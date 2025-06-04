@@ -52,11 +52,12 @@ class AuthController extends Controller
         // }
 
         if (Auth::attempt($credentials)) {
+            Auth::login($user);
             return redirect()->intended(route('dashboard'));
         }
 
-        Auth::login($user); // log them in
-        return redirect()->intended('/dashboard');
+        // Auth::login($user); // log them in
+        return back()->withErrors(['password' => 'Incorrect password.']);
     }
 
     public function logout()
