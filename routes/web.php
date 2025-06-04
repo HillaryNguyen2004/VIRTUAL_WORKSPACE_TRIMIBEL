@@ -7,7 +7,7 @@ use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
-
+use App\Http\Controllers\Auth\EmailVerificationController;
 
 
 // Redirect root to login
@@ -26,28 +26,20 @@ Route::post('/register', [AuthController::class, 'registerPost'])->name('registe
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Protected dashboard route
+Route::get('/email/verify', [EmailVerificationController::class, 'notice'])
+    ->middleware('auth')->name('verification.notice');
+
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->middleware(['signed'])->name('verification.verify');
+
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
 });
 
-// Email verification routes
-Route::get('/email/verify', function () {
-    return view('auth.verify-email');
-})->middleware('auth')->name('verification.notice');
-
-Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-    \Log::info('Verification route hit');
-    $request->fulfill(); // sets email_verified_at
-    Auth::loginUsingId($request->user()->id); // auto-login
-    return redirect('/dashboard');
-})->middleware(['signed'])->name('verification.verify');
-
-Route::post('/email/verification-notification', function () {
-    request()->user()->sendEmailVerificationNotification();
-    return back()->with('message', 'Verification link sent!');
-})->middleware(['auth', 'throttle:6,1'])->name('verification.send');
+Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])
+    ->middleware(['auth', 'throttle:6,1'])->name('verification.send');
 
 Route::get('forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
 Route::post('forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
