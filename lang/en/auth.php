@@ -20,6 +20,6 @@ return [
     'registration_failed' => 'Registration failed, please try again.',
     'registration_success' => 'User created successfully, please log in.',
     'logout_success' => 'You have been logged out successfully.',
-
-
+    'no_user_found' => 'No user found.',
+    'incorrect_password' => 'Incorrect password.',
 ];

@@ -6,8 +6,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use App\Http\Validate\LoginRequest;
-use App\Http\Validate\RegistrationRequest;
+use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegistrationRequest;
 
 class AuthController extends Controller
 {
@@ -43,7 +43,7 @@ class AuthController extends Controller
         $user = User::where('email', $credentials['email'])->first();
 
         if (!$user) {
-            return back()->withErrors(['email' => 'No user found.']);
+            return back()->withErrors(['email' => __('auth.no_user_found')]);
         }
 
         // if (!$user->hasVerifiedEmail()) {
@@ -57,7 +57,7 @@ class AuthController extends Controller
         }
 
         // Auth::login($user); // log them in
-        return back()->withErrors(['password' => 'Incorrect password.']);
+        return back()->withErrors(['password' => __('auth.incorrect_password')]);
     }
 
     public function logout()
