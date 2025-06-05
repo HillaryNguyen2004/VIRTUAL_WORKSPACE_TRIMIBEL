@@ -33,12 +33,18 @@
         <button type="submit" class="btn btn-primary w-100">Login</button>
     </form>
     <div class="text-center mt-3">
+        <div class="text-center mt-3">
+            <a href="{{ route('google.login') }}" class="btn btn-danger w-100 mb-2">
+                <i class="fab fa-google"></i> Login with Google
+            </a>
+        </div>
         <div>
             <a href="{{ route('register') }}">Don't have an account yet? Register here</a>
         </div>
         <div>
             <a href="{{ route('password.request') }}">Forgot Password?</a>
         </div>
+        
     </div>
 </div>
 @endsection

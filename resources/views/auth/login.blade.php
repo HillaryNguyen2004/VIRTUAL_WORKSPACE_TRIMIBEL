@@ -67,6 +67,11 @@
                         <a href="{{ route('register') }}" style="color: #007bff; text-decoration: underline;">Don't have an account yet? Register here</a><br>
                         <a href="{{ route('password.request') }}" style="color: #007bff; text-decoration: underline;">Forgot Password?</a>
                     </div>
+                    <div class="text-center mt-3">
+                        <a href="{{ route('google.login') }}" class="btn btn-danger w-100 mb-2">
+                            <i class="fab fa-google"></i> Login with Google
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
