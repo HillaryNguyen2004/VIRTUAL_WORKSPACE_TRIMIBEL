@@ -39,7 +39,7 @@ class AuthController extends Controller
     public function loginPost(LoginRequest $request)
     {
         $credentials = $request->only('email', 'password');
-
+        $remember = $request->filled('remember');
         $user = User::where('email', $credentials['email'])->first();
 
         if (!$user) {
@@ -51,10 +51,14 @@ class AuthController extends Controller
         //     return back()->withErrors(['email' => 'Please verify your email first. A new link has been sent.']);
         // }
 
-        if (Auth::attempt($credentials)) {
-            Auth::login($user);
-            return redirect()->intended(route('dashboard'));
-        }
+        // if (Auth::attempt($credentials)) {
+        //     Auth::login($user);
+        //     return redirect()->intended(route('dashboard'));
+        // }
+        if (Auth::attempt($credentials, $remember)) {
+        // No need to call Auth::login($user) again
+        return redirect()->intended(route('dashboard'));
+    }
 
         // Auth::login($user); // log them in
         return back()->withErrors(['password' => __('auth.incorrect_password')]);
