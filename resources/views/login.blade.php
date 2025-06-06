@@ -23,9 +23,28 @@
         <div class="form-group mb-3">
             <input type="email" name="email" class="form-control" placeholder="Email" required autofocus>
         </div>
-        <div class="form-group mb-3">
-            <input type="password" name="password" class="form-control" placeholder="Password" required>
+        <div class="form-group mb-3 position-relative">
+            <input type="password" name="password" class="form-control" placeholder="Password" id="password" required>
+            <span class="position-absolute" style="top: 50%; right: 15px; transform: translateY(-50%); cursor: pointer;" onclick="togglePassword()">
+                <i id="togglePasswordIcon" class="fa fa-eye"></i>
+            </span>
         </div>
+
+        <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const icon = document.getElementById('togglePasswordIcon');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+        </script>
         <div class="form-group form-check mb-3">
             <input type="checkbox" name="remember" class="form-check-input" id="remember">
             <label class="form-check-label" for="remember">Remember Me</label>

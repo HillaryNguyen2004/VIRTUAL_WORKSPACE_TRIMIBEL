@@ -38,14 +38,20 @@
             @enderror
         </div>
         <div class="row">
-            <div class="col-md-6 mb-3">
-                <input type="password" name="password" class="form-control" placeholder="Password">
+            <div class="col-md-6 mb-3 position-relative">
+                <input type="password" name="password" class="form-control" placeholder="Password" id="password">
+                <span class="position-absolute" style="top: 50%; right: 15px; transform: translateY(-50%); cursor: pointer;" onclick="togglePassword('password', 'togglePasswordIcon')">
+                    <i id="togglePasswordIcon" class="fa fa-eye"></i>
+                </span>
                 @error('password')
                     <span class="text-danger small">{{ $message }}</span>
                 @enderror
             </div>
-            <div class="col-md-6 mb-3">
-                <input type="password" name="password_confirmation" class="form-control" placeholder="Repeat Password">
+            <div class="col-md-6 mb-3 position-relative">
+                <input type="password" name="password_confirmation" class="form-control" placeholder="Repeat Password" id="password_confirmation">
+                <span class="position-absolute" style="top: 50%; right: 15px; transform: translateY(-50%); cursor: pointer;" onclick="togglePassword('password_confirmation', 'togglePasswordIcon2')">
+                    <i id="togglePasswordIcon2" class="fa fa-eye"></i>
+                </span>
                 @error('password_confirmation')
                     <span class="text-danger small">{{ $message }}</span>
                 @enderror
@@ -65,4 +71,19 @@
         <a class="small" href="{{ route('login') }}">Already have an account? Login!</a>
     </div>
 </div>
+<script>
+function togglePassword(inputId, iconId) {
+    const passwordInput = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+</script>
 @endsection
