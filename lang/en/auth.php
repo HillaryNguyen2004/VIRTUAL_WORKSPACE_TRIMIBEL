@@ -22,4 +22,6 @@ return [
     'logout_success' => 'You have been logged out successfully.',
     'no_user_found' => 'No user found.',
     'incorrect_password' => 'Incorrect password.',
+    'account_blocked' => 'Your account is blocked due to too many failed login attempts.',
+    'incorrect_password' => 'The provided password is incorrect.',
 ];

@@ -51,18 +51,18 @@ class AuthController extends Controller
         }
 
         if ($user->isBlocked()) {
-        return back()->withErrors(['email' => 'Your account is blocked due to too many failed login attempts.']);
-    }
-        if (Auth::attempt($credentials, $remember)) {
-        $user->resetLoginAttempts();
-        return redirect()->intended(route('dashboard'));
-    } else {
-        $user->incrementLoginAttempts();
-        if ($user->isBlocked()) {
-            return back()->withErrors(['email' => 'Your account is blocked due to too many failed login attempts.']);
+            return back()->withErrors(['email' => __('auth.account_blocked')]);
         }
-        return back()->withErrors(['password' => __('auth.incorrect_password')]);
-    }
+        if (Auth::attempt($credentials, $remember)) {
+            $user->resetLoginAttempts();
+            return redirect()->intended(route('dashboard'));
+        } else {
+            $user->incrementLoginAttempts();
+            if ($user->isBlocked()) {
+                return back()->withErrors(['email' => __('auth.account_blocked')]);
+            }
+            return back()->withErrors(['password' => __('auth.incorrect_password')]);
+        }
         if (Auth::attempt($credentials, $remember)) {
         // No need to call Auth::login($user) again
         return redirect()->intended(route('dashboard'));
