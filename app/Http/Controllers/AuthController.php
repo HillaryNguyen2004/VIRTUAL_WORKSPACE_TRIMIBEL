@@ -11,6 +11,10 @@ use App\Http\Requests\RegistrationRequest;
 
 class AuthController extends Controller
 {
+    public function redirectToLogin() {
+    return redirect()->route('login');
+    }
+
     public function login()
     {
         return view('login');
@@ -46,37 +50,19 @@ class AuthController extends Controller
             return back()->withErrors(['email' => __('auth.no_user_found')]);
         }
 
-        if ($user->blocked) {
+        if ($user->isBlocked()) {
+        return back()->withErrors(['email' => 'Your account is blocked due to too many failed login attempts.']);
+    }
+        if (Auth::attempt($credentials, $remember)) {
+        $user->resetLoginAttempts();
+        return redirect()->intended(route('dashboard'));
+    } else {
+        $user->incrementLoginAttempts();
+        if ($user->isBlocked()) {
             return back()->withErrors(['email' => 'Your account is blocked due to too many failed login attempts.']);
-            }
-
-            if (Auth::attempt($credentials, $remember)) {
-            // Reset login attempts on successful login
-            $user->login_attempts = 0;
-            $user->save();
-            return redirect()->intended(route('dashboard'));
-        } else {
-            // Increment login attempts
-            $user->login_attempts += 1;
-            if ($user->login_attempts >= 5) {
-                $user->blocked = true;
-            }
-            $user->save();
-            if ($user->blocked) {
-                return back()->withErrors(['email' => 'Your account is blocked due to too many failed login attempts.']);
-            }
-            return back()->withErrors(['password' => __('auth.incorrect_password')]);
         }
-
-        // if (!$user->hasVerifiedEmail()) {
-        //     $user->sendEmailVerificationNotification();
-        //     return back()->withErrors(['email' => 'Please verify your email first. A new link has been sent.']);
-        // }
-
-        // if (Auth::attempt($credentials)) {
-        //     Auth::login($user);
-        //     return redirect()->intended(route('dashboard'));
-        // }
+        return back()->withErrors(['password' => __('auth.incorrect_password')]);
+    }
         if (Auth::attempt($credentials, $remember)) {
         // No need to call Auth::login($user) again
         return redirect()->intended(route('dashboard'));
