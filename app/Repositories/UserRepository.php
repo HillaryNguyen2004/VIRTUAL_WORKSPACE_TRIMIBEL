@@ -1,22 +1,18 @@
 <?php
 
 namespace App\Repositories;
-use Laravel\Socialite\Facades\Socialite;
+
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Laravel\Socialite\Facades\Socialite;
 
-// All create,get,update, delete methods related to User model is here
-class UserRepository
+
+class UserRepository extends BaseRepository
 {
-    public function findByEmail(string $email): ?User
+    public function __construct(User $user)
     {
-        return User::where('email', $email)->first();
-    }
-
-    public function create(array $data): User
-    {
-        return User::create($data);
+        parent::__construct($user);
     }
 
     public function updatePassword(User $user, string $newPassword): void
@@ -27,28 +23,27 @@ class UserRepository
         ])->save();
     }
 
-    public function update(User $user, array $data): bool
-    {
-        return $user->update($data);
-    }
-
     public function findOrCreateFromGoogle($googleUser): User
     {
-        return $this->firstOrCreate(
+        return $this->model->firstOrCreate(
             ['email' => $googleUser->getEmail()],
             [
                 'name' => $googleUser->getName(),
-                'password' => bcrypt(\Str::random(24)),
+                'password' => bcrypt(Str::random(24)),
             ]
         );
     }
 
     public function createFromRequest($request): User
     {
-        return User::create([
+        return $this->create([
             'name' => $request->first_name . ' ' . $request->last_name,
             'email' => $request->email,
             'password' => bcrypt($request->password),
         ]);
+    }
+    public function findByEmail(string $email): ?User
+    {
+        return User::where('email', $email)->first();
     }
 }
