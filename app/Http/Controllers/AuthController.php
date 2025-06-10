@@ -1,6 +1,6 @@
 <?php
 namespace App\Http\Controllers;
-
+use App\Repositories\UserRepository;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -8,9 +8,18 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegistrationRequest;
+use App\Services\LoginService;
 
 class AuthController extends Controller
 {
+    protected $userRepository;
+    protected $loginService;
+    public function __construct(UserRepository $userRepository, LoginService $loginService)
+    {
+        $this->userRepository = $userRepository;
+        $this->loginService = $loginService;
+    }
+
     public function redirectToLogin() {
     return redirect()->route('login');
     }
@@ -28,48 +37,27 @@ class AuthController extends Controller
     // POST /register → handles form submission
     public function registerPost(RegistrationRequest $request)
     {
-        $user = User::create([
-        'name' => $request->first_name . ' ' . $request->last_name,
-        'email' => $request->email,
-        'password' => bcrypt($request->password),
-    ]);
-
+        $user = $this->userRepository->createFromRequest($request);
         $user->sendEmailVerificationNotification();
         Auth::login($user);
 
         return redirect()->route('verification.notice');
     }
-
+    // call app/Services/LoginService to handle login logic
+    // POST /login → handles form submission
     public function loginPost(LoginRequest $request)
     {
-        $credentials = $request->only('email', 'password');
-        $remember = $request->filled('remember');
-        $user = User::where('email', $credentials['email'])->first();
+        try {
+            $user = $this->loginService->login(
+                $request->only('email', 'password'),
+                $request->filled('remember')
+            );
 
-        if (!$user) {
-            return back()->withErrors(['email' => __('auth.no_user_found')]);
-        }
-
-        if ($user->isBlocked()) {
-            return back()->withErrors(['email' => __('auth.account_blocked')]);
-        }
-        if (Auth::attempt($credentials, $remember)) {
-            $user->resetLoginAttempts();
             return redirect()->intended(route('dashboard'));
-        } else {
-            $user->incrementLoginAttempts();
-            if ($user->isBlocked()) {
-                return back()->withErrors(['email' => __('auth.account_blocked')]);
-            }
-            return back()->withErrors(['password' => __('auth.incorrect_password')]);
-        }
-        if (Auth::attempt($credentials, $remember)) {
-        // No need to call Auth::login($user) again
-        return redirect()->intended(route('dashboard'));
-    }
 
-        // Auth::login($user); // log them in
-        return back()->withErrors(['password' => __('auth.incorrect_password')]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->withErrors($e->errors());
+    }
     }
 
     public function logout()
