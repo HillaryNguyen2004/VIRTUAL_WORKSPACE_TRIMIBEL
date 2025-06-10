@@ -11,6 +11,10 @@ use App\Http\Requests\RegistrationRequest;
 
 class AuthController extends Controller
 {
+    public function redirectToLogin() {
+    return redirect()->route('login');
+    }
+
     public function login()
     {
         return view('login');
@@ -46,15 +50,19 @@ class AuthController extends Controller
             return back()->withErrors(['email' => __('auth.no_user_found')]);
         }
 
-        // if (!$user->hasVerifiedEmail()) {
-        //     $user->sendEmailVerificationNotification();
-        //     return back()->withErrors(['email' => 'Please verify your email first. A new link has been sent.']);
-        // }
-
-        // if (Auth::attempt($credentials)) {
-        //     Auth::login($user);
-        //     return redirect()->intended(route('dashboard'));
-        // }
+        if ($user->isBlocked()) {
+            return back()->withErrors(['email' => __('auth.account_blocked')]);
+        }
+        if (Auth::attempt($credentials, $remember)) {
+            $user->resetLoginAttempts();
+            return redirect()->intended(route('dashboard'));
+        } else {
+            $user->incrementLoginAttempts();
+            if ($user->isBlocked()) {
+                return back()->withErrors(['email' => __('auth.account_blocked')]);
+            }
+            return back()->withErrors(['password' => __('auth.incorrect_password')]);
+        }
         if (Auth::attempt($credentials, $remember)) {
         // No need to call Auth::login($user) again
         return redirect()->intended(route('dashboard'));

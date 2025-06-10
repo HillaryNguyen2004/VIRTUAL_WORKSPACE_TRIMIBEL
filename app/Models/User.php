@@ -42,4 +42,24 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+    
+public function incrementLoginAttempts()
+{
+    $this->login_attempts += 1;
+    if ($this->login_attempts >= 5) {
+        $this->blocked = true;
+    }
+    $this->save();
+}
+
+public function resetLoginAttempts()
+{
+    $this->login_attempts = 0;
+    $this->save();
+}
+
+public function isBlocked()
+{
+    return $this->blocked;
+}
 }
