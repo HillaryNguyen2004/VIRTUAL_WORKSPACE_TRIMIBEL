@@ -1,13 +1,22 @@
 <?php
 namespace App\Http\Controllers\Auth;
-
+use App\Repositories\UserRepository;
 use App\Http\Controllers\Controller;
 use Socialite;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
+
+// This controller handles Google authentication
+// It redirects users to Google for authentication and handles the callback
+// after authentication to log them in or create a new user if they don't exist, handle this in app/Repositories/UserRepository.php
 class GoogleController extends Controller
 {
+    protected $userRepository;
+    public function __construct(UserRepository $userRepository)
+{
+    $this->userRepository = $userRepository;
+}
     public function redirectToGoogle()
     {
         return Socialite::driver('google')->redirect();
@@ -17,13 +26,7 @@ class GoogleController extends Controller
     {
         $googleUser = Socialite::driver('google')->stateless()->user();
 
-        $user = User::firstOrCreate(
-            ['email' => $googleUser->getEmail()],
-            [
-                'name' => $googleUser->getName(),
-                'password' => bcrypt(\Str::random(24)), // random password
-            ]
-        );
+        $user = $this->userRepository->findOrCreateFromGoogle($googleUser);
 
         Auth::login($user, true);
 
