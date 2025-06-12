@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\GoogleController;
+use App\Http\Controllers\ProfileController;
 
 
 // Redirect root to login
@@ -57,3 +58,6 @@ Route::post('reset-password', [ResetPasswordController::class, 'reset'])->name('
 
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
 Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
+
+Route::get('/profile', [ProfileController::class, 'showProfile'])->name('profile');
+Route::get('/settings', [ProfileController::class, 'showSettings'])->name('settings');
