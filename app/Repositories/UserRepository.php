@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Repositories;
-
+use Illuminate\Http\UploadedFile;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -45,5 +45,20 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
     public function findByEmail(string $email): ?User
     {
         return $this->model->where('email', $email)->first();
+    }
+
+    public function updateName($user, $firstName, $lastName): void
+    {
+        $user->name = $firstName . ' ' . $lastName;
+        $user->save();
+    }
+
+    public function updateAvatar($user, UploadedFile $file): void
+    {
+        $safeEmail = str_replace(['@', '.'], '_', $user->email);
+        $extension = $file->getClientOriginalExtension();
+        $filename = $safeEmail . '.' . $extension;
+
+        $file->move(public_path('img/user_avatar/'), $filename);
     }
 }

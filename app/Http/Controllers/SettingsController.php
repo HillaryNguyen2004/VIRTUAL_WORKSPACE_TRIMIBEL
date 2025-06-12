@@ -1,37 +1,29 @@
 <?php
 namespace App\Http\Controllers;
-
+use App\Http\Requests\UpdateAvatarRequest;
 use App\Http\Requests\UpdateProfileRequest;
 use Illuminate\Http\Request;
-
+use App\Repositories\UserRepository;
 class SettingsController extends Controller
 {
+    protected $userRepo;
+
+    public function __construct(UserRepository $userRepo)
+    {
+        $this->userRepo = $userRepo;
+    }
     public function updateName(UpdateProfileRequest $request)
     {
-        $user = auth()->user();
-        $user->name = $request->first_name . ' ' . $request->last_name;
-        $user->save();
+        $this->userRepo->updateName(auth()->user(), $request->first_name, $request->last_name);
 
-        return back()->with('success', 'Profile updated successfully.');
+        return back()->with('success', __('messages.profile_updated'));
+
     }
 
-    public function updateAvatar(Request $request)
-{
-    $request->validate([
-        'avatar' => 'required|image|mimes:jpg,jpeg,png|max:2048',
-    ]);
+    public function updateAvatar(UpdateAvatarRequest $request)
+    {
+        $this->userRepo->updateAvatar(auth()->user(), $request->file('avatar'));
 
-    $user = auth()->user();
-    $file = $request->file('avatar');
-
-    // Sanitize email to use as a file name (replace @ and . to avoid filesystem issues)
-    $safeEmail = str_replace(['@', '.'], '_', $user->email);
-    $extension = $file->getClientOriginalExtension();
-    $filename = $safeEmail . '.' . $extension;
-
-    // Save file to public/img/user_avatar/
-    $file->move(public_path('img/user_avatar/'), $filename);
-
-    return redirect()->back()->with('success_avatar', 'Profile picture updated successfully.');
-}
+        return back()->with('success_avatar', __('messages.avatar_updated'));
+    }
 }
