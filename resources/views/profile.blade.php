@@ -34,20 +34,7 @@
         <div class="col-lg-4">
             <div class="card shadow mb-4 text-center">
                 <div class="card-body">
-                    @php
-                        $safeEmail = str_replace(['@', '.'], '_', Auth::user()->email);
-                        $jpgPath = 'img/user_avatar/' . $safeEmail . '.jpg';
-                        $pngPath = 'img/user_avatar/' . $safeEmail . '.png';
-
-                        if (file_exists(public_path($jpgPath))) {
-                            $avatar = asset($jpgPath);
-                        } elseif (file_exists(public_path($pngPath))) {
-                            $avatar = asset($pngPath);
-                        } else {
-                            $avatar = asset('img/undraw_profile_2.svg');
-                        }
-                    @endphp
-                    <img src="{{ $avatar }}" class="img-fluid rounded-circle mb-3" style="width: 150px;" alt="User Avatar">
+                    <img src="{{ getUserAvatar(Auth::user()->email) }}" class="img-fluid rounded-circle mb-3" style="width: 150px;" alt="User Avatar">
                     <h5 class="text-primary">{{ Auth::user()->name }}</h5>
                     <p class="text-muted mb-0">{{ Auth::user()->email }}</p>
                 </div>

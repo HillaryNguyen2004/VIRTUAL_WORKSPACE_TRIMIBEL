@@ -4,6 +4,7 @@ namespace App\Helpers;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class FileUploadHelper
 {
@@ -17,3 +18,5 @@ class FileUploadHelper
         return Storage::disk($disk)->delete($path);
     }
 }
+
+
