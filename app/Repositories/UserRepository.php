@@ -49,8 +49,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
 
     public function updateName($user, $firstName, $lastName): void
     {
-        $user->name = $firstName . ' ' . $lastName;
-        $user->save();
+        $this->update($user, ['name' => $firstName . ' ' . $lastName]);
     }
 
     public function updateAvatar($user, UploadedFile $file): void

@@ -10,4 +10,5 @@ interface UserRepositoryInterface
     public function findOrCreateFromGoogle($googleUser): User;
     public function createFromRequest($request): User;
     public function findByEmail(string $email): ?User;
+    public function updateName($user, $firstName, $lastName): void;
 }
