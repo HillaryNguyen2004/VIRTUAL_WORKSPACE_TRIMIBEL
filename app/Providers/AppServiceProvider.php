@@ -13,7 +13,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        $this->app->singleton('fileuploadhelper', function ($app) {
+            return new \App\Helpers\FileUploadHelper();
+        });
     }
 
     /**
