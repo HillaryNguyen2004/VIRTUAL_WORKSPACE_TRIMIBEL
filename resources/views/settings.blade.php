@@ -96,12 +96,8 @@
                         <div class="form-group">
                             <label for="avatar">Profile Photo</label>
                             <input type="file" name="avatar" id="avatar" accept=".jpg,.jpeg,.png" class="form-control-file">
-                            @if(auth()->user()->avatar)
-                                <div class="mt-2">
-                                    <img src="{{ asset('img/user_avatar/' . auth()->user()->avatar) }}"
-                                         alt="User Avatar" class="img-thumbnail" style="max-width: 120px;">
-                                </div>
-                            @endif
+
+                            <div class="mt-2" id="avatarPreviewContainer" style="display: none;"></div>
                         </div>
 
                         <div class="form-group">
@@ -126,3 +122,29 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.getElementById('avatar').addEventListener('change', function(event) {
+    const previewContainer = document.getElementById('avatarPreviewContainer');
+    const file = event.target.files[0];
+
+    // Clear any existing preview
+    previewContainer.innerHTML = '';
+    previewContainer.style.display = 'none';
+
+    if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.classList.add('img-thumbnail');
+            img.style.maxWidth = '120px';
+            previewContainer.appendChild(img);
+            previewContainer.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+</script>
+@endpush
