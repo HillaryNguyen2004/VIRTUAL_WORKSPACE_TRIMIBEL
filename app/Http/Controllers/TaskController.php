@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Task; // Make sure you have a Task model
-use App\Models\User; // Assuming you have a User model for staff users
+use App\Models\Task; 
+use App\Models\User; 
+use App\Http\Requests\StoreTaskRequest;
 
 class TaskController extends Controller
 {
@@ -17,15 +18,10 @@ class TaskController extends Controller
     }
 
     // Handle form submission and save the task
-    public function store(Request $request)
+    public function store(StoreTaskRequest $request)
 {
-    $validated = $request->validate([
-        'title' => 'required|string|max:255',
-        'assignee' => 'required|exists:users,id',
-        'due_date' => 'required|date',
-        'description' => 'nullable|string',
-        'active' => 'nullable|boolean',
-    ]);
+    $validated = $request->validated();
+
 
     $task = new \App\Models\Task();
     $task->title = $validated['title'];
