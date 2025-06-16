@@ -45,12 +45,12 @@
                     </div>
                     <div class="text-secondary mb-2">Review and manage tasks assigned to your team members.</div>
                     <ul class="mb-3 ps-3">
-                        <li class="mb-1 text-success">Assign tasks to users based on project priorities</li>
-                        <li class="mb-1 text-danger">Remove or archive completed or outdated tasks</li>
-                        <li class="mb-1 text-warning">Track deadlines and task completion progress</li>
+                        <li class="mb-1">Assign tasks to users based on project priorities</li>
+                        <li class="mb-1">Remove or archive completed or outdated tasks</li>
+                        <li class="mb-1">Track deadlines and task completion progress</li>
                     </ul>
                     <a href="#" class="btn btn-primary w-100" style="background:#2563eb;border:none;">
-                        <i class="bi bi-check2-circle"></i> Manage Pending Tasks (5)
+                        <i class="bi bi-check2-circle"></i> Edit Tasks
                     </a>
                 </div>
             </div>
@@ -59,17 +59,15 @@
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <strong>Project Management</strong>
+                        <strong>Permission Management</strong>
                         <a href="#" class="small text-primary">View All <i class="bi bi-list"></i></a>
                     </div>
-                    <div class="text-secondary mb-2">Organize project pipelines and set milestones.</div>
+                    <div class="text-secondary mb-2">Organize Staff Permission.</div>
                     <ul class="mb-3 ps-3">
-                        <li class="mb-1">Create and configure new project boards</li>
-                        <li class="mb-1">Mark project statuses (active/completed)</li>
-                        <li class="mb-1">Monitor overall team project load</li>
+                        <li class="mb-1">Grant or delete a staff permission</li>
                     </ul>
                     <a href="#" class="btn w-100" style="background:#00b96b;color:#fff;border:none;">
-                        <i class="bi bi-folder-plus"></i> Create New Project
+                        <i class="bi bi-folder-plus"></i> Edit Permissions
                     </a>
                 </div>
             </div>
@@ -137,7 +135,7 @@
                         <a href="#" class="btn btn-outline-primary w-100"><i class="bi bi-check2-square"></i> Review Tasks</a>
                     </div>
                     <div class="col-md-3 mb-2">
-                        <a href="#" class="btn btn-outline-success w-100"><i class="bi bi-folder-plus"></i> New Project</a>
+                        <a href="{{ route('tasks.create') }}" class="btn btn-outline-success w-100"><i class="bi bi-folder-plus"></i> New Task</a>
                     </div>
                     <div class="col-md-3 mb-2">
                         <a href="#" class="btn btn-outline-secondary w-100"><i class="bi bi-people"></i> Manage Users</a>

@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\TaskController;
 
 // Redirect root to login
 // Route::get('/', function () {
@@ -54,6 +55,10 @@ Route::get('/dashboard', function () {
 Route::get('/admin/dashboard', function () {
     return view('admindashboard');
 })->name('admin.dashboard')->middleware(['auth']);
+
+
+Route::get('/tasks/new', [TaskController::class, 'create'])->name('tasks.create');
+Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
 
 Route::get('/staff/dashboard', function () {
     return view('staffdashboard');
