@@ -52,8 +52,14 @@ class AuthController extends Controller
                 $request->only('email', 'password'),
                 $request->filled('remember')
             );
-
-            return redirect()->intended(route('dashboard'));
+            if ($user->roles === 'admin') {
+            return redirect()->route('admin.dashboard');
+        } elseif ($user->roles === 'staff') {
+            return redirect()->route('staff.dashboard');
+        } else {
+            return redirect()->route('user.dashboard');
+        }
+            // return redirect()->intended(route('dashboard'));
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return back()->withErrors($e->errors());

@@ -43,9 +43,30 @@ Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 've
 //     })->name('dashboard');
 // });
 
-Route::middleware(['auth'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-});
+// Route::middleware(['auth'])->group(function () {
+//     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+// });
+
+Route::get('/dashboard', function () {
+    return view('dashboard');
+})->name('user.dashboard')->middleware(['auth']);
+
+Route::get('/admin/dashboard', function () {
+    return view('admindashboard');
+})->name('admin.dashboard')->middleware(['auth']);
+
+Route::get('/staff/dashboard', function () {
+    return view('staffdashboard');
+})->name('staff.dashboard')->middleware(['auth']);
+
+// Redirect after login
+Route::get('/home', function () {
+    // This triggers the middleware
+})->middleware(['auth', 'role.redirect']);
+
+// Route::get('/dashboard', function () {
+//     return view('dashboard');
+// })->name('dashboard');
 
 Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])
     ->middleware(['auth', 'throttle:6,1'])->name('verification.send');
