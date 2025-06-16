@@ -37,7 +37,7 @@
                     <div class="mb-2" style="font-size:2rem; color:#a259f7;"><i class="bi bi-list-task"></i></div>
                     <div class="fw-bold mb-2">My Tasks</div>
                     <div class="mb-3 text-secondary">View and manage all your assigned tasks and statuses.</div>
-                    <a href="#" class="btn w-100" style="background:#a259f7;color:#fff;"><i class="bi bi-eye"></i> View Tasks</a>
+                    <a href="{{ route('tasks.staff.index') }}" class="btn w-100" style="background:#a259f7;color:#fff;"><i class="bi bi-eye"></i> View Tasks</a>
                 </div>
             </div>
         </div>
@@ -56,41 +56,27 @@
     <div class="mb-4">
         <div class="d-flex justify-content-between align-items-center mb-2">
             <strong>Your Upcoming Tasks</strong>
-            <a href="#" class="small text-primary">View all <i class="bi bi-chevron-right"></i></a>
+            <a href="{{ route('tasks.staff.index') }}" class="small text-primary">View all <i class="bi bi-chevron-right"></i></a>
         </div>
-        <div class="card mb-2">
-            <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center">
-                <div>
-                    <div class="fw-bold">Design Homepage</div>
-                    <div class="text-secondary">Due: May 25, 2025</div>
-                    <a href="#" class="text-primary me-3">View Details</a>
-                    <a href="#" class="text-danger">Mark as Complete</a>
+        @forelse($tasks as $task)
+            <div class="card mb-2">
+                <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                    <div>
+                        <div class="fw-bold">{{ $task->title }}</div>
+                        <div class="text-secondary">Due: {{ $task->due_date }}</div>
+                        <a href="#" class="text-primary me-3">View Details</a>
+                    </div>
+                    <span class="badge rounded-pill 
+                        @if($task->status === 'pending') bg-warning text-dark 
+                        @elseif($task->status === 'in_progress') bg-info text-dark 
+                        @endif">
+                        {{ ucfirst($task->status) }}
+                    </span>
                 </div>
-                <span class="badge rounded-pill" style="background:#b7f5d8;color:#1a7f37;font-weight:500;">IN PROGRESS</span>
             </div>
-        </div>
-        <div class="card mb-2">
-            <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center">
-                <div>
-                    <div class="fw-bold">Client Meeting Prep</div>
-                    <div class="text-secondary">Due: May 27, 2025</div>
-                    <a href="#" class="text-primary">View Details</a>
-                    <span class="text-secondary ms-3">Pending review</span>
-                </div>
-                <span class="badge rounded-pill" style="background:#ffe066;color:#856404;font-weight:500;">PENDING</span>
-            </div>
-        </div>
-        <div class="card mb-2">
-            <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center">
-                <div>
-                    <div class="fw-bold">Write Report</div>
-                    <div class="text-secondary">Due: June 1, 2025</div>
-                    <a href="#" class="text-primary">View Details</a>
-                    <span class="text-secondary ms-3">Not started</span>
-                </div>
-                <span class="badge rounded-pill" style="background:#f8d7da;color:#721c24;font-weight:500;">NOT STARTED</span>
-            </div>
-        </div>
+        @empty
+            <p class="text-muted">No upcoming tasks found.</p>
+        @endforelse
     </div>
 
     <div class="row mb-4">

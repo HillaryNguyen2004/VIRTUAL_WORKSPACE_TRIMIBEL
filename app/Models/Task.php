@@ -11,4 +11,8 @@ class Task extends Model
     protected $fillable = [
         'title', 'description', 'assigned_user_id', 'status', 'due_date', 'active'
     ];
+    public function assigneeUser()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'assigned_user_id');
+    }
 }

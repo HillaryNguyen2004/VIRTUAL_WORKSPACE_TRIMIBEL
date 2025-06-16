@@ -41,7 +41,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <strong>Task Management</strong>
-                        <a href="#" class="small text-primary">View All <i class="bi bi-list"></i></a>
+                        <a href="{{ route('tasks.index') }}" class="small text-primary">View All <i class="bi bi-list"></i></a>
                     </div>
                     <div class="text-secondary mb-2">Review and manage tasks assigned to your team members.</div>
                     <ul class="mb-3 ps-3">
@@ -80,7 +80,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <strong>User Management</strong>
-                        <a href="#" class="small text-primary">View All <i class="bi bi-list"></i></a>
+                        <a href="{{ route('users.index') }}" class="small text-primary">View All <i class="bi bi-list"></i></a>
                     </div>
                     <div class="text-secondary mb-2">Manage team members and their access roles.</div>
                     <ul class="mb-3 ps-3">
@@ -132,13 +132,13 @@
                 <strong>Quick Actions</strong>
                 <div class="row mt-3">
                     <div class="col-md-3 mb-2">
-                        <a href="#" class="btn btn-outline-primary w-100"><i class="bi bi-check2-square"></i> Review Tasks</a>
+                        <a href="{{ route('tasks.index') }}" class="btn btn-outline-primary w-100"><i class="bi bi-check2-square"></i> Review Tasks</a>
                     </div>
                     <div class="col-md-3 mb-2">
                         <a href="{{ route('tasks.create') }}" class="btn btn-outline-success w-100"><i class="bi bi-folder-plus"></i> New Task</a>
                     </div>
                     <div class="col-md-3 mb-2">
-                        <a href="#" class="btn btn-outline-secondary w-100"><i class="bi bi-people"></i> Manage Users</a>
+                        <a href="{{ route('users.index') }}" class="btn btn-outline-secondary w-100"><i class="bi bi-people"></i> Manage Users</a>
                     </div>
                     <div class="col-md-3 mb-2">
                         <a href="#" class="btn btn-outline-info w-100"><i class="bi bi-bar-chart"></i> View Reports</a>

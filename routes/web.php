@@ -12,6 +12,7 @@ use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\UserController;
 
 // Redirect root to login
 // Route::get('/', function () {
@@ -59,10 +60,20 @@ Route::get('/admin/dashboard', function () {
 
 Route::get('/tasks/new', [TaskController::class, 'create'])->name('tasks.create');
 Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
+Route::get('/management/tasks', [TaskController::class, 'index'])->name('tasks.index');
+Route::get('/management/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
+Route::get('/management/tasks/{task}/edit', [TaskController::class, 'edit'])->name('tasks.edit');
+Route::put('/management/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
+Route::delete('/management/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
 
 Route::get('/staff/dashboard', function () {
     return view('staffdashboard');
 })->name('staff.dashboard')->middleware(['auth']);
+
+Route::get('/management/users', [UserController::class, 'index'])->name('users.index');
+Route::get('/staff/tasks', [TaskController::class, 'staffTasks'])->name('tasks.staff.index');
+Route::get('/staff/dashboard', [TaskController::class, 'upcomingTasks'])->name('staff.dashboard');
+
 
 // Redirect after login
 Route::get('/home', function () {
