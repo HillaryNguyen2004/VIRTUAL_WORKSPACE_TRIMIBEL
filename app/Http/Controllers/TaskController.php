@@ -51,7 +51,8 @@ class TaskController extends Controller
     public function show($id)
     {
         $task = $this->taskRepo->find($id);
-        return view('tasks.show', compact('task'));
+        // $staffUsers = User::where('roles', 'staff')->get();
+        return view('tasks.create', compact('task'));
     }
 
     public function edit($id)
@@ -61,12 +62,29 @@ class TaskController extends Controller
         return view('tasks.edit', compact('task', 'staffUsers'));
     }
 
-    public function update(UpdateTaskRequest $request, $id)
+    // public function update(UpdateTaskRequest $request, $task)
+    // {
+    //     $data = $request->validated();
+    //     $data['active'] = $request->has('active') ? 1 : 0;
+
+    //     $task = $this->taskRepo->find($id);
+    //     $this->taskRepo->update($task, [
+    //         'title' => $data['title'],
+    //         'description' => $data['description'] ?? null,
+    //         'assigned_user_id' => $data['assignee'],
+    //         'due_date' => $data['due_date'],
+    //         'status' => $data['status'],
+    //         'active' => $data['active']
+    //     ]);
+
+    //     return redirect()->route('tasks.index')->with('success', 'Task updated successfully!');
+    // }
+
+    public function update(UpdateTaskRequest $request, Task $task)
     {
         $data = $request->validated();
         $data['active'] = $request->has('active') ? 1 : 0;
 
-        $task = $this->taskRepo->find($id);
         $this->taskRepo->update($task, [
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
@@ -78,6 +96,7 @@ class TaskController extends Controller
 
         return redirect()->route('tasks.index')->with('success', 'Task updated successfully!');
     }
+
 
     public function destroy($id)
     {
