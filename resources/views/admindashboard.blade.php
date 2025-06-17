@@ -88,7 +88,7 @@
                         <li class="mb-1">Change roles (admin, staff, user)</li>
                         <li class="mb-1">Track last activity and login time</li>
                     </ul>
-                    <a href="#" class="btn w-100" style="background:#a259f7;color:#fff;border:none;">
+                    <a href="{{ route('admin.users.create') }}" class="btn w-100" style="background:#a259f7;color:#fff;border:none;">
                         <i class="bi bi-person-plus"></i> Add New User
                     </a>
                 </div>

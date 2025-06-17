@@ -82,6 +82,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/staff/team', [TeamController::class, 'index'])->name('team.overview');
 });
 
+Route::get('/admin/users/create', [UserController::class, 'create'])->name('admin.users.create');
+Route::post('/admin/users/store', [UserController::class, 'store'])->name('admin.users.store');
+
+
 // Redirect after login
 Route::get('/home', function () {
     // This triggers the middleware
