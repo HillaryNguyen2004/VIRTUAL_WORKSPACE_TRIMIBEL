@@ -49,12 +49,9 @@
                 <tr>
                     <td>
                         {{ $user->name }}
-
-                        <!-- EDIT FORM -->
                         <form id="edit-form-{{ $user->id }}" action="{{ route('users.update', $user->id) }}" method="POST" class="mt-2 d-none">
                             @csrf
                             @method('PUT')
-
                             <input type="text" name="name" value="{{ $user->name }}" class="form-control mb-2" placeholder="Change name">
 
                             <select name="roles" class="form-select mb-2" onchange="toggleTeamSelect(this, {{ $user->id }})">
@@ -119,6 +116,10 @@
                             <i class="bi bi-pencil-square"></i>
                         </a>
 
+                        <a href="javascript:void(0)" onclick="toggleUserDetails({{ $user->id }})" class="text-info me-2" title="View Details">
+                            <i class="bi bi-info-circle"></i>
+                        </a>
+
                         <form action="{{ route('users.destroy', $user->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this user?')" style="display:inline;">
                             @csrf
                             @method('DELETE')
@@ -126,6 +127,39 @@
                                 <i class="bi bi-trash"></i>
                             </button>
                         </form>
+                    </td>
+                </tr>
+
+                <!-- DROPDOWN INFO ROW -->
+                <tr id="user-details-{{ $user->id }}" class="d-none">
+                    <td colspan="6">
+                        <div class="bg-light p-3 rounded">
+                            @if($user->roles === 'user')
+                                @php
+                                    $leader = $users->firstWhere('id', $user->team_leader_id);
+                                @endphp
+                                <strong>Team Leader:</strong>
+                                @if($leader)
+                                    {{ $leader->name }} ({{ $leader->email }})
+                                @else
+                                    <span class="text-muted">No leader assigned</span>
+                                @endif
+                            @elseif($user->roles === 'staff')
+                                @php
+                                    $members = $users->filter(fn($u) => $u->team_leader_id == $user->id);
+                                @endphp
+                                <strong>Team Members:</strong>
+                                @if($members->isNotEmpty())
+                                    <ul class="mb-0">
+                                        @foreach($members as $member)
+                                            <li>{{ $member->name }} ({{ $member->email }})</li>
+                                        @endforeach
+                                    </ul>
+                                @else
+                                    <span class="text-muted">No members assigned</span>
+                                @endif
+                            @endif
+                        </div>
                     </td>
                 </tr>
                 @endforeach
@@ -191,6 +225,11 @@
 
     function removeTeamMemberField(button) {
         button.closest('.team-member-select').remove();
+    }
+
+    function toggleUserDetails(userId) {
+        const row = document.getElementById(`user-details-${userId}`);
+        row.classList.toggle('d-none');
     }
 </script>
 @endsection
