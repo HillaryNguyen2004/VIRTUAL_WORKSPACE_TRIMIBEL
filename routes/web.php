@@ -11,6 +11,9 @@ use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\TaskController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\TeamController;
 
 // Redirect root to login
 // Route::get('/', function () {
@@ -43,9 +46,50 @@ Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 've
 //     })->name('dashboard');
 // });
 
+// Route::middleware(['auth'])->group(function () {
+//     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+// });
+
+Route::get('/dashboard', function () {
+    return view('dashboard');
+})->name('user.dashboard')->middleware(['auth']);
+
+Route::get('/admin/dashboard', function () {
+    return view('admindashboard');
+})->name('admin.dashboard')->middleware(['auth']);
+
+
+Route::get('/tasks/new', [TaskController::class, 'create'])->name('tasks.create');
+Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
+Route::get('/management/tasks', [TaskController::class, 'index'])->name('tasks.index');
+Route::get('/management/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
+Route::get('/management/tasks/{task}/edit', [TaskController::class, 'edit'])->name('tasks.edit');
+Route::put('/management/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
+Route::delete('/management/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
+
+Route::get('/staff/dashboard', function () {
+    return view('staffdashboard');
+})->name('staff.dashboard')->middleware(['auth']);
+
+Route::get('/management/users', [UserController::class, 'index'])->name('users.index');
+Route::get('/staff/tasks', [TaskController::class, 'staffTasks'])->name('tasks.staff.index');
+Route::get('/staff/dashboard', [TaskController::class, 'upcomingTasks'])->name('staff.dashboard');
+// Route::middleware(['auth', 'check.role:staff'])->group(function () {
+//     Route::get('/team-overview', [TeamController::class, 'index'])->name('team.overview');
+//     Route::post('/assign-task', [TeamController::class, 'assignTask'])->name('team.assign.task');
+// });
 Route::middleware(['auth'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/staff/team', [TeamController::class, 'index'])->name('team.overview');
 });
+
+// Redirect after login
+Route::get('/home', function () {
+    // This triggers the middleware
+})->middleware(['auth', 'role.redirect']);
+
+// Route::get('/dashboard', function () {
+//     return view('dashboard');
+// })->name('dashboard');
 
 Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])
     ->middleware(['auth', 'throttle:6,1'])->name('verification.send');

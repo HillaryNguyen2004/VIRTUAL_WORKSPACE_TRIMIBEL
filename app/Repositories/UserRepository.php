@@ -54,10 +54,17 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
 
     public function updateAvatar($user, UploadedFile $file): void
     {
-        $safeEmail = str_replace(['@', '.'], '_', $user->email);
+        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $cleanName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $originalName);
+        $timestamp = time();
         $extension = $file->getClientOriginalExtension();
-        $filename = $safeEmail . '.' . $extension;
+        $filename = $cleanName . '_' . $timestamp . '.' . $extension;
 
+        // Move the file to the desired directory
         $file->move(public_path('img/user_avatar/'), $filename);
+
+        // Save the file name in the user_profile_photo column
+        $user->user_profile_photo = $filename;
+        $user->save();
     }
 }
