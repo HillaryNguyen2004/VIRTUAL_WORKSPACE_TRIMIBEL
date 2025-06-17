@@ -14,3 +14,5 @@ Route::middleware(['auth'])->group(function () {
     // Admin user management
     Route::get('/management/users', [UserController::class, 'index'])->name('users.index');
 });
+
+Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');

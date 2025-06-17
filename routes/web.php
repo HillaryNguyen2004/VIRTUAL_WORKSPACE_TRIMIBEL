@@ -14,6 +14,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TeamController;
+use App\Services\UserRoleRedirectService;
 
 // Route::group(['middleware' => ['web', 'core']], function () {
 //     include_once 'admin/user.php';
@@ -38,9 +39,17 @@ Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 've
 Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])->middleware(['auth', 'throttle:6,1'])->name('verification.send');
 
 // Dashboards
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->name('user.dashboard')->middleware(['auth']);
+// Route::get('/dashboard', function () {
+//     return view('dashboard');
+// })->name('user.dashboard')->middleware(['auth']);
+
+
+
+Route::get('/dashboard', function (UserRoleRedirectService $redirectService) {
+    return redirect()->to($redirectService->getDashboardRoute());
+})->middleware(['auth'])->name('dashboard');
+
+Route::get('/user/dashboard', [DashboardController::class, 'user'])->name('user.dashboard')->middleware('auth');
 
 
 // Tasks
