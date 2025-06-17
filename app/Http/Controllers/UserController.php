@@ -8,7 +8,7 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        // Optional: Add search/filter logic here
+        // Add search/filter logic here
         $users = User::all();
         return view('users.index', compact('users'));
     }

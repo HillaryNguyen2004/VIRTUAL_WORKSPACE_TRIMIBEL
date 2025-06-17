@@ -5,98 +5,97 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Task; 
 use App\Models\User; 
+use App\Repositories\TaskRepositoryInterface;
 use App\Http\Requests\StoreTaskRequest;
+use App\Http\Requests\UpdateTaskRequest;
 
 class TaskController extends Controller
 {
-    // Show the create task form
+    protected $taskRepo;
+
+    public function __construct(TaskRepositoryInterface $taskRepo)
+    {
+        $this->taskRepo = $taskRepo;
+    }
+
     public function create()
     {
         $staffUsers = User::where('roles', 'staff')->get();
         return view('tasks.create', compact('staffUsers'));
-        // return view('tasks.create');
     }
 
-    // Handle form submission and save the task
     public function store(StoreTaskRequest $request)
-{
-    $validated = $request->validated();
+    {
+        $data = $request->validated();
+        $data['active'] = $request->has('active') ? 1 : 0;
+        $data['status'] = 'pending';
 
+        $this->taskRepo->create([
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'assigned_user_id' => $data['assignee'],
+            'due_date' => $data['due_date'],
+            'status' => $data['status'],
+            'active' => $data['active']
+        ]);
 
-    $task = new \App\Models\Task();
-    $task->title = $validated['title'];
-    $task->description = $validated['description'] ?? null;
-    $task->assigned_user_id = $validated['assignee'];
-    $task->status = 'pending';
-    $task->due_date = $validated['due_date'];
-    $task->active = $request->has('active') ? 1 : 0;
-    $task->save();
+        return redirect()->route('tasks.create')->with('success', 'Task created successfully!');
+    }
 
-    return redirect()->route('tasks.create')->with('success', 'Task created successfully!');
-}
+    public function index()
+    {
+        $tasks = $this->taskRepo->all();
+        return view('tasks.index', compact('tasks'));
+    }
 
-public function index()
-{
-    $tasks = \App\Models\Task::with('assigneeUser')->get();
-    return view('tasks.index', compact('tasks'));
-}
+    public function show($id)
+    {
+        $task = $this->taskRepo->find($id);
+        return view('tasks.show', compact('task'));
+    }
 
-public function show($id)
-{
-    $task = \App\Models\Task::with('assigneeUser')->findOrFail($id);
-    return view('tasks.show', compact('task'));
-}
+    public function edit($id)
+    {
+        $task = $this->taskRepo->find($id);
+        $staffUsers = User::where('roles', 'staff')->get();
+        return view('tasks.edit', compact('task', 'staffUsers'));
+    }
 
-public function edit($id)
-{
-    $task = Task::findOrFail($id);
-    $staffUsers = User::where('roles', 'staff')->get();
-    return view('tasks.edit', compact('task', 'staffUsers'));
-}
+    public function update(UpdateTaskRequest $request, $id)
+    {
+        $data = $request->validated();
+        $data['active'] = $request->has('active') ? 1 : 0;
 
-public function update(Request $request, $id)
-{
-    $validated = $request->validate([
-        'title' => 'required|string|max:255',
-        'assignee' => 'required|exists:users,id',
-        'due_date' => 'required|date',
-        'description' => 'nullable|string',
-        'active' => 'nullable|boolean',
-        'status' => 'required|in:pending,in_progress,completed',
-    ]);
+        $task = $this->taskRepo->find($id);
+        $this->taskRepo->update($task, [
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'assigned_user_id' => $data['assignee'],
+            'due_date' => $data['due_date'],
+            'status' => $data['status'],
+            'active' => $data['active']
+        ]);
 
-    $task = Task::findOrFail($id);
-    $task->title = $validated['title'];
-    $task->description = $validated['description'] ?? null;
-    $task->assigned_user_id = $validated['assignee'];
-    $task->due_date = $validated['due_date'];
-    $task->active = $request->has('active') ? 1 : 0;
-    $task->status = $validated['status'];
-    $task->save();
+        return redirect()->route('tasks.index')->with('success', 'Task updated successfully!');
+    }
 
-    return redirect()->route('tasks.index')->with('success', 'Task updated successfully!');
-}
+    public function destroy($id)
+    {
+        $task = $this->taskRepo->find($id);
+        $this->taskRepo->delete($task);
 
-public function destroy($id)
-{
-    $task = Task::findOrFail($id);
-    $task->delete();
+        return redirect()->route('tasks.index')->with('success', 'Task deleted successfully!');
+    }
 
-    return redirect()->route('tasks.index')->with('success', 'Task deleted successfully!');
-}
+    public function staffTasks()
+    {
+        $tasks = $this->taskRepo->getTasksForUser(auth()->id());
+        return view('tasks.staff.index', compact('tasks'));
+    }
 
-public function staffTasks()
-{
-    $tasks = \App\Models\Task::where('assigned_user_id', auth()->id())->get();
-    return view('tasks.staff.index', compact('tasks'));
-}
-
-public function upcomingTasks()
-{
-    $tasks = \App\Models\Task::where('assigned_user_id', auth()->id())
-        ->whereIn('status', ['pending', 'in_progress'])
-        ->get();
-
-    return view('staffdashboard', compact('tasks'));
-}
+    public function upcomingTasks()
+    {
+        $tasks = $this->taskRepo->getUpcomingTasks(auth()->id());
+        return view('staffdashboard', compact('tasks'));
+    }
 }

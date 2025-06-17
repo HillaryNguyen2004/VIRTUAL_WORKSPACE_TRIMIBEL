@@ -3,7 +3,7 @@
 @section('content')
 <div class="container py-4">
     <h1 class="mb-4 fw-bold">Edit Task</h1>
-    <form action="{{ route('tasks.update', $task->task_id) }}" method="POST">
+    <form action="{{ route('tasks.update', $task->id) }}" method="POST">
         @csrf
         @method('PUT')
         <div class="card p-4 mb-4">

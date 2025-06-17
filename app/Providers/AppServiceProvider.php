@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Repositories\TaskRepository;
+use App\Repositories\TaskRepositoryInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -16,6 +18,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton('fileuploadhelper', function ($app) {
             return new \App\Helpers\FileUploadHelper();
         });
+        $this->app->bind(TaskRepositoryInterface::class, TaskRepository::class);
     }
 
     /**
