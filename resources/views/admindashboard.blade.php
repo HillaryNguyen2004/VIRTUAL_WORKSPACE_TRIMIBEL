@@ -49,7 +49,7 @@
                         <li class="mb-1">Remove or archive completed or outdated tasks</li>
                         <li class="mb-1">Track deadlines and task completion progress</li>
                     </ul>
-                    <a href="#" class="btn btn-primary w-100" style="background:#2563eb;border:none;">
+                    <a href="{{ route('tasks.index') }}" class="btn btn-primary w-100" style="background:#2563eb;border:none;">
                         <i class="bi bi-check2-circle"></i> Edit Tasks
                     </a>
                 </div>

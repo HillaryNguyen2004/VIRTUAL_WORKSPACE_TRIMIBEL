@@ -47,7 +47,7 @@
                     <div class="mb-2" style="font-size:2rem; color:#00b96b;"><i class="bi bi-people"></i></div>
                     <div class="fw-bold mb-2">Team Overview</div>
                     <div class="mb-3 text-secondary">Check team members, task distribution, and roles.</div>
-                    <a href="#" class="btn w-100" style="background:#00b96b;color:#fff;"><i class="bi bi-search"></i> View Team</a>
+                    <a href="/staff/team" class="btn w-100" style="background:#00b96b;color:#fff;"><i class="bi bi-search"></i> View Team</a>
                 </div>
             </div>
         </div>

@@ -13,6 +13,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\TeamController;
 
 // Redirect root to login
 // Route::get('/', function () {
@@ -73,7 +74,13 @@ Route::get('/staff/dashboard', function () {
 Route::get('/management/users', [UserController::class, 'index'])->name('users.index');
 Route::get('/staff/tasks', [TaskController::class, 'staffTasks'])->name('tasks.staff.index');
 Route::get('/staff/dashboard', [TaskController::class, 'upcomingTasks'])->name('staff.dashboard');
-
+// Route::middleware(['auth', 'check.role:staff'])->group(function () {
+//     Route::get('/team-overview', [TeamController::class, 'index'])->name('team.overview');
+//     Route::post('/assign-task', [TeamController::class, 'assignTask'])->name('team.assign.task');
+// });
+Route::middleware(['auth'])->group(function () {
+    Route::get('/staff/team', [TeamController::class, 'index'])->name('team.overview');
+});
 
 // Redirect after login
 Route::get('/home', function () {
