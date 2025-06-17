@@ -118,7 +118,14 @@
                         <a href="javascript:void(0)" onclick="toggleEditForm({{ $user->id }})" class="text-primary me-2" title="Edit">
                             <i class="bi bi-pencil-square"></i>
                         </a>
-                        <a href="#" class="text-danger" title="Delete"><i class="bi bi-trash"></i></a>
+
+                        <form action="{{ route('users.destroy', $user->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this user?')" style="display:inline;">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-link text-danger p-0" title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
                     </td>
                 </tr>
                 @endforeach

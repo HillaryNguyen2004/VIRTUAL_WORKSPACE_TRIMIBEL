@@ -103,4 +103,15 @@ public function update(Request $request, User $user)
     return redirect()->route('users.index')->with('success', 'User updated successfully.');
 }
 
+public function destroy(User $user)
+{
+    // Optional: prevent deleting admin or yourself
+    if (auth()->id() === $user->id || $user->roles === 'admin') {
+        return back()->with('error', 'You cannot delete this user.');
+    }
+
+    $user->delete();
+
+    return redirect()->route('users.index')->with('success', 'User deleted successfully.');
+}
 }
