@@ -9,6 +9,7 @@ use App\Repositories\TaskRepositoryInterface;
 use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 
+
 class TaskController extends Controller
 {
     protected $taskRepo;
@@ -106,13 +107,24 @@ class TaskController extends Controller
         return redirect()->route('tasks.index')->with('success', 'Task deleted successfully!');
     }
 
-    public function staffTasks()
+    public function staffTasks(Request $request)
     {
+        $query = $this->taskRepo->getTasksForUser(auth()->id());
+
+        if ($request->filled('search')) {
+            $query = $query->where('title', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('status')) {
+            $query = $query->where('status', $request->status);
+        }
         // $tasks = $this->taskRepo->getTasksForUser(auth()->id());
         $tasks = $this->taskRepo->getTasksForUser(auth()->id())->load('assignedUsers');
+        // $tasks = $query->with('assignedUsers')->get();
         return view('tasks.staff.index', compact('tasks'));
     }
 
+ 
     public function upcomingTasks()
     {
         $tasks = $this->taskRepo->getUpcomingTasks(auth()->id());

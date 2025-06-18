@@ -3,6 +3,33 @@
 @section('content')
 <div class="container py-4">
     <h1 class="mb-4 fw-bold">My Tasks</h1>
+
+    {{-- Search & Filter Bar --}}
+    <form method="GET" action="{{ route('tasks.staff') }}" class="card p-4 mb-4">
+        <div class="row align-items-end">
+            <div class="col-md-5">
+                <label for="search" class="form-label fw-bold">Search by Task Name</label>
+                <input type="text" name="search" id="search" class="form-control" placeholder="Enter task name"
+                    value="{{ request('search') }}">
+            </div>
+            <div class="col-md-4">
+                <label for="status" class="form-label fw-bold">Filter by Status</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="">All statuses</option>
+                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                    <option value="in_progress" {{ request('status') == 'in_progress' ? 'selected' : '' }}>In Progress</option>
+                    <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-grid">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-funnel-fill me-1"></i> Apply Filter
+                </button>
+            </div>
+        </div>
+    </form>
+
+    {{-- Task Table --}}
     <div class="card p-4 mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <strong>All Tasks Assigned to My Team</strong>
@@ -19,7 +46,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($tasks as $task)
+                @forelse($tasks as $task)
                 <tr>
                     <td>{{ $task->task_id }}</td>
                     <td>{{ $task->title }}</td>
@@ -81,7 +108,11 @@
                         </div>
                     </td>
                 </tr>
-                @endforeach
+                @empty
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">No tasks found.</td>
+                    </tr>
+                @endforelse
             </tbody>
         </table>
     </div>

@@ -24,4 +24,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/team/assign-task', [TeamController::class, 'assignTask'])->name('team.assignTask');
 });
 
+Route::get('/tasks/staff', [TaskController::class, 'staffTasks'])->name('tasks.staff');
+
 
