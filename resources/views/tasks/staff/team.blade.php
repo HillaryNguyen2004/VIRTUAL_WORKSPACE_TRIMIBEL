@@ -25,13 +25,13 @@
                         <td>{{ $member->name }}</td>
                         <td>{{ $member->email }}</td>
                         <td>
-                            <form action="#" method="POST" class="d-flex align-items-center">
+                            <form action="{{ route('team.assignTask') }}" method="POST" class="d-flex align-items-center">
                                 @csrf
                                 <input type="hidden" name="user_id" value="{{ $member->id }}">
                                 <select name="task_id" class="form-select me-2" required>
                                     <option value="">Select a task</option>
                                     @foreach($staffTasks as $task)
-                                        <option value="{{ $task->id }}">{{ $task->title }}</option>
+                                        <option value="{{ $task->task_id }}">{{ $task->title }}</option>
                                     @endforeach
                                 </select>
                                 <button type="submit" class="btn btn-sm btn-primary">

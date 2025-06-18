@@ -62,4 +62,12 @@ public function isBlocked()
 {
     return $this->blocked;
 }
+
+public function assignedTasks()
+{
+    // return $this->belongsToMany(Task::class, 'task_user', 'user_id', 'task_id', 'id', 'task_id')->withTimestamps();
+    return $this->belongsToMany(Task::class, 'task_user', 'user_id', 'task_id')->withTimestamps();
+}
+
+
 }

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\User;
+use App\Models\Task;
 
 class TeamController extends Controller
 {
@@ -15,16 +17,19 @@ class TeamController extends Controller
     }
 
     public function assignTask(Request $request)
-    {
-        $request->validate([
-            'task_id' => 'required|exists:tasks,id',
-            'user_id' => 'required|exists:users,id'
-        ]);
+{
+    $request->validate([
+        'task_id' => 'required|exists:tasks,task_id',
+        'user_id' => 'required|exists:users,id'
+    ]);
 
-        $task = Task::find($request->task_id);
-        $task->assigned_to = $request->user_id;
-        $task->save();
+    $user = User::findOrFail($request->user_id);
+    $user->assignedTasks()->attach($request->task_id);
+    // Avoid duplicate task assignment
+    // if (!$user->assignedTasks()->where('task_id', $request->task_id)->exists()) {
+    //     $user->assignedTasks()->attach($request->task_id);
+    // }
 
-        return redirect()->route('team.overview')->with('success', 'Task assigned successfully!');
-    }
+    return redirect()->route('team.overview')->with('success', 'Task assigned successfully!');
+}
 }

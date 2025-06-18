@@ -18,3 +18,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/staff/team', [TeamController::class, 'index'])
         ->name('team.overview');
 });
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/team', [TeamController::class, 'index'])->name('team.index');
+    Route::post('/team/assign-task', [TeamController::class, 'assignTask'])->name('team.assignTask');
+});
