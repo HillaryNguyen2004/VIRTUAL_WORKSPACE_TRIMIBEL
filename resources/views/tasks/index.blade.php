@@ -44,19 +44,22 @@
                         @endif
                     </td>
                     <td>
-                        <a href="#" title="View">
-                            <i class="bi bi-eye text-primary fs-5"></i>
-                        </a>
-                        <a href="{{ route('tasks.edit', $task->task_id) }}" title="Edit">
-                            <i class="bi bi-pencil-square"></i>
-                        </a>
-                        <form action="{{ route('tasks.destroy', $task->task_id) }}" method="POST" class="d-inline">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-link p-0 m-0 text-danger" onclick="return confirm('Are you sure?')">
-                                <i class="bi bi-trash fs-5"></i>
-                            </button>
-                        </form>
+                        <!-- STOP PROPAGATION HERE -->
+                        <div onclick="event.stopPropagation();">
+                            <a href="#" title="View">
+                                <i class="bi bi-eye text-primary fs-5"></i>
+                            </a>
+                            <a href="{{ route('tasks.edit', $task->task_id) }}" title="Edit">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            <form action="{{ route('tasks.destroy', $task->task_id) }}" method="POST" class="d-inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-link p-0 m-0 text-danger" onclick="return confirm('Are you sure?')">
+                                    <i class="bi bi-trash fs-5"></i>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 <tr class="collapse" id="taskDetails{{ $task->task_id }}">

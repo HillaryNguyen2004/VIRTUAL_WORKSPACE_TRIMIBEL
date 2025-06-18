@@ -19,6 +19,7 @@ class DashboardController extends Controller
     // Get team leader (staff)
     $teamLeader = null;
     $teamMembers = collect();
+    
     if ($user->team_leader_id !== null) {
         $teamLeader = User::find($user->team_leader_id);
 
@@ -31,6 +32,21 @@ class DashboardController extends Controller
     // Get tasks assigned to this user
     // $tasks = Task::where('assigned_to', $user->id)->get();
 
-    return view('dashboard', compact('user', 'teamLeader', 'teamMembers'));
+    // return view('dashboard', compact('user', 'teamLeader', 'teamMembers'));
+    $assignedTasks = $user->assignedTasks()->get();
+    return view('dashboard', compact('user', 'teamLeader', 'teamMembers', 'assignedTasks'));
+    }
+
+    public function upcomingTasks()
+    {
+        $user = auth()->user();
+
+        // Fetch tasks assigned via pivot table
+        $assignedTasks = $user->assignedTasks()->get();
+
+        $teamLeader = $user->teamLeader;
+        $teamMembers = $user->teamMembers ?? collect();
+
+        return view('staffdashboard', compact('assignedTasks', 'teamLeader', 'teamMembers'));
     }
 }

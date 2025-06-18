@@ -108,7 +108,8 @@ class TaskController extends Controller
 
     public function staffTasks()
     {
-        $tasks = $this->taskRepo->getTasksForUser(auth()->id());
+        // $tasks = $this->taskRepo->getTasksForUser(auth()->id());
+        $tasks = $this->taskRepo->getTasksForUser(auth()->id())->load('assignedUsers');
         return view('tasks.staff.index', compact('tasks'));
     }
 
@@ -117,4 +118,6 @@ class TaskController extends Controller
         $tasks = $this->taskRepo->getUpcomingTasks(auth()->id());
         return view('staffdashboard', compact('tasks'));
     }
+
+    
 }

@@ -5,7 +5,7 @@
     <h1 class="mb-4 fw-bold">My Tasks</h1>
     <div class="card p-4 mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <strong>All Tasks Assigned to Me</strong>
+            <strong>All Tasks Assigned to My Team</strong>
         </div>
         <table class="table align-middle">
             <thead>
@@ -20,7 +20,7 @@
             </thead>
             <tbody>
                 @foreach($tasks as $task)
-                <tr data-bs-toggle="collapse" data-bs-target="#taskDetails{{ $task->task_id }}" aria-expanded="false" style="cursor:pointer;">
+                <tr>
                     <td>{{ $task->task_id }}</td>
                     <td>{{ $task->title }}</td>
                     <td>{{ $task->due_date }}</td>
@@ -41,29 +41,42 @@
                         @endif
                     </td>
                     <td>
-                        <a href="#" title="View">
+                        <button class="btn btn-sm btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#taskDetails{{ $task->task_id }}" aria-expanded="false" aria-controls="taskDetails{{ $task->task_id }}">
                             <i class="bi bi-eye text-primary fs-5"></i>
-                        </a>
+                        </button>
                     </td>
                 </tr>
-                <tr class="collapse" id="taskDetails{{ $task->task_id }}">
-                    <td colspan="6" class="bg-light">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <strong>Description:</strong>
-                                <div>{{ $task->description ?? 'No description' }}</div>
-                            </div>
-                            <div class="col-md-6">
-                                <strong>Tags:</strong>
-                                <div>
-                                    @if(!empty($task->tags))
-                                        @foreach(json_decode($task->tags, true) as $tag)
-                                            <span class="badge bg-primary">{{ $tag }}</span>
-                                        @endforeach
-                                    @else
-                                        <span class="text-muted">No tags</span>
-                                    @endif
+                <tr>
+                    <td colspan="6" class="p-0 border-0">
+                        <div class="collapse" id="taskDetails{{ $task->task_id }}">
+                            <div class="p-3 bg-light">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Description:</strong>
+                                        <div>{{ $task->description ?? 'No description' }}</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Tags:</strong>
+                                        <div>
+                                            @if(!empty($task->tags))
+                                                @foreach(json_decode($task->tags, true) as $tag)
+                                                    <span class="badge bg-primary">{{ $tag }}</span>
+                                                @endforeach
+                                            @else
+                                                <span class="text-muted">No tags</span>
+                                            @endif
+                                        </div>
+                                    </div>
                                 </div>
+                                <hr class="my-3">
+                                <strong>Assigned Users:</strong>
+                                <ul>
+                                    @forelse($task->assignedUsers as $user)
+                                        <li>{{ $user->name }} ({{ $user->email }})</li>
+                                    @empty
+                                        <li class="text-muted">No users assigned</li>
+                                    @endforelse
+                                </ul>
                             </div>
                         </div>
                     </td>
