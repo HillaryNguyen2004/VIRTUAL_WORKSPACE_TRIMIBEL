@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
+    
     // public function index(Request $request)
     // {
     //     // Add search/filter logic here
@@ -17,6 +18,13 @@ class UserController extends Controller
     // }
     public function create()
     {
+        $user = User::create([
+        'name' => $request->name,
+        'email' => $request->email,
+        'password' => Hash::make($randomPassword),
+    ]);
+
+    $user->assignRole($request->roles);
         return view('users.create'); 
     }
 

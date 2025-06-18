@@ -13,9 +13,14 @@ return new class extends Migration
      */
     public function up()
     {
+        // Schema::table('users', function (Blueprint $table) {
+        //     $table->string('user_profile_photo')->nullable();
+        // });
         Schema::table('users', function (Blueprint $table) {
+        if (!Schema::hasColumn('users', 'user_profile_photo')) {
             $table->string('user_profile_photo')->nullable();
-        });
+        }
+    });
     }
 
     /**

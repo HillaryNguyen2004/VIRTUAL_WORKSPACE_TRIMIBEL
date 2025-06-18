@@ -58,9 +58,15 @@ class TaskController extends Controller
 
     public function edit($id)
     {
+        // $task = $this->taskRepo->find($id);
+        // $staffUsers = User::where('roles', 'staff')->get();
+        // return view('tasks.edit', compact('task', 'staffUsers'));
         $task = $this->taskRepo->find($id);
-        $staffUsers = User::where('roles', 'staff')->get();
-        return view('tasks.edit', compact('task', 'staffUsers'));
+
+    // ✅ Correct way to get users with "staff" role using Spatie
+    $staffUsers = User::role('staff')->get();
+
+    return view('tasks.edit', compact('task', 'staffUsers'));
     }
 
     // public function update(UpdateTaskRequest $request, $task)
