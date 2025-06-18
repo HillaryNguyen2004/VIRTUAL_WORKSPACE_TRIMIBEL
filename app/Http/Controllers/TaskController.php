@@ -21,8 +21,11 @@ class TaskController extends Controller
 
     public function create()
     {
-        $staffUsers = User::where('roles', 'staff')->get();
-        return view('tasks.create', compact('staffUsers'));
+        // $staffUsers = User::where('roles', 'staff')->get();
+        // return view('tasks.create', compact('staffUsers'));
+        $staffUsers = \App\Models\User::role('staff')->get(); // This uses Spatie
+
+    return view('tasks.create', compact('staffUsers'));
     }
 
     public function store(StoreTaskRequest $request)
