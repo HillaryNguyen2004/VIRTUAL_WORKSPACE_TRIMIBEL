@@ -16,4 +16,14 @@ class TeamRepository implements TeamRepositoryInterface
 
         return false;
     }
+
+    public function getTeamMembersByLeader(int $leaderId)
+    {
+        return \App\Models\User::where('team_leader_id', $leaderId)->get();
+    }
+
+    public function getTasksAssignedToLeader(int $leaderId)
+    {
+        return \App\Models\Task::where('assigned_user_id', $leaderId)->get();
+    }
 }

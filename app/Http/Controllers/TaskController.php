@@ -83,22 +83,38 @@ class TaskController extends Controller
 
     // THIS PART IS FOR STAFF
 
+    // public function staffTasks(Request $request)
+    // {
+    //     $query = $this->taskRepo->getTasksForUser(auth()->id());
+
+    //     if ($request->filled('search')) {
+    //         $query = $query->where('title', 'like', '%' . $request->search . '%');
+    //     }
+
+    //     if ($request->filled('status')) {
+    //         $query = $query->where('status', $request->status);
+    //     }
+    //     // $tasks = $this->taskRepo->getTasksForUser(auth()->id());
+    //     $tasks = $this->taskRepo->getTasksForUser(auth()->id())->load('assignedUsers');
+    //     // $tasks = $query->with('assignedUsers')->get();
+    //     return view('tasks.staff.index', compact('tasks'));
+    // }
+
     public function staffTasks(Request $request)
-    {
-        $query = $this->taskRepo->getTasksForUser(auth()->id());
+{
+    $query = $this->taskRepo->getTasksForUser(auth()->id());
 
-        if ($request->filled('search')) {
-            $query = $query->where('title', 'like', '%' . $request->search . '%');
-        }
-
-        if ($request->filled('status')) {
-            $query = $query->where('status', $request->status);
-        }
-        // $tasks = $this->taskRepo->getTasksForUser(auth()->id());
-        $tasks = $this->taskRepo->getTasksForUser(auth()->id())->load('assignedUsers');
-        // $tasks = $query->with('assignedUsers')->get();
-        return view('tasks.staff.index', compact('tasks'));
+    if ($request->filled('search')) {
+        $query = $query->where('title', 'like', '%' . $request->search . '%');
     }
+
+    if ($request->filled('status')) {
+        $query = $query->where('status', $request->status);
+    }
+
+    $tasks = $query->get()->load('assignedUsers');
+    return view('tasks.staff.index', compact('tasks'));
+}
 
  
     public function upcomingTasks()

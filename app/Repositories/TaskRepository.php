@@ -20,9 +20,13 @@ public function create(array $data): \App\Models\Task
     return parent::create($data); // uses BaseRepository logic
 }
 
+    // public function getTasksForUser(int $userId)
+    // {
+    //     return $this->model->where('assigned_user_id', $userId)->get();
+    // }
     public function getTasksForUser(int $userId)
     {
-        return $this->model->where('assigned_user_id', $userId)->get();
+        return $this->model->where('assigned_user_id', $userId); // Remove ->get()
     }
 
     public function getUpcomingTasks(int $userId)
