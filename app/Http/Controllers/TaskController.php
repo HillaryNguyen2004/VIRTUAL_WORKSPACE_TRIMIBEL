@@ -19,6 +19,8 @@ class TaskController extends Controller
         $this->taskRepo = $taskRepo;
     }
 
+    // THIS PART IS FOR ADMINS ONLY
+
     public function create()
     {
         // $staffUsers = User::where('roles', 'staff')->get();
@@ -30,18 +32,7 @@ class TaskController extends Controller
 
     public function store(StoreTaskRequest $request)
     {
-        $data = $request->validated();
-        $data['active'] = $request->has('active') ? 1 : 0;
-        $data['status'] = 'pending';
-
-        $this->taskRepo->create([
-            'title' => $data['title'],
-            'description' => $data['description'] ?? null,
-            'assigned_user_id' => $data['assignee'],
-            'due_date' => $data['due_date'],
-            'status' => $data['status'],
-            'active' => $data['active']
-        ]);
+        $this->taskRepo->create($request->formatted());
 
         return redirect()->route('tasks.create')->with('success', 'Task created successfully!');
     }
@@ -75,17 +66,7 @@ class TaskController extends Controller
 
     public function update(UpdateTaskRequest $request, Task $task)
     {
-        $data = $request->validated();
-        $data['active'] = $request->has('active') ? 1 : 0;
-
-        $this->taskRepo->update($task, [
-            'title' => $data['title'],
-            'description' => $data['description'] ?? null,
-            'assigned_user_id' => $data['assignee'],
-            'due_date' => $data['due_date'],
-            'status' => $data['status'],
-            'active' => $data['active']
-        ]);
+        $this->taskRepo->update($task, $request->formatted());
 
         return redirect()->route('tasks.index')->with('success', 'Task updated successfully!');
     }
@@ -98,6 +79,9 @@ class TaskController extends Controller
 
         return redirect()->route('tasks.index')->with('success', 'Task deleted successfully!');
     }
+
+
+    // THIS PART IS FOR STAFF
 
     public function staffTasks(Request $request)
     {
