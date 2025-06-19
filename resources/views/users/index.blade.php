@@ -128,7 +128,7 @@
                         <td>
                             <a href="javascript:void(0)" onclick="toggleViewTeam({{ $user->id }})" class="text-info me-2"><i class="bi bi-eye"></i></a>
                             <a href="javascript:void(0)" onclick="toggleEditForm({{ $user->id }})" class="text-primary me-2"><i class="bi bi-pencil-square"></i></a>
-                            <form action="#" method="POST" style="display:inline;">
+                            <form action="{{ route('users.destroy', $user->id) }}" method="POST" style="display:inline;">
                                 @csrf
                                 @method('DELETE')
                                 <button class="btn btn-link text-danger p-0" onclick="return confirm('Delete user?')"><i class="bi bi-trash"></i></button>

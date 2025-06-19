@@ -5,7 +5,7 @@
     <h1 class="mb-4 fw-bold">My Tasks</h1>
 
     {{-- Search & Filter Bar --}}
-    <form method="GET" action="{{ route('tasks.staff') }}" class="card p-4 mb-4">
+    <form method="GET" action="{{ route('tasks.staff.index') }}" class="card p-4 mb-4">
         <div class="row align-items-end">
             <div class="col-md-5">
                 <label for="search" class="form-label fw-bold">Search by Task Name</label>

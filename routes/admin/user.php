@@ -27,4 +27,5 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/admin/users/store', [UserController::class, 'store'])->name('admin.users.store');
 
     Route::get('/management/users', [UserController::class, 'index'])->name('users.index');
+    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy')->middleware('role:admin');
 });

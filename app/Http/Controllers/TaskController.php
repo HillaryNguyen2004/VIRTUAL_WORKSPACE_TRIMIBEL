@@ -72,23 +72,6 @@ class TaskController extends Controller
     return view('tasks.edit', compact('task', 'staffUsers'));
     }
 
-    // public function update(UpdateTaskRequest $request, $task)
-    // {
-    //     $data = $request->validated();
-    //     $data['active'] = $request->has('active') ? 1 : 0;
-
-    //     $task = $this->taskRepo->find($id);
-    //     $this->taskRepo->update($task, [
-    //         'title' => $data['title'],
-    //         'description' => $data['description'] ?? null,
-    //         'assigned_user_id' => $data['assignee'],
-    //         'due_date' => $data['due_date'],
-    //         'status' => $data['status'],
-    //         'active' => $data['active']
-    //     ]);
-
-    //     return redirect()->route('tasks.index')->with('success', 'Task updated successfully!');
-    // }
 
     public function update(UpdateTaskRequest $request, Task $task)
     {
