@@ -47,23 +47,7 @@ class AuthController extends Controller
     // POST /login → handles form submission
     public function loginPost(LoginRequest $request)
     {
-    //     try {
-    //         $user = $this->loginService->login(
-    //             $request->only('email', 'password'),
-    //             $request->filled('remember')
-    //         );
-    //         if ($user->roles === 'admin') {
-    //         return redirect()->route('admin.dashboard');
-    //     } elseif ($user->roles === 'staff') {
-    //         return redirect()->route('staff.dashboard');
-    //     } else {
-    //         return redirect()->route('user.dashboard');
-    //     }
-    //         // return redirect()->intended(route('dashboard'));
-
-    //     } catch (\Illuminate\Validation\ValidationException $e) {
-    //         return back()->withErrors($e->errors());
-    // }
+    
     try {
         $user = $this->loginService->login(
             $request->only('email', 'password'),
@@ -78,8 +62,6 @@ class AuthController extends Controller
             return redirect()->route('user.dashboard');
         }
 
-        // OR better: use the central redirect service
-        // return redirect()->intended(route('dashboard'));
 
     } catch (\Illuminate\Validation\ValidationException $e) {
         return back()->withErrors($e->errors());

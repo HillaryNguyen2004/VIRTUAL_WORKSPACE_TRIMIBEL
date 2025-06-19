@@ -5,9 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Task;
 use App\Http\Requests\AssignTaskRequest;
+use App\Repositories\TeamRepositoryInterface;
 
 class TeamController extends Controller
 {
+    protected $teamRepo;
+
+    public function __construct(TeamRepositoryInterface $teamRepo)
+    {
+        $this->teamRepo = $teamRepo;
+    }
+        
     public function index()
     {
         $teamMembers = User::where('team_leader_id', auth()->id())->get();
@@ -20,13 +28,9 @@ class TeamController extends Controller
     {
         $data = $request->validatedData();
 
-        $user = User::findOrFail($data['user_id']);
+        $assigned = $this->teamRepo->assignTaskToUser($data['user_id'], $data['task_id']);
 
-        // Avoid duplicate task assignment
-        if (!$user->assignedTasks()->where('task_user.task_id', $data['task_id'])->exists()) {
-            $user->assignedTasks()->attach($data['task_id']);
-        }
-
-        return redirect()->route('team.overview')->with('success', 'Task assigned successfully!');
+        return redirect()->route('team.overview')
+            ->with('success', $assigned ? 'Task assigned successfully!' : 'Task already assigned.');
     }
 }
