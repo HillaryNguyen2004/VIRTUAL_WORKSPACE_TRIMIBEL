@@ -1,0 +1,41 @@
+<?php
+
+ use Illuminate\Support\Facades\Route;
+ use App\Http\Controllers\UserController;
+    use App\Http\Controllers\TaskController;
+
+// Route::middleware(['auth'])->group(function () {
+//     Route::get('/admin/dashboard', function () {
+//         return view('admindashboard');
+//     })->name('admin.dashboard');
+
+    // Route::get('/admin/users/create', [UserController::class, 'create'])->name('admin.users.create');
+    //  Route::post('/admin/users/store', [UserController::class, 'store'])->name('admin.users.store');
+
+//     // Admin user management
+//     Route::get('/management/users', [UserController::class, 'index'])->name('users.index');
+// });
+
+
+// Route::resource('users', UserController::class);
+
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/admin/dashboard', function () {
+        return view('admindashboard');
+    })->name('admin.dashboard');
+    Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+    Route::get('/admin/users/create', [UserController::class, 'create'])->name('admin.users.create');
+    Route::post('/admin/users/store', [UserController::class, 'store'])->name('admin.users.store');
+
+    Route::get('/management/users', [UserController::class, 'index'])->name('users.index');
+    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy')->middleware('role:admin');
+    Route::get('/tasks/new', [TaskController::class, 'create'])->name('tasks.create');
+    Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
+    Route::get('/management/tasks', [TaskController::class, 'index'])->name('tasks.index');
+    Route::get('/management/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
+    Route::get('/management/tasks/{task}/edit', [TaskController::class, 'edit'])->name('tasks.edit');
+    // Route::put('/management/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
+    Route::put('/management/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
+
+    Route::delete('/management/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
+});

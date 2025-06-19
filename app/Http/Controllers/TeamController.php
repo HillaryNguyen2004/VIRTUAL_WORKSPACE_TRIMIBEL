@@ -2,29 +2,35 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\User;
+use App\Models\Task;
+use App\Http\Requests\AssignTaskRequest;
+use App\Repositories\TeamRepositoryInterface;
 
 class TeamController extends Controller
 {
+    protected $teamRepo;
+
+    public function __construct(TeamRepositoryInterface $teamRepo)
+    {
+        $this->teamRepo = $teamRepo;
+    }
+        
     public function index()
     {
-        $teamMembers = \App\Models\User::where('team_leader_id', auth()->id())->get();
-        $staffTasks = \App\Models\Task::where('assigned_user_id', auth()->id())->get();
+        $teamMembers = User::where('team_leader_id', auth()->id())->get();
+        $staffTasks = Task::where('assigned_user_id', auth()->id())->get();
 
-    return view('tasks.staff.team', compact('teamMembers', 'staffTasks'));
+        return view('tasks.staff.team', compact('teamMembers', 'staffTasks'));
     }
 
-    public function assignTask(Request $request)
+    public function assignTask(AssignTaskRequest $request)
     {
-        $request->validate([
-            'task_id' => 'required|exists:tasks,id',
-            'user_id' => 'required|exists:users,id'
-        ]);
+        $data = $request->validatedData();
 
-        $task = Task::find($request->task_id);
-        $task->assigned_to = $request->user_id;
-        $task->save();
+        $assigned = $this->teamRepo->assignTaskToUser($data['user_id'], $data['task_id']);
 
-        return redirect()->route('team.overview')->with('success', 'Task assigned successfully!');
+        return redirect()->route('team.overview')
+            ->with('success', $assigned ? 'Task assigned successfully!' : 'Task already assigned.');
     }
 }

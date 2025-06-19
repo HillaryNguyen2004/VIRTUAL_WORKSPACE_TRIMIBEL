@@ -15,4 +15,10 @@ class Task extends Model
     {
         return $this->belongsTo(\App\Models\User::class, 'assigned_user_id');
     }
+
+    public function assignedUsers()
+{
+    // return $this->belongsToMany(User::class, 'task_user', 'task_id', 'user_id', 'task_id', 'id')->withTimestamps();
+    return $this->belongsToMany(User::class, 'task_user', 'task_id', 'user_id');
+}
 }

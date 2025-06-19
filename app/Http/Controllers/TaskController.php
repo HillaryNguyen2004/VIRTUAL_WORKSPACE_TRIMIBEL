@@ -9,6 +9,7 @@ use App\Repositories\TaskRepositoryInterface;
 use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 
+
 class TaskController extends Controller
 {
     protected $taskRepo;
@@ -18,26 +19,20 @@ class TaskController extends Controller
         $this->taskRepo = $taskRepo;
     }
 
+    // THIS PART IS FOR ADMINS ONLY
+
     public function create()
     {
-        $staffUsers = User::where('roles', 'staff')->get();
-        return view('tasks.create', compact('staffUsers'));
+        // $staffUsers = User::where('roles', 'staff')->get();
+        // return view('tasks.create', compact('staffUsers'));
+        $staffUsers = \App\Models\User::role('staff')->get(); // This uses Spatie
+
+    return view('tasks.create', compact('staffUsers'));
     }
 
     public function store(StoreTaskRequest $request)
     {
-        $data = $request->validated();
-        $data['active'] = $request->has('active') ? 1 : 0;
-        $data['status'] = 'pending';
-
-        $this->taskRepo->create([
-            'title' => $data['title'],
-            'description' => $data['description'] ?? null,
-            'assigned_user_id' => $data['assignee'],
-            'due_date' => $data['due_date'],
-            'status' => $data['status'],
-            'active' => $data['active']
-        ]);
+        $this->taskRepo->create($request->formatted());
 
         return redirect()->route('tasks.create')->with('success', 'Task created successfully!');
     }
@@ -51,33 +46,31 @@ class TaskController extends Controller
     public function show($id)
     {
         $task = $this->taskRepo->find($id);
-        return view('tasks.show', compact('task'));
+        // $staffUsers = User::where('roles', 'staff')->get();
+        return view('tasks.create', compact('task'));
     }
 
     public function edit($id)
     {
+        // $task = $this->taskRepo->find($id);
+        // $staffUsers = User::where('roles', 'staff')->get();
+        // return view('tasks.edit', compact('task', 'staffUsers'));
         $task = $this->taskRepo->find($id);
-        $staffUsers = User::where('roles', 'staff')->get();
+
+    
+        $staffUsers = User::role('staff')->get();
+
         return view('tasks.edit', compact('task', 'staffUsers'));
     }
 
-    public function update(UpdateTaskRequest $request, $id)
-    {
-        $data = $request->validated();
-        $data['active'] = $request->has('active') ? 1 : 0;
 
-        $task = $this->taskRepo->find($id);
-        $this->taskRepo->update($task, [
-            'title' => $data['title'],
-            'description' => $data['description'] ?? null,
-            'assigned_user_id' => $data['assignee'],
-            'due_date' => $data['due_date'],
-            'status' => $data['status'],
-            'active' => $data['active']
-        ]);
+    public function update(UpdateTaskRequest $request, Task $task)
+    {
+        $this->taskRepo->update($task, $request->formatted());
 
         return redirect()->route('tasks.index')->with('success', 'Task updated successfully!');
     }
+
 
     public function destroy($id)
     {
@@ -87,15 +80,32 @@ class TaskController extends Controller
         return redirect()->route('tasks.index')->with('success', 'Task deleted successfully!');
     }
 
-    public function staffTasks()
+
+    // THIS PART IS FOR STAFF
+
+    public function staffTasks(Request $request)
     {
-        $tasks = $this->taskRepo->getTasksForUser(auth()->id());
+        $query = $this->taskRepo->getTasksForUser(auth()->id());
+
+        if ($request->filled('search')) {
+            $query = $query->where('title', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('status')) {
+            $query = $query->where('status', $request->status);
+        }
+        // $tasks = $this->taskRepo->getTasksForUser(auth()->id());
+        $tasks = $this->taskRepo->getTasksForUser(auth()->id())->load('assignedUsers');
+        // $tasks = $query->with('assignedUsers')->get();
         return view('tasks.staff.index', compact('tasks'));
     }
 
+ 
     public function upcomingTasks()
     {
         $tasks = $this->taskRepo->getUpcomingTasks(auth()->id());
         return view('staffdashboard', compact('tasks'));
     }
+
+    
 }

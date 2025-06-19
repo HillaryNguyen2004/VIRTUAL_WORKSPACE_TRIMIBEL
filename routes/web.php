@@ -14,99 +14,75 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TeamController;
+use App\Services\UserRoleRedirectService;
 
-// Redirect root to login
-// Route::get('/', function () {
-//     return redirect()->route('login');
+// Route::group(['middleware' => ['web', 'core']], function () {
+//     include_once 'admin/user.php';
 // });
 
-Route::get('/', [AuthController::class, 'redirectToLogin']);
+include_once 'admin/user.php';
+include_once 'staff/user.php';
 
+// Redirect root to login
+Route::get('/', [AuthController::class, 'redirectToLogin']);
 
 // Auth routes
 Route::get('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/login', [AuthController::class, 'loginPost'])->name('login.post');
-
 Route::get('/register', [AuthController::class, 'register'])->name('register');
 Route::post('/register', [AuthController::class, 'registerPost'])->name('register.post');
-
-// Optional logout route (only if logout method exists in your controller)
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Protected dashboard route
-Route::get('/email/verify', [EmailVerificationController::class, 'notice'])
-    ->middleware('auth')->name('verification.notice');
+// Email Verification
+Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->middleware('auth')->name('verification.notice');
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->middleware(['signed'])->name('verification.verify');
+Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])->middleware(['auth', 'throttle:6,1'])->name('verification.send');
 
-Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
-    ->middleware(['signed'])->name('verification.verify');
-
-// Route::middleware(['auth'])->group(function () {
-//     Route::get('/dashboard', function () {
-//         return view('dashboard');
-//     })->name('dashboard');
-// });
-
-// Route::middleware(['auth'])->group(function () {
-//     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-// });
-
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->name('user.dashboard')->middleware(['auth']);
-
-Route::get('/admin/dashboard', function () {
-    return view('admindashboard');
-})->name('admin.dashboard')->middleware(['auth']);
+// Dashboards
+// Route::get('/dashboard', function () {
+//     return view('dashboard');
+// })->name('user.dashboard')->middleware(['auth']);
 
 
-Route::get('/tasks/new', [TaskController::class, 'create'])->name('tasks.create');
-Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
-Route::get('/management/tasks', [TaskController::class, 'index'])->name('tasks.index');
-Route::get('/management/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
-Route::get('/management/tasks/{task}/edit', [TaskController::class, 'edit'])->name('tasks.edit');
-Route::put('/management/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
-Route::delete('/management/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
 
-Route::get('/staff/dashboard', function () {
-    return view('staffdashboard');
-})->name('staff.dashboard')->middleware(['auth']);
+Route::get('/dashboard', function (UserRoleRedirectService $redirectService) {
+    return redirect()->to($redirectService->getDashboardRoute());
+})->middleware(['auth'])->name('dashboard');
 
-Route::get('/management/users', [UserController::class, 'index'])->name('users.index');
-Route::get('/staff/tasks', [TaskController::class, 'staffTasks'])->name('tasks.staff.index');
-Route::get('/staff/dashboard', [TaskController::class, 'upcomingTasks'])->name('staff.dashboard');
-// Route::middleware(['auth', 'check.role:staff'])->group(function () {
-//     Route::get('/team-overview', [TeamController::class, 'index'])->name('team.overview');
-//     Route::post('/assign-task', [TeamController::class, 'assignTask'])->name('team.assign.task');
-// });
-Route::middleware(['auth'])->group(function () {
-    Route::get('/staff/team', [TeamController::class, 'index'])->name('team.overview');
-});
+Route::get('/user/dashboard', [DashboardController::class, 'user'])->name('user.dashboard')->middleware('auth');
+
+
+// Tasks
+// Route::resource('tasks', TaskController::class);
+// Route::get('/tasks/new', [TaskController::class, 'create'])->name('tasks.create');
+// Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
+// Route::get('/management/tasks', [TaskController::class, 'index'])->name('tasks.index');
+// Route::get('/management/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
+// Route::get('/management/tasks/{task}/edit', [TaskController::class, 'edit'])->name('tasks.edit');
+// // Route::put('/management/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
+// Route::put('/management/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
+
+// Route::delete('/management/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
+
+
 
 // Redirect after login
 Route::get('/home', function () {
     // This triggers the middleware
 })->middleware(['auth', 'role.redirect']);
 
-// Route::get('/dashboard', function () {
-//     return view('dashboard');
-// })->name('dashboard');
-
-Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])
-    ->middleware(['auth', 'throttle:6,1'])->name('verification.send');
-
+// Password Reset
 Route::get('forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
 Route::post('forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
-
 Route::get('reset-password/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
 Route::post('reset-password', [ResetPasswordController::class, 'reset'])->name('password.update');
 
+// Google Login
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
 Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
 
+// Profile and Settings
 Route::get('/profile', [ProfileController::class, 'showProfile'])->name('profile');
 Route::get('/settings', [ProfileController::class, 'showSettings'])->name('settings');
-// Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
-
 Route::put('/settings/update-name', [SettingsController::class, 'updateName'])->name('settings.update.name');
 Route::put('/settings/update-avatar', [SettingsController::class, 'updateAvatar'])->name('settings.update.avatar');
-

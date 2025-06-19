@@ -8,9 +8,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
+    use HasRoles;
     use HasApiTokens, HasFactory, Notifiable;
     /**
      * The attributes that are mass assignable.
@@ -21,7 +23,6 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
-        'role',
     ];
 
     /**
@@ -62,4 +63,22 @@ public function isBlocked()
 {
     return $this->blocked;
 }
+
+public function assignedTasks()
+{
+    // return $this->belongsToMany(Task::class, 'task_user', 'user_id', 'task_id', 'id', 'task_id')->withTimestamps();
+    return $this->belongsToMany(Task::class, 'task_user', 'user_id', 'task_id')->withTimestamps();
+}
+
+public function teamLeader()
+{
+    return $this->belongsTo(User::class, 'team_leader_id');
+}
+
+public function teamMembers()
+{
+    return $this->hasMany(User::class, 'team_leader_id');
+}
+
+
 }

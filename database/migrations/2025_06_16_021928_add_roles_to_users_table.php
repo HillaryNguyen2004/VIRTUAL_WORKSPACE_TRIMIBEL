@@ -13,9 +13,14 @@ return new class extends Migration
      */
     public function up()
     {
+        // Schema::table('users', function (Blueprint $table) {
+        //     $table->enum('roles', ['user', 'staff', 'admin'])->default('user');
+        // });
         Schema::table('users', function (Blueprint $table) {
+        if (!Schema::hasColumn('users', 'roles')) {
             $table->enum('roles', ['user', 'staff', 'admin'])->default('user');
-        });
+        }
+    });
     }
 
     /**

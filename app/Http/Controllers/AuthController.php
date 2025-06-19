@@ -47,22 +47,24 @@ class AuthController extends Controller
     // POST /login → handles form submission
     public function loginPost(LoginRequest $request)
     {
-        try {
-            $user = $this->loginService->login(
-                $request->only('email', 'password'),
-                $request->filled('remember')
-            );
-            if ($user->roles === 'admin') {
+    
+    try {
+        $user = $this->loginService->login(
+            $request->only('email', 'password'),
+            $request->filled('remember')
+        );
+
+        if ($user->hasRole('admin')) {
             return redirect()->route('admin.dashboard');
-        } elseif ($user->roles === 'staff') {
+        } elseif ($user->hasRole('staff')) {
             return redirect()->route('staff.dashboard');
         } else {
             return redirect()->route('user.dashboard');
         }
-            // return redirect()->intended(route('dashboard'));
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return back()->withErrors($e->errors());
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return back()->withErrors($e->errors());
     }
     }
 
