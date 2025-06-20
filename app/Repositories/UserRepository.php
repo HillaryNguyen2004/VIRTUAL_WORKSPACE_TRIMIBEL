@@ -123,6 +123,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => $password,
+            'team_leader_id' => $data['team_leader_id'] ?? null,
         ]);
 
         $user->assignRole($data['roles']);

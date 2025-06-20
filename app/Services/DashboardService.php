@@ -19,10 +19,10 @@ class DashboardService
 
     public function getStaffDashboardData(User $user): array
     {
-        $assignedTasks = $user->assignedTasks()->get();
+        $tasks = $user->assignedTasks()->get();
         $teamLeader = $user->teamLeader;
         $teamMembers = $user->teamMembers;
 
-        return compact('assignedTasks', 'teamLeader', 'teamMembers');
+        return compact('tasks', 'teamLeader', 'teamMembers');
     }
 }

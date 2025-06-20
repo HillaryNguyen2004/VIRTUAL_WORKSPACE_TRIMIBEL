@@ -18,6 +18,7 @@ class StoreUserRequest extends FormRequest
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'roles' => 'required|in:user,staff',
+            'team_leader_id' => 'nullable|exists:users,id',
         ];
     }
 
