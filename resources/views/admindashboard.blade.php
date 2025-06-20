@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
+
+@role('admin')
 <div class="container py-4">
     <h1 class="mb-2 fw-bold">Admin Dashboard</h1>
     <p class="mb-4">Welcome to the Task Management & User Administration Panel.</p>
@@ -175,4 +177,11 @@
         </div>
     </div>
 </div>
+@else
+<div class="container py-4">
+    <h3 class="text-danger">Access Denied</h3>
+    <p>You do not have permission to view this page.</p>
+</div>
+@endrole
+
 @endsection

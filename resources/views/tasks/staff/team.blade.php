@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
+
+@role('staff')
 <div class="container py-4">
     <h2 class="mb-4">My Team</h2>
 
@@ -45,4 +47,11 @@
         </table>
     @endif
 </div>
+@else
+<div class="container py-4">
+    <h3 class="text-danger">Access Denied</h3>
+    <p>You do not have permission to view this page.</p>
+</div>
+@endrole
+
 @endsection
