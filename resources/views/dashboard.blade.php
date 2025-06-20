@@ -1,6 +1,8 @@
 @extends('layout_dashboard')
 @section('title', 'Dashboard')
+
 @section('content')
+@role('user')
 <div class="container-fluid">
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
@@ -139,7 +141,6 @@
         </div>
     </div>
 
-
     <!-- Content Row -->
     <div class="row">
         <!-- Content Column -->
@@ -189,5 +190,11 @@
         </div>
     </div>
 </div>
-<!-- /.container-fluid -->
+@else
+<div class="container py-5">
+    <div class="alert alert-danger text-center">
+        <h4>You do not have permission to view this page.</h4>
+    </div>
+</div>
+@endrole
 @endsection

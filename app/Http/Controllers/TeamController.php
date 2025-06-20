@@ -6,22 +6,24 @@ use App\Models\User;
 use App\Models\Task;
 use App\Http\Requests\AssignTaskRequest;
 use App\Repositories\TeamRepositoryInterface;
+use App\Services\TeamService;
 
 class TeamController extends Controller
 {
     protected $teamRepo;
+    protected TeamService $teamService;
 
-    public function __construct(TeamRepositoryInterface $teamRepo)
+    public function __construct(TeamService $teamService, TeamRepositoryInterface $teamRepo)
     {
+        $this->teamService = $teamService;
         $this->teamRepo = $teamRepo;
     }
         
     public function index()
     {
-        $teamMembers = User::where('team_leader_id', auth()->id())->get();
-        $staffTasks = Task::where('assigned_user_id', auth()->id())->get();
+        $data = $this->teamService->getTeamOverview(auth()->id());
 
-        return view('tasks.staff.team', compact('teamMembers', 'staffTasks'));
+        return view('tasks.staff.team', $data);
     }
 
     public function assignTask(AssignTaskRequest $request)

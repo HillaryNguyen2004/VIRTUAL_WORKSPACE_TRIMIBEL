@@ -12,12 +12,20 @@ abstract class BaseRepository
         $this->model = $model;
     }
 
-    public function find($id): ?Model
+    /**
+     * @param mixed $id
+     * @return Model|null
+     */
+    public function find($id)
     {
         return $this->model->find($id);
     }
 
-    public function findBy(array $conditions): ?Model
+    /**
+     * @param array $conditions
+     * @return Model|null
+     */
+    public function findBy(array $conditions)
     {
         return $this->model->where($conditions)->first();
     }

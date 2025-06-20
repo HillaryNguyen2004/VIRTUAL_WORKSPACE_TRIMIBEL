@@ -12,6 +12,7 @@ use App\Repositories\UserRepository;
 
 
 
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
