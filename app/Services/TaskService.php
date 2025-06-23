@@ -75,4 +75,10 @@ class TaskService
     {
         return $this->taskRepo->getUpcomingTasks($userId);
     }
+
+public function getAllTasksQuery()
+{
+    return \App\Models\Task::with('assigneeUser');
+}
+
 }

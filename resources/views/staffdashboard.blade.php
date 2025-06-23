@@ -13,10 +13,10 @@
             <a href="{{ route('staff.dashboard') }}" class="text-white me-4">Dashboard</a>
             <a href="{{ route('tasks.staff.index') }}" class="text-white me-4">My Tasks</a>
             <a href="{{ route('team.overview') }}" class="text-white me-4">Team</a>
-            <form action="{{ route('logout') }}" method="POST" class="d-inline">
+            <!-- <form action="{{ route('logout') }}" method="POST" class="d-inline">
                 @csrf
                 <button class="btn btn-danger">Logout</button>
-            </form>
+            </form> -->
         </div>
     </div>
 </div>

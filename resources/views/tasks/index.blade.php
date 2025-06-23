@@ -3,11 +3,41 @@
 @section('content')
 <div class="container py-4">
     <h1 class="mb-4 fw-bold">Task Management</h1>
+
     <div class="card p-4 mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <strong>All Tasks</strong>
             <a href="{{ route('tasks.create') }}" class="btn btn-primary">+ Add New Task</a>
         </div>
+
+        <!-- Filter Bar -->
+        <form method="GET" action="{{ route('tasks.index') }}" class="row g-3 mb-4">
+            <div class="col-md-3">
+                <input type="text" name="search" class="form-control" placeholder="Search by Task Name" value="{{ request('search') }}">
+            </div>
+            <div class="col-md-3">
+                <input type="date" name="due_date" class="form-control" value="{{ request('due_date') }}">
+            </div>
+            <div class="col-md-3">
+                <select name="assigned_user_id" class="form-select">
+                    <option value="">-- Filter by Assignee --</option>
+                    @foreach($allUsers as $user)
+                        <option value="{{ $user->id }}" {{ request('assigned_user_id') == $user->id ? 'selected' : '' }}>
+                            {{ $user->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <select name="sort_by" class="form-select">
+                    <option value="">-- Sort By --</option>
+                    <option value="title" {{ request('sort_by') == 'title' ? 'selected' : '' }}>Task Name</option>
+                    <option value="due_date" {{ request('sort_by') == 'due_date' ? 'selected' : '' }}>Due Date</option>
+                </select>
+                <button type="submit" class="btn btn-secondary">Apply</button>
+            </div>
+        </form>
+
         <table class="table align-middle">
             <thead>
                 <tr>
@@ -44,7 +74,6 @@
                         @endif
                     </td>
                     <td>
-                        <!-- STOP PROPAGATION HERE -->
                         <div onclick="event.stopPropagation();">
                             <a href="#" title="View">
                                 <i class="bi bi-eye text-primary fs-5"></i>
