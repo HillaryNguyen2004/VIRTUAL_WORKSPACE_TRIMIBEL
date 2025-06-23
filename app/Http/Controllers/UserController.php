@@ -7,6 +7,8 @@ use App\Http\Requests\FilterUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Repositories\UserRepositoryInterface;
+use Spatie\Permission\Models\Permission;
+use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
@@ -54,4 +56,19 @@ class UserController extends Controller
 
         return redirect()->route('admin.users.create')->with('success', 'User created and password reset link sent to their email.');
     }
+
+    public function permissions()
+    {
+        $users = User::role('staff')->with('permissions')->get();
+        $permissions = Permission::all();
+        return view('users.permissions', compact('users', 'permissions'));
+    }
+
+    public function updatePermissions(Request $request)
+    {
+        $user = User::findOrFail($request->user_id);
+        $user->syncPermissions($request->permissions); // Replaces existing permissions
+        return redirect()->back()->with('success', 'Permissions updated successfully.');
+    }
+
 }

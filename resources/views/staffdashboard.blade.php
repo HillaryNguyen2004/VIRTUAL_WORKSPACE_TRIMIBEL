@@ -13,10 +13,6 @@
             <a href="{{ route('staff.dashboard') }}" class="text-white me-4">Dashboard</a>
             <a href="{{ route('tasks.staff.index') }}" class="text-white me-4">My Tasks</a>
             <a href="{{ route('team.overview') }}" class="text-white me-4">Team</a>
-            <!-- <form action="{{ route('logout') }}" method="POST" class="d-inline">
-                @csrf
-                <button class="btn btn-danger">Logout</button>
-            </form> -->
         </div>
     </div>
 </div>
@@ -26,6 +22,15 @@
     <p class="mb-4">Welcome to your task portal. Create tasks, track progress, and collaborate with your team.</p>
 
     <div class="row mb-4">
+
+        {{-- ✅ Permission check: Only show Create Task if staff has all permissions --}}
+        @php
+            $hasAllPermissions = auth()->user()->can('task.create') &&
+                                 auth()->user()->can('task.edit') &&
+                                 auth()->user()->can('task.delete');
+        @endphp
+
+        @if($hasAllPermissions)
         <div class="col-md-4 mb-3">
             <div class="card border-primary border-2" style="border-top:4px solid #2563eb;">
                 <div class="card-body">
@@ -38,6 +43,7 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <div class="col-md-4 mb-3">
             <div class="card border-purple border-2" style="border-top:4px solid #a259f7;">

@@ -52,17 +52,38 @@ Route::get('/dashboard', function (UserRoleRedirectService $redirectService) {
 Route::get('/user/dashboard', [DashboardController::class, 'user'])->name('user.dashboard')->middleware('auth');
 
 
-// Tasks
-// Route::resource('tasks', TaskController::class);
-// Route::get('/tasks/new', [TaskController::class, 'create'])->name('tasks.create');
-// Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
-// Route::get('/management/tasks', [TaskController::class, 'index'])->name('tasks.index');
-// Route::get('/management/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
-// Route::get('/management/tasks/{task}/edit', [TaskController::class, 'edit'])->name('tasks.edit');
-// // Route::put('/management/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
-// Route::put('/management/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
+Route::middleware(['role:admin|staff'])->group(function () {
 
-// Route::delete('/management/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
+    // CREATE TASK
+    Route::get('/management/tasks/create', [TaskController::class, 'create'])
+        ->middleware('permission:task.create')
+        ->name('tasks.create');
+
+    Route::post('/management/tasks', [TaskController::class, 'store'])
+        ->middleware('permission:task.create')
+        ->name('tasks.store');
+
+    // LIST + SHOW
+    Route::get('/management/tasks', [TaskController::class, 'index'])
+        ->name('tasks.index');
+
+    Route::get('/management/tasks/{task}', [TaskController::class, 'show'])
+        ->name('tasks.show');
+
+    // EDIT TASK
+    Route::get('/management/tasks/{task}/edit', [TaskController::class, 'edit'])
+        ->middleware('permission:task.edit')
+        ->name('tasks.edit');
+
+    Route::put('/management/tasks/{task}', [TaskController::class, 'update'])
+        ->middleware('permission:task.edit')
+        ->name('tasks.update');
+
+    // DELETE TASK
+    Route::delete('/management/tasks/{task}', [TaskController::class, 'destroy'])
+        ->middleware('permission:task.delete')
+        ->name('tasks.destroy');
+});
 
 
 
