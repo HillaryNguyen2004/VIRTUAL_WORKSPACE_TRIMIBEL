@@ -56,10 +56,10 @@ class TaskController extends Controller
     {
         $this->taskService->updateTask($id, $request->formatted());
         if (auth()->user()->hasRole('admin')) {
-        return redirect()->route('tasks.index')->with('success', 'Task updated successfully!');
+            return redirect()->route('tasks.index')->with('success', 'Task updated successfully!');
         }
 
-        return redirect()->route('tasks.staff.index')->with('success', 'Task updated successfully!');
+            return redirect()->route('tasks.staff.index')->with('success', 'Task updated successfully!');
         // return redirect()->route('tasks.index')->with('success', 'Task updated successfully!');
     }
 

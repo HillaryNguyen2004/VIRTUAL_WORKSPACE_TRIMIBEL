@@ -52,7 +52,12 @@
                 <tr>
                     <td>{{ $task->task_id }}</td>
                     <td>{{ $task->title }}</td>
-                    <td>{{ $task->due_date }}</td>
+                    <td>
+                        {{ $task->due_date }}
+                        @if(\Carbon\Carbon::parse($task->due_date)->isPast() && $task->status !== 'completed')
+                            <span class="badge bg-danger ms-2">Overdue</span>
+                        @endif
+                    </td>
                     <td>
                         @if($task->status === 'pending')
                             <span class="badge bg-warning text-dark">Pending</span>
