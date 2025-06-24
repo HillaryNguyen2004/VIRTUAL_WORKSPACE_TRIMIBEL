@@ -6,7 +6,8 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
-
+use App\Models\ActivityLog;
+use Illuminate\Support\Facades\Auth;
 
 class UserRepository extends BaseRepository implements UserRepositoryInterface
 {
@@ -90,6 +91,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
 
     public function updateUser(User $user, array $data): void
     {
+        $originalRole = $user->getRoleNames()->first();
         $user->name = $data['name'];
 
         if ($data['role'] === 'staff') {
@@ -104,6 +106,16 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
 
         $user->save();
         $user->syncRoles([$data['role']]);
+        $newRole = $user->getRoleNames()->first();
+
+        // ✅ Log if role changed
+        if ($originalRole !== $newRole) {
+            ActivityLog::create([
+                'user_id' => auth()->id(), // admin performing the action
+                'action' => 'Changed User Role',
+                'description' => "Admin changed role of user {$user->name} (ID: {$user->id}) from '$originalRole' to '$newRole'."
+            ]);
+        }
     }
 
     public function deleteUser(User $user): bool
@@ -127,6 +139,11 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         ]);
 
         $user->assignRole($data['roles']);
+        ActivityLog::create([
+        'user_id' => Auth::id(), // admin performing the creation
+        'action' => 'User Created',
+        'description' => "Admin created a {$data['roles']} with ID {$user->id} and email {$user->email}."
+    ]);
 
         return $user;
     }
