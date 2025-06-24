@@ -72,7 +72,7 @@
                     <td class="d-flex gap-2">
                         {{-- View button --}}
                         <button class="btn btn-sm btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#taskDetails{{ $task->task_id }}" aria-expanded="false" aria-controls="taskDetails{{ $task->task_id }}">
-                            <i class="bi bi-eye text-primary fs-5"></i>
+                            <i class="fas fa-eye text-primary fs-5"></i>
                         </button>
 
                         {{-- Edit button with permission --}}
@@ -80,6 +80,17 @@
                         <a href="{{ route('tasks.edit', $task->task_id) }}" class="btn btn-sm btn-link">
                             <i class="fas fa-edit text-success fs-5"></i>
                         </a>
+                        @endcan
+
+                        {{-- Delete button with permission --}}
+                        @can('task.delete')
+                        <form action="{{ route('tasks.destroy', $task->task_id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this task?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-sm btn-link">
+                                <i class="fas fa-trash text-danger fs-5"></i>
+                            </button>
+                        </form>
                         @endcan
                     </td>
                 </tr>
