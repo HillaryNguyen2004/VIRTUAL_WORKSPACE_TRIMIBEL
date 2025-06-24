@@ -69,10 +69,18 @@
                             <span class="badge bg-secondary">Inactive</span>
                         @endif
                     </td>
-                    <td>
+                    <td class="d-flex gap-2">
+                        {{-- View button --}}
                         <button class="btn btn-sm btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#taskDetails{{ $task->task_id }}" aria-expanded="false" aria-controls="taskDetails{{ $task->task_id }}">
                             <i class="bi bi-eye text-primary fs-5"></i>
                         </button>
+
+                        {{-- Edit button with permission --}}
+                        @can('task.edit')
+                        <a href="{{ route('tasks.edit', $task->task_id) }}" class="btn btn-sm btn-link">
+                            <i class="fas fa-edit text-success fs-5"></i>
+                        </a>
+                        @endcan
                     </td>
                 </tr>
                 <tr>

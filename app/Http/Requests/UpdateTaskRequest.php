@@ -36,13 +36,19 @@ class UpdateTaskRequest extends FormRequest
     {
         $data = $this->validated();
 
-        return [
+        $formatted = [
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
-            'assigned_user_id' => $data['assignee'],
             'due_date' => $data['due_date'],
             'status' => $data['status'],
             'active' => $this->has('active') ? 1 : 0,
         ];
+
+        // Only include assigned_user_id if current user is admin
+        if (auth()->user()->hasRole('admin')) {
+            $formatted['assigned_user_id'] = $data['assignee'];
+        }
+
+        return $formatted;
     }
 }

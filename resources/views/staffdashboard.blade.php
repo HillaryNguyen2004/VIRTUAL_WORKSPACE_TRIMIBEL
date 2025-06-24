@@ -25,12 +25,10 @@
 
         {{-- ✅ Permission check: Only show Create Task if staff has all permissions --}}
         @php
-            $hasAllPermissions = auth()->user()->can('task.create') &&
-                                 auth()->user()->can('task.edit') &&
-                                 auth()->user()->can('task.delete');
+            $hasPermissions = auth()->user()->can('task.create');
         @endphp
 
-        @if($hasAllPermissions)
+        @if($hasPermissions)
         <div class="col-md-4 mb-3">
             <div class="card border-primary border-2" style="border-top:4px solid #2563eb;">
                 <div class="card-body">
