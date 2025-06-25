@@ -31,7 +31,7 @@ class UserController extends Controller
     public function update(UpdateUserRequest $request, User $user)
     {
         $this->userRepo->updateUser($user, $request->validated());
-        return redirect()->route('users.index')->with('success', 'User updated successfully.');
+        return redirect()->route('users.index')->with('success', __('messages.user_updated'));
     }
 
     public function destroy(User $user)
@@ -39,10 +39,10 @@ class UserController extends Controller
         $deleted = $this->userRepo->deleteUser($user);
 
         if (!$deleted) {
-            return back()->with('error', 'You cannot delete this user.');
+            return back()->with('error',  __('messages.user_not_deleted'));
         }
 
-        return redirect()->route('users.index')->with('success', 'User deleted successfully.');
+        return redirect()->route('users.index')->with('success', __('messages.user_deleted'));
     }
 
     public function create()
@@ -57,7 +57,7 @@ class UserController extends Controller
         // Send password reset link
         Password::sendResetLink(['email' => $user->email]);
 
-        return redirect()->route('admin.users.create')->with('success', 'User created and password reset link sent to their email.');
+        return redirect()->route('admin.users.create')->with('success', __('messages.user_created'));
     }
 
     public function permissions()
@@ -75,7 +75,7 @@ class UserController extends Controller
             $request->permissions?? []
         );
 
-        return redirect()->back()->with('success', 'Permissions updated successfully.');
+        return redirect()->back()->with('success',  __('messages.permissions_updated'));
     }
 
 }

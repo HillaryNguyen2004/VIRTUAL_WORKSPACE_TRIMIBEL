@@ -27,7 +27,7 @@ class TaskController extends Controller
     public function store(StoreTaskRequest $request)
     {
         $this->taskService->createTask($request->formatted());
-        return redirect()->route('tasks.create')->with('success', 'Task created successfully!');
+        return redirect()->route('tasks.create')->with('success', __('messages.task_created'));
     }
 
     public function show($id)
@@ -47,17 +47,17 @@ class TaskController extends Controller
     {
         $this->taskService->updateTask($id, $request->formatted());
         if (auth()->user()->hasRole('admin')) {
-            return redirect()->route('tasks.index')->with('success', 'Task updated successfully!');
+            return redirect()->route('tasks.index')->with('success',  __('messages.task_updated'));
         }
 
-            return redirect()->route('tasks.staff.index')->with('success', 'Task updated successfully!');
+            return redirect()->route('tasks.staff.index')->with('success',  __('messages.task_updated'));
         // return redirect()->route('tasks.index')->with('success', 'Task updated successfully!');
     }
 
     public function destroy($id)
     {
         $this->taskService->deleteTask($id);
-        return redirect()->route('tasks.index')->with('success', 'Task deleted successfully!');
+        return redirect()->route('tasks.index')->with('success', __('messages.task_deleted'));
     }
 
 
