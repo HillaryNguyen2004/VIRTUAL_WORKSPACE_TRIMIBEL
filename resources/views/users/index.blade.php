@@ -17,6 +17,11 @@
                 </select>
             </div>
             <div class="col-md-2">
+                <a href="{{ route('users.index', array_merge(request()->except('page'), ['sort' => request('sort') === 'asc' ? 'desc' : 'asc'])) }}" class="btn btn-outline-dark w-100">
+                    Sort: {{ request('sort') === 'desc' ? 'Z → A' : 'A → Z' }}
+                </a>
+            </div>
+            <div class="col-md-2">
                 <button class="btn btn-primary w-100" type="submit">Search</button>
             </div>
             <div class="col-md-2">

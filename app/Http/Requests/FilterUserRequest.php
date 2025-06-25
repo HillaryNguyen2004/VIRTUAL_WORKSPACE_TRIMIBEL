@@ -16,11 +16,12 @@ class FilterUserRequest extends FormRequest
         return [
             'search' => 'nullable|string|max:255',
             'role' => 'nullable|string|exists:roles,name',
+            'sort' => 'in:asc,desc' ,
         ];
     }
 
     public function filters(): array
     {
-        return $this->only(['search', 'role']);
+        return $this->only(['search', 'role','sort']);
     }
 }

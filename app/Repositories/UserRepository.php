@@ -86,6 +86,9 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
             });
         }
 
+        $sortOrder = $filters['sort'] ?? 'asc';
+        $query->orderBy('name', in_array($sortOrder, ['asc', 'desc']) ? $sortOrder : 'asc');
+
         // return $query->get();
         return $query->paginate($perPage)->appends($filters);
     }
