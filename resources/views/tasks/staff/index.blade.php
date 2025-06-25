@@ -7,15 +7,18 @@
     <h1 class="mb-4 fw-bold">My Tasks</h1>
 
     {{-- Search & Filter Bar --}}
-    <form method="GET" action="{{ route('tasks.staff.index') }}" class="card p-4 mb-4">
-        <div class="row align-items-end">
-            <div class="col-md-5">
-                <label for="search" class="form-label fw-bold">Search by Task Name</label>
-                <input type="text" name="search" id="search" class="form-control" placeholder="Enter task name"
+    <form method="GET" action="{{ route('tasks.staff.index') }}" class="card shadow-sm p-4 mb-4">
+        <div class="row gy-3">
+            {{-- Search --}}
+            <div class="col-md-4">
+                <label for="search" class="form-label fw-semibold text-primary">🔍 Search</label>
+                <input type="text" name="search" id="search" class="form-control" placeholder="Enter task name..."
                     value="{{ request('search') }}">
             </div>
-            <div class="col-md-4">
-                <label for="status" class="form-label fw-bold">Filter by Status</label>
+
+            {{-- Status Filter --}}
+            <div class="col-md-3">
+                <label for="status" class="form-label fw-semibold text-primary">📋 Status</label>
                 <select name="status" id="status" class="form-select">
                     <option value="">All statuses</option>
                     <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
@@ -23,13 +26,28 @@
                     <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
                 </select>
             </div>
-            <div class="col-md-3 d-grid">
+
+            {{-- Sort --}}
+            <div class="col-md-3">
+                <label for="sort" class="form-label fw-semibold text-primary">⬇️ Sort</label>
+                <select name="sort" id="sort" class="form-select">
+                    <option value="">Default</option>
+                    <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Name (A-Z)</option>
+                    <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Name (Z-A)</option>
+                    <option value="due_asc" {{ request('sort') == 'due_asc' ? 'selected' : '' }}>Due Date (Soonest)</option>
+                    <option value="due_desc" {{ request('sort') == 'due_desc' ? 'selected' : '' }}>Due Date (Latest)</option>
+                </select>
+            </div>
+
+            {{-- Submit --}}
+            <div class="col-md-2 d-grid align-self-end">
                 <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-funnel-fill me-1"></i> Apply Filter
+                    <i class="bi bi-funnel-fill me-1"></i> Apply
                 </button>
             </div>
         </div>
     </form>
+
 
     {{-- Task Table --}}
     <div class="card p-4 mb-4">

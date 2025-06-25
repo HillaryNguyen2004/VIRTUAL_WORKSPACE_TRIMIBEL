@@ -68,8 +68,35 @@ class TaskService
             $query = $query->where('status', $request->status);
         }
 
-        return $query->with('assignedUsers')->get();
+        if ($search = $request->search) {
+        $query->where('title', 'like', '%' . $search . '%');
     }
+
+        // Apply sort
+        if ($sort = $request->sort) {
+            switch ($sort) {
+                case 'name_asc':
+                    $query->orderByRaw("SUBSTRING_INDEX(title, ' ', 1) ASC");
+                    break;
+                case 'name_desc':
+                    $query->orderByRaw("SUBSTRING_INDEX(title, ' ', 1) DESC");
+                    break;
+                case 'due_asc':
+                    $query->orderBy('due_date', 'asc');
+                    break;
+                case 'due_desc':
+                    $query->orderBy('due_date', 'desc');
+                    break;
+            }
+        } else {
+            $query->orderBy('due_date', 'desc');
+        }
+
+        return $query->paginate(3)->appends($request->query());
+}
+
+        // return $query->with('assignedUsers')->get();
+    
 
     public function getUpcomingTasks($userId)
     {
