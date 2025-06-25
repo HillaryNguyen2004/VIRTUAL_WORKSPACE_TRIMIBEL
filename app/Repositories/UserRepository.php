@@ -69,7 +69,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         $user->save();
     }
 
-    public function filterUsers(array $filters)
+    public function filterUsers(array $filters, int $perPage = 3)
     {
         $query = $this->model->with('roles');
 
@@ -86,7 +86,8 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
             });
         }
 
-        return $query->get();
+        // return $query->get();
+        return $query->paginate($perPage)->appends($filters);
     }
 
     public function updateUser(User $user, array $data): void
