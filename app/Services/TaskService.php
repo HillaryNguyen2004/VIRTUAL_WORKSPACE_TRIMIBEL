@@ -1,6 +1,6 @@
 <?php
 namespace App\Services;
-
+use App\Models\Task;
 use App\Repositories\TaskRepositoryInterface;
 use Illuminate\Http\Request;
 
@@ -79,6 +79,29 @@ class TaskService
 public function getAllTasksQuery()
 {
     return \App\Models\Task::with('assigneeUser');
+}
+
+public function getFilteredTasks(Request $request)
+{
+    $query = Task::with('assigneeUser');
+
+    if ($request->filled('search')) {
+        $query->where('title', 'like', '%' . $request->search . '%');
+    }
+
+    if ($request->filled('due_date')) {
+        $query->whereDate('due_date', $request->due_date);
+    }
+
+    if ($request->filled('assigned_user_id')) {
+        $query->where('assigned_user_id', $request->assigned_user_id);
+    }
+
+    if ($request->filled('sort_by')) {
+        $query->orderBy($request->sort_by);
+    }
+
+    return $query->paginate(3); // or ->paginate(10);
 }
 
 }

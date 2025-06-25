@@ -17,15 +17,6 @@ class TaskController extends Controller
         $this->taskService = $taskService;
     }
 
-    // THIS PART IS FOR ADMIN
-    // public function index()
-    // {
-    //     $tasks = $this->taskService->getAllTasks();
-    //     return view('tasks.index', compact('tasks'));
-    // }
-    
-
-
 
     public function create()
     {
@@ -69,32 +60,14 @@ class TaskController extends Controller
         return redirect()->route('tasks.index')->with('success', 'Task deleted successfully!');
     }
 
+
     public function index(Request $request)
-{
-    $query = $this->taskService->getAllTasksQuery(); // returns Task::query()->with('assigneeUser');
+    {
+        $tasks = $this->taskService->getFilteredTasks($request);
+        $allUsers = User::role('staff')->get();
 
-    if ($request->filled('search')) {
-        $query->where('title', 'like', '%' . $request->search . '%');
+        return view('tasks.index', compact('tasks', 'allUsers'));
     }
-
-    if ($request->filled('due_date')) {
-        $query->whereDate('due_date', $request->due_date);
-    }
-
-    if ($request->filled('assigned_user_id')) {
-        $query->where('assigned_user_id', $request->assigned_user_id);
-    }
-
-    if ($request->filled('sort_by')) {
-        $query->orderBy($request->sort_by);
-    }
-
-    $tasks = $query->get();
-    $allUsers = User::role('staff')->get();
-
-    return view('tasks.index', compact('tasks', 'allUsers'));
-}
-
 
 
     // THIS PART IS FOR STAFF 
