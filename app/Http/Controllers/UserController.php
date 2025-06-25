@@ -9,14 +9,17 @@ use App\Http\Requests\StoreUserRequest;
 use App\Repositories\UserRepositoryInterface;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Http\Request;
+use App\Http\Requests\UpdateUserPermissionsRequest;
+use App\Repositories\UserPermissionRepositoryInterface;
 
 class UserController extends Controller
 {
     protected $userRepo;
-
-    public function __construct(UserRepositoryInterface $userRepo)
+    protected $permissionRepo;
+    public function __construct(UserRepositoryInterface $userRepo, UserPermissionRepositoryInterface $permissionRepo)
     {
         $this->userRepo = $userRepo;
+        $this->permissionRepo = $permissionRepo;
     }
 
     public function index(FilterUserRequest $request)
@@ -59,15 +62,19 @@ class UserController extends Controller
 
     public function permissions()
     {
-        $users = User::role('staff')->with('permissions')->get();
-        $permissions = Permission::all();
+        $users = $this->permissionRepo->getStaffWithPermissions();
+        $permissions = $this->permissionRepo->getAllPermissions();
+
         return view('users.permissions', compact('users', 'permissions'));
     }
 
-    public function updatePermissions(Request $request)
+    public function updatePermissions(UpdateUserPermissionsRequest $request)
     {
-        $user = User::findOrFail($request->user_id);
-        $user->syncPermissions($request->permissions); // Replaces existing permissions
+        $this->permissionRepo->updateUserPermissions(
+            $request->user_id,
+            $request->permissions?? []
+        );
+
         return redirect()->back()->with('success', 'Permissions updated successfully.');
     }
 
