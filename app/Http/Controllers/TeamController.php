@@ -33,6 +33,6 @@ class TeamController extends Controller
         $assigned = $this->teamRepo->assignTaskToUser($data['user_id'], $data['task_id']);
 
         return redirect()->route('team.overview')
-            ->with('success', $assigned ? 'Task assigned successfully!' : 'Task already assigned.');
+            ->with('success', $assigned ? __('messages.task_assigned') : __('messages.task_already_assigned'));
     }
 }

@@ -38,6 +38,7 @@ class AuthController extends Controller
     public function registerPost(RegistrationRequest $request)
     {
         $user = $this->userRepository->createFromRequest($request);
+        $user->assignRole('user');
         $user->sendEmailVerificationNotification();
         Auth::login($user);
 

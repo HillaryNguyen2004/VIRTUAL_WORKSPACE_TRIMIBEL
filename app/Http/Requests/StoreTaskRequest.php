@@ -22,7 +22,7 @@ class StoreTaskRequest extends FormRequest
         return [
             'title' => 'required|string|max:255',
             'assignee' => 'required|exists:users,id',
-            'due_date' => 'required|date',
+            'due_date' => 'required|date|after_or_equal:today',
             'description' => 'nullable|string',
             'active' => 'nullable|boolean',
         ];
@@ -42,6 +42,13 @@ class StoreTaskRequest extends FormRequest
             'due_date' => $data['due_date'],
             'status' => 'pending',
             'active' => $this->has('active') ? 1 : 0,
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'due_date.after_or_equal' => 'The due date must be today or a future date.',
         ];
     }
 }

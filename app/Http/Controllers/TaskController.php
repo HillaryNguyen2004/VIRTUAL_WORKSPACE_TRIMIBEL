@@ -17,15 +17,6 @@ class TaskController extends Controller
         $this->taskService = $taskService;
     }
 
-    // THIS PART IS FOR ADMIN
-    public function index()
-    {
-        $tasks = $this->taskService->getAllTasks();
-        return view('tasks.index', compact('tasks'));
-    }
-    
-
-
 
     public function create()
     {
@@ -36,7 +27,7 @@ class TaskController extends Controller
     public function store(StoreTaskRequest $request)
     {
         $this->taskService->createTask($request->formatted());
-        return redirect()->route('tasks.create')->with('success', 'Task created successfully!');
+        return redirect()->route('tasks.create')->with('success', __('messages.task_created'));
     }
 
     public function show($id)
@@ -55,14 +46,29 @@ class TaskController extends Controller
     public function update(UpdateTaskRequest $request, $id)
     {
         $this->taskService->updateTask($id, $request->formatted());
-        return redirect()->route('tasks.index')->with('success', 'Task updated successfully!');
+        if (auth()->user()->hasRole('admin')) {
+            return redirect()->route('tasks.index')->with('success',  __('messages.task_updated'));
+        }
+
+            return redirect()->route('tasks.staff.index')->with('success',  __('messages.task_updated'));
+        // return redirect()->route('tasks.index')->with('success', 'Task updated successfully!');
     }
 
     public function destroy($id)
     {
         $this->taskService->deleteTask($id);
-        return redirect()->route('tasks.index')->with('success', 'Task deleted successfully!');
+        return redirect()->route('tasks.index')->with('success', __('messages.task_deleted'));
     }
+
+
+    public function index(Request $request)
+    {
+        $tasks = $this->taskService->getFilteredTasks($request);
+        $allUsers = User::role('staff')->get();
+
+        return view('tasks.index', compact('tasks', 'allUsers'));
+    }
+
 
     // THIS PART IS FOR STAFF 
     public function staffTasks(Request $request)

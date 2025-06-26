@@ -7,15 +7,18 @@
     <h1 class="mb-4 fw-bold">My Tasks</h1>
 
     {{-- Search & Filter Bar --}}
-    <form method="GET" action="{{ route('tasks.staff.index') }}" class="card p-4 mb-4">
-        <div class="row align-items-end">
-            <div class="col-md-5">
-                <label for="search" class="form-label fw-bold">Search by Task Name</label>
-                <input type="text" name="search" id="search" class="form-control" placeholder="Enter task name"
+    <form method="GET" action="{{ route('tasks.staff.index') }}" class="card shadow-sm p-4 mb-4">
+        <div class="row gy-3">
+            {{-- Search --}}
+            <div class="col-md-4">
+                <label for="search" class="form-label fw-semibold text-primary">🔍 Search</label>
+                <input type="text" name="search" id="search" class="form-control" placeholder="Enter task name..."
                     value="{{ request('search') }}">
             </div>
-            <div class="col-md-4">
-                <label for="status" class="form-label fw-bold">Filter by Status</label>
+
+            {{-- Status Filter --}}
+            <div class="col-md-3">
+                <label for="status" class="form-label fw-semibold text-primary">📋 Status</label>
                 <select name="status" id="status" class="form-select">
                     <option value="">All statuses</option>
                     <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
@@ -23,13 +26,28 @@
                     <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
                 </select>
             </div>
-            <div class="col-md-3 d-grid">
+
+            {{-- Sort --}}
+            <div class="col-md-3">
+                <label for="sort" class="form-label fw-semibold text-primary">⬇️ Sort</label>
+                <select name="sort" id="sort" class="form-select">
+                    <option value="">Default</option>
+                    <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Name (A-Z)</option>
+                    <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Name (Z-A)</option>
+                    <option value="due_asc" {{ request('sort') == 'due_asc' ? 'selected' : '' }}>Due Date (Soonest)</option>
+                    <option value="due_desc" {{ request('sort') == 'due_desc' ? 'selected' : '' }}>Due Date (Latest)</option>
+                </select>
+            </div>
+
+            {{-- Submit --}}
+            <div class="col-md-2 d-grid align-self-end">
                 <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-funnel-fill me-1"></i> Apply Filter
+                    <i class="bi bi-funnel-fill me-1"></i> Apply
                 </button>
             </div>
         </div>
     </form>
+
 
     {{-- Task Table --}}
     <div class="card p-4 mb-4">
@@ -52,7 +70,12 @@
                 <tr>
                     <td>{{ $task->task_id }}</td>
                     <td>{{ $task->title }}</td>
-                    <td>{{ $task->due_date }}</td>
+                    <td>
+                        {{ $task->due_date }}
+                        @if(\Carbon\Carbon::parse($task->due_date)->isPast() && $task->status !== 'completed')
+                            <span class="badge bg-danger ms-2">Overdue</span>
+                        @endif
+                    </td>
                     <td>
                         @if($task->status === 'pending')
                             <span class="badge bg-warning text-dark">Pending</span>
@@ -69,10 +92,29 @@
                             <span class="badge bg-secondary">Inactive</span>
                         @endif
                     </td>
-                    <td>
+                    <td class="d-flex gap-2">
+                        {{-- View button --}}
                         <button class="btn btn-sm btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#taskDetails{{ $task->task_id }}" aria-expanded="false" aria-controls="taskDetails{{ $task->task_id }}">
-                            <i class="bi bi-eye text-primary fs-5"></i>
+                            <i class="fas fa-eye text-primary fs-5"></i>
                         </button>
+
+                        {{-- Edit button with permission --}}
+                        @can('task.edit')
+                        <a href="{{ route('tasks.edit', $task->task_id) }}" class="btn btn-sm btn-link">
+                            <i class="fas fa-edit text-success fs-5"></i>
+                        </a>
+                        @endcan
+
+                        {{-- Delete button with permission --}}
+                        @can('task.delete')
+                        <form action="{{ route('tasks.destroy', $task->task_id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this task?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-sm btn-link">
+                                <i class="fas fa-trash text-danger fs-5"></i>
+                            </button>
+                        </form>
+                        @endcan
                     </td>
                 </tr>
                 <tr>
@@ -117,6 +159,11 @@
                 @endforelse
             </tbody>
         </table>
+        @if ($tasks->hasPages())
+            <div class="mt-3 d-flex justify-content-center">
+                {{ $tasks->withQueryString()->links('pagination::bootstrap-5') }}
+            </div>
+        @endif
     </div>
 </div>
 @else

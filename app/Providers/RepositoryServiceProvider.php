@@ -1,8 +1,11 @@
 <?php
-namespace App\Repositories;
+// namespace App\Repositories;
+namespace App\Providers;
 use App\Repositories\UserRepositoryInterface;
 use \App\Repositories\UserRepository;
-namespace App\Providers;
+use App\Repositories\UserPermissionRepositoryInterface;
+use App\Repositories\UserPermissionRepository;
+
 
 use Illuminate\Support\ServiceProvider;
 
@@ -19,6 +22,7 @@ class RepositoryServiceProvider extends ServiceProvider
         UserRepositoryInterface::class,
         UserRepository::class
         );
+        $this->app->bind(UserPermissionRepositoryInterface::class, UserPermissionRepository::class);
     }
 
     /**

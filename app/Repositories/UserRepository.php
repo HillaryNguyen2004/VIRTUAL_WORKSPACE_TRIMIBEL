@@ -6,7 +6,8 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
-
+use App\Models\ActivityLog;
+use Illuminate\Support\Facades\Auth;
 
 class UserRepository extends BaseRepository implements UserRepositoryInterface
 {
@@ -68,7 +69,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         $user->save();
     }
 
-    public function filterUsers(array $filters)
+    public function filterUsers(array $filters, int $perPage = 3)
     {
         $query = $this->model->with('roles');
 
@@ -85,49 +86,11 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
             });
         }
 
-        return $query->get();
+        $sortOrder = $filters['sort'] ?? 'asc';
+        $query->orderBy('name', in_array($sortOrder, ['asc', 'desc']) ? $sortOrder : 'asc');
+
+        // return $query->get();
+        return $query->paginate($perPage)->appends($filters);
     }
 
-    public function updateUser(User $user, array $data): void
-    {
-        $user->name = $data['name'];
-
-        if ($data['role'] === 'staff') {
-            User::where('team_leader_id', $user->id)->update(['team_leader_id' => null]);
-
-            if (!empty($data['team_members'])) {
-                User::whereIn('id', $data['team_members'])->update(['team_leader_id' => $user->id]);
-            }
-        } else {
-            User::where('team_leader_id', $user->id)->update(['team_leader_id' => null]);
-        }
-
-        $user->save();
-        $user->syncRoles([$data['role']]);
-    }
-
-    public function deleteUser(User $user): bool
-    {
-        if (auth()->id() === $user->id || $user->hasRole('admin')) {
-            return false;
-        }
-
-        return $user->delete();
-    }
-
-    public function createUser(array $data): User
-    {
-        $password = Hash::make(Str::random(12));
-
-        $user = $this->create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => $password,
-            'team_leader_id' => $data['team_leader_id'] ?? null,
-        ]);
-
-        $user->assignRole($data['roles']);
-
-        return $user;
-    }
 }

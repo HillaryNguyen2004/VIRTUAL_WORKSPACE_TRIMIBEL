@@ -1,6 +1,6 @@
 <?php
 namespace App\Services;
-
+use App\Models\Task;
 use App\Repositories\TaskRepositoryInterface;
 use Illuminate\Http\Request;
 
@@ -68,11 +68,67 @@ class TaskService
             $query = $query->where('status', $request->status);
         }
 
-        return $query->with('assignedUsers')->get();
+        if ($search = $request->search) {
+        $query->where('title', 'like', '%' . $search . '%');
     }
+
+        // Apply sort
+        if ($sort = $request->sort) {
+            switch ($sort) {
+                case 'name_asc':
+                    $query->orderByRaw("SUBSTRING_INDEX(title, ' ', 1) ASC");
+                    break;
+                case 'name_desc':
+                    $query->orderByRaw("SUBSTRING_INDEX(title, ' ', 1) DESC");
+                    break;
+                case 'due_asc':
+                    $query->orderBy('due_date', 'asc');
+                    break;
+                case 'due_desc':
+                    $query->orderBy('due_date', 'desc');
+                    break;
+            }
+        } else {
+            $query->orderBy('due_date', 'desc');
+        }
+
+        return $query->paginate(3)->appends($request->query());
+}
+
+        // return $query->with('assignedUsers')->get();
+    
 
     public function getUpcomingTasks($userId)
     {
         return $this->taskRepo->getUpcomingTasks($userId);
     }
+
+public function getAllTasksQuery()
+{
+    return \App\Models\Task::with('assigneeUser');
+}
+
+public function getFilteredTasks(Request $request)
+{
+    $query = Task::with('assigneeUser');
+
+    if ($request->filled('search')) {
+        $query->where('title', 'like', '%' . $request->search . '%');
+    }
+
+    if ($request->filled('due_date')) {
+        $query->whereDate('due_date', $request->due_date);
+    }
+
+    if ($request->filled('assigned_user_id')) {
+        $query->where('assigned_user_id', $request->assigned_user_id);
+    }
+
+    if ($request->filled('sort_by')) {
+        $query->orderBy($request->sort_by);
+    }
+
+    return $query->paginate(3); // or ->paginate(10);
+}
+
 }

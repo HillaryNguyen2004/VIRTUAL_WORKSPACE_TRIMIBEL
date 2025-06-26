@@ -13,38 +13,35 @@
     @if($teamMembers->isEmpty())
         <p class="text-muted">You don't have any team members yet.</p>
     @else
-        <table class="table table-bordered">
-            <thead class="table-light">
-                <tr>
-                    <th>Member Name</th>
-                    <th>Email</th>
-                    <th>Assign Task</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($teamMembers as $member)
-                    <tr>
-                        <td>{{ $member->name }}</td>
-                        <td>{{ $member->email }}</td>
-                        <td>
-                            <form action="{{ route('team.assignTask') }}" method="POST" class="d-flex align-items-center">
-                                @csrf
-                                <input type="hidden" name="user_id" value="{{ $member->id }}">
-                                <select name="task_id" class="form-select me-2" required>
-                                    <option value="">Select a task</option>
-                                    @foreach($staffTasks as $task)
-                                        <option value="{{ $task->task_id }}">{{ $task->title }}</option>
-                                    @endforeach
-                                </select>
-                                <button type="submit" class="btn btn-sm btn-primary">
-                                    Assign
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    @foreach($teamMembers as $member)
+        <div class="col">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title text-primary fw-bold mb-1">{{ $member->name }}</h5>
+                    <p class="card-subtitle mb-3 text-muted">{{ $member->email }}</p>
+
+                    <form action="{{ route('team.assignTask') }}" method="POST" class="mt-auto">
+                        @csrf
+                        <input type="hidden" name="user_id" value="{{ $member->id }}">
+                        <div class="mb-2">
+                            <select name="task_id" class="form-select" required>
+                                <option value="">Select a task</option>
+                                @foreach($staffTasks as $task)
+                                    <option value="{{ $task->task_id }}">{{ $task->title }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                            Assign Task
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endforeach
+</div>
+
     @endif
 </div>
 @else

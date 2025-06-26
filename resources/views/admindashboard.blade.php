@@ -62,13 +62,13 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <strong>Permission Management</strong>
-                        <a href="#" class="small text-primary">View All <i class="bi bi-list"></i></a>
+                        <a href="{{ route('admin.permissions') }}" class="small text-primary">View All <i class="bi bi-list"></i></a>
                     </div>
                     <div class="text-secondary mb-2">Organize Staff Permission.</div>
                     <ul class="mb-3 ps-3">
                         <li class="mb-1">Grant or delete a staff permission</li>
                     </ul>
-                    <a href="#" class="btn w-100" style="background:#00b96b;color:#fff;border:none;">
+                    <a href="{{ route('admin.permissions') }}" class="btn w-100" style="background:#00b96b;color:#fff;border:none;">
                         <i class="bi bi-folder-plus"></i> Edit Permissions
                     </a>
                 </div>
