@@ -159,6 +159,11 @@
                 @endforelse
             </tbody>
         </table>
+        @if ($tasks->hasPages())
+            <div class="mt-3 d-flex justify-content-center">
+                {{ $tasks->withQueryString()->links('pagination::bootstrap-5') }}
+            </div>
+        @endif
     </div>
 </div>
 @else
