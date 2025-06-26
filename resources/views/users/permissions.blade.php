@@ -1,5 +1,7 @@
 @extends('layouts.app')
-
+@section('header')
+    @include('partials.headers.admin')
+@endsection
 @section('content')
 <div class="container py-4">
     <div class="card border-primary shadow-sm mb-4">

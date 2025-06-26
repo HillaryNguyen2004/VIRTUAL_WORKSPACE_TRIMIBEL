@@ -1,5 +1,7 @@
 @extends('layouts.app')
-
+@section('header')
+    @include('partials.headers.staff')
+@endsection
 @section('content')
 
 @role('staff')

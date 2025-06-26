@@ -9,10 +9,23 @@
             <span class="h4 text-white fw-bold">Task Management</span>
             <span class="badge bg-primary ms-2" style="background:#377dff;">STAFF</span>
         </div>
-        <div>
+
+        <div class="d-flex align-items-center">
             <a href="{{ route('staff.dashboard') }}" class="text-white me-4">Dashboard</a>
             <a href="{{ route('tasks.staff.index') }}" class="text-white me-4">My Tasks</a>
             <a href="{{ route('team.overview') }}" class="text-white me-4">Team</a>
+
+            {{-- 🌐 Language Switcher --}}
+            @php $currentLocale = app()->getLocale(); @endphp
+            @if ($currentLocale === 'en')
+                <a class="text-white text-decoration-none me-2" href="#">
+                    🇻🇳 <span class="d-none d-md-inline">Vietnamese</span>
+                </a>
+            @elseif ($currentLocale === 'vi')
+                <a class="text-white text-decoration-none me-2" href="#">
+                    🇺🇸 <span class="d-none d-md-inline">English</span>
+                </a>
+            @endif
         </div>
     </div>
 </div>
