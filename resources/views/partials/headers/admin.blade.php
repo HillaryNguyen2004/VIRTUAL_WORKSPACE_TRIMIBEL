@@ -34,11 +34,11 @@
                 @php $currentLocale = app()->getLocale(); @endphp
                 <li class="nav-item">
                     @if ($currentLocale === 'en')
-                        <a class="nav-link text-white" href="#">
+                        <a class="nav-link text-white" href="{{ route('lang.switch', 'vi') }}">
                             🇻🇳 <span class="d-none d-md-inline ms-1">Vietnamese</span>
                         </a>
                     @elseif ($currentLocale === 'vi')
-                        <a class="nav-link text-white" href="#">
+                        <a class="nav-link text-white" href="{{ route('lang.switch', 'en') }}">
                             🇺🇸 <span class="d-none d-md-inline ms-1">English</span>
                         </a>
                     @endif
