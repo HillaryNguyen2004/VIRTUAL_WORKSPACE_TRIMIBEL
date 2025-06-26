@@ -107,3 +107,11 @@ Route::get('/profile', [ProfileController::class, 'showProfile'])->name('profile
 Route::get('/settings', [ProfileController::class, 'showSettings'])->name('settings');
 Route::put('/settings/update-name', [SettingsController::class, 'updateName'])->name('settings.update.name');
 Route::put('/settings/update-avatar', [SettingsController::class, 'updateAvatar'])->name('settings.update.avatar');
+
+Route::get('lang/{locale}', function ($locale) {
+    if (in_array($locale, ['en', 'vi'])) {
+        session(['locale' => $locale]);
+        app()->setLocale($locale);
+    }
+    return redirect()->back();
+})->name('lang.switch');

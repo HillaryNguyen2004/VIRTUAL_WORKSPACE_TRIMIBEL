@@ -31,11 +31,11 @@
                 @endphp
                 <li class="nav-item">
                     @if ($currentLocale === 'en')
-                        <a class="nav-link text-white" href="#">
-                            🇻🇳 <span class="ms-1 d-none d-md-inline">Vietnamese</span>
+                        <a class="nav-link text-white" href="{{ route('lang.switch', 'vi') }}">
+                            🇻🇳 <span class="ms-1 d-none d-md-inline">Tiếng Việt</span>
                         </a>
                     @elseif ($currentLocale === 'vi')
-                        <a class="nav-link text-white" href="#">
+                        <a class="nav-link text-white" href="{{ route('lang.switch', 'en') }}">
                             🇺🇸 <span class="ms-1 d-none d-md-inline">English</span>
                         </a>
                     @endif
