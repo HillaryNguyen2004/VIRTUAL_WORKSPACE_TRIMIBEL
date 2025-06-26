@@ -13,7 +13,4 @@ interface UserRepositoryInterface
     public function updateName($user, $firstName, $lastName): void;
     // New methods:
     public function filterUsers(array $filters);
-    public function updateUser(User $user, array $data): void;
-    public function deleteUser(User $user): bool;
-    public function createUser(array $data): User;
 }

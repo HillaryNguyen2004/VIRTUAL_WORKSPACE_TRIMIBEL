@@ -11,15 +11,18 @@ use Spatie\Permission\Models\Permission;
 use Illuminate\Http\Request;
 use App\Http\Requests\UpdateUserPermissionsRequest;
 use App\Repositories\UserPermissionRepositoryInterface;
+use App\Services\UserService;
 
 class UserController extends Controller
 {
     protected $userRepo;
     protected $permissionRepo;
-    public function __construct(UserRepositoryInterface $userRepo, UserPermissionRepositoryInterface $permissionRepo)
+    protected $userService;
+    public function __construct(UserService $userService,UserRepositoryInterface $userRepo, UserPermissionRepositoryInterface $permissionRepo)
     {
         $this->userRepo = $userRepo;
         $this->permissionRepo = $permissionRepo;
+        $this->userService = $userService;
     }
 
     public function index(FilterUserRequest $request)
@@ -30,13 +33,13 @@ class UserController extends Controller
 
     public function update(UpdateUserRequest $request, User $user)
     {
-        $this->userRepo->updateUser($user, $request->validated());
+        $this->userService->updateUser($user, $request->validated());
         return redirect()->route('users.index')->with('success', __('messages.user_updated'));
     }
 
     public function destroy(User $user)
     {
-        $deleted = $this->userRepo->deleteUser($user);
+        $deleted = $this->userService->deleteUser($user);
 
         if (!$deleted) {
             return back()->with('error',  __('messages.user_not_deleted'));
@@ -52,7 +55,7 @@ class UserController extends Controller
 
     public function store(StoreUserRequest $request)
     {
-        $user = $this->userRepo->createUser($request->validatedData());
+        $user = $this->userService->createUser($request->validatedData());
 
         // Send password reset link
         Password::sendResetLink(['email' => $user->email]);
