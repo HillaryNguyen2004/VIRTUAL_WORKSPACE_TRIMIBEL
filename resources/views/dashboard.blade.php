@@ -1,14 +1,14 @@
 @extends('layout_dashboard')
-@section('title', 'Dashboard')
+@section('title', __('user_dashboard.title'))
 
 @section('content')
 @role('user')
 <div class="container-fluid">
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
+        <h1 class="h3 mb-0 text-gray-800">{{ __('user_dashboard.heading') }}</h1>
         <a href="#" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
-            <i class="fas fa-download fa-sm text-white-50"></i> Generate Report
+            <i class="fas fa-download fa-sm text-white-50"></i> {{ __('user_dashboard.generate_report') }}
         </a>
     </div>
 
@@ -21,7 +21,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Earnings (Monthly)
+                                {{ __('user_dashboard.earnings_monthly') }}
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">$40,000</div>
                         </div>
@@ -40,7 +40,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                Earnings (Annual)
+                                {{ __('user_dashboard.earnings_annual') }}
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">$215,000</div>
                         </div>
@@ -58,7 +58,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Tasks</div>
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">{{ __('user_dashboard.tasks') }}</div>
                             <div class="row no-gutters align-items-center">
                                 <div class="col-auto">
                                     <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">50%</div>
@@ -86,7 +86,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                Pending Requests
+                                {{ __('user_dashboard.pending_requests') }}
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">18</div>
                         </div>
@@ -105,14 +105,14 @@
         <div class="col-md-6 mb-4">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
-                    Team Leader
+                    {{ __('user_dashboard.team_leader') }}
                 </div>
                 <div class="card-body">
                     @if($teamLeader)
-                        <p><strong>Name:</strong> {{ $teamLeader->name }}</p>
-                        <p><strong>Email:</strong> {{ $teamLeader->email }}</p>
+                        <p><strong>{{ __('user_dashboard.name_label') }}:</strong> {{ $teamLeader->name }}</p>
+                        <p><strong>{{ __('user_dashboard.email_label') }}:</strong> {{ $teamLeader->email }}</p>
                     @else
-                        <p class="text-muted">No team leader assigned.</p>
+                        <p class="text-muted">{{ __('user_dashboard.no_team_leader') }}</p>
                     @endif
                 </div>
             </div>
@@ -122,7 +122,7 @@
         <div class="col-md-6 mb-4">
             <div class="card shadow">
                 <div class="card-header bg-success text-white">
-                    Team Members
+                    {{ __('user_dashboard.team_members') }}
                 </div>
                 <div class="card-body">
                     @if($teamMembers->count())
@@ -134,7 +134,7 @@
                             @endforeach
                         </ul>
                     @else
-                        <p class="text-muted">No other team members.</p>
+                        <p class="text-muted">{{ __('user_dashboard.no_team_members') }}</p>
                     @endif
                 </div>
             </div>
@@ -148,13 +148,13 @@
             <!-- Project Card Example -->
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Assigned Projects</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">{{ __('user_dashboard.assigned_projects') }}</h6>
                 </div>
                 <div class="card-body">
                     @if($assignedTasks->count())
                         @foreach($assignedTasks as $task)
                             <h5 class="small font-weight-bold">{{ $task->title }} 
-                                <span class="float-right">{{ ucfirst($task->status) }}</span>
+                                <span class="float-right">{{ __( 'user_dashboard.status_' . $task->status) }}</span>
                             </h5>
                             <div class="progress mb-4">
                                 <div 
@@ -183,7 +183,7 @@
                             </div>
                         @endforeach
                     @else
-                        <p class="text-muted">No projects assigned to you.</p>
+                        <p class="text-muted">{{ __('user_dashboard.no_projects_assigned') }}</p>
                     @endif
                 </div>
             </div>
@@ -193,7 +193,7 @@
 @else
 <div class="container py-5">
     <div class="alert alert-danger text-center">
-        <h4>You do not have permission to view this page.</h4>
+        <h4>{{ __('user_dashboard.no_permission') }}</h4>
     </div>
 </div>
 @endrole

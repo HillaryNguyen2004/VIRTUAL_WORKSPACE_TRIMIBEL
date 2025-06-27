@@ -1,0 +1,22 @@
+<?php
+return [
+    'title' => 'Bảng Điều Khiển',
+    'heading' => 'Bảng Điều Khiển',
+    'generate_report' => 'Tạo Báo Cáo',
+    'earnings_monthly' => 'Thu Nhập (Hàng Tháng)',
+    'earnings_annual' => 'Thu Nhập (Hàng Năm)',
+    'tasks' => 'Công Việc',
+    'pending_requests' => 'Yêu Cầu Đang Chờ',
+    'team_leader' => 'Trưởng Nhóm',
+    'name_label' => 'Tên',
+    'email_label' => 'Email',
+    'no_team_leader' => 'Không có trưởng nhóm được chỉ định.',
+    'team_members' => 'Thành Viên Nhóm',
+    'no_team_members' => 'Không có thành viên nhóm nào khác.',
+    'assigned_projects' => 'Dự Án Được Giao',
+    'no_projects_assigned' => 'Không có dự án nào được giao cho bạn.',
+    'no_permission' => 'Bạn không có quyền xem trang này.',
+    'status_pending' => 'Đang Chờ',
+    'status_in_progress' => 'Đang Thực Hiện',
+    'status_completed' => 'Hoàn Thành',
+];
