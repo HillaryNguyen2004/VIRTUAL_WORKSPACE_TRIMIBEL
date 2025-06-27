@@ -63,22 +63,41 @@ class UserController extends Controller
         return redirect()->route('admin.users.create')->with('success', __('messages.user_created'));
     }
 
+    // public function permissions()
+    // {
+    //     $users = $this->permissionRepo->getStaffWithPermissions();
+    //     $permissions = $this->permissionRepo->getAllPermissions();
+
+    //     return view('users.permissions', compact('users', 'permissions'));
+    // }
+
+    // public function updatePermissions(UpdateUserPermissionsRequest $request)
+    // {
+    //     $this->permissionRepo->updateUserPermissions(
+    //         $request->user_id,
+    //         $request->permissions?? []
+    //     );
+
+    //     return redirect()->back()->with('success',  __('messages.permissions_updated'));
+    // }
+
+
     public function permissions()
     {
-        $users = $this->permissionRepo->getStaffWithPermissions();
+        $roles = \Spatie\Permission\Models\Role::with('permissions')->get();
         $permissions = $this->permissionRepo->getAllPermissions();
 
-        return view('users.permissions', compact('users', 'permissions'));
+        return view('users.permissions', compact('roles', 'permissions'));
     }
 
     public function updatePermissions(UpdateUserPermissionsRequest $request)
     {
-        $this->permissionRepo->updateUserPermissions(
-            $request->user_id,
-            $request->permissions?? []
+        $this->permissionRepo->updateRolePermissions(
+            $request->role_name,
+            $request->permissions ?? []
         );
 
-        return redirect()->back()->with('success',  __('messages.permissions_updated'));
+        return redirect()->back()->with('success', __('messages.permissions_updated'));
     }
 
 }

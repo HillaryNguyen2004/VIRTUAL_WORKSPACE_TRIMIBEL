@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\User;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use App\Repositories\UserPermissionRepositoryInterface;
 
 class UserPermissionRepository implements UserPermissionRepositoryInterface
@@ -18,9 +19,15 @@ class UserPermissionRepository implements UserPermissionRepositoryInterface
         return Permission::all();
     }
 
-    public function updateUserPermissions(int $userId, array $permissions): void
+    // public function updateUserPermissions(int $userId, array $permissions): void
+    // {
+    //     $user = User::findOrFail($userId);
+    //     $user->syncPermissions($permissions);
+    // }
+
+    public function updateRolePermissions(string $roleName, array $permissions): void
     {
-        $user = User::findOrFail($userId);
-        $user->syncPermissions($permissions);
+        $role = Role::where('name', $roleName)->firstOrFail();
+        $role->syncPermissions($permissions);
     }
 }
