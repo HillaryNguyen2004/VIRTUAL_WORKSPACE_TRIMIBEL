@@ -1,12 +1,12 @@
 <?php
 return [
-    'add_new_user' => 'Add New User',
-    'name' => 'Name',
-    'email' => 'Email',
-    'role' => 'Role',
+    'title' => 'Add New User',
+    'name_label' => 'Name',
+    'email_label' => 'Email',
+    'role_label' => 'Role',
     'select_role' => 'Select Role',
-    'user' => 'User',
-    'staff' => 'Staff',
-    'add_user' => 'Add User'
+    'user_role' => 'User',
+    'staff_role' => 'Staff',
+    'submit_button' => 'Add User',
+    'error_message' => ':error',
 ];
-?>

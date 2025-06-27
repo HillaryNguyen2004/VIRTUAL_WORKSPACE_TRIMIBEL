@@ -1,12 +1,12 @@
 <?php
 return [
-    'admin_create_user.add_new_user' => 'Thêm người dùng mới',
-    'admin_create_user.name' => 'Tên',
-    'admin_create_user.email' => 'Email',
-    'admin_create_user.role' => 'Vai trò',
-    'admin_create_user.select_role' => 'Chọn vai trò',
-    'admin_create_user.user' => 'Người dùng',
-    'admin_create_user.staff' => 'Nhân viên',
-    'admin_create_user.add_user' => 'Thêm người dùng'
+    'title' => 'Thêm Người Dùng Mới',
+    'name_label' => 'Tên',
+    'email_label' => 'Email',
+    'role_label' => 'Vai Trò',
+    'select_role' => 'Chọn Vai Trò',
+    'user_role' => 'Người Dùng',
+    'staff_role' => 'Nhân Viên',
+    'submit_button' => 'Thêm Người Dùng',
+    'error_message' => ':error',
 ];
-?>

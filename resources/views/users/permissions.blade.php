@@ -6,7 +6,7 @@
 <div class="container py-4">
     <div class="card border-primary shadow-sm mb-4">
         <div class="card-body">
-            <h2 class="card-title text-primary mb-4 fs-3 fw-semibold border-bottom pb-3">Manage User Permissions</h2>
+            <h2 class="card-title text-primary mb-4 fs-3 fw-semibold border-bottom pb-3">{{ __('user_permission.title') }}</h2>
 
             @foreach($users as $user)
             <div class="card mb-4 border border-info-subtle">
@@ -37,7 +37,7 @@
                                         class="form-check-label text-dark" 
                                         for="perm-{{ $user->id }}-{{ $permission->name }}"
                                     >
-                                        {{ ucfirst(str_replace('-', ' ', $permission->name)) }}
+                                        {{ __('user_permission.' . str_replace('-', '_', $permission->name)) }}
                                     </label>
                                 </div>
                             </div>
@@ -46,7 +46,7 @@
 
                         <div class="mt-4 text-end">
                             <button type="submit" class="btn btn-primary px-4">
-                                <i class="bi bi-check2-circle me-1"></i> Update Permissions
+                                <i class="bi bi-check2-circle me-1"></i> {{ __('user_permission.update_button') }}
                             </button>
                         </div>
                     </form>
