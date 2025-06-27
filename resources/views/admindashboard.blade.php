@@ -10,6 +10,7 @@
     <p class="mb-4">{{ __('admin_dashboard.welcome_message') }}</p>
 
     <div class="row mb-4">
+        <!-- Cards: Pending Tasks / Active Projects / Total Users -->
         <div class="col-md-4 mb-3">
             <div class="card text-center shadow-sm border-0">
                 <div class="card-body">
@@ -40,6 +41,7 @@
     </div>
 
     <div class="row mb-4">
+        <!-- Task & Permission Management -->
         <div class="col-md-6 mb-3">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-body">
@@ -59,6 +61,7 @@
                 </div>
             </div>
         </div>
+
         <div class="col-md-6 mb-3">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-body">
@@ -79,6 +82,7 @@
     </div>
 
     <div class="row mb-4">
+        <!-- User Management -->
         <div class="col-md-6 mb-3">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-body">
@@ -98,6 +102,8 @@
                 </div>
             </div>
         </div>
+
+        <!-- Recent Task Submissions -->
         <div class="col-md-6 mb-3">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-body">
@@ -113,15 +119,25 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>TK0098</td>
-                                <td>John Doe</td>
-                                <td>{{ __('admin_dashboard.design_landing_page') }}</td>
-                                <td>{{ __('admin_dashboard.deadline_date') }}</td>
-                                <td>
-                                    <span class="badge rounded-pill" style="background:#ffe066;color:#856404;">{{ __('admin_dashboard.pending') }}</span>
-                                </td>
-                            </tr>
+                            @forelse($recentLogs as $log)
+                                <tr>
+                                    <td>{{ $log->id }}</td>
+                                    <td>{{ $log->user->name ?? 'N/A' }}</td>
+                                    <td>{{ $log->action }}</td>
+                                    <td>{{ $log->created_at->format('Y-m-d H:i') }}</td>
+                                    <td>
+                                        <span class="badge rounded-pill bg-info text-dark">
+                                            {{ \Illuminate\Support\Str::limit($log->description, 30) }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">
+                                        {{ __('admin_dashboard.no_activity_logs') }}
+                                    </td>
+                                </tr>
+                            @endforelse
                         </tbody>
                     </table>
                     <a href="#" class="small text-primary">{{ __('admin_dashboard.view_all_tasks') }} <i class="bi bi-list"></i></a>
@@ -130,6 +146,7 @@
         </div>
     </div>
 
+    <!-- Quick Actions -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card p-3 shadow-sm border-0">
@@ -152,6 +169,7 @@
         </div>
     </div>
 
+    <!-- Bottom Stats -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card p-3 shadow-sm border-0">

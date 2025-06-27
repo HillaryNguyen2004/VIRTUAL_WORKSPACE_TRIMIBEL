@@ -22,7 +22,7 @@ return [
     'user_management_item_2' => 'Thay đổi vai trò (quản trị, nhân viên, người dùng)',
     'user_management_item_3' => 'Theo dõi hoạt động gần đây và thời gian đăng nhập',
     'add_new_user' => 'Thêm người dùng mới',
-    'recent_task_submissions' => 'Nộp công việc gần đây',
+    'recent_task_submissions' => 'Hoạt Động gần đây',
     'id' => 'ID',
     'user' => 'NGƯỜI DÙNG',
     'task' => 'CÔNG VIỆC',

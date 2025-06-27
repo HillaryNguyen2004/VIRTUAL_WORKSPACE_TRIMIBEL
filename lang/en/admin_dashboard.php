@@ -22,7 +22,7 @@ return [
     'user_management_item_2' => 'Change roles (admin, staff, user)',
     'user_management_item_3' => 'Track last activity and login time',
     'add_new_user' => 'Add New User',
-    'recent_task_submissions' => 'Recent Task Submissions',
+    'recent_task_submissions' => 'Recent Activities',
     'id' => 'ID',
     'user' => 'USER',
     'task' => 'TASK',
