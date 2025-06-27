@@ -31,7 +31,7 @@ return [
     'design_landing_page' => 'Thiết kế trang đích',
     'deadline_date' => '18 tháng 6, 2025 5:00 chiều',
     'pending' => 'ĐANG CHỜ',
-    'view_all_tasks' => 'Xem tất cả công việc',
+    'view_all_tasks' => 'Xem tất cả',
     'quick_actions' => 'Hành động nhanh',
     'review_tasks' => 'Xem xét công việc',
     'new_task' => 'Công việc mới',

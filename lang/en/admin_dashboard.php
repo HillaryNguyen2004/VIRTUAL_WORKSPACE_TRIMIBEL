@@ -31,7 +31,7 @@ return [
     'design_landing_page' => 'Design Landing Page',
     'deadline_date' => 'June 18, 2025 5:00 PM',
     'pending' => 'PENDING',
-    'view_all_tasks' => 'View All Tasks',
+    'view_all_tasks' => 'View All',
     'quick_actions' => 'Quick Actions',
     'review_tasks' => 'Review Tasks',
     'new_task' => 'New Task',

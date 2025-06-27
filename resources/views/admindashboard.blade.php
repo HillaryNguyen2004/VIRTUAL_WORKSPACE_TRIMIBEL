@@ -140,7 +140,7 @@
                             @endforelse
                         </tbody>
                     </table>
-                    <a href="#" class="small text-primary">{{ __('admin_dashboard.view_all_tasks') }} <i class="bi bi-list"></i></a>
+                    <a href="{{ route('admin.activity.logs') }}" class="small text-primary">{{ __('admin_dashboard.view_all_tasks') }} <i class="bi bi-list"></i></a>
                 </div>
             </div>
         </div>

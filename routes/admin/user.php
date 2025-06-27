@@ -21,6 +21,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy')->middleware('role:admin');
     Route::get('/admin/permissions', [UserController::class, 'permissions'])->name('admin.permissions');
     Route::post('/admin/permissions', [UserController::class, 'updatePermissions'])->name('admin.permissions.update');
+    Route::get('/admin/activity-logs', [App\Http\Controllers\AdminDashboardController::class, 'viewAllLogs'])->name('admin.activity.logs');
     // Route::get('/tasks/new', [TaskController::class, 'create'])->name('tasks.create');
     // Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
     // Route::get('/management/tasks', [TaskController::class, 'index'])->name('tasks.index');
