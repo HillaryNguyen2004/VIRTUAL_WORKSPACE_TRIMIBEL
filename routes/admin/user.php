@@ -3,6 +3,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\CampaignController;
 
 
 
@@ -22,6 +23,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/permissions', [UserController::class, 'permissions'])->name('admin.permissions');
     Route::post('/admin/permissions', [UserController::class, 'updatePermissions'])->name('admin.permissions.update');
     Route::get('/admin/activity-logs', [App\Http\Controllers\AdminDashboardController::class, 'viewAllLogs'])->name('admin.activity.logs');
+    Route::resource('campaigns', CampaignController::class)->middleware(['auth', 'role:admin']);
+
     // Route::get('/tasks/new', [TaskController::class, 'create'])->name('tasks.create');
     // Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
     // Route::get('/management/tasks', [TaskController::class, 'index'])->name('tasks.index');

@@ -1,7 +1,9 @@
 @extends('layouts.app')
+
 @section('header')
     @include('partials.headers.admin')
 @endsection
+
 @section('content')
 
 @role('admin')
@@ -9,8 +11,8 @@
     <h1 class="mb-2 fw-bold">{{ __('admin_dashboard.admin_dashboard') }}</h1>
     <p class="mb-4">{{ __('admin_dashboard.welcome_message') }}</p>
 
+    <!-- Cards -->
     <div class="row mb-4">
-        <!-- Cards: Pending Tasks / Active Projects / Total Users -->
         <div class="col-md-4 mb-3">
             <div class="card text-center shadow-sm border-0">
                 <div class="card-body">
@@ -40,8 +42,8 @@
         </div>
     </div>
 
+    <!-- Management Panels -->
     <div class="row mb-4">
-        <!-- Task & Permission Management -->
         <div class="col-md-6 mb-3">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-body">
@@ -81,8 +83,8 @@
         </div>
     </div>
 
+    <!-- User Management & Recent Tasks -->
     <div class="row mb-4">
-        <!-- User Management -->
         <div class="col-md-6 mb-3">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-body">
@@ -103,7 +105,6 @@
             </div>
         </div>
 
-        <!-- Recent Task Submissions -->
         <div class="col-md-6 mb-3">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-body">
@@ -141,6 +142,31 @@
                         </tbody>
                     </table>
                     <a href="{{ route('admin.activity.logs') }}" class="small text-primary">{{ __('admin_dashboard.view_all_tasks') }} <i class="bi bi-list"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Campaign Management (corrected placement) -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>{{ __('admin_dashboard.campaign_management') }}</strong>
+                        <a href="{{ route('campaigns.index') }}" class="small text-primary">
+                            {{ __('admin_dashboard.view_all') }} <i class="bi bi-list"></i>
+                        </a>
+                    </div>
+                    <div class="text-secondary mb-2">{{ __('admin_dashboard.campaign_management_description') }}</div>
+                    <ul class="mb-3 ps-3">
+                        <li class="mb-1">{{ __('admin_dashboard.campaign_crud') }}</li>
+                        <li class="mb-1">{{ __('admin_dashboard.assign_users_to_campaign') }}</li>
+                        <li class="mb-1">{{ __('admin_dashboard.schedule_and_send') }}</li>
+                    </ul>
+                    <a href="{{ route('campaigns.create') }}" class="btn w-100" style="background:#ff6b6b;color:#fff;border:none;">
+                        <i class="bi bi-envelope-plus"></i> {{ __('admin_dashboard.create_new_campaign') }}
+                    </a>
                 </div>
             </div>
         </div>
