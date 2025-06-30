@@ -56,4 +56,20 @@ class EmailTemplateController extends Controller
 
         return redirect()->route('email-templates.index')->with('success', 'Template deleted.');
     }
+
+    public function sendTemplateEmail($templateId, $recipientEmail, $data)
+    {
+        $template = EmailTemplate::findOrFail($templateId);
+
+        // Replace shortcodes like {first_name} with real data
+        $content = strtr($template->content, $data);
+        $subject = strtr($template->subject, $data);
+
+        \Mail::send([], [], function ($message) use ($recipientEmail, $subject, $content) {
+            $message->to($recipientEmail)
+                    ->subject($subject)
+                    ->setBody($content, 'text/html');
+        });
+    }
+
 }
