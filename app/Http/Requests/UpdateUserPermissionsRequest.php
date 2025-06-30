@@ -13,10 +13,15 @@ class UpdateUserPermissionsRequest extends FormRequest
 
     public function rules()
     {
+        // return [
+        //     'user_id' => 'required|exists:users,id',
+        //     'permissions' => 'nullable|array',
+        //     'permissions.*' => 'exists:permissions,name',
+        // ];
         return [
-            'user_id' => 'required|exists:users,id',
-            'permissions' => 'nullable|array',
-            'permissions.*' => 'exists:permissions,name',
-        ];
+        'role_name' => 'required|string|exists:roles,name',
+        'permissions' => 'array',
+        'permissions.*' => 'string|exists:permissions,name',
+    ];
     }
 }
