@@ -14,4 +14,9 @@ class Campaign extends Model
     {
         return $this->belongsToMany(User::class);
     }
+
+    public function emailTemplate()
+    {
+        return $this->belongsTo(EmailTemplate::class);
+    }
 }

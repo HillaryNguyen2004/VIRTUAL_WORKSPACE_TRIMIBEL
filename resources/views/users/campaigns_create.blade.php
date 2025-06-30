@@ -63,6 +63,13 @@
                         <i class="bi bi-plus"></i> Add Member
                     </button>
                 </div>
+                <!-- <select name="email_template_id" class="form-select">
+                    @foreach($templates as $template)
+                        <option value="{{ $template->id }}" {{ old('email_template_id', $campaign->email_template_id ?? '') == $template->id ? 'selected' : '' }}>
+                            {{ $template->name }}
+                        </option>
+                    @endforeach
+                </select> -->
 
                 <button type="submit" class="btn btn-success mt-3">
                     <i class="bi bi-send"></i> Save & Schedule
