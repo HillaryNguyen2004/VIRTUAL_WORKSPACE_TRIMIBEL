@@ -33,7 +33,8 @@ class EmailTemplateController extends Controller
 
     public function edit(EmailTemplate $emailTemplate)
     {
-        return view('tasks.email-templates.edit', compact('emailTemplate'));
+        // return view('tasks.email-templates.edit', compact('emailTemplate'));
+        return view('tasks.email-templates.create', compact('emailTemplate'));
     }
 
     public function update(Request $request, EmailTemplate $emailTemplate)

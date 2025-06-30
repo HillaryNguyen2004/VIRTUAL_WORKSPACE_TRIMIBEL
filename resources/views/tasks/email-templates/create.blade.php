@@ -1,5 +1,7 @@
 @extends('layouts.app')
-
+@section('header')
+    @include('partials.headers.admin')
+@endsection
 @section('content')
 <div class="container">
     <h1 class="mb-4">{{ isset($emailTemplate) ? 'Edit' : 'Create' }} Email Template</h1>

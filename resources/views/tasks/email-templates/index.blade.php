@@ -1,5 +1,7 @@
 @extends('layouts.app')
-
+@section('header')
+    @include('partials.headers.admin')
+@endsection
 @section('content')
 <div class="container">
     <h1>Email Templates</h1>
@@ -9,25 +11,40 @@
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
-    <table class="table">
-        <thead>
-            <tr><th>Name</th><th>Subject</th><th>Actions</th></tr>
-        </thead>
-        <tbody>
-            @foreach($templates as $template)
-                <tr>
-                    <td>{{ $template->name }}</td>
-                    <td>{{ $template->subject }}</td>
-                    <td>
-                        <a href="{{ route('email-templates.edit', $template) }}" class="btn btn-sm btn-warning">Edit</a>
-                        <form action="{{ route('email-templates.destroy', $template) }}" method="POST" style="display:inline;">
-                            @csrf @method('DELETE')
-                            <button onclick="return confirm('Delete this template?')" class="btn btn-sm btn-danger">Delete</button>
-                        </form>
-                    </td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
+    <div class="accordion" id="templateAccordion">
+        @forelse($templates as $template)
+            <div class="accordion-item mb-3">
+                <h2 class="accordion-header" id="heading-{{ $template->id }}">
+                    <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $template->id }}" aria-expanded="false" aria-controls="collapse-{{ $template->id }}">
+                        {{ $template->name }} - <span class="ms-2 text-muted">{{ $template->subject }}</span>
+                    </button>
+                </h2>
+                <div id="collapse-{{ $template->id }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ $template->id }}" data-bs-parent="#templateAccordion">
+                    <div class="accordion-body">
+                        <div class="mb-3">
+                            <strong>Subject:</strong> {{ $template->subject }}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Description:</strong><br>
+                            {!! nl2br(e($template->description ?? '')) !!}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Content:</strong><br>
+                            {!! $template->content !!}
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{{ route('email-templates.edit', $template) }}" class="btn btn-sm btn-warning">Edit</a>
+                            <form action="{{ route('email-templates.destroy', $template) }}" method="POST" onsubmit="return confirm('Delete this template?')">
+                                @csrf @method('DELETE')
+                                <button class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @empty
+            <p>No templates found.</p>
+        @endforelse
+    </div>
 </div>
 @endsection
