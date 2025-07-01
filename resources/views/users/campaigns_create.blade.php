@@ -50,6 +50,12 @@
                     @endforeach
                 </select>
 
+                <div class="mb-3">
+                    <label for="scheduled_at" class="form-label">Schedule At (optional)</label>
+                    <input type="datetime-local" name="scheduled_at" id="scheduled_at" class="form-control" value="{{ old('scheduled_at') }}">
+                    <div class="form-text">Leave empty to send manually later.</div>
+                </div>
+
                 <button type="submit" class="btn btn-success mt-3">
                     <i class="bi bi-send"></i> Save & Schedule
                 </button>
