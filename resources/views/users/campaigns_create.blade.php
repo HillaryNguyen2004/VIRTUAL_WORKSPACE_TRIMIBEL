@@ -37,31 +37,10 @@
                     <input type="text" name="subject" class="form-control" placeholder="Enter email subject">
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Content</label>
-                    <textarea name="content" rows="5" class="form-control" placeholder="Write your email content"></textarea>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Assign Team Members</label>
-                    <div id="user-select-wrapper">
-                        <div class="d-flex mb-2 user-select-row">
-                            <select name="users[]" class="form-select me-2 select2" required>
-                                <option value="" disabled selected>Select a user</option>
-                                @foreach($users as $user)
-                                    <option value="{{ $user->id }}">
-                                        {{ $user->name }} ({{ $user->email }})
-                                    </option>
-                                @endforeach
-                            </select>
-                            <button type="button" class="btn btn-outline-danger remove-member-btn">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </div>
+                    <div class="form-check mb-3">
+                        <input type="checkbox" name="send_to_all" id="send_to_all" class="form-check-input">
+                        <label for="send_to_all" class="form-check-label">Send to all users</label>
                     </div>
-                    <button type="button" class="btn btn-outline-primary mt-2" id="add-user-btn">
-                        <i class="bi bi-plus"></i> Add Member
-                    </button>
                 </div>
                 <select name="email_template_id" class="form-select">
                     @foreach($templates as $template)

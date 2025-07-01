@@ -26,6 +26,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/activity-logs', [App\Http\Controllers\AdminDashboardController::class, 'viewAllLogs'])->name('admin.activity.logs');
     Route::resource('campaigns', CampaignController::class)->middleware(['auth', 'role:admin']);
     Route::resource('email-templates', EmailTemplateController::class)->middleware(['auth', 'role:admin']);
+    Route::post('/campaigns/{campaign}/send-now', [CampaignController::class, 'sendNow'])->name('campaigns.sendNow');
+
 
     // Route::get('/tasks/new', [TaskController::class, 'create'])->name('tasks.create');
     // Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
