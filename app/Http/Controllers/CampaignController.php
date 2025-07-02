@@ -9,15 +9,53 @@ use App\Models\EmailTemplate;
 use App\Mail\CampaignEmail;
 use App\Jobs\SendCampaignEmailJob;
 use Illuminate\Support\Facades\Mail;
+use App\Services\BirthdayEmailService;
 
 
 class CampaignController extends Controller
 {
-    public function index()
-    {
-        // $campaigns = Campaign::with('users')->latest()->get();
-        // return view('users.campaigns_index', compact('campaigns'));
-         $dueCampaigns = Campaign::whereNotNull('scheduled_at')
+    // public function index()
+    // {
+    //     // $campaigns = Campaign::with('users')->latest()->get();
+    //     // return view('users.campaigns_index', compact('campaigns'));
+    //      $dueCampaigns = Campaign::whereNotNull('scheduled_at')
+    //     ->where('scheduled_at', '<=', now())
+    //     ->where('sent', false)
+    //     ->with('users')
+    //     ->get();
+
+    // foreach ($dueCampaigns as $campaign) {
+    //     foreach ($campaign->users as $user) {
+    //         $replacements = [
+    //             '{first_name}' => $user->name,
+    //             '{birthday}' => $user->birthday,
+    //             '{email}' => $user->email,
+    //             '{site_title}' => config('app.name'),
+    //         ];
+
+    //         $subject = strtr($campaign->subject, $replacements);
+    //         $content = strtr($campaign->content, $replacements);
+
+    //         dispatch(new \App\Jobs\SendCampaignEmailJob($user, $subject, $content));
+    //     }
+
+    //     $campaign->sent = true;
+    //     $campaign->save();
+    // }
+
+    //     // Load campaigns for display
+    //     $campaigns = Campaign::with('users')->latest()->get();
+    //     return view('users.campaigns_index', compact('campaigns'));
+    // }
+
+
+    public function index(BirthdayEmailService $birthdayService)
+{
+    // ✅ Check for birthdays and send emails automatically
+    $birthdayService->send();
+
+    // 🎯 Continue existing campaign check
+    $dueCampaigns = Campaign::whereNotNull('scheduled_at')
         ->where('scheduled_at', '<=', now())
         ->where('sent', false)
         ->with('users')
@@ -42,10 +80,9 @@ class CampaignController extends Controller
         $campaign->save();
     }
 
-        // Load campaigns for display
-        $campaigns = Campaign::with('users')->latest()->get();
-        return view('users.campaigns_index', compact('campaigns'));
-    }
+    $campaigns = Campaign::with('users')->latest()->get();
+    return view('users.campaigns_index', compact('campaigns'));
+}
 
     public function create()
     {

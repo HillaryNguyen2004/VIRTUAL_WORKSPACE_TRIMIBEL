@@ -50,6 +50,9 @@
             <div class="col-md-3 mb-2">
                 <code>{site_title}</code><br>Your site title
             </div>
+            <div class="col-md-3 mb-2">
+                <code>{birthday}</code><br>User's birthday (YYYY-MM-DD)
+            </div>
         </div>
     </div>
 
