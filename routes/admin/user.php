@@ -5,6 +5,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\EmailTemplateController;
+use App\Http\Controllers\UserExportController;
 
 
 
@@ -27,7 +28,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('campaigns', CampaignController::class)->middleware(['auth', 'role:admin']);
     Route::resource('email-templates', EmailTemplateController::class)->middleware(['auth', 'role:admin']);
     Route::post('/campaigns/{campaign}/send-now', [CampaignController::class, 'sendNow'])->name('campaigns.sendNow');
-
+    Route::get('/export-users-excel', [UserExportController::class, 'exportExcel']);
 
     // Route::get('/tasks/new', [TaskController::class, 'create'])->name('tasks.create');
     // Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');

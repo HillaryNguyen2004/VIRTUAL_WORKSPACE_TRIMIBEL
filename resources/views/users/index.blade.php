@@ -46,6 +46,11 @@
                 @endforeach
             </tbody>
         </table>
+        <div class="mb-3 text-end">
+            <a href="{{ url('/export-users-excel') }}" class="btn btn-success">
+                <i class="bi bi-file-earmark-excel"></i> Export to Excel
+            </a>
+        </div>
         <!-- Pagination Links -->
         <div class="d-flex justify-content-center">
             {{ $users->links('pagination::bootstrap-5') }}
