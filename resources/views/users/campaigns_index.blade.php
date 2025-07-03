@@ -73,14 +73,21 @@
                                         </button>
                                     </form>
                                 @endif
+
+                                <form method="POST" action="{{ route('campaigns.reset', $campaign->id) }}" class="d-inline">
+                                    @csrf
+                                    @method('PUT')
+                                    <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Reset send status?')">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Reset
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                     @endforeach
                 </tbody>
             </table>
         @endif
-    </div>
-
+        </div>
     </div>
 </div>
 @endsection

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Campaign extends Model
 {
     // use HasFactory;
-    protected $fillable = ['name', 'subject', 'content', 'scheduled_at'];
+    protected $fillable = ['name', 'subject', 'content', 'sent','scheduled_at'];
     protected $casts = [
         'scheduled_at' => 'datetime',
     ];

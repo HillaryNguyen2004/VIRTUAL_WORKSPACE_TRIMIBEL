@@ -32,7 +32,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/users/import', [UserController::class, 'showImportForm'])->name('admin.users.import.form');
     Route::post('/admin/users/import', [UserController::class, 'import'])->name('admin.users.import');
     Route::get('/admin/users/import/template', [UserController::class, 'downloadTemplate'])->name('admin.users.import.template');
-
+    Route::put('/campaigns/{campaign}/reset', [CampaignController::class, 'reset'])->name('campaigns.reset');
 
     // Route::get('/tasks/new', [TaskController::class, 'create'])->name('tasks.create');
     // Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');

@@ -163,8 +163,13 @@ class CampaignController extends Controller
 
     public function edit(Campaign $campaign)
     {
+        // $users = User::role('user')->get();
+        // return view('users.campaigns_edit', compact('campaign', 'users'));
+        $templates = EmailTemplate::all();
         $users = User::role('user')->get();
-        return view('users.campaigns_edit', compact('campaign', 'users'));
+        $campaign->load('users'); // ensure user relation is loaded
+        return view('users.campaigns_create', compact('campaign', 'templates', 'users'));
+        // return view('users.campaigns_create', compact('campaign', 'templates'));
     }
 
     public function update(Request $request, Campaign $campaign)
@@ -178,11 +183,28 @@ class CampaignController extends Controller
             'users.*' => 'exists:users,id',
         ]);
 
+        $scheduledAt = $request->scheduled_at
+        ? \Carbon\Carbon::parse($request->scheduled_at, 'Asia/Ho_Chi_Minh')->setTimezone('UTC')
+        : null;
+
+        // $resetSent = $scheduledAt && $scheduledAt->greaterThan(now());
+        // $shouldReset = !$campaign->scheduled_at || $campaign->scheduled_at->ne($scheduledAt);
+        $originalScheduled = $campaign->scheduled_at
+            ? \Carbon\Carbon::parse($campaign->scheduled_at)->format('Y-m-d H:i')
+            : null;
+
+        $newScheduled = $scheduledAt
+            ? $scheduledAt->format('Y-m-d H:i')
+            : null;
+
+        $shouldReset = $originalScheduled !== $newScheduled;
+
         $campaign->update([
             'name' => $request->name,
             'subject' => $request->subject,
             'content' => $request->content,
-            'scheduled_at' => $request->scheduled_at,
+            'scheduled_at' => $scheduledAt,
+            'sent' => $shouldReset ? false : $campaign->sent,
         ]);
 
         $campaign->users()->sync($request->users ?? []);
@@ -203,32 +225,79 @@ class CampaignController extends Controller
     }
 
 
+    // public function sendNow(Campaign $campaign)
+    // {
+    //     if ($campaign->sent) {
+    //         return redirect()->back()->with('error', 'Campaign already sent.');
+    //     }
+
+    //     $campaign->load('users');
+
+    //     foreach ($campaign->users as $user) {
+    //         $replacements = [
+    //             '{first_name}' => $user->name,
+    //             '{birthday}' => $user->birthday,
+    //             '{email}' => $user->email,
+    //             '{site_title}' => config('app.name'),
+    //         ];
+
+    //         $subject = strtr($campaign->subject, $replacements);
+    //         $content = strtr($campaign->content, $replacements);
+
+    //         // SendCampaignEmailJob::dispatch($user, $subject, $content);
+    //         dispatch(new SendCampaignEmailJob($user, $subject, $content));
+    //     }
+
+    //     $campaign->sent = true;
+    //     $campaign->save();
+
+    //     return redirect()->back()->with('success', 'Campaign sent successfully.');
+    // }
+
     public function sendNow(Campaign $campaign)
-    {
-        if ($campaign->sent) {
-            return redirect()->back()->with('error', 'Campaign already sent.');
-        }
-
-        $campaign->load('users');
-
-        foreach ($campaign->users as $user) {
-            $replacements = [
-                '{first_name}' => $user->name,
-                '{birthday}' => $user->birthday,
-                '{email}' => $user->email,
-                '{site_title}' => config('app.name'),
-            ];
-
-            $subject = strtr($campaign->subject, $replacements);
-            $content = strtr($campaign->content, $replacements);
-
-            // SendCampaignEmailJob::dispatch($user, $subject, $content);
-            dispatch(new SendCampaignEmailJob($user, $subject, $content));
-        }
-
-        $campaign->sent = true;
-        $campaign->save();
-
-        return redirect()->back()->with('success', 'Campaign sent successfully.');
+{
+    if ($campaign->sent) {
+        return redirect()->back()->with('error', 'Campaign already sent.');
     }
+
+    $campaign->load('users');
+
+    $subject = $campaign->subject;
+    $content = $campaign->content;
+
+    if (!$subject || !$content) {
+        if ($campaign->email_template_id) {
+            $template = \App\Models\EmailTemplate::find($campaign->email_template_id);
+            $subject = $subject ?: $template->subject;
+            $content = $content ?: $template->content;
+        }
+    }
+
+    foreach ($campaign->users as $user) {
+        $replacements = [
+            '{first_name}' => $user->name,
+            '{birthday}' => $user->birthday,
+            '{email}' => $user->email,
+            '{site_title}' => config('app.name'),
+        ];
+
+        $personalizedSubject = strtr($subject, $replacements);
+        $personalizedContent = strtr($content, $replacements);
+
+        dispatch(new SendCampaignEmailJob($user, $personalizedSubject, $personalizedContent));
+    }
+
+    $campaign->sent = true;
+    $campaign->save();
+
+    return redirect()->back()->with('success', 'Campaign sent successfully.');
+}
+
+
+    public function reset(Campaign $campaign)
+{
+    $campaign->update(['sent' => false]);
+    return redirect()->back()->with('success', 'Campaign send status reset.');
+}
+
 }
