@@ -41,4 +41,22 @@
         <button class="btn btn-primary">{{ __('create_user.submit_button') }}</button>
     </form>
 </div>
+
+<div class="container py-4">
+    <h1 class="mb-4 fw-bold">Import Users from CSV</h1>
+
+    @if(session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+
+    <form action="{{ route('admin.users.import') }}" method="POST" enctype="multipart/form-data">
+        @csrf
+        <div class="mb-3">
+            <label class="form-label">CSV File</label>
+            <input type="file" name="csv_file" class="form-control" accept=".csv" required>
+        </div>
+        <button class="btn btn-primary">Import</button>
+        <a href="{{ route('admin.users.import.template') }}" class="btn btn-secondary">Download Template</a>
+    </form>
+</div>
 @endsection

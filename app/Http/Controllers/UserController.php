@@ -100,4 +100,65 @@ class UserController extends Controller
         return redirect()->back()->with('success', __('messages.permissions_updated'));
     }
 
+    public function downloadTemplate()
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="user_import_template.csv"',
+        ];
+
+        $callback = function () {
+            $file = fopen('php://output', 'w');
+            // Header row
+            fputcsv($file, ['name', 'email', 'password', 'roles']);
+            // Sample row
+            fputcsv($file, ['John Doe', 'john@example.com', 'password123', 'user']);
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'csv_file' => 'required|mimes:csv,txt'
+        ]);
+
+        $file = $request->file('csv_file');
+        $path = $file->getRealPath();
+        $handle = fopen($path, 'r');
+
+        $header = fgetcsv($handle); // Skip header
+
+        while (($row = fgetcsv($handle)) !== false) {
+            [$name, $email, $password, $roles] = $row;
+
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                continue; // skip invalid email
+            }
+
+            // Skip if email already exists
+            if (User::where('email', $email)->exists()) {
+                continue;
+            }
+
+            $user = User::create([
+                'name' => $name,
+                'email' => $email,
+                'password' => bcrypt($password ?: 'password123'),
+                'roles' => $roles ?: 'user',
+            ]);
+
+            // Optionally assign role with Spatie
+            if (in_array($roles, ['admin', 'staff', 'user'])) {
+                $user->assignRole($roles);
+            }
+        }
+
+        fclose($handle);
+
+        return redirect()->back()->with('success', __('messages.user_imported'));
+    }
+
 }
