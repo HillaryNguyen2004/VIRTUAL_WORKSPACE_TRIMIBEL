@@ -15,9 +15,12 @@ class SendCampaignEmailJob implements ShouldQueue
     // use InteractsWithQueue, Queueable, SerializesModels;
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $user;
-    protected $subject;
-    protected $content;
+    // protected $user;
+    // protected $subject;
+    // protected $content;
+    public $user;
+    public $subject;
+    public $content;
 
     public function __construct(User $user, $subject, $content)
     {

@@ -109,11 +109,22 @@ class CampaignController extends Controller
     $subject = $request->subject;
     $content = $request->content;
 
+    // if ($request->email_template_id) {
+    //     $template = EmailTemplate::find($request->email_template_id);
+    //     $subject = $template->subject;
+    //     $content = $template->content;
+    // }
+
     if ($request->email_template_id) {
-        $template = EmailTemplate::find($request->email_template_id);
-        $subject = $template->subject;
-        $content = $template->content;
+    $template = EmailTemplate::find($request->email_template_id);
+    
+    if ($template) {
+        // Only override if the template has actual subject/content
+        $subject = $template->subject ?? $subject;
+        $content = $template->content ?? $content;
     }
+    }
+
 
     $campaign = Campaign::create([
         'name' => $request->name,

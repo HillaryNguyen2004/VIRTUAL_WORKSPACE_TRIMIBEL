@@ -23,4 +23,14 @@ class CampaignEmail extends Mailable
         return $this->subject($this->subjectText)
                     ->html($this->bodyContent);
     }
+
+    // public function build()
+    // {
+    //     // ✅ Using Blade view with HTML-safe rendering
+    //     return $this->subject($this->subjectText)
+    //                 ->view('emails.campaign')
+    //                 ->with([
+    //                     'bodyContent' => $this->bodyContent,
+    //                 ]);
+    // }
 }
