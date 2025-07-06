@@ -100,7 +100,7 @@ class CampaignController extends Controller
         'name' => 'required|string|max:255',
         'subject' => 'nullable|string|max:255',
         'content' => 'nullable|string',
-        'scheduled_at' => 'nullable|date',
+        'scheduled_at' => 'nullable|date|after_or_equal:today',
         'users' => 'nullable|array',
         'users.*' => 'exists:users,id',
         'email_template_id' => 'nullable|exists:email_templates,id',
@@ -189,7 +189,7 @@ class CampaignController extends Controller
             'name' => 'required|string|max:255',
             'subject' => 'nullable|string|max:255',
             'content' => 'nullable|string',
-            'scheduled_at' => 'nullable|date',
+            'scheduled_at' => 'nullable|date|after_or_equal:today',
             'users' => 'nullable|array',
             'users.*' => 'exists:users,id',
         ]);
@@ -212,8 +212,8 @@ class CampaignController extends Controller
 
         $campaign->update([
             'name' => $request->name,
-            'subject' => $request->subject,
-            'content' => $request->content,
+            'subject' => $request->filled('subject') ? $request->subject : $campaign->subject,
+            'content' => $request->filled('content') ? $request->content : $campaign->content,
             'scheduled_at' => $scheduledAt,
             'sent' => $shouldReset ? false : $campaign->sent,
         ]);
@@ -276,13 +276,25 @@ class CampaignController extends Controller
     $subject = $campaign->subject;
     $content = $campaign->content;
 
-    if (!$subject || !$content) {
-        if ($campaign->email_template_id) {
-            $template = \App\Models\EmailTemplate::find($campaign->email_template_id);
-            $subject = $subject ?: $template->subject;
-            $content = $content ?: $template->content;
-        }
+    // if (!$subject || !$content) {
+    //     if ($campaign->email_template_id) {
+    //         $template = \App\Models\EmailTemplate::find($campaign->email_template_id);
+    //         $subject = $subject ?: $template->subject;
+    //         $content = $content ?: $template->content;
+    //     }
+    // }
+
+    if ((!$subject || !$content) && $campaign->email_template_id) {
+    $template = \App\Models\EmailTemplate::find($campaign->email_template_id);
+
+    if ($template) {
+        $subject = $subject ?: $template->subject;
+        $content = $content ?: $template->content;
+    } else {
+        return redirect()->back()->with('error', 'The assigned email template no longer exists. Please update the campaign.');
     }
+    }
+
 
     foreach ($campaign->users as $user) {
         $replacements = [
