@@ -34,4 +34,10 @@ class CampaignRepository
     {
         return $campaign->delete();
     }
+
+        public function getAllPaginated($perPage = 3)
+    {
+        return Campaign::with('users')->latest()->paginate($perPage);
+    }
+
 }

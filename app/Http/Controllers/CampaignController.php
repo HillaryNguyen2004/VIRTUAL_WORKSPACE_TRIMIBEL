@@ -31,7 +31,7 @@ class CampaignController extends Controller
         $this->campaignService->processDueCampaigns();
 
         // $campaigns = Campaign::with('users')->latest()->get();
-        $campaigns = $this->campaignRepository->getAll();
+        $campaigns = $this->campaignRepository->getAllPaginated();
         return view('users.campaigns_index', compact('campaigns'));
     }
 
