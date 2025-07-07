@@ -65,6 +65,7 @@
                                     </button>
                                 </form>
 
+                                {{-- Show "Send Now" only when status is Pending --}}
                                 @if(!$campaign->sent)
                                     <form action="{{ route('campaigns.sendNow', $campaign->id) }}" method="POST" class="d-inline">
                                         @csrf
@@ -74,13 +75,16 @@
                                     </form>
                                 @endif
 
-                                <form method="POST" action="{{ route('campaigns.reset', $campaign->id) }}" class="d-inline">
-                                    @csrf
-                                    @method('PUT')
-                                    <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Reset send status?')">
-                                        <i class="bi bi-arrow-counterclockwise"></i> Reset
-                                    </button>
-                                </form>
+                                {{-- Show "Reset" only when status is Sent --}}
+                                @if($campaign->sent)
+                                    <form method="POST" action="{{ route('campaigns.reset', $campaign->id) }}" class="d-inline">
+                                        @csrf
+                                        @method('PUT')
+                                        <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Reset send status?')">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Resend
+                                        </button>
+                                    </form>
+                                @endif
                             </td>
                         </tr>
                     @endforeach
