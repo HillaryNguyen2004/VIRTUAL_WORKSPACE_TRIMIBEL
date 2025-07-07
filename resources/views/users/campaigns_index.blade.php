@@ -48,11 +48,19 @@
                                 @endif
                             </td>
                             <td>
-                                @foreach ($campaign->users as $user)
-                                    <span class="badge bg-secondary">{{ $user->name }}</span>
-                                @endforeach
+                                <div class="position-relative">
+                                    <button type="button" class="btn btn-sm btn-outline-primary toggle-user-list" data-id="{{ $campaign->id }}">
+                                        {{ $campaign->users->count() }} {{ Str::plural('User', $campaign->users->count()) }}
+                                    </button>
+
+                                    <div id="user-list-{{ $campaign->id }}" class="mt-2 border rounded bg-light p-2 shadow-sm user-list" style="display: none;">
+                                        @foreach ($campaign->users as $user)
+                                            <span class="badge bg-secondary me-1 mb-1">{{ $user->name }}</span>
+                                        @endforeach
+                                    </div>
+                                </div>
                             </td>
-                            <td class="d-flex gap-1">
+                            <td class="d-flex gap-1 flex-wrap">
                                 <a href="{{ route('campaigns.edit', $campaign->id) }}" class="btn btn-sm btn-warning">
                                     <i class="bi bi-pencil-square"></i>
                                 </a>
@@ -65,7 +73,6 @@
                                     </button>
                                 </form>
 
-                                {{-- Show "Send Now" only when status is Pending --}}
                                 @if(!$campaign->sent)
                                     <form action="{{ route('campaigns.sendNow', $campaign->id) }}" method="POST" class="d-inline">
                                         @csrf
@@ -75,7 +82,6 @@
                                     </form>
                                 @endif
 
-                                {{-- Show "Reset" only when status is Sent --}}
                                 @if($campaign->sent)
                                     <form method="POST" action="{{ route('campaigns.reset', $campaign->id) }}" class="d-inline">
                                         @csrf
@@ -94,4 +100,41 @@
         </div>
     </div>
 </div>
+
+{{-- Style for smooth appearance --}}
+<style>
+    .user-list {
+        transition: all 0.3s ease-in-out;
+        max-width: 300px;
+        word-wrap: break-word;
+    }
+</style>
+
+{{-- Toggle user list JS --}}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.toggle-user-list').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const id = this.dataset.id;
+                const target = document.getElementById('user-list-' + id);
+
+                // Hide others
+                document.querySelectorAll('.user-list').forEach(div => {
+                    if (div !== target) div.style.display = 'none';
+                });
+
+                // Toggle selected
+                if (target) {
+                    target.style.display = (target.style.display === 'none' || target.style.display === '') ? 'block' : 'none';
+                }
+            });
+        });
+
+        // Hide on click outside
+        document.addEventListener('click', function () {
+            document.querySelectorAll('.user-list').forEach(div => div.style.display = 'none');
+        });
+    });
+</script>
 @endsection
