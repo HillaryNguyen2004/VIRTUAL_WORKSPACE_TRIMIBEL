@@ -47,7 +47,7 @@
             </tbody>
         </table>
         <div class="mb-3 text-end">
-            <a href="{{ url('/export-users-excel') }}" class="btn btn-success">
+            <a href="{{ url('/export-users-excel') . '?' . http_build_query(request()->all()) }}" class="btn btn-success">
                 <i class="bi bi-file-earmark-excel"></i> Export to Excel
             </a>
         </div>
