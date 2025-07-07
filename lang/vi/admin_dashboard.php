@@ -45,6 +45,20 @@ return [
     'assign_now' => 'Phân công ngay',
     'current_date' => 'Thứ Tư, 18 tháng 6, 2025',
     'access_denied' => 'Truy cập bị từ chối',
-    'no_permission' => 'Bạn không có quyền xem trang này.'
+    'no_permission' => 'Bạn không có quyền xem trang này.',
+    'campaign_management' => 'Quản lý Chiến dịch',
+    'campaign_management_description' => 'Tạo và quản lý các chiến dịch email cho nhóm hoặc khách hàng của bạn.',
+    'campaign_crud' => 'Tạo, cập nhật và xóa chiến dịch',
+    'assign_users_to_campaign' => 'Chỉ định người dùng nhận chiến dịch cụ thể',
+    'schedule_and_send' => 'Lên lịch gửi email tự động',
+
+    'email_template_management' => 'Quản lý Mẫu Email',
+    'email_template_management_description' => 'Thiết kế và quản lý các mẫu email có thể tái sử dụng với shortcode.',
+    'email_template_crud' => 'Tạo, chỉnh sửa và xóa mẫu email',
+    'support_shortcodes' => 'Hỗ trợ shortcode như [name], [birthday], v.v.',
+    'assign_to_campaign' => 'Gán mẫu cho chiến dịch',
+    'create_new_template' => 'Tạo Mẫu Mới',
+    'create_new_campaign' => 'Tạo Chiến dịch Mới',
+
 ];
 ?>

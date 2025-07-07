@@ -147,8 +147,9 @@
         </div>
     </div>
 
-    <!-- Campaign Management (corrected placement) -->
+    <!-- Campaign & Email Template Management -->
     <div class="row mb-4">
+        <!-- Campaign Management -->
         <div class="col-md-6 mb-3">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-body">
@@ -170,10 +171,8 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Email Template Management -->
-    <div class="row mb-4">
+        <!-- Email Template Management -->
         <div class="col-md-6 mb-3">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-body">
@@ -196,7 +195,6 @@
             </div>
         </div>
     </div>
-
 
     <!-- Quick Actions -->
     <div class="row mb-4">
