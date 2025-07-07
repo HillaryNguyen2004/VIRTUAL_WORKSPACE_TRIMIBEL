@@ -98,20 +98,5 @@ class CampaignController extends Controller
         return redirect()->back()->with('success', 'Campaign send status reset.');
     }
 
-    public function syncTemplate(Campaign $campaign)
-    {
-        $template = \App\Models\EmailTemplate::find($campaign->email_template_id);
-
-        if (!$template) {
-            return redirect()->back()->with('error', 'Email template no longer exists.');
-        }
-
-        $campaign->update([
-            'subject' => $template->subject,
-            'content' => $template->content,
-        ]);
-
-        return redirect()->back()->with('success', 'Campaign synced with latest email template.');
-    }
-
+    
 }

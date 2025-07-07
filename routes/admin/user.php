@@ -33,10 +33,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/admin/users/import', [UserController::class, 'import'])->name('admin.users.import');
     Route::get('/admin/users/import/template', [UserController::class, 'downloadTemplate'])->name('admin.users.import.template');
     Route::put('/campaigns/{campaign}/reset', [CampaignController::class, 'reset'])->name('campaigns.reset');
-    // ✅ Corrected route name to match Blade
-    Route::post('/campaigns/{campaign}/sync-template', [CampaignController::class, 'syncTemplate'])
-        ->name('campaigns.sync-template'); 
-
+    
 
 
     // Route::get('/tasks/new', [TaskController::class, 'create'])->name('tasks.create');

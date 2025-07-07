@@ -24,16 +24,6 @@
         </div>
     @endif
 
-    @if(isset($campaign) && $campaign->email_template_id)
-        <form method="POST" action="{{ route('campaigns.sync-template', $campaign) }}" class="mb-3">
-            @csrf
-            <button type="submit" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-arrow-clockwise"></i> Sync from Template
-            </button>
-        </form>
-    @endif
-
-
     <div class="card shadow-sm">
         <div class="card-body">
             <form method="POST" action="{{ isset($campaign) ? route('campaigns.update', $campaign) : route('campaigns.store') }}">
