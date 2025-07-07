@@ -2,230 +2,74 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreCampaignRequest;
+use App\Repositories\CampaignRepository;
+use App\Http\Requests\UpdateCampaignRequest;
 use App\Models\Campaign;
 use App\Models\User;
-use Illuminate\Http\Request;
 use App\Models\EmailTemplate;
-use App\Mail\CampaignEmail;
-use App\Jobs\SendCampaignEmailJob;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Http\Request;
+use App\Services\CampaignService;
 use App\Services\BirthdayEmailService;
-
 
 class CampaignController extends Controller
 {
-    // public function index()
-    // {
-    //     // $campaigns = Campaign::with('users')->latest()->get();
-    //     // return view('users.campaigns_index', compact('campaigns'));
-    //      $dueCampaigns = Campaign::whereNotNull('scheduled_at')
-    //     ->where('scheduled_at', '<=', now())
-    //     ->where('sent', false)
-    //     ->with('users')
-    //     ->get();
+    protected CampaignService $campaignService;
+    protected BirthdayEmailService $birthdayService;
+    protected CampaignRepository $campaignRepository;
 
-    // foreach ($dueCampaigns as $campaign) {
-    //     foreach ($campaign->users as $user) {
-    //         $replacements = [
-    //             '{first_name}' => $user->name,
-    //             '{birthday}' => $user->birthday,
-    //             '{email}' => $user->email,
-    //             '{site_title}' => config('app.name'),
-    //         ];
-
-    //         $subject = strtr($campaign->subject, $replacements);
-    //         $content = strtr($campaign->content, $replacements);
-
-    //         dispatch(new \App\Jobs\SendCampaignEmailJob($user, $subject, $content));
-    //     }
-
-    //     $campaign->sent = true;
-    //     $campaign->save();
-    // }
-
-    //     // Load campaigns for display
-    //     $campaigns = Campaign::with('users')->latest()->get();
-    //     return view('users.campaigns_index', compact('campaigns'));
-    // }
-
-
-    public function index(BirthdayEmailService $birthdayService)
-{
-    // ✅ Check for birthdays and send emails automatically
-    $birthdayService->send();
-
-    // 🎯 Continue existing campaign check
-    $dueCampaigns = Campaign::whereNotNull('scheduled_at')
-        ->where('scheduled_at', '<=', now())
-        ->where('sent', false)
-        ->with('users')
-        ->get();
-
-    foreach ($dueCampaigns as $campaign) {
-        foreach ($campaign->users as $user) {
-            $replacements = [
-                '{first_name}' => $user->name,
-                '{birthday}' => $user->birthday,
-                '{email}' => $user->email,
-                '{site_title}' => config('app.name'),
-            ];
-
-            $subject = strtr($campaign->subject, $replacements);
-            $content = strtr($campaign->content, $replacements);
-
-            dispatch(new \App\Jobs\SendCampaignEmailJob($user, $subject, $content));
-        }
-
-        $campaign->sent = true;
-        $campaign->save();
+    public function __construct(CampaignService $campaignService, BirthdayEmailService $birthdayService, CampaignRepository $campaignRepository)
+    {
+        $this->campaignService = $campaignService;
+        $this->birthdayService = $birthdayService;
+        $this->campaignRepository = $campaignRepository;
     }
 
-    $campaigns = Campaign::with('users')->latest()->get();
-    return view('users.campaigns_index', compact('campaigns'));
-}
+    public function index()
+    {
+        $this->birthdayService->send();
+        $this->campaignService->processDueCampaigns();
+
+        // $campaigns = Campaign::with('users')->latest()->get();
+        $campaigns = $this->campaignRepository->getAll();
+        return view('users.campaigns_index', compact('campaigns'));
+    }
 
     public function create()
     {
-        $users = User::role('user')->get(); // Only assign regular users
+        $users = User::role('user')->get();
         $templates = EmailTemplate::all();
         return view('users.campaigns_create', compact('users', 'templates'));
     }
 
-  
+    public function store(StoreCampaignRequest $request)
+    {
+        $campaign = $this->campaignService->createCampaign($request->all());
 
-
-    public function store(Request $request)
-{
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'subject' => 'nullable|string|max:255',
-        'content' => 'nullable|string',
-        'scheduled_at' => 'nullable|date|after_or_equal:today',
-        'users' => 'nullable|array',
-        'users.*' => 'exists:users,id',
-        'email_template_id' => 'nullable|exists:email_templates,id',
-    ]);
-
-    $subject = $request->subject;
-    $content = $request->content;
-
-    // if ($request->email_template_id) {
-    //     $template = EmailTemplate::find($request->email_template_id);
-    //     $subject = $template->subject;
-    //     $content = $template->content;
-    // }
-
-    if ($request->email_template_id) {
-    $template = EmailTemplate::find($request->email_template_id);
-    
-    if ($template) {
-        // Only override if the template has actual subject/content
-        $subject = $template->subject ?? $subject;
-        $content = $template->content ?? $content;
+        return redirect()->route('campaigns.index')
+            ->with('success', $request->scheduled_at ? 'Campaign scheduled.' : 'Campaign created and emails queued.');
     }
-    }
-
-
-    $campaign = Campaign::create([
-        'name' => $request->name,
-        'subject' => $subject,
-        'content' => $content,
-        'scheduled_at' => $request->scheduled_at
-    ? \Carbon\Carbon::parse($request->scheduled_at, 'Asia/Ho_Chi_Minh')->setTimezone('UTC')
-    : null,
-        'email_template_id' => $request->email_template_id,
-    ]);
-
-    // Determine recipients
-    $allUsers = collect();
-
-    if ($request->filled('send_to_all')) {
-        $allUsers = User::role('user')->get(); // Send to all users
-    } elseif ($request->has('users')) {
-        $allUsers = User::whereIn('id', $request->users)->get(); // Send to selected users
-    }
-
-    // Attach users to campaign
-    if ($allUsers->isNotEmpty()) {
-        $campaign->users()->attach($allUsers->pluck('id'));
-    }
-
-    // Dispatch emails if not scheduled
-    // if ($allUsers->isNotEmpty() && !$request->scheduled_at) {
-    //     foreach ($allUsers as $user) {
-    //         $replacements = [
-    //             '{first_name}' => $user->name,
-    //             '{birthday}' => $user->birthday,
-    //             '{email}' => $user->email,
-    //             '{site_title}' => config('app.name'),
-    //         ];
-
-    //         $personalizedSubject = strtr($subject, $replacements);
-    //         $personalizedContent = strtr($content, $replacements);
-
-    //         dispatch(new SendCampaignEmailJob($user, $personalizedSubject, $personalizedContent));
-    //     }
-    // }
-
-    return redirect()->route('campaigns.index')
-        ->with('success', $request->scheduled_at ? 'Campaign scheduled.' : 'Campaign created and emails queued.');
-}
-
 
     public function edit(Campaign $campaign)
     {
-        // $users = User::role('user')->get();
-        // return view('users.campaigns_edit', compact('campaign', 'users'));
         $templates = EmailTemplate::all();
         $users = User::role('user')->get();
-        $campaign->load('users'); // ensure user relation is loaded
+        $campaign->load('users');
+
         return view('users.campaigns_create', compact('campaign', 'templates', 'users'));
-        // return view('users.campaigns_create', compact('campaign', 'templates'));
     }
 
-    public function update(Request $request, Campaign $campaign)
+    public function update(UpdateCampaignRequest $request, Campaign $campaign)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'subject' => 'nullable|string|max:255',
-            'content' => 'nullable|string',
-            'scheduled_at' => 'nullable|date|after_or_equal:today',
-            'users' => 'nullable|array',
-            'users.*' => 'exists:users,id',
-        ]);
-
-        $scheduledAt = $request->scheduled_at
-        ? \Carbon\Carbon::parse($request->scheduled_at, 'Asia/Ho_Chi_Minh')->setTimezone('UTC')
-        : null;
-
-        // $resetSent = $scheduledAt && $scheduledAt->greaterThan(now());
-        // $shouldReset = !$campaign->scheduled_at || $campaign->scheduled_at->ne($scheduledAt);
-        $originalScheduled = $campaign->scheduled_at
-            ? \Carbon\Carbon::parse($campaign->scheduled_at)->format('Y-m-d H:i')
-            : null;
-
-        $newScheduled = $scheduledAt
-            ? $scheduledAt->format('Y-m-d H:i')
-            : null;
-
-        $shouldReset = $originalScheduled !== $newScheduled;
-
-        $campaign->update([
-            'name' => $request->name,
-            'subject' => $request->filled('subject') ? $request->subject : $campaign->subject,
-            'content' => $request->filled('content') ? $request->content : $campaign->content,
-            'scheduled_at' => $scheduledAt,
-            'sent' => $shouldReset ? false : $campaign->sent,
-        ]);
-
-        $campaign->users()->sync($request->users ?? []);
+        $this->campaignService->updateCampaign($campaign, $request->all());
 
         return redirect()->route('campaigns.index')->with('success', 'Campaign updated successfully.');
     }
 
     public function destroy(Campaign $campaign)
     {
-        $campaign->delete();
+        // $campaign->delete();
+        $this->campaignRepository->delete($campaign);
         return redirect()->route('campaigns.index')->with('success', 'Campaign deleted successfully.');
     }
 
@@ -235,92 +79,22 @@ class CampaignController extends Controller
         return view('users.campaigns_show', compact('campaign'));
     }
 
-
-    // public function sendNow(Campaign $campaign)
-    // {
-    //     if ($campaign->sent) {
-    //         return redirect()->back()->with('error', 'Campaign already sent.');
-    //     }
-
-    //     $campaign->load('users');
-
-    //     foreach ($campaign->users as $user) {
-    //         $replacements = [
-    //             '{first_name}' => $user->name,
-    //             '{birthday}' => $user->birthday,
-    //             '{email}' => $user->email,
-    //             '{site_title}' => config('app.name'),
-    //         ];
-
-    //         $subject = strtr($campaign->subject, $replacements);
-    //         $content = strtr($campaign->content, $replacements);
-
-    //         // SendCampaignEmailJob::dispatch($user, $subject, $content);
-    //         dispatch(new SendCampaignEmailJob($user, $subject, $content));
-    //     }
-
-    //     $campaign->sent = true;
-    //     $campaign->save();
-
-    //     return redirect()->back()->with('success', 'Campaign sent successfully.');
-    // }
-
     public function sendNow(Campaign $campaign)
-{
-    if ($campaign->sent) {
-        return redirect()->back()->with('error', 'Campaign already sent.');
+    {
+        $result = $this->campaignService->sendNow($campaign);
+
+        if ($result === false) {
+            return redirect()->back()->with('error', 'Campaign already sent.');
+        } elseif ($result === 'template_missing') {
+            return redirect()->back()->with('error', 'The assigned email template no longer exists. Please update the campaign.');
+        }
+
+        return redirect()->back()->with('success', 'Campaign sent successfully.');
     }
-
-    $campaign->load('users');
-
-    $subject = $campaign->subject;
-    $content = $campaign->content;
-
-    // if (!$subject || !$content) {
-    //     if ($campaign->email_template_id) {
-    //         $template = \App\Models\EmailTemplate::find($campaign->email_template_id);
-    //         $subject = $subject ?: $template->subject;
-    //         $content = $content ?: $template->content;
-    //     }
-    // }
-
-    if ((!$subject || !$content) && $campaign->email_template_id) {
-    $template = \App\Models\EmailTemplate::find($campaign->email_template_id);
-
-    if ($template) {
-        $subject = $subject ?: $template->subject;
-        $content = $content ?: $template->content;
-    } else {
-        return redirect()->back()->with('error', 'The assigned email template no longer exists. Please update the campaign.');
-    }
-    }
-
-
-    foreach ($campaign->users as $user) {
-        $replacements = [
-            '{first_name}' => $user->name,
-            '{birthday}' => $user->birthday,
-            '{email}' => $user->email,
-            '{site_title}' => config('app.name'),
-        ];
-
-        $personalizedSubject = strtr($subject, $replacements);
-        $personalizedContent = strtr($content, $replacements);
-
-        dispatch(new SendCampaignEmailJob($user, $personalizedSubject, $personalizedContent));
-    }
-
-    $campaign->sent = true;
-    $campaign->save();
-
-    return redirect()->back()->with('success', 'Campaign sent successfully.');
-}
-
 
     public function reset(Campaign $campaign)
-{
-    $campaign->update(['sent' => false]);
-    return redirect()->back()->with('success', 'Campaign send status reset.');
-}
-
+    {
+        $campaign->update(['sent' => false]);
+        return redirect()->back()->with('success', 'Campaign send status reset.');
+    }
 }
