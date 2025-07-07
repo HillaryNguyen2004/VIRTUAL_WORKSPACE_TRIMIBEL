@@ -52,19 +52,35 @@ class CampaignService
 
         $originalSchedule = $campaign->scheduled_at?->format('Y-m-d H:i');
         $newScheduleStr = $newSchedule?->format('Y-m-d H:i');
-
         $shouldReset = $originalSchedule !== $newScheduleStr;
+
+        // Check if email template has changed
+        $templateChanged = isset($data['email_template_id']) &&
+                        $data['email_template_id'] != $campaign->email_template_id;
+
+        $subject = $data['subject'] ?? $campaign->subject;
+        $content = $data['content'] ?? $campaign->content;
+
+        if ($templateChanged && $data['email_template_id']) {
+            $template = EmailTemplate::find($data['email_template_id']);
+            if ($template) {
+                $subject = $template->subject;
+                $content = $template->content;
+            }
+        }
 
         $campaign->update([
             'name' => $data['name'],
-            'subject' => $data['subject'] ?? $campaign->subject,
-            'content' => $data['content'] ?? $campaign->content,
+            'subject' => $subject,
+            'content' => $content,
             'scheduled_at' => $newSchedule,
             'sent' => $shouldReset ? false : $campaign->sent,
+            'email_template_id' => $data['email_template_id'] ?? null, // ✅ Important!
         ]);
 
         $campaign->users()->sync($data['users'] ?? []);
     }
+
 
     public function sendNow(Campaign $campaign): bool|string
     {

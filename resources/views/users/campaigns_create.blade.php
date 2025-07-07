@@ -24,6 +24,16 @@
         </div>
     @endif
 
+    @if(isset($campaign) && $campaign->email_template_id)
+        <form method="POST" action="{{ route('campaigns.sync-template', $campaign) }}" class="mb-3">
+            @csrf
+            <button type="submit" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-clockwise"></i> Sync from Template
+            </button>
+        </form>
+    @endif
+
+
     <div class="card shadow-sm">
         <div class="card-body">
             <form method="POST" action="{{ isset($campaign) ? route('campaigns.update', $campaign) : route('campaigns.store') }}">
@@ -48,11 +58,11 @@
 
                 <div class="form-check mb-3">
                     <input type="checkbox" name="send_to_all" id="send_to_all" class="form-check-input"
-                           {{ old('send_to_all', $campaign->send_to_all ?? false) ? 'checked' : '' }}>
+                           {{ old('send_to_all') ? 'checked' : '' }}>
                     <label for="send_to_all" class="form-check-label">Send to all users</label>
                 </div>
 
-                <div id="user-select-wrapper" class="mb-3" style="{{ old('send_to_all', $campaign->send_to_all ?? false) ? 'display: none;' : '' }}">
+                <div id="user-select-wrapper" class="mb-3" style="{{ old('send_to_all') ? 'display: none;' : '' }}">
                     <label class="form-label">Select Users</label>
                     <select name="users[]" class="form-select select2" multiple>
                         @foreach($users as $user)
@@ -87,6 +97,15 @@
                     <i class="bi bi-send"></i> {{ isset($campaign) ? 'Update Campaign' : 'Save & Schedule' }}
                 </button>
             </form>
+
+            @if(isset($campaign) && $campaign->email_template_id)
+                <form action="{{ route('campaigns.syncTemplate', $campaign->id) }}" method="POST" class="mt-3">
+                    @csrf
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-arrow-repeat"></i> Sync with Template
+                    </button>
+                </form>
+            @endif
         </div>
     </div>
 </div>
@@ -103,11 +122,7 @@
 
         // Show/hide user selection on toggle
         $('#send_to_all').on('change', function () {
-            if ($(this).is(':checked')) {
-                $('#user-select-wrapper').hide();
-            } else {
-                $('#user-select-wrapper').show();
-            }
+            $('#user-select-wrapper').toggle(!this.checked);
         });
     });
 </script>
