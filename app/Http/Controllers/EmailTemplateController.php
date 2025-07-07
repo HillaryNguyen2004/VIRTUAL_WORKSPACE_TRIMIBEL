@@ -20,7 +20,7 @@ class EmailTemplateController extends Controller
 
     public function index(): View
     {
-        $templates = EmailTemplate::all();
+        $templates = EmailTemplate::latest()->paginate(3);
         return view('tasks.email-templates.index', compact('templates'));
     }
 

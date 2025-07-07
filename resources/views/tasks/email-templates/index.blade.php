@@ -46,5 +46,9 @@
             <p>No templates found.</p>
         @endforelse
     </div>
+    <div class="d-flex justify-content-center mt-4">
+        {{ $templates->links() }}
+    </div>
+
 </div>
 @endsection
