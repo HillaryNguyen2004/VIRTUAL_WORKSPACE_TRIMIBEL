@@ -1,75 +1,59 @@
 <?php
+
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreEmailTemplateRequest;
+use App\Http\Requests\UpdateEmailTemplateRequest;
 use App\Models\EmailTemplate;
-use Illuminate\Http\Request;
+use App\Services\EmailTemplateService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class EmailTemplateController extends Controller
 {
-    public function index()
+    protected EmailTemplateService $emailService;
+
+    public function __construct(EmailTemplateService $emailService)
+    {
+        $this->emailService = $emailService;
+    }
+
+    public function index(): View
     {
         $templates = EmailTemplate::all();
         return view('tasks.email-templates.index', compact('templates'));
     }
 
-    public function create()
+    public function create(): View
     {
         return view('tasks.email-templates.create');
     }
 
-    public function store(Request $request)
+    public function store(StoreEmailTemplateRequest $request): RedirectResponse
     {
-        $request->validate([
-            'name' => 'required',
-            'subject' => 'required',
-            'content' => 'required',
-        ]);
-
-        EmailTemplate::create($request->all());
-
+        EmailTemplate::create($request->validated());
         return redirect()->route('email-templates.index')->with('success', 'Template created successfully.');
     }
 
-    public function edit(EmailTemplate $emailTemplate)
+    public function edit(EmailTemplate $emailTemplate): View
     {
-        // return view('tasks.email-templates.edit', compact('emailTemplate'));
         return view('tasks.email-templates.create', compact('emailTemplate'));
     }
 
-    public function update(Request $request, EmailTemplate $emailTemplate)
+    public function update(UpdateEmailTemplateRequest $request, EmailTemplate $emailTemplate): RedirectResponse
     {
-        $request->validate([
-            'name' => 'required',
-            'subject' => 'required',
-            'content' => 'required',
-        ]);
-
-        $emailTemplate->update($request->all());
-
+        $emailTemplate->update($request->validated());
         return redirect()->route('email-templates.index')->with('success', 'Template updated.');
     }
 
-    public function destroy(EmailTemplate $emailTemplate)
+    public function destroy(EmailTemplate $emailTemplate): RedirectResponse
     {
         $emailTemplate->delete();
-
         return redirect()->route('email-templates.index')->with('success', 'Template deleted.');
     }
 
-    public function sendTemplateEmail($templateId, $recipientEmail, $data)
+    public function send($templateId, $recipientEmail, array $data): void
     {
-        $template = EmailTemplate::findOrFail($templateId);
-
-        // Replace shortcodes like {first_name} with real data
-        $content = strtr($template->content, $data);
-        $subject = strtr($template->subject, $data);
-
-        \Mail::send([], [], function ($message) use ($recipientEmail, $subject, $content) {
-            $message->to($recipientEmail)
-                    ->subject($subject)
-                    ->setBody($content, 'text/html');
-        });
+        $this->emailService->sendTemplateEmail($templateId, $recipientEmail, $data);
     }
-
 }
