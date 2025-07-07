@@ -6,29 +6,29 @@
 
 @section('content')
 <div class="container py-4">
-    <h1 class="mb-4 fw-bold">{{ __('Campaign List') }}</h1>
+    <h1 class="mb-4 fw-bold">{{ __('campaigns.title') }}</h1>
 
     <div class="mb-3">
         <a href="{{ route('campaigns.create') }}" class="btn btn-primary">
-            <i class="bi bi-envelope-plus"></i> Create New Campaign
+            <i class="bi bi-envelope-plus"></i> {{ __('campaigns.create_new_campaign') }}
         </a>
     </div>
 
     <div class="card shadow-sm">
         <div class="card-body">
         @if($campaigns->isEmpty())
-            <p class="text-muted">No campaigns found.</p>
+            <p class="text-muted">{{ __('campaigns.no_campaigns_found') }}</p>
         @else
             <table class="table table-bordered table-hover">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Campaign Name</th>
-                        <th>Subject</th>
-                        <th>Scheduled At</th>
-                        <th>Status</th>
-                        <th>Users</th>
-                        <th>Actions</th>
+                        <th>{{ __('campaigns.id') }}</th>
+                        <th>{{ __('campaigns.name') }}</th>
+                        <th>{{ __('campaigns.subject') }}</th>
+                        <th>{{ __('campaigns.scheduled_at') }}</th>
+                        <th>{{ __('campaigns.status') }}</th>
+                        <th>{{ __('campaigns.users') }}</th>
+                        <th>{{ __('campaigns.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -40,11 +40,11 @@
                             <td>{{ $campaign->scheduled_at ? $campaign->scheduled_at->format('Y-m-d H:i') : 'N/A' }}</td>
                             <td>
                                 @if($campaign->sent)
-                                    <span class="badge bg-success">Sent</span>
+                                    <span class="badge bg-success">{{ __('campaigns.sent') }}</span>
                                 @elseif($campaign->scheduled_at && $campaign->scheduled_at->isFuture())
-                                    <span class="badge bg-info">Scheduled</span>
+                                    <span class="badge bg-info">{{ __('campaigns.scheduled') }}</span>
                                 @else
-                                    <span class="badge bg-warning text-dark">Pending</span>
+                                    <span class="badge bg-warning text-dark">{{ __('campaigns.pending') }}</span>
                                 @endif
                             </td>
                             <td>
@@ -68,7 +68,7 @@
                                 <form action="{{ route('campaigns.destroy', $campaign->id) }}" method="POST" class="d-inline">
                                     @csrf
                                     @method('DELETE')
-                                    <button class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">
+                                    <button class="btn btn-sm btn-danger" onclick="return confirm('{{ __('campaigns.confirm_delete') }}')">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
@@ -76,8 +76,8 @@
                                 @if(!$campaign->sent)
                                     <form action="{{ route('campaigns.sendNow', $campaign->id) }}" method="POST" class="d-inline">
                                         @csrf
-                                        <button class="btn btn-sm btn-success" onclick="return confirm('Send this campaign now?')">
-                                            <i class="bi bi-send"></i> Send Now
+                                        <button class="btn btn-sm btn-success" onclick="return confirm('{{ __('campaigns.confirm_send') }}')">
+                                            <i class="bi bi-send"></i> {{ __('campaigns.send_now') }}
                                         </button>
                                     </form>
                                 @endif
@@ -86,8 +86,8 @@
                                     <form method="POST" action="{{ route('campaigns.reset', $campaign->id) }}" class="d-inline">
                                         @csrf
                                         @method('PUT')
-                                        <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Reset send status?')">
-                                            <i class="bi bi-arrow-counterclockwise"></i> Resend
+                                        <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('{{ __('campaigns.confirm_reset') }}')">
+                                            <i class="bi bi-arrow-counterclockwise"></i> {{ __('campaigns.reset') }}
                                         </button>
                                     </form>
                                 @endif

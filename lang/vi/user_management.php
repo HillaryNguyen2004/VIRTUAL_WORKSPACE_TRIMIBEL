@@ -14,4 +14,5 @@ return [
     'email_column' => 'EMAIL',
     'role_column' => 'VAI TRÒ',
     'actions_column' => 'HÀNH ĐỘNG',
+    'export_excel' => 'Xuất ra Excel',
 ];

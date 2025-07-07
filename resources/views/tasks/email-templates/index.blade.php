@@ -1,11 +1,13 @@
 @extends('layouts.app')
+
 @section('header')
     @include('partials.headers.admin')
 @endsection
+
 @section('content')
 <div class="container">
-    <h1>Email Templates</h1>
-    <a href="{{ route('email-templates.create') }}" class="btn btn-primary mb-3">Add New Template</a>
+    <h1>{{ __('template.title') }}</h1>
+    <a href="{{ route('email-templates.create') }}" class="btn btn-primary mb-3">{{ __('template.add_new_template') }}</a>
 
     @if(session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
@@ -22,33 +24,32 @@
                 <div id="collapse-{{ $template->id }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ $template->id }}" data-bs-parent="#templateAccordion">
                     <div class="accordion-body">
                         <div class="mb-3">
-                            <strong>Subject:</strong> {{ $template->subject }}
+                            <strong>{{ __('template.subject') }}:</strong> {{ $template->subject }}
                         </div>
                         <div class="mb-3">
-                            <strong>Description:</strong><br>
+                            <strong>{{ __('template.description') }}:</strong><br>
                             {!! nl2br(e($template->description ?? '')) !!}
                         </div>
                         <div class="mb-3">
-                            <strong>Content:</strong><br>
+                            <strong>{{ __('template.content') }}:</strong><br>
                             {!! $template->content !!}
                         </div>
                         <div class="d-flex gap-2">
-                            <a href="{{ route('email-templates.edit', $template) }}" class="btn btn-sm btn-warning">Edit</a>
-                            <form action="{{ route('email-templates.destroy', $template) }}" method="POST" onsubmit="return confirm('Delete this template?')">
+                            <a href="{{ route('email-templates.edit', $template) }}" class="btn btn-sm btn-warning">{{ __('template.edit') }}</a>
+                            <form action="{{ route('email-templates.destroy', $template) }}" method="POST" onsubmit="return confirm('{{ __('template.confirm_delete') }}')">
                                 @csrf @method('DELETE')
-                                <button class="btn btn-sm btn-danger">Delete</button>
+                                <button class="btn btn-sm btn-danger">{{ __('template.delete') }}</button>
                             </form>
                         </div>
                     </div>
                 </div>
             </div>
         @empty
-            <p>No templates found.</p>
+            <p>{{ __('template.no_templates_found') }}</p>
         @endforelse
     </div>
     <div class="d-flex justify-content-center mt-4">
         {{ $templates->links() }}
     </div>
-
 </div>
 @endsection

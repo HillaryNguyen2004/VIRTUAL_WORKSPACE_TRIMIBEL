@@ -1,0 +1,22 @@
+<?php
+
+return [
+    'title' => 'Danh sách Chiến dịch',
+    'create_new_campaign' => 'Tạo Chiến dịch Mới',
+    'no_campaigns_found' => 'Không tìm thấy chiến dịch nào.',
+    'id' => 'ID',
+    'name' => 'Tên Chiến dịch',
+    'subject' => 'Chủ đề',
+    'scheduled_at' => 'Lịch gửi',
+    'status' => 'Trạng thái',
+    'users' => 'Người dùng',
+    'actions' => 'Hành động',
+    'sent' => 'Đã gửi',
+    'scheduled' => 'Đã lên lịch',
+    'pending' => 'Đang chờ',
+    'confirm_delete' => 'Bạn có chắc không?',
+    'send_now' => 'Gửi Ngay',
+    'confirm_send' => 'Gửi chiến dịch này ngay bây giờ?',
+    'reset' => 'Gửi lại',
+    'confirm_reset' => 'Đặt lại trạng thái gửi?',
+];

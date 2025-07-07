@@ -7,7 +7,7 @@
 @section('content')
 <div class="container py-4">
     <h1 class="mb-4 fw-bold">
-        {{ isset($campaign) ? 'Edit Campaign' : 'Create New Campaign' }}
+        {{ isset($campaign) ? __('campaigns_create.edit_campaign') : __('campaigns_create.create_new_campaign') }}
     </h1>
 
     @if(session('success'))
@@ -33,27 +33,27 @@
                 @endif
 
                 <div class="mb-3">
-                    <label class="form-label">Campaign Name</label>
+                    <label class="form-label">{{ __('campaigns_create.campaign_name') }}</label>
                     <input type="text" name="name" class="form-control"
                            value="{{ old('name', $campaign->name ?? '') }}"
-                           placeholder="Enter campaign name" required>
+                           placeholder="{{ __('campaigns_create.enter_campaign_name') }}" required>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Subject</label>
+                    <label class="form-label">{{ __('campaigns_create.subject') }}</label>
                     <input type="text" name="subject" class="form-control"
                            value="{{ old('subject', $campaign->subject ?? '') }}"
-                           placeholder="Enter email subject">
+                           placeholder="{{ __('campaigns_create.enter_email_subject') }}">
                 </div>
 
                 <div class="form-check mb-3">
                     <input type="checkbox" name="send_to_all" id="send_to_all" class="form-check-input"
                            {{ old('send_to_all') ? 'checked' : '' }}>
-                    <label for="send_to_all" class="form-check-label">Send to all users</label>
+                    <label for="send_to_all" class="form-check-label">{{ __('campaigns_create.send_to_all_users') }}</label>
                 </div>
 
                 <div id="user-select-wrapper" class="mb-3" style="{{ old('send_to_all') ? 'display: none;' : '' }}">
-                    <label class="form-label">Select Users</label>
+                    <label class="form-label">{{ __('campaigns_create.select_users') }}</label>
                     <select name="users[]" class="form-select select2" multiple>
                         @foreach($users as $user)
                             <option value="{{ $user->id }}"
@@ -65,7 +65,7 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Email Template</label>
+                    <label class="form-label">{{ __('campaigns_create.email_template') }}</label>
                     <select name="email_template_id" class="form-select">
                         @foreach($templates as $template)
                             <option value="{{ $template->id }}"
@@ -77,14 +77,14 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="scheduled_at" class="form-label">Schedule At (optional)</label>
+                    <label for="scheduled_at" class="form-label">{{ __('campaigns_create.schedule_at') }}</label>
                     <input type="datetime-local" name="scheduled_at" id="scheduled_at" class="form-control"
                            value="{{ old('scheduled_at', isset($campaign->scheduled_at) ? \Carbon\Carbon::parse($campaign->scheduled_at)->format('Y-m-d\TH:i') : '') }}">
-                    <div class="form-text">Leave empty to send manually later.</div>
+                    <div class="form-text">{{ __('campaigns_create.schedule_at_hint') }}</div>
                 </div>
 
                 <button type="submit" class="btn btn-success mt-3">
-                    <i class="bi bi-send"></i> {{ isset($campaign) ? 'Update Campaign' : 'Save & Schedule' }}
+                    <i class="bi bi-send"></i> {{ isset($campaign) ? __('campaigns_create.update_campaign') : __('campaigns_create.save_and_schedule') }}
                 </button>
             </form>
 
@@ -92,7 +92,7 @@
                 <form action="{{ route('campaigns.syncTemplate', $campaign->id) }}" method="POST" class="mt-3">
                     @csrf
                     <button type="submit" class="btn btn-warning">
-                        <i class="bi bi-arrow-repeat"></i> Sync with Template
+                        <i class="bi bi-arrow-repeat"></i> {{ __('campaigns_create.sync_with_template') }}
                     </button>
                 </form>
             @endif
@@ -106,7 +106,7 @@
 <script>
     $(document).ready(function () {
         $('.select2').select2({
-            placeholder: "Select users",
+            placeholder: "{{ __('campaigns_create.select_users_placeholder') }}",
             width: '100%'
         });
 

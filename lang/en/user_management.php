@@ -14,4 +14,5 @@ return [
     'email_column' => 'EMAIL',
     'role_column' => 'ROLE',
     'actions_column' => 'ACTIONS',
+    'export_excel' => 'Export to Excel',
 ];

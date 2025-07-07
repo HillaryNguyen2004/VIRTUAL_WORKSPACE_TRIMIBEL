@@ -4,7 +4,7 @@
 @endsection
 @section('content')
 <div class="container">
-    <h1 class="mb-4">{{ isset($emailTemplate) ? 'Edit' : 'Create' }} Email Template</h1>
+    <h1 class="mb-4">{{ isset($emailTemplate) ? __('template_create.edit_template') : __('template_create.create_template') }}</h1>
 
     <form action="{{ isset($emailTemplate) ? route('email-templates.update', $emailTemplate) : route('email-templates.store') }}"
           method="POST"
@@ -15,43 +15,43 @@
 
         <div class="row mb-3">
             <div class="col-md-6">
-                <label class="form-label fw-bold">Title *</label>
+                <label class="form-label fw-bold">{{ __('template_create.title') }} *</label>
                 <input name="name" class="form-control" value="{{ old('name', $emailTemplate->name ?? '') }}" required>
             </div>
             <div class="col-md-6">
-                <label class="form-label fw-bold">Subject *</label>
+                <label class="form-label fw-bold">{{ __('template_create.subject') }} *</label>
                 <input name="subject" class="form-control" value="{{ old('subject', $emailTemplate->subject ?? '') }}" required>
             </div>
         </div>
 
         <div class="mb-3">
-            <label class="form-label fw-bold">Description</label>
+            <label class="form-label fw-bold">{{ __('template_create.description') }}</label>
             <textarea name="description" class="form-control" rows="2">{{ old('description', $emailTemplate->description ?? '') }}</textarea>
         </div>
 
         <div class="mb-3">
-            <label class="form-label fw-bold">Body *</label>
+            <label class="form-label fw-bold">{{ __('template_create.body') }} *</label>
             <textarea id="content" name="content" class="form-control rich-text" rows="10" required>{{ old('content', $emailTemplate->content ?? '') }}</textarea>
         </div>
 
-        <button type="submit" class="btn btn-success" id="saveButton">Save</button>
+        <button type="submit" class="btn btn-success" id="saveButton">{{ __('template_create.save') }}</button>
     </form>
 
     {{-- Shortcode Variables --}}
     <div class="mt-5">
-        <h5 class="fw-bold">Variables</h5>
+        <h5 class="fw-bold">{{ __('template_create.variables') }}</h5>
         <div class="row text-muted small">
             <div class="col-md-3 mb-2">
-                <code>{first_name}</code><br>First name of the user
+                <code>{first_name}</code><br>{{ __('template_create.variable_first_name') }}
             </div>
             <div class="col-md-3 mb-2">
-                <code>{total_of_times_late}</code><br>Number of times user was late
+                <code>{total_of_times_late}</code><br>{{ __('template_create.variable_times_late') }}
             </div>
             <div class="col-md-3 mb-2">
-                <code>{site_title}</code><br>Your site title
+                <code>{site_title}</code><br>{{ __('template_create.variable_site_title') }}
             </div>
             <div class="col-md-3 mb-2">
-                <code>{birthday}</code><br>User's birthday (YYYY-MM-DD)
+                <code>{birthday}</code><br>{{ __('template_create.variable_birthday') }}
             </div>
         </div>
     </div>
