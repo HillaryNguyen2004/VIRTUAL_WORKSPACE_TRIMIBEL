@@ -6,10 +6,24 @@ use App\Models\User;
 use App\Models\EmailTemplate;
 use App\Jobs\SendCampaignEmailJob;
 use Illuminate\Support\Carbon;
+use App\Services\BirthdayEmailService;
+use App\Repositories\CampaignRepository;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class CampaignService
 {
+
+    protected BirthdayEmailService $birthdayService;
+    protected CampaignRepository $campaignRepository;
+
+    public function __construct(
+        BirthdayEmailService $birthdayService,
+        CampaignRepository $campaignRepository
+    ) {
+        $this->birthdayService = $birthdayService;
+        $this->campaignRepository = $campaignRepository;
+    }
     public function createCampaign(array $data)
     {
         $template = EmailTemplate::find($data['email_template_id'] ?? null);
@@ -128,4 +142,26 @@ class CampaignService
             $this->sendNow($campaign);
         }
     }
+
+
+    public function runScheduledTasks(): void
+    {
+        $this->birthdayService->send();
+        $this->processDueCampaigns();
+    }
+
+    public function extractFilters(Request $request): array
+    {
+        return [
+            'search' => $request->input('search'),
+            'status' => $request->input('status'),
+            'sort'   => $request->input('sort'),
+        ];
+    }
+
+    public function getFilteredCampaigns(array $filters)
+    {
+        return $this->campaignRepository->getFilteredPaginated($filters);
+    }
+
 }

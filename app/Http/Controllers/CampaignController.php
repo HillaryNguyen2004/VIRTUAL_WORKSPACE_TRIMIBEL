@@ -25,14 +25,14 @@ class CampaignController extends Controller
         $this->campaignRepository = $campaignRepository;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $this->birthdayService->send();
-        $this->campaignService->processDueCampaigns();
-
-        $campaigns = $this->campaignRepository->getAllPaginated();
-        return view('users.campaigns_index', compact('campaigns'));
+        $this->campaignService->runScheduledTasks();
+        $filters = $this->campaignService->extractFilters($request);
+        $campaigns = $this->campaignService->getFilteredCampaigns($filters);
+        return view('users.campaigns_index', compact('campaigns', 'filters'));
     }
+
 
     public function create()
     {

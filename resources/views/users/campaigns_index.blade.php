@@ -14,6 +14,30 @@
         </a>
     </div>
 
+    <form method="GET" action="{{ route('campaigns.index') }}" class="mb-3 row">
+        <div class="col-md-4">
+            <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="Search by name">
+        </div>
+        <div class="col-md-3">
+            <select name="status" class="form-control">
+                <option value="">All Status</option>
+                <option value="sent" {{ request('status') == 'sent' ? 'selected' : '' }}>Sent</option>
+                <option value="scheduled" {{ request('status') == 'scheduled' ? 'selected' : '' }}>Scheduled</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select name="sort" class="form-control">
+                <option value="desc" {{ request('sort') == 'desc' ? 'selected' : '' }}>Newest First</option>
+                <option value="asc" {{ request('sort') == 'asc' ? 'selected' : '' }}>Oldest First</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Filter</button>
+        </div>
+    </form>
+
+
+
     <div class="card shadow-sm">
         <div class="card-body">
         @if($campaigns->isEmpty())
