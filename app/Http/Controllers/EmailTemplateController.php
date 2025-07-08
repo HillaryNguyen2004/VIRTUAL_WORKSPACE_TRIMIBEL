@@ -7,20 +7,23 @@ use App\Http\Requests\UpdateEmailTemplateRequest;
 use App\Models\EmailTemplate;
 use App\Services\EmailTemplateService;
 use Illuminate\Http\RedirectResponse;
+use App\Repositories\EmailTemplateRepository;
 use Illuminate\View\View;
 
 class EmailTemplateController extends Controller
 {
     protected EmailTemplateService $emailService;
+    protected EmailTemplateRepository $templateRepo;
 
-    public function __construct(EmailTemplateService $emailService)
+    public function __construct(EmailTemplateService $emailService, EmailTemplateRepository $templateRepo)
     {
         $this->emailService = $emailService;
+        $this->templateRepo = $templateRepo;
     }
 
     public function index(): View
     {
-        $templates = EmailTemplate::latest()->paginate(3);
+        $templates = $this->templateRepo->paginate();
         return view('tasks.email-templates.index', compact('templates'));
     }
 
@@ -31,7 +34,7 @@ class EmailTemplateController extends Controller
 
     public function store(StoreEmailTemplateRequest $request): RedirectResponse
     {
-        EmailTemplate::create($request->validated());
+        $this->templateRepo->create($request->validated());
         return redirect()->route('email-templates.index')->with('success', 'Template created successfully.');
     }
 
@@ -42,13 +45,13 @@ class EmailTemplateController extends Controller
 
     public function update(UpdateEmailTemplateRequest $request, EmailTemplate $emailTemplate): RedirectResponse
     {
-        $emailTemplate->update($request->validated());
+        $this->templateRepo->update($emailTemplate, $request->validated());
         return redirect()->route('email-templates.index')->with('success', 'Template updated.');
     }
 
     public function destroy(EmailTemplate $emailTemplate): RedirectResponse
     {
-        $emailTemplate->delete();
+        $this->templateRepo->delete($emailTemplate);
         return redirect()->route('email-templates.index')->with('success', 'Template deleted.');
     }
 

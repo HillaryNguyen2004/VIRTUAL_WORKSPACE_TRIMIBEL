@@ -14,4 +14,12 @@ return [
     'task_updated' => 'Task updated successfully!',
     'task_deleted' => 'Task deleted successfully!',
     'user_imported' => 'Users imported successfully.',
+    'campaign_scheduled' => 'Campaign scheduled.',
+    'campaign_created_and_queued' => 'Campaign created and emails queued.',
+    'campaign_updated' => 'Campaign updated successfully.',
+    'campaign_deleted' => 'Campaign deleted successfully.',
+    'campaign_already_sent' => 'Campaign already sent.',
+    'template_missing' => 'The assigned email template no longer exists. Please update the campaign.',
+    'campaign_sent_successfully' => 'Campaign sent successfully.',
+    'campaign_reset' => 'Campaign send status reset.',
 ];

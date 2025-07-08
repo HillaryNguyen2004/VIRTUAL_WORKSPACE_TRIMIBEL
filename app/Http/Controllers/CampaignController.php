@@ -30,7 +30,6 @@ class CampaignController extends Controller
         $this->birthdayService->send();
         $this->campaignService->processDueCampaigns();
 
-        // $campaigns = Campaign::with('users')->latest()->get();
         $campaigns = $this->campaignRepository->getAllPaginated();
         return view('users.campaigns_index', compact('campaigns'));
     }
@@ -47,7 +46,7 @@ class CampaignController extends Controller
         $campaign = $this->campaignService->createCampaign($request->all());
 
         return redirect()->route('campaigns.index')
-            ->with('success', $request->scheduled_at ? 'Campaign scheduled.' : 'Campaign created and emails queued.');
+            ->with('success', $request->scheduled_at ? __('messages.campaign_scheduled') : __('messages.campaign_created_and_queued'));
     }
 
     public function edit(Campaign $campaign)
@@ -63,14 +62,13 @@ class CampaignController extends Controller
     {
         $this->campaignService->updateCampaign($campaign, $request->all());
 
-        return redirect()->route('campaigns.index')->with('success', 'Campaign updated successfully.');
+        return redirect()->route('campaigns.index')->with('success', __('messages.campaign_updated'));
     }
 
     public function destroy(Campaign $campaign)
     {
-        // $campaign->delete();
         $this->campaignRepository->delete($campaign);
-        return redirect()->route('campaigns.index')->with('success', 'Campaign deleted successfully.');
+        return redirect()->route('campaigns.index')->with('success', __('messages.campaign_deleted'));
     }
 
     public function show(Campaign $campaign)
@@ -84,19 +82,17 @@ class CampaignController extends Controller
         $result = $this->campaignService->sendNow($campaign);
 
         if ($result === false) {
-            return redirect()->back()->with('error', 'Campaign already sent.');
+            return redirect()->back()->with('error', __('messages.campaign_already_sent'));
         } elseif ($result === 'template_missing') {
-            return redirect()->back()->with('error', 'The assigned email template no longer exists. Please update the campaign.');
+            return redirect()->back()->with('error', __('messages.template_missing'));
         }
 
-        return redirect()->back()->with('success', 'Campaign sent successfully.');
+        return redirect()->back()->with('success', __('messages.campaign_sent_successfully'));
     }
 
     public function reset(Campaign $campaign)
     {
         $campaign->update(['sent' => false]);
-        return redirect()->back()->with('success', 'Campaign send status reset.');
+        return redirect()->back()->with('success', __('messages.campaign_reset'));
     }
-
-    
 }
