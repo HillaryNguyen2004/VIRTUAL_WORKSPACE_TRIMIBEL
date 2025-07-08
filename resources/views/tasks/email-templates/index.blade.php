@@ -13,6 +13,23 @@
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
+    <form method="GET" action="{{ route('email-templates.index') }}" class="mb-3 d-flex gap-2">
+        <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name or subject" class="form-control w-25">
+        
+        <select name="sort_by" class="form-select w-auto">
+            <option value="created_at" {{ request('sort_by') === 'created_at' ? 'selected' : '' }}>Created At</option>
+            <option value="name" {{ request('sort_by') === 'name' ? 'selected' : '' }}>Name</option>
+        </select>
+
+        <select name="sort_dir" class="form-select w-auto">
+            <option value="desc" {{ request('sort_dir') === 'desc' ? 'selected' : '' }}>Descending</option>
+            <option value="asc" {{ request('sort_dir') === 'asc' ? 'selected' : '' }}>Ascending</option>
+        </select>
+
+        <button type="submit" class="btn btn-primary">Filter</button>
+    </form>
+
+
     <div class="accordion" id="templateAccordion">
         @forelse($templates as $template)
             <div class="accordion-item mb-3">

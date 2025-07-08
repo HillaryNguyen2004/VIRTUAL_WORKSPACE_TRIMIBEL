@@ -9,6 +9,8 @@ use App\Services\EmailTemplateService;
 use Illuminate\Http\RedirectResponse;
 use App\Repositories\EmailTemplateRepository;
 use Illuminate\View\View;
+use Illuminate\Http\Request;
+
 
 class EmailTemplateController extends Controller
 {
@@ -21,10 +23,16 @@ class EmailTemplateController extends Controller
         $this->templateRepo = $templateRepo;
     }
 
-    public function index(): View
+    public function index(Request $request)
     {
-        $templates = $this->templateRepo->paginate();
-        return view('tasks.email-templates.index', compact('templates'));
+        $filters = [
+        'search' => $request->input('search'),
+        'sort_by' => $request->input('sort_by'), // name or created_at
+        'sort_dir' => $request->input('sort_dir'), // asc or desc
+        ];
+
+        $templates = $this->templateRepo->getFilteredPaginated($filters, 3);
+        return view('tasks.email-templates.index', compact('templates', 'filters'));
     }
 
     public function create(): View
