@@ -13,4 +13,5 @@ return [
     'task_created' => 'Tạo nhiệm vụ thành công!',
     'task_updated' => 'Cập nhật nhiệm vụ thành công!',
     'task_deleted' => 'Xóa nhiệm vụ thành công!',
+    'user_imported' => 'Thêm người dùng thành công.',
 ];
