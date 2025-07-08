@@ -4,6 +4,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\CampaignController;
+use App\Http\Controllers\EmailTemplateController;
+use App\Http\Controllers\UserExportController;
 
 
 
@@ -24,6 +26,15 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/admin/permissions', [UserController::class, 'updatePermissions'])->name('admin.permissions.update');
     Route::get('/admin/activity-logs', [App\Http\Controllers\AdminDashboardController::class, 'viewAllLogs'])->name('admin.activity.logs');
     Route::resource('campaigns', CampaignController::class)->middleware(['auth', 'role:admin']);
+    Route::resource('email-templates', EmailTemplateController::class)->middleware(['auth', 'role:admin']);
+    Route::post('/campaigns/{campaign}/send-now', [CampaignController::class, 'sendNow'])->name('campaigns.sendNow');
+    Route::get('/export-users-excel', [UserExportController::class, 'exportExcel']);
+    Route::get('/admin/users/import', [UserController::class, 'showImportForm'])->name('admin.users.import.form');
+    Route::post('/admin/users/import', [UserController::class, 'import'])->name('admin.users.import');
+    Route::get('/admin/users/import/template', [UserController::class, 'downloadTemplate'])->name('admin.users.import.template');
+    Route::put('/campaigns/{campaign}/reset', [CampaignController::class, 'reset'])->name('campaigns.reset');
+    
+
 
     // Route::get('/tasks/new', [TaskController::class, 'create'])->name('tasks.create');
     // Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');

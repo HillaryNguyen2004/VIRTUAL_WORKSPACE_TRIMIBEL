@@ -12,17 +12,21 @@ use Illuminate\Http\Request;
 use App\Http\Requests\UpdateUserPermissionsRequest;
 use App\Repositories\UserPermissionRepositoryInterface;
 use App\Services\UserService;
+use App\Services\UserImportService;
+use App\Http\Requests\ImportUserRequest;
 
 class UserController extends Controller
 {
     protected $userRepo;
     protected $permissionRepo;
     protected $userService;
-    public function __construct(UserService $userService,UserRepositoryInterface $userRepo, UserPermissionRepositoryInterface $permissionRepo)
+    protected $importService;
+    public function __construct(UserService $userService,UserRepositoryInterface $userRepo, UserPermissionRepositoryInterface $permissionRepo, UserImportService $importService)
     {
         $this->userRepo = $userRepo;
         $this->permissionRepo = $permissionRepo;
         $this->userService = $userService;
+        $this->importService = $importService;
     }
 
     public function index(FilterUserRequest $request)
@@ -63,24 +67,6 @@ class UserController extends Controller
         return redirect()->route('admin.users.create')->with('success', __('messages.user_created'));
     }
 
-    // public function permissions()
-    // {
-    //     $users = $this->permissionRepo->getStaffWithPermissions();
-    //     $permissions = $this->permissionRepo->getAllPermissions();
-
-    //     return view('users.permissions', compact('users', 'permissions'));
-    // }
-
-    // public function updatePermissions(UpdateUserPermissionsRequest $request)
-    // {
-    //     $this->permissionRepo->updateUserPermissions(
-    //         $request->user_id,
-    //         $request->permissions?? []
-    //     );
-
-    //     return redirect()->back()->with('success',  __('messages.permissions_updated'));
-    // }
-
 
     public function permissions()
     {
@@ -99,5 +85,19 @@ class UserController extends Controller
 
         return redirect()->back()->with('success', __('messages.permissions_updated'));
     }
+
+
+    public function downloadTemplate()
+    {
+        return $this->importService->downloadTemplate();
+    }
+
+    public function import(ImportUserRequest $request)
+    {
+        $importedCount = $this->importService->importFromCsv($request->file('csv_file'));
+
+        return redirect()->back()->with('success', __('messages.user_imported') . " ({$importedCount} users)");
+    }
+
 
 }

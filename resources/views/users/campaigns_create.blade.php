@@ -6,7 +6,9 @@
 
 @section('content')
 <div class="container py-4">
-    <h1 class="mb-4 fw-bold">Create New Campaign</h1>
+    <h1 class="mb-4 fw-bold">
+        {{ isset($campaign) ? __('campaigns_create.edit_campaign') : __('campaigns_create.create_new_campaign') }}
+    </h1>
 
     @if(session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
@@ -24,50 +26,76 @@
 
     <div class="card shadow-sm">
         <div class="card-body">
-            <form method="POST" action="{{ route('campaigns.store') }}">
+            <form method="POST" action="{{ isset($campaign) ? route('campaigns.update', $campaign) : route('campaigns.store') }}">
                 @csrf
+                @if(isset($campaign))
+                    @method('PUT')
+                @endif
 
                 <div class="mb-3">
-                    <label class="form-label">Campaign Name</label>
-                    <input type="text" name="name" class="form-control" placeholder="Enter campaign name" required>
+                    <label class="form-label">{{ __('campaigns_create.campaign_name') }}</label>
+                    <input type="text" name="name" class="form-control"
+                           value="{{ old('name', $campaign->name ?? '') }}"
+                           placeholder="{{ __('campaigns_create.enter_campaign_name') }}" required>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Subject</label>
-                    <input type="text" name="subject" class="form-control" placeholder="Enter email subject">
+                    <label class="form-label">{{ __('campaigns_create.subject') }}</label>
+                    <input type="text" name="subject" class="form-control"
+                           value="{{ old('subject', $campaign->subject ?? '') }}"
+                           placeholder="{{ __('campaigns_create.enter_email_subject') }}">
+                </div>
+
+                <div class="form-check mb-3">
+                    <input type="checkbox" name="send_to_all" id="send_to_all" class="form-check-input"
+                           {{ old('send_to_all') ? 'checked' : '' }}>
+                    <label for="send_to_all" class="form-check-label">{{ __('campaigns_create.send_to_all_users') }}</label>
+                </div>
+
+                <div id="user-select-wrapper" class="mb-3" style="{{ old('send_to_all') ? 'display: none;' : '' }}">
+                    <label class="form-label">{{ __('campaigns_create.select_users') }}</label>
+                    <select name="users[]" class="form-select select2" multiple>
+                        @foreach($users as $user)
+                            <option value="{{ $user->id }}"
+                                {{ (collect(old('users', isset($campaign) ? $campaign->users->pluck('id')->toArray() : []))->contains($user->id)) ? 'selected' : '' }}>
+                                {{ $user->name }} ({{ $user->email }})
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Content</label>
-                    <textarea name="content" rows="5" class="form-control" placeholder="Write your email content"></textarea>
+                    <label class="form-label">{{ __('campaigns_create.email_template') }}</label>
+                    <select name="email_template_id" class="form-select">
+                        @foreach($templates as $template)
+                            <option value="{{ $template->id }}"
+                                {{ old('email_template_id', $campaign->email_template_id ?? '') == $template->id ? 'selected' : '' }}>
+                                {{ $template->name }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Assign Team Members</label>
-                    <div id="user-select-wrapper">
-                        <div class="d-flex mb-2 user-select-row">
-                            <select name="users[]" class="form-select me-2 select2" required>
-                                <option value="" disabled selected>Select a user</option>
-                                @foreach($users as $user)
-                                    <option value="{{ $user->id }}">
-                                        {{ $user->name }} ({{ $user->email }})
-                                    </option>
-                                @endforeach
-                            </select>
-                            <button type="button" class="btn btn-outline-danger remove-member-btn">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <button type="button" class="btn btn-outline-primary mt-2" id="add-user-btn">
-                        <i class="bi bi-plus"></i> Add Member
-                    </button>
+                    <label for="scheduled_at" class="form-label">{{ __('campaigns_create.schedule_at') }}</label>
+                    <input type="datetime-local" name="scheduled_at" id="scheduled_at" class="form-control"
+                           value="{{ old('scheduled_at', isset($campaign->scheduled_at) ? \Carbon\Carbon::parse($campaign->scheduled_at)->format('Y-m-d\TH:i') : '') }}">
+                    <div class="form-text">{{ __('campaigns_create.schedule_at_hint') }}</div>
                 </div>
 
                 <button type="submit" class="btn btn-success mt-3">
-                    <i class="bi bi-send"></i> Save & Schedule
+                    <i class="bi bi-send"></i> {{ isset($campaign) ? __('campaigns_create.update_campaign') : __('campaigns_create.save_and_schedule') }}
                 </button>
             </form>
+
+            @if(isset($campaign) && $campaign->email_template_id)
+                <form action="{{ route('campaigns.syncTemplate', $campaign->id) }}" method="POST" class="mt-3">
+                    @csrf
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-arrow-repeat"></i> {{ __('campaigns_create.sync_with_template') }}
+                    </button>
+                </form>
+            @endif
         </div>
     </div>
 </div>
@@ -77,37 +105,15 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     $(document).ready(function () {
-        // Initial select2
         $('.select2').select2({
-            placeholder: "Select user",
+            placeholder: "{{ __('campaigns_create.select_users_placeholder') }}",
             width: '100%'
         });
 
-        // Add new user row
-        $('#add-user-btn').on('click', function () {
-            let newRow = $('.user-select-row:first').clone();
-
-            // Clear selected value
-            newRow.find('select').val(null).trigger('change');
-
-            // Destroy select2 before appending clone
-            newRow.find('.select2').select2('destroy');
-
-            // Append and re-apply select2
-            $('#user-select-wrapper').append(newRow);
-            $('#user-select-wrapper .select2').select2({
-                placeholder: "Select user",
-                width: '100%'
-            });
-        });
-
-        // Remove user row
-        $(document).on('click', '.remove-member-btn', function () {
-            if ($('.user-select-row').length > 1) {
-                $(this).closest('.user-select-row').remove();
-            }
+        // Show/hide user selection on toggle
+        $('#send_to_all').on('change', function () {
+            $('#user-select-wrapper').toggle(!this.checked);
         });
     });
 </script>
-
 @endsection

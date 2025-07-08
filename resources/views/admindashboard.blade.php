@@ -147,8 +147,9 @@
         </div>
     </div>
 
-    <!-- Campaign Management (corrected placement) -->
+    <!-- Campaign & Email Template Management -->
     <div class="row mb-4">
+        <!-- Campaign Management -->
         <div class="col-md-6 mb-3">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-body">
@@ -166,6 +167,29 @@
                     </ul>
                     <a href="{{ route('campaigns.create') }}" class="btn w-100" style="background:#ff6b6b;color:#fff;border:none;">
                         <i class="bi bi-envelope-plus"></i> {{ __('admin_dashboard.create_new_campaign') }}
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Email Template Management -->
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>{{ __('admin_dashboard.email_template_management') }}</strong>
+                        <a href="{{ route('email-templates.index') }}" class="small text-primary">
+                            {{ __('admin_dashboard.view_all') }} <i class="bi bi-list"></i>
+                        </a>
+                    </div>
+                    <div class="text-secondary mb-2">{{ __('admin_dashboard.email_template_management_description') }}</div>
+                    <ul class="mb-3 ps-3">
+                        <li class="mb-1">{{ __('admin_dashboard.email_template_crud') }}</li>
+                        <li class="mb-1">{{ __('admin_dashboard.support_shortcodes') }}</li>
+                        <li class="mb-1">{{ __('admin_dashboard.assign_to_campaign') }}</li>
+                    </ul>
+                    <a href="{{ route('email-templates.create') }}" class="btn w-100" style="background:#4b6cb7;color:#fff;border:none;">
+                        <i class="bi bi-file-earmark-plus"></i> {{ __('admin_dashboard.create_new_template') }}
                     </a>
                 </div>
             </div>

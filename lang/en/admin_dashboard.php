@@ -45,6 +45,19 @@ return [
     'assign_now' => 'Assign now',
     'current_date' => 'Wednesday, June 18, 2025',
     'access_denied' => 'Access Denied',
-    'no_permission' => 'You do not have permission to view this page.'
+    'no_permission' => 'You do not have permission to view this page.',
+    'campaign_management' => 'Campaign Management',
+    'campaign_management_description' => 'Create and manage email campaigns for your team or customers.',
+    'campaign_crud' => 'Create, update, and delete campaigns',
+    'assign_users_to_campaign' => 'Assign users to receive specific campaigns',
+    'schedule_and_send' => 'Schedule emails to be sent automatically',
+
+    'email_template_management' => 'Email Template Management',
+    'email_template_management_description' => 'Design and manage reusable email templates with shortcodes.',
+    'email_template_crud' => 'Create, edit, and delete email templates',
+    'support_shortcodes' => 'Supports shortcodes like [name], [birthday], etc.',
+    'assign_to_campaign' => 'Assign templates to campaigns',
+    'create_new_template' => 'Create New Template',
+    'create_new_campaign' => 'Create New Campaign',
 ];
 ?>

@@ -13,4 +13,13 @@ return [
     'task_created' => 'Tạo nhiệm vụ thành công!',
     'task_updated' => 'Cập nhật nhiệm vụ thành công!',
     'task_deleted' => 'Xóa nhiệm vụ thành công!',
+    'user_imported' => 'Thêm người dùng thành công.',
+    'campaign_scheduled' => 'Chiến dịch đã được lên lịch.',
+    'campaign_created_and_queued' => 'Chiến dịch đã được tạo và email đã được đưa vào hàng đợi.',
+    'campaign_updated' => 'Cập nhật chiến dịch thành công.',
+    'campaign_deleted' => 'Xóa chiến dịch thành công.',
+    'campaign_already_sent' => 'Chiến dịch đã được gửi.',
+    'template_missing' => 'Mẫu email đã được gán không còn tồn tại. Vui lòng cập nhật chiến dịch.',
+    'campaign_sent_successfully' => 'Chiến dịch được gửi thành công.',
+    'campaign_reset' => 'Trạng thái gửi của chiến dịch đã được đặt lại.',
 ];

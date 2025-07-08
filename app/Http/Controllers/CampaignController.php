@@ -2,87 +2,97 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreCampaignRequest;
+use App\Repositories\CampaignRepository;
+use App\Http\Requests\UpdateCampaignRequest;
 use App\Models\Campaign;
 use App\Models\User;
+use App\Models\EmailTemplate;
 use Illuminate\Http\Request;
+use App\Services\CampaignService;
+use App\Services\BirthdayEmailService;
 
 class CampaignController extends Controller
 {
-    public function index()
+    protected CampaignService $campaignService;
+    protected BirthdayEmailService $birthdayService;
+    protected CampaignRepository $campaignRepository;
+
+    public function __construct(CampaignService $campaignService, BirthdayEmailService $birthdayService, CampaignRepository $campaignRepository)
     {
-        $campaigns = Campaign::with('users')->latest()->get();
-        return view('users.campaigns_index', compact('campaigns'));
+        $this->campaignService = $campaignService;
+        $this->birthdayService = $birthdayService;
+        $this->campaignRepository = $campaignRepository;
     }
+
+    public function index(Request $request)
+    {
+        $this->campaignService->runScheduledTasks();
+        $filters = $this->campaignService->extractFilters($request);
+        $campaigns = $this->campaignService->getFilteredCampaigns($filters);
+        return view('users.campaigns_index', compact('campaigns', 'filters'));
+    }
+
 
     public function create()
     {
-        $users = User::role('user')->get(); // Only assign regular users
-        return view('users.campaigns_create', compact('users'));
+        $users = User::role('user')->get();
+        $templates = EmailTemplate::all();
+        return view('users.campaigns_create', compact('users', 'templates'));
     }
 
-    public function store(Request $request)
+    public function store(StoreCampaignRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'subject' => 'nullable|string|max:255',
-            'content' => 'nullable|string',
-            'scheduled_at' => 'nullable|date',
-            'users' => 'nullable|array',
-            'users.*' => 'exists:users,id',
-        ]);
+        $campaign = $this->campaignService->createCampaign($request->all());
 
-        $campaign = Campaign::create([
-            'name' => $request->name,
-            'subject' => $request->subject,
-            'content' => $request->content,
-            'scheduled_at' => $request->scheduled_at,
-        ]);
-
-        if ($request->has('users')) {
-            $campaign->users()->attach($request->users);
-        }
-
-        return redirect()->route('campaigns.index')->with('success', 'Campaign created successfully.');
+        return redirect()->route('campaigns.index')
+            ->with('success', $request->scheduled_at ? __('messages.campaign_scheduled') : __('messages.campaign_created_and_queued'));
     }
 
     public function edit(Campaign $campaign)
     {
+        $templates = EmailTemplate::all();
         $users = User::role('user')->get();
-        return view('users.campaigns_edit', compact('campaign', 'users'));
+        $campaign->load('users');
+
+        return view('users.campaigns_create', compact('campaign', 'templates', 'users'));
     }
 
-    public function update(Request $request, Campaign $campaign)
+    public function update(UpdateCampaignRequest $request, Campaign $campaign)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'subject' => 'nullable|string|max:255',
-            'content' => 'nullable|string',
-            'scheduled_at' => 'nullable|date',
-            'users' => 'nullable|array',
-            'users.*' => 'exists:users,id',
-        ]);
+        $this->campaignService->updateCampaign($campaign, $request->all());
 
-        $campaign->update([
-            'name' => $request->name,
-            'subject' => $request->subject,
-            'content' => $request->content,
-            'scheduled_at' => $request->scheduled_at,
-        ]);
-
-        $campaign->users()->sync($request->users ?? []);
-
-        return redirect()->route('campaigns.index')->with('success', 'Campaign updated successfully.');
+        return redirect()->route('campaigns.index')->with('success', __('messages.campaign_updated'));
     }
 
     public function destroy(Campaign $campaign)
     {
-        $campaign->delete();
-        return redirect()->route('campaigns.index')->with('success', 'Campaign deleted successfully.');
+        $this->campaignRepository->delete($campaign);
+        return redirect()->route('campaigns.index')->with('success', __('messages.campaign_deleted'));
     }
 
     public function show(Campaign $campaign)
     {
         $campaign->load('users');
         return view('users.campaigns_show', compact('campaign'));
+    }
+
+    public function sendNow(Campaign $campaign)
+    {
+        $result = $this->campaignService->sendNow($campaign);
+
+        if ($result === false) {
+            return redirect()->back()->with('error', __('messages.campaign_already_sent'));
+        } elseif ($result === 'template_missing') {
+            return redirect()->back()->with('error', __('messages.template_missing'));
+        }
+
+        return redirect()->back()->with('success', __('messages.campaign_sent_successfully'));
+    }
+
+    public function reset(Campaign $campaign)
+    {
+        $campaign->update(['sent' => false]);
+        return redirect()->back()->with('success', __('messages.campaign_reset'));
     }
 }
