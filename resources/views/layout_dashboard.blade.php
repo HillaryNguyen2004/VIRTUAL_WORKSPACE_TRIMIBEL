@@ -446,7 +446,35 @@
             document.getElementById('checkInAlert').innerHTML =
                 `<div class="alert alert-danger">Check-in failed</div>`;
         });
+        console.log(localStorage.getItem('api_token'));
     });
+
+    document.getElementById('checkOutBtn').addEventListener('click', function () {
+    const token = localStorage.getItem('api_token');
+    if (!token) {
+        alert('Missing API token.');
+        return;
+    }
+
+    fetch('/api/check-out', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('checkInAlert').innerHTML =
+            `<div class="alert alert-success">${data.message}</div>`;
+    })
+    .catch(err => {
+        document.getElementById('checkInAlert').innerHTML =
+            `<div class="alert alert-danger">Check-out failed</div>`;
+    });
+});
+
 </script>
 
 </body>
