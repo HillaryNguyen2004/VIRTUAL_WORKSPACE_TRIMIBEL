@@ -12,9 +12,22 @@
         </a>
     </div>
 
+    <!-- Check In/Out Buttons -->
+    <div class="mb-4">
+        <div class="mb-2">
+            <label for="usernameInput" class="form-label fw-bold">Enter Username to Check In</label>
+            <input type="text" id="usernameInput" class="form-control" placeholder="Enter your username">
+        </div>
+        <button id="checkInBtn" class="btn btn-success me-2">Check In</button>
+        <button id="checkOutBtn" class="btn btn-danger">Check Out</button>
+        <div id="checkInAlert" class="mt-3"></div>
+    </div>
+
     <!-- Content Row -->
+    <!-- [everything below remains unchanged] -->
+    
+    <!-- Earnings (Monthly) Card Example -->
     <div class="row">
-        <!-- Earnings (Monthly) Card Example -->
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">
                 <div class="card-body">

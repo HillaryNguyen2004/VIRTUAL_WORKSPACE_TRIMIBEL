@@ -413,5 +413,41 @@
     <!-- Page level custom scripts -->
     <script src="{{ asset('js/demo/chart-area-demo.js') }}"></script>
     <script src="{{ asset('js/demo/chart-pie-demo.js') }}"></script>
+    <script>
+    document.getElementById('checkInBtn').addEventListener('click', function () {
+        const username = document.getElementById('usernameInput').value.trim();
+
+        if (!username) {
+            alert('Username required!');
+            return;
+        }
+
+        fetch('/api/check-in', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ username: username })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.token) {
+                // ✅ Save token for future requests
+                localStorage.setItem('api_token', data.token);
+                document.getElementById('checkInAlert').innerHTML =
+                    `<div class="alert alert-success">${data.message}</div>`;
+            } else {
+                document.getElementById('checkInAlert').innerHTML =
+                    `<div class="alert alert-danger">${data.message}</div>`;
+            }
+        })
+        .catch(err => {
+            document.getElementById('checkInAlert').innerHTML =
+                `<div class="alert alert-danger">Check-in failed</div>`;
+        });
+    });
+</script>
+
 </body>
 </html>

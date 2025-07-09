@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\CheckInController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,4 +17,15 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+// Public check-in (creates token)
+Route::post('/check-in', [CheckInController::class, 'checkIn']);
+
+// Authenticated routes (require token)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/check-out', [CheckInController::class, 'checkOut']);
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
 });
