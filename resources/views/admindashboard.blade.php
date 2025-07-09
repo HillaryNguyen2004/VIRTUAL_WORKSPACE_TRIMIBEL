@@ -196,6 +196,45 @@
         </div>
     </div>
 
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <strong>{{ __('admin_dashboard.recent_check_ins') }}</strong>
+                    <table class="table table-sm mt-3">
+                        <thead>
+                            <tr>
+                                <th>{{ __('admin_dashboard.user') }}</th>
+                                <th>{{ __('admin_dashboard.date') }}</th>
+                                <th>{{ __('admin_dashboard.check_in') }}</th>
+                                <th>{{ __('admin_dashboard.check_out') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($recentCheckIns as $log)
+                                <tr>
+                                    <td>{{ $log->user_name }}</td>
+                                    <td>{{ $log->date }}</td>
+                                    <td>{{ $log->check_in_time ?? '-' }}</td>
+                                    <td>{{ $log->check_out_time ?? '-' }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">
+                                        {{ __('admin_dashboard.no_check_ins') }}
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                    <a href="#" class="small text-primary">
+                        {{ __('admin_dashboard.view_all_checkins') }} <i class="bi bi-list"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Quick Actions -->
     <div class="row mb-4">
         <div class="col-12">

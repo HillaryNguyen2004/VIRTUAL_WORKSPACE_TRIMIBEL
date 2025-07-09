@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\ActivityLog;
 
 class AdminDashboardController extends Controller
@@ -13,8 +14,15 @@ class AdminDashboardController extends Controller
             ->with('user')
             ->take(3)
             ->get();
+        
+        $recentCheckIns = DB::table('check_ins')
+        ->orderBy('date', 'desc')
+        ->orderBy('check_in_time', 'desc')
+        ->limit(3)
+        ->get();
 
-        return view('admindashboard', compact('recentLogs'));
+
+        return view('admindashboard', compact('recentLogs','recentCheckIns'));
     }
 
     public function viewAllLogs(Request $request)

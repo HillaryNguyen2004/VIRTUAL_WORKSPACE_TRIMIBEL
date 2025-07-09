@@ -59,5 +59,12 @@ return [
     'assign_to_campaign' => 'Assign templates to campaigns',
     'create_new_template' => 'Create New Template',
     'create_new_campaign' => 'Create New Campaign',
+    'recent_check_ins' => 'Recent Check-ins',
+    'user' => 'User',
+    'date' => 'Date',
+    'check_in' => 'Check In Time',
+    'check_out' => 'Check Out Time',
+    'no_check_ins' => 'No check-ins available.',
+    'view_all_checkins' => 'View all check-ins',
 ];
 ?>

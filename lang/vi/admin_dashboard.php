@@ -59,6 +59,12 @@ return [
     'assign_to_campaign' => 'Gán mẫu cho chiến dịch',
     'create_new_template' => 'Tạo Mẫu Mới',
     'create_new_campaign' => 'Tạo Chiến dịch Mới',
-
+    'recent_check_ins' => 'Chấm công gần đây',
+    'user' => 'Người dùng',
+    'date' => 'Ngày',
+    'check_in' => 'Giờ vào',
+    'check_out' => 'Giờ ra',
+    'no_check_ins' => 'Không có bản ghi chấm công.',
+    'view_all_checkins' => 'Xem tất cả chấm công',
 ];
 ?>
