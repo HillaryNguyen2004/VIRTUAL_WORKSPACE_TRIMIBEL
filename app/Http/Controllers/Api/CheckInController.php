@@ -7,11 +7,31 @@ use App\Models\User;
 use App\Models\CheckIn;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use App\Models\CompanyHour;
 use Illuminate\Support\Facades\DB;
 
 
 class CheckInController extends Controller
 {
+    public function index(Request $request)
+    {
+        $query = DB::table('check_ins')
+            ->orderByDesc('date')
+            ->orderByDesc('check_in_time');
+
+        if ($request->filled('username')) {
+            $query->where('user_name', 'like', '%' . $request->username . '%');
+        }
+
+        if ($request->filled('date')) {
+            $query->where('date', $request->date);
+        }
+
+        $checkIns = $query->paginate(3);
+
+        return view('users.checkin_index', compact('checkIns'));
+    }
+
     public function checkIn(Request $request)
     {
         $request->validate([
@@ -34,6 +54,7 @@ class CheckInController extends Controller
         // Use Vietnam timezone
         $now = Carbon::now('Asia/Ho_Chi_Minh');
         $today = $now->toDateString();
+        
 
         // Check if already checked in today
         $alreadyCheckedIn = \DB::table('check_ins')
@@ -46,6 +67,15 @@ class CheckInController extends Controller
                 'message' => 'You have already checked in today.',
             ], 400);
         }
+        $workingHour = CompanyHour::first(); // Assuming one row
+        $isLate = false;
+
+        if ($workingHour) {
+            $configuredStart = Carbon::createFromFormat('H:i:s', $workingHour->start_at, 'Asia/Ho_Chi_Minh')
+                ->setDate($now->year, $now->month, $now->day);
+            $isLate = $now->greaterThan($configuredStart);
+        }
+
 
         // Save check-in
         \DB::table('check_ins')->insert([
@@ -54,6 +84,7 @@ class CheckInController extends Controller
             'check_in_time' => $now->toTimeString(),
             'created_at' => $now,
             'updated_at' => $now,
+            'is_late' => $isLate,
         ]);
 
         return response()->json([

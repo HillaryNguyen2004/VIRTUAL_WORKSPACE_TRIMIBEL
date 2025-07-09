@@ -6,7 +6,7 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\UserExportController;
-
+use App\Http\Controllers\Api\CheckInController;
 
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
@@ -33,7 +33,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/admin/users/import', [UserController::class, 'import'])->name('admin.users.import');
     Route::get('/admin/users/import/template', [UserController::class, 'downloadTemplate'])->name('admin.users.import.template');
     Route::put('/campaigns/{campaign}/reset', [CampaignController::class, 'reset'])->name('campaigns.reset');
-    
+    Route::get('/check-ins', [CheckInController::class, 'index'])->name('users.checkin_index');
+
 
 
     // Route::get('/tasks/new', [TaskController::class, 'create'])->name('tasks.create');

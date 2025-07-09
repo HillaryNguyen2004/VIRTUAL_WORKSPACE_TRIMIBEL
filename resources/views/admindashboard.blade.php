@@ -227,7 +227,7 @@
                             @endforelse
                         </tbody>
                     </table>
-                    <a href="#" class="small text-primary">
+                    <a href="{{ route('users.checkin_index') }}" class="small text-primary">
                         {{ __('admin_dashboard.view_all_checkins') }} <i class="bi bi-list"></i>
                     </a>
                 </div>
