@@ -11,16 +11,26 @@
 
     <!-- Search + Filter -->
     <form method="GET" action="{{ route('users.checkin_index') }}" class="row g-3 mb-4">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <input type="text" name="username" value="{{ request('username') }}" class="form-control" placeholder="Search by username...">
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <input type="date" name="date" value="{{ request('date') }}" class="form-control">
         </div>
-        <div class="col-md-4">
-            <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> Filter</button>
+        <div class="col-md-3">
+            <select name="status" class="form-select">
+                <option value="">All Statuses</option>
+                <option value="late" {{ request('status') == 'late' ? 'selected' : '' }}>Late</option>
+                <option value="on_time" {{ request('status') == 'on_time' ? 'selected' : '' }}>On Time</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button class="btn btn-primary" type="submit">
+                <i class="bi bi-search"></i> Filter
+            </button>
         </div>
     </form>
+
 
     <!-- Table -->
     <div class="card shadow-sm">

@@ -21,6 +21,13 @@
         <button id="checkInBtn" class="btn btn-success me-2">Check In</button>
         <button id="checkOutBtn" class="btn btn-danger">Check Out</button>
         <div id="checkInAlert" class="mt-3"></div>
+        @if($workingHour)
+            <div class="alert alert-info">
+                <strong>Company Working Hours:</strong><br>
+                Start: <span class="text-primary">{{ \Carbon\Carbon::createFromFormat('H:i:s', $workingHour->start_at)->format('H:i') }}</span><br>
+                End: <span class="text-danger">{{ \Carbon\Carbon::createFromFormat('H:i:s', $workingHour->end_at)->format('H:i') }}</span>
+            </div>
+        @endif
     </div>
 
     <!-- Content Row -->

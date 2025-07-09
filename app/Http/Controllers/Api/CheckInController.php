@@ -27,10 +27,19 @@ class CheckInController extends Controller
             $query->where('date', $request->date);
         }
 
+        if ($request->filled('status')) {
+            if ($request->status === 'late') {
+                $query->where('is_late', true);
+            } elseif ($request->status === 'on_time') {
+                $query->where('is_late', false);
+            }
+        }
+
         $checkIns = $query->paginate(3);
 
         return view('users.checkin_index', compact('checkIns'));
     }
+
 
     public function checkIn(Request $request)
     {
