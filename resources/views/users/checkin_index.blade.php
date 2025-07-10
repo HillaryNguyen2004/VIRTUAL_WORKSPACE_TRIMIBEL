@@ -83,6 +83,12 @@
             <div class="mt-3">
                 {{ $checkIns->withQueryString()->links() }}
             </div>
+            <form method="GET" action="{{ route('checkins.export') }}">
+                <input type="hidden" name="username" value="{{ request('username') }}">
+                <input type="hidden" name="status" value="{{ request('status') }}">
+                <input type="hidden" name="date" value="{{ request('date') }}">
+                <button type="submit" class="btn btn-success">Export to Excel</button>
+            </form>
         </div>
     </div>
 </div>

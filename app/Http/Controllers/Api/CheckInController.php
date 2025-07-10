@@ -9,37 +9,48 @@ use Illuminate\Support\Str;
 use Carbon\Carbon;
 use App\Models\CompanyHour;
 use Illuminate\Support\Facades\DB;
+use App\Services\CheckInExportService;
+// use Maatwebsite\Excel\Facades\Excel;
+// use App\Exports\CheckInExport;
+
 
 
 class CheckInController extends Controller
 {
-    public function index(Request $request)
+    // public function index(Request $request)
+    // {
+    //     $query = DB::table('check_ins')
+    //         ->orderByDesc('date')
+    //         ->orderByDesc('check_in_time');
+
+    //     if ($request->filled('username')) {
+    //         $query->where('user_name', 'like', '%' . $request->username . '%');
+    //     }
+
+    //     if ($request->filled('date')) {
+    //         $query->where('date', $request->date);
+    //     }
+
+    //     if ($request->filled('status')) {
+    //         if ($request->status === 'late') {
+    //             $query->where('is_late', true);
+    //         } elseif ($request->status === 'on_time') {
+    //             $query->where('is_late', false);
+    //         }
+    //     }
+
+    //     $checkIns = $query->paginate(3);
+
+    //     return view('users.checkin_index', compact('checkIns'));
+    // }
+
+    public function index(Request $request, CheckInExportService $exportService)
     {
-        $query = DB::table('check_ins')
-            ->orderByDesc('date')
-            ->orderByDesc('check_in_time');
-
-        if ($request->filled('username')) {
-            $query->where('user_name', 'like', '%' . $request->username . '%');
-        }
-
-        if ($request->filled('date')) {
-            $query->where('date', $request->date);
-        }
-
-        if ($request->filled('status')) {
-            if ($request->status === 'late') {
-                $query->where('is_late', true);
-            } elseif ($request->status === 'on_time') {
-                $query->where('is_late', false);
-            }
-        }
-
+        $query = $exportService->getFilteredCheckIns($request);
         $checkIns = $query->paginate(3);
 
         return view('users.checkin_index', compact('checkIns'));
     }
-
 
     public function checkIn(Request $request)
     {
@@ -137,6 +148,30 @@ class CheckInController extends Controller
             'message' => 'Checked out successfully.',
         ]);
     }
+
+    
+    // public function export(Request $request, CheckInExportService $exportService)
+    // {
+    //     $filteredCheckIns = $exportService->getFilteredCheckIns($request)->get();
+    //     return Excel::download(new CheckInExport($filteredCheckIns), 'checkin_logs.xlsx');
+    // }
+
+    // public function export(Request $request, CheckInExportService $exportService)
+    // {
+    //     $checkIns = $exportService->getFilteredCheckIns($request);
+    //     $excelFile = $exportService->generateExcel($checkIns);
+
+    //     return response()->download($excelFile['file'], $excelFile['name'])->deleteFileAfterSend(true);
+    // }
+    public function export(Request $request, CheckInExportService $exportService)
+    {
+        $checkIns = $exportService->getFilteredCheckIns($request)->get(); // ✅ Now we get all results
+        $excelFile = $exportService->generateExcel($checkIns);
+
+        return response()->download($excelFile['file'], $excelFile['name'])->deleteFileAfterSend(true);
+    }
+
+
 }
 
 

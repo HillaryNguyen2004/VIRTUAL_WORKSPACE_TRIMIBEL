@@ -34,6 +34,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/users/import/template', [UserController::class, 'downloadTemplate'])->name('admin.users.import.template');
     Route::put('/campaigns/{campaign}/reset', [CampaignController::class, 'reset'])->name('campaigns.reset');
     Route::get('/check-ins', [CheckInController::class, 'index'])->name('users.checkin_index');
+    Route::get('/admin/check-ins/export', [CheckInController::class, 'export'])->name('checkins.export');
 
 
 
