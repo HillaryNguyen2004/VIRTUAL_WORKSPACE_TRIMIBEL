@@ -12,6 +12,7 @@
         "laravel/socialite": "^5.21",
         "laravel/tinker": "^2.7",
         "maatwebsite/excel": "^1.1",
+        "nguyen_nguyen/company-hour": "dev-sprint4",
         "phpoffice/phpspreadsheet": "^4.4",
         "spatie/laravel-permission": "^6.20",
         "tymon/jwt-auth": "^2.2"
@@ -69,5 +70,12 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "repositories": [
+    {
+        "type": "path",
+        "url": "packages/Nguyen_Nguyen/CompanyHour"
+    }
+    ]
+
 }

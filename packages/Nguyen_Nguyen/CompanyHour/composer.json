@@ -1,0 +1,27 @@
+{
+    "name": "nguyen_nguyen/company-hour",
+    "description": "CRUD for company working hours",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "NguyenNguyen\\CompanyHour\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "HillaryNguyen2004",
+            "email": "hillary.le.2004@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.0",
+        "illuminate/support": "^9.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+            "NguyenNguyen\\CompanyHour\\CompanyHourServiceProvider"
+            ]
+        }
+    }
+}

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3ca63a7f38056d4ffbf0b02c705236c7",
+    "content-hash": "fca105a119dad5369da2caf79d193e9e",
     "packages": [
         {
             "name": "brick/math",
@@ -2847,6 +2847,42 @@
                 "source": "https://github.com/nette/utils/tree/v4.0.7"
             },
             "time": "2025-06-03T04:55:08+00:00"
+        },
+        {
+            "name": "nguyen_nguyen/company-hour",
+            "version": "dev-sprint4",
+            "dist": {
+                "type": "path",
+                "url": "packages/Nguyen_Nguyen/CompanyHour",
+                "reference": "af7c87c51f28132ae8b9b9308a2562d0f3160def"
+            },
+            "require": {
+                "illuminate/support": "^9.0",
+                "php": "^8.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "NguyenNguyen\\CompanyHour\\CompanyHourServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "NguyenNguyen\\CompanyHour\\": "src/"
+                }
+            },
+            "authors": [
+                {
+                    "name": "HillaryNguyen2004",
+                    "email": "hillary.le.2004@gmail.com"
+                }
+            ],
+            "description": "CRUD for company working hours",
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "nikic/php-parser",
@@ -9355,7 +9391,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "nguyen_nguyen/company-hour": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
