@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use App\Models\CompanyHour;
 use Illuminate\Support\Facades\DB;
 use App\Services\CheckInExportService;
+use App\Services\CheckInService;
 // use Maatwebsite\Excel\Facades\Excel;
 // use App\Exports\CheckInExport;
 
@@ -17,6 +18,12 @@ use App\Services\CheckInExportService;
 
 class CheckInController extends Controller
 {
+    protected $checkInService;
+
+    public function __construct(CheckInService $checkInService)
+    {
+        $this->checkInService = $checkInService;
+    }
    
     public function index(Request $request, CheckInExportService $exportService)
     {
@@ -38,11 +45,6 @@ class CheckInController extends Controller
             return response()->json(['message' => 'Invalid user'], 401);
         }
 
-        // Optional: generate token if doesn't exist
-        // if (!$user->api_token) {
-        //     $user->api_token = Str::random(60);
-        //     $user->save();
-        // }
         $token = $user->createToken('check-in-token')->plainTextToken;
 
         // Use Vietnam timezone
@@ -89,38 +91,12 @@ class CheckInController extends Controller
 
     public function checkOut(Request $request)
     {
-        $user = $request->user(); // Authenticated user via Sanctum
+        $user = $request->user();
+        $result = $this->checkInService->processCheckOut($user->name);
 
-        $now = Carbon::now('Asia/Ho_Chi_Minh');
-        $today = $now->toDateString();
-
-        $checkIn = DB::table('check_ins')
-            ->where('user_name', $user->name)
-            ->where('date', $today)
-            ->first();
-
-        if (!$checkIn) {
-            return response()->json([
-                'message' => 'You have not checked in today.',
-            ], 400);
-        }
-
-        if ($checkIn->check_out_time !== null) {
-            return response()->json([
-                'message' => 'You have already checked out today.',
-            ], 400);
-        }
-
-        DB::table('check_ins')
-            ->where('id', $checkIn->id)
-            ->update([
-                'check_out_time' => $now->toTimeString(),
-                'updated_at' => $now,
-            ]);
-
-        return response()->json([
-            'message' => 'Checked out successfully.',
-        ]);
+        return $result['status']
+            ? response()->json(['message' => $result['message']])
+            : response()->json(['message' => $result['message']], 400);
     }
 
     

@@ -28,6 +28,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(TaskRepositoryInterface::class, TaskRepository::class);
         $this->app->bind(TeamRepositoryInterface::class, TeamRepository::class);
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
+        $this->app->bind(
+            \App\Repositories\CheckInRepositoryInterface::class,
+            \App\Repositories\CheckInRepository::class
+        );
     }
 
     /**
