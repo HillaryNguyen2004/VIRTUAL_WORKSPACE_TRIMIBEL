@@ -10,14 +10,20 @@
     <h2 class="mb-4 fw-bold">All Check-In Logs</h2>
 
     <!-- Search + Filter -->
-    <form method="GET" action="{{ route('users.checkin_index') }}" class="row g-3 mb-4">
-        <div class="col-md-3">
-            <input type="text" name="username" value="{{ request('username') }}" class="form-control" placeholder="Search by username...">
+    <form method="GET" action="{{ route('users.checkin_index') }}" class="row g-3 align-items-end mb-4">
+        <div class="col-md-2">
+            <input type="text" name="username" value="{{ request('username') }}" class="form-control" placeholder="Username">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">From:</label>
+            <input type="date" name="date_from" value="{{ request('date_from') }}" class="form-control">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">To:</label>
+            <input type="date" name="date_to" value="{{ request('date_to') }}" class="form-control">
         </div>
         <div class="col-md-3">
-            <input type="date" name="date" value="{{ request('date') }}" class="form-control">
-        </div>
-        <div class="col-md-3">
+            <label class="form-label">Status</label>
             <select name="status" class="form-select">
                 <option value="">All Statuses</option>
                 <option value="late" {{ request('status') == 'late' ? 'selected' : '' }}>Late</option>
@@ -25,11 +31,12 @@
             </select>
         </div>
         <div class="col-md-3">
-            <button class="btn btn-primary" type="submit">
+            <button class="btn btn-primary w-100" type="submit">
                 <i class="bi bi-search"></i> Filter
             </button>
         </div>
     </form>
+
 
 
     <!-- Table -->
@@ -43,7 +50,7 @@
                         <th>Date</th>
                         <th>Check In Time</th>
                         <th>Check Out Time</th>
-                        <th>Status</th>
+                        <th>Working Hours</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -52,22 +59,28 @@
                             <td>{{ $checkIns->firstItem() + $index }}</td>
                             <td>{{ $log->user_name }}</td>
                             <td>{{ $log->date }}</td>
-                            <td>{{ $log->check_in_time ?? '-' }}</td>
-                            <td>{{ $log->check_out_time ?? '-' }}</td>
                             <td>
-                                @if($log->check_in_time && !$log->check_out_time)
-                                    <span class="badge bg-warning text-dark">Checked In</span>
-                                @elseif($log->check_in_time && $log->check_out_time)
-                                    <span class="badge bg-success">Checked Out</span>
+                                @if ($log->check_in_time)
+                                    <span class="{{ $log->is_late ? 'text-danger fw-bold' : '' }}">
+                                        {{ $log->check_in_time }}
+                                    </span>
                                 @else
-                                    <span class="badge bg-secondary">Not Checked In</span>
+                                    -
                                 @endif
                             </td>
+                            <td>{{ $log->check_out_time ?? '-' }}</td>
                             <td>
-                                @if($log->is_late)
-                                    <span class="badge bg-danger">Late</span>
+                                @if ($log->check_in_time && $log->check_out_time)
+                                    @php
+                                        $checkIn = \Carbon\Carbon::parse($log->check_in_time);
+                                        $checkOut = \Carbon\Carbon::parse($log->check_out_time);
+                                        $workingHours = $checkOut->diff($checkIn)->format('%H:%I');
+                                    @endphp
+                                    <span class="badge bg-primary">{{ $workingHours }} hrs</span>
+                                @elseif($log->check_in_time && !$log->check_out_time)
+                                    <span class="badge bg-warning text-dark">Checked In</span>
                                 @else
-                                    <span class="badge bg-success">On Time</span>
+                                    <span class="badge bg-secondary">Not Checked In</span>
                                 @endif
                             </td>
                         </tr>
@@ -77,6 +90,7 @@
                         </tr>
                     @endforelse
                 </tbody>
+
             </table>
 
             <!-- Pagination -->
