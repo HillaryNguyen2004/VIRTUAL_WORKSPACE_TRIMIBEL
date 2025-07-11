@@ -66,5 +66,12 @@ return [
     'check_out' => 'Check Out Time',
     'no_check_ins' => 'No check-ins available.',
     'view_all_checkins' => 'View all check-ins',
+    'company_hours_management' => 'Company Working Hours Management',
+    'view_all' => 'View All',
+    'company_hours_management_description' => 'Set and manage the official working hours of the company.',
+    'company_hours_crud' => 'Add, Edit, Delete Working Hours',
+    'set_company_hours' => 'Set Working Hours',
+    'manage_hours_policies' => 'Manage Working Hours Policies',
+    'create_new_company_hours' => 'Set New Company Hours',
 ];
 ?>

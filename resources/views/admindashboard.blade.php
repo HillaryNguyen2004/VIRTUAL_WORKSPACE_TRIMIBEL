@@ -196,6 +196,7 @@
         </div>
     </div>
 
+    <!-- Recent Check Ins & Company Hours -->
     <div class="row mb-4">
         <div class="col-md-6 mb-3">
             <div class="card shadow-sm border-0 h-100">
@@ -229,6 +230,28 @@
                     </table>
                     <a href="{{ route('users.checkin_index') }}" class="small text-primary">
                         {{ __('admin_dashboard.view_all_checkins') }} <i class="bi bi-list"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>{{ __('admin_dashboard.company_hours_management') }}</strong>
+                        <a href="{{ route('companyhour.index') }}" class="small text-primary">
+                            {{ __('admin_dashboard.view_all') }} <i class="bi bi-list"></i>
+                        </a>
+                    </div>
+                    <div class="text-secondary mb-2">{{ __('admin_dashboard.company_hours_management_description') }}</div>
+                    <ul class="mb-3 ps-3">
+                        <li class="mb-1">{{ __('admin_dashboard.company_hours_crud') }}</li>
+                        <li class="mb-1">{{ __('admin_dashboard.set_company_hours') }}</li>
+                        <li class="mb-1">{{ __('admin_dashboard.manage_hours_policies') }}</li>
+                    </ul>
+                    <a href="{{ route('companyhour.create') }}" class="btn w-100" style="background:#f39c12;color:#fff;border:none;">
+                        <i class="bi bi-clock"></i> {{ __('admin_dashboard.create_new_company_hours') }}
                     </a>
                 </div>
             </div>

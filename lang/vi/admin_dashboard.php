@@ -66,5 +66,11 @@ return [
     'check_out' => 'Giờ ra',
     'no_check_ins' => 'Không có bản ghi chấm công.',
     'view_all_checkins' => 'Xem tất cả chấm công',
+    'company_hours_management' => 'Quản lý giờ làm việc công ty',
+    'company_hours_management_description' => 'Thiết lập và quản lý khung giờ làm việc chính thức của công ty.',
+    'company_hours_crud' => 'Thêm, sửa, xoá giờ làm việc',
+    'set_company_hours' => 'Thiết lập giờ làm việc',
+    'manage_hours_policies' => 'Quản lý chính sách thời gian làm việc',
+    'create_new_company_hours' => 'Tạo giờ làm việc mới',
 ];
 ?>

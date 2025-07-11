@@ -10,8 +10,9 @@ class CompanyHourController extends Controller
 {
     public function index()
     {
-        $hours = CompanyHour::all();
-        return view('companyhour::index', compact('hours'));
+        // $hours = CompanyHour::all();
+        $hour = CompanyHour::first();
+        return view('companyhour::index', compact('hour'));
     }
 
     public function create()
@@ -19,13 +20,18 @@ class CompanyHourController extends Controller
         return view('companyhour::create');
     }
 
+    
     public function store(StoreCompanyHourRequest $request)
     {
-        // CompanyHour::truncate();
-        // CompanyHour::create($request->validated());
-        CompanyHour::updateOrCreate([], $request->validated());
-        return redirect()->route('companyhour.index')->with('success', 'Created!');
+        // Always update the first row or create it if none exists
+        CompanyHour::updateOrCreate(
+            ['id' => CompanyHour::first()?->id], // condition
+            $request->validated()               // values to update/create
+        );
+
+        return redirect()->route('companyhour.index')->with('success', 'Company hour saved!');
     }
+
 
     public function edit(CompanyHour $companyhour)
     {
