@@ -33,13 +33,27 @@ class CompanyHourController extends Controller
     }
 
 
-    public function edit(CompanyHour $companyhour)
+    // public function edit(CompanyHour $companyhour)
+    // {
+    //     return view('companyhour::edit', compact('companyhour'));
+    // }
+
+    // public function update(StoreCompanyHourRequest $request, CompanyHour $companyhour)
+    // {
+    //     $companyhour->update($request->validated());
+    //     return redirect()->route('companyhour.index')->with('success', 'Updated!');
+    // }
+
+
+    public function edit()
     {
+        $companyhour = CompanyHour::firstOrFail();
         return view('companyhour::edit', compact('companyhour'));
     }
 
-    public function update(StoreCompanyHourRequest $request, CompanyHour $companyhour)
+    public function update(StoreCompanyHourRequest $request)
     {
+        $companyhour = CompanyHour::firstOrFail();
         $companyhour->update($request->validated());
         return redirect()->route('companyhour.index')->with('success', 'Updated!');
     }

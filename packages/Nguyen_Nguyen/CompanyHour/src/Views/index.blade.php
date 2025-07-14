@@ -30,7 +30,7 @@
                             <td>{{ \Carbon\Carbon::parse($hour->start_at)->format('H:i') }}</td>
                             <td>{{ \Carbon\Carbon::parse($hour->end_at)->format('H:i') }}</td>
                             <td class="text-center">
-                                <a href="{{ route('companyhour.edit', $hour->id) }}" class="btn btn-sm btn-outline-primary me-2">
+                                <a href="{{ route('companyhour.edit') }}" class="btn btn-sm btn-outline-primary me-2">
                                     <i class="bi bi-pencil-square"></i> Edit
                                 </a>
                                 <form action="{{ route('companyhour.destroy', $hour->id) }}" method="POST" class="d-inline-block" onsubmit="return confirm('Are you sure?');">

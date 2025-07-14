@@ -4,10 +4,8 @@
 <div class="container">
     <h1>Edit Company Hour</h1>
 
-    <form action="{{ route('companyhour.update', $companyhour->id) }}" method="POST">
+    <form action="{{ route('companyhour.update') }}" method="POST">
         @csrf
-        @method('PUT')
-
         <div class="form-group">
             <label for="start_at">Start Time</label>
             <input type="time" name="start_at" id="start_at" class="form-control" value="{{ $companyhour->start_at }}" required>
