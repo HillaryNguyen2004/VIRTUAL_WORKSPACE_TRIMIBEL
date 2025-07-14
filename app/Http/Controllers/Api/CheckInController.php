@@ -11,6 +11,9 @@ use App\Models\CompanyHour;
 use Illuminate\Support\Facades\DB;
 use App\Services\CheckInExportService;
 use App\Services\CheckInService;
+use App\Http\Requests\CheckInRequest;
+use App\Http\Requests\CheckOutRequest;
+
 // use Maatwebsite\Excel\Facades\Excel;
 // use App\Exports\CheckInExport;
 
@@ -33,66 +36,21 @@ class CheckInController extends Controller
         return view('users.checkin_index', compact('checkIns'));
     }
 
-    public function checkIn(Request $request)
+    public function checkIn(CheckInRequest $request)
     {
-        $request->validate([
-            'username' => 'required|string',
-        ]);
-
-        $user = User::where('name', $request->username)->first();
-
-        if (!$user) {
-            return response()->json(['message' => 'Invalid user'], 401);
-        }
-
-        $token = $user->createToken('check-in-token')->plainTextToken;
-
-        // Use Vietnam timezone
-        $now = Carbon::now('Asia/Ho_Chi_Minh');
-        $today = $now->toDateString();
         
+        $result = $this->checkInService->processCheckIn($request->username);
 
-        // Check if already checked in today
-        $alreadyCheckedIn = \DB::table('check_ins')
-            ->where('user_name', $user->name)
-            ->where('date', $today)
-            ->exists();
-
-        if ($alreadyCheckedIn) {
-            return response()->json([
-                'message' => 'You have already checked in today.',
-            ], 400);
-        }
-        $workingHour = CompanyHour::first(); // Assuming one row
-        $isLate = false;
-
-        if ($workingHour) {
-            $configuredStart = Carbon::createFromFormat('H:i:s', $workingHour->start_at, 'Asia/Ho_Chi_Minh')
-                ->setDate($now->year, $now->month, $now->day);
-            $isLate = $now->greaterThan($configuredStart);
-        }
-
-
-        // Save check-in
-        \DB::table('check_ins')->insert([
-            'user_name' => $user->name,
-            'date' => $today,
-            'check_in_time' => $now->toTimeString(),
-            'created_at' => $now,
-            'updated_at' => $now,
-            'is_late' => $isLate,
-        ]);
-
-        return response()->json([
-            'message' => 'Checked in successfully',
-            'token' => $token,
-        ]);
+        return $result['status']
+            ? response()->json(['message' => $result['message'], 'token' => $result['token']])
+            : response()->json(['message' => $result['message']], 400);
     }
 
-    public function checkOut(Request $request)
+
+    public function checkOut(CheckOutRequest $request)
     {
-        $user = $request->user();
-        $result = $this->checkInService->processCheckOut($user->name);
+       
+        $result = $this->checkInService->processCheckOut($request->username);
 
         return $result['status']
             ? response()->json(['message' => $result['message']])

@@ -475,6 +475,41 @@
     });
 });
 
+document.getElementById('checkOutBtn').addEventListener('click', function () {
+    const username = document.getElementById('usernameInput').value.trim();
+    const token = localStorage.getItem('api_token');
+
+    if (!username) {
+        // alert('Username required!');
+        return;
+    }
+
+    if (!token) {
+        alert('Missing API token.');
+        return;
+    }
+
+    fetch('/api/check-out', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ username: username }) // ✅ send username here
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('checkInAlert').innerHTML =
+            `<div class="alert alert-${res.ok ? 'success' : 'danger'}">${data.message}</div>`;
+    })
+    // .catch(err => {
+    //     document.getElementById('checkInAlert').innerHTML =
+    //         `<div class="alert alert-danger">Check-out failed</div>`;
+    // });
+});
+
+
 </script>
 
 </body>

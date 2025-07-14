@@ -21,4 +21,17 @@ class CheckInRepository implements CheckInRepositoryInterface
             'updated_at' => Carbon::now('Asia/Ho_Chi_Minh')
         ]);
     }
+
+    public function hasCheckedInToday(string $username, string $date): bool
+    {
+        return DB::table('check_ins')
+            ->where('user_name', $username)
+            ->where('date', $date)
+            ->exists();
+    }
+
+    public function insertCheckIn(array $data): void
+    {
+        DB::table('check_ins')->insert($data);
+    }
 }
