@@ -414,64 +414,39 @@
     <script src="{{ asset('js/demo/chart-area-demo.js') }}"></script>
     <script src="{{ asset('js/demo/chart-pie-demo.js') }}"></script>
     <script>
-    document.getElementById('checkInBtn').addEventListener('click', function () {
-        const username = document.getElementById('usernameInput').value.trim();
 
-        if (!username) {
-            alert('Username required!');
-            return;
-        }
+document.getElementById('checkInBtn').addEventListener('click', function () {
+    const username = document.getElementById('usernameInput').value.trim();
 
-        fetch('/api/check-in', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ username: username })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.token) {
-                // ✅ Save token for future requests
-                localStorage.setItem('api_token', data.token);
-                document.getElementById('checkInAlert').innerHTML =
-                    `<div class="alert alert-success">${data.message}</div>`;
-            } else {
-                document.getElementById('checkInAlert').innerHTML =
-                    `<div class="alert alert-danger">${data.message}</div>`;
-            }
-        })
-        .catch(err => {
-            document.getElementById('checkInAlert').innerHTML =
-                `<div class="alert alert-danger">Check-in failed</div>`;
-        });
-        console.log(localStorage.getItem('api_token'));
-    });
-
-    document.getElementById('checkOutBtn').addEventListener('click', function () {
-    const token = localStorage.getItem('api_token');
-    if (!token) {
-        alert('Missing API token.');
+    if (!username) {
+        alert('Username required!');
         return;
     }
 
-    fetch('/api/check-out', {
+    fetch('/api/check-in', {
         method: 'POST',
         headers: {
-            'Authorization': 'Bearer ' + token,
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         },
+        body: JSON.stringify({ username: username })
     })
     .then(res => res.json())
     .then(data => {
-        document.getElementById('checkInAlert').innerHTML =
-            `<div class="alert alert-success">${data.message}</div>`;
+        if (data.token) {
+            // ✅ Save token for future use
+            localStorage.setItem('api_token', data.token);
+
+            document.getElementById('checkInAlert').innerHTML =
+                `<div class="alert alert-success">${data.message}</div>`;
+        } else {
+            document.getElementById('checkInAlert').innerHTML =
+                `<div class="alert alert-danger">${data.message}</div>`;
+        }
     })
     .catch(err => {
         document.getElementById('checkInAlert').innerHTML =
-            `<div class="alert alert-danger">Check-out failed</div>`;
+            `<div class="alert alert-danger">Check-in failed</div>`;
     });
 });
 
@@ -480,7 +455,7 @@ document.getElementById('checkOutBtn').addEventListener('click', function () {
     const token = localStorage.getItem('api_token');
 
     if (!username) {
-        // alert('Username required!');
+        alert('Username required!');
         return;
     }
 
@@ -496,18 +471,20 @@ document.getElementById('checkOutBtn').addEventListener('click', function () {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         },
-        body: JSON.stringify({ username: username }) // ✅ send username here
+        body: JSON.stringify({ username: username })
     })
-    .then(res => res.json())
-    .then(data => {
+    .then(res => res.json().then(data => ({ status: res.ok, body: data })))
+    .then(({ status, body }) => {
         document.getElementById('checkInAlert').innerHTML =
-            `<div class="alert alert-${res.ok ? 'success' : 'danger'}">${data.message}</div>`;
+            `<div class="alert alert-${status ? 'success' : 'danger'}">${body.message}</div>`;
     })
-    // .catch(err => {
-    //     document.getElementById('checkInAlert').innerHTML =
-    //         `<div class="alert alert-danger">Check-out failed</div>`;
-    // });
+    .catch(err => {
+        document.getElementById('checkInAlert').innerHTML =
+            `<div class="alert alert-danger">Check-out failed</div>`;
+    });
 });
+
+
 
 
 </script>
