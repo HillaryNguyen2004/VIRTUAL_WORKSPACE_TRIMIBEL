@@ -32,19 +32,6 @@ class CompanyHourController extends Controller
         return redirect()->route('companyhour.index')->with('success', 'Company hour saved!');
     }
 
-
-    // public function edit(CompanyHour $companyhour)
-    // {
-    //     return view('companyhour::edit', compact('companyhour'));
-    // }
-
-    // public function update(StoreCompanyHourRequest $request, CompanyHour $companyhour)
-    // {
-    //     $companyhour->update($request->validated());
-    //     return redirect()->route('companyhour.index')->with('success', 'Updated!');
-    // }
-
-
     public function edit()
     {
         $companyhour = CompanyHour::firstOrFail();
@@ -53,6 +40,7 @@ class CompanyHourController extends Controller
 
     public function update(StoreCompanyHourRequest $request)
     {
+        // dd('✅ Update reached!', $request->validated());
         $companyhour = CompanyHour::firstOrFail();
         $companyhour->update($request->validated());
         return redirect()->route('companyhour.index')->with('success', 'Updated!');

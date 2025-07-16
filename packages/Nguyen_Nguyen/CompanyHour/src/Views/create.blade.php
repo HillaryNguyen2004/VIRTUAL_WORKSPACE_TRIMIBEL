@@ -1,10 +1,18 @@
 @extends('layouts.app')
-
+@if ($errors->any())
+    <div class="alert alert-danger mt-2">
+        <ul>
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
 @section('content')
 <div class="container">
     <h1>Add Company Hour</h1>
 
-    <form action="{{ route('companyhour.store') }}" method="POST">
+    <form method="POST" action="{{ route('companyhour.store') }}">
         @csrf
         <div class="form-group">
             <label for="start_at">Start Time</label>

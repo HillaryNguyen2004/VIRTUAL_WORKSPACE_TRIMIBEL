@@ -10,8 +10,8 @@ Route::middleware(['web', 'auth'])->prefix('admin/company-hours')->name('company
     // Route::get('/{companyhour}/edit', [CompanyHourController::class, 'edit'])->name('edit');
     // Route::put('/{companyhour}', [CompanyHourController::class, 'update'])->name('update');
     Route::get('/edit', [CompanyHourController::class, 'edit'])->name('edit');
-    // Route::post('/companyhour/update', [CompanyHourController::class, 'update'])->name('update');
-    Route::match(['post', 'put'], '/companyhour/update', [CompanyHourController::class, 'update'])->name('update');
+    Route::post('/companyhour/update', [CompanyHourController::class, 'update'])->name('update');
+    // Route::match(['post', 'put'], '/companyhour/update', [CompanyHourController::class, 'update'])->name('update');
 
 
     Route::delete('/{companyhour}', [CompanyHourController::class, 'destroy'])->name('destroy');
