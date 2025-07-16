@@ -23,14 +23,14 @@ class CheckInService
         if (!$checkIn) {
             return [
                 'status' => false,
-                'message' => 'You have not checked in today.',
+                'message' => __('messages.not_checked_in'),
             ];
         }
 
         if ($checkIn->check_out_time !== null) {
             return [
                 'status' => false,
-                'message' => 'You have already checked out today.',
+                'message' => __('messages.already_checked_out'),
             ];
         }
 
@@ -38,7 +38,7 @@ class CheckInService
 
         return [
             'status' => true,
-            'message' => 'Checked out successfully.',
+            'message' => __('messages.check_out_success'),
         ];
     }
 
@@ -49,7 +49,7 @@ class CheckInService
         if (!$user) {
             return [
                 'status' => false,
-                'message' => 'Invalid user',
+                'message' => __('messages.invalid_user'),
             ];
         }
 
@@ -62,7 +62,7 @@ class CheckInService
         if ($this->checkInRepository->hasCheckedInToday($user->name, $today)) {
             return [
                 'status' => false,
-                'message' => 'You have already checked in today.',
+                'message' => __('messages.already_checked_in'),
             ];
         }
 
@@ -88,7 +88,7 @@ class CheckInService
 
         return [
             'status' => true,
-            'message' => 'Checked in successfully',
+            'message' => __('messages.check_in_success'),
             'token' => $token,
         ];
     }

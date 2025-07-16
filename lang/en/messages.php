@@ -22,4 +22,11 @@ return [
     'template_missing' => 'The assigned email template no longer exists. Please update the campaign.',
     'campaign_sent_successfully' => 'Campaign sent successfully.',
     'campaign_reset' => 'Campaign send status reset.',
+    'not_checked_in' => 'You have not checked in today.',
+    'already_checked_out' => 'You have already checked out today.',
+    'check_out_success' => 'Checked out successfully.',
+
+    'invalid_user' => 'Invalid user.',
+    'already_checked_in' => 'You have already checked in today.',
+    'check_in_success' => 'Checked in successfully.',
 ];

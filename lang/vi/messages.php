@@ -22,4 +22,10 @@ return [
     'template_missing' => 'Mẫu email đã được gán không còn tồn tại. Vui lòng cập nhật chiến dịch.',
     'campaign_sent_successfully' => 'Chiến dịch được gửi thành công.',
     'campaign_reset' => 'Trạng thái gửi của chiến dịch đã được đặt lại.',
+    'not_checked_in' => 'Bạn chưa chấm công hôm nay.',
+    'already_checked_out' => 'Bạn đã chấm công ra hôm nay rồi.',
+    'check_out_success' => 'Chấm công ra thành công.',
+    'invalid_user' => 'Người dùng không hợp lệ.',
+    'already_checked_in' => 'Bạn đã chấm công vào hôm nay rồi.',
+    'check_in_success' => 'Chấm công vào thành công.',
 ];
