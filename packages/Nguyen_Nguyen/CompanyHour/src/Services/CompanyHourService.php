@@ -1,42 +1,35 @@
 <?php
+
 namespace NguyenNguyen\CompanyHour\Services;
 
-use NguyenNguyen\CompanyHour\Repositories\CompanyHourRepository;
+use NguyenNguyen\CompanyHour\Repositories\CompanyHourRepositoryInterface;
 
 class CompanyHourService
 {
-    protected $repo;
+    protected $repository;
 
-    public function __construct(CompanyHourRepository $repo)
+    public function __construct(CompanyHourRepositoryInterface $repository)
     {
-        $this->repo = $repo;
+        $this->repository = $repository;
     }
 
     public function getFirst()
     {
-        return $this->repo->first();
-    }
-
-    public function getFirstOrFail()
-    {
-        return $this->repo->firstOrFail();
+        return $this->repository->getFirst();
     }
 
     public function store(array $data)
     {
-        return $this->repo->updateOrCreate($data);
+        return $this->repository->updateOrCreate($data);
     }
 
     public function update(array $data)
     {
-        $companyHour = $this->repo->firstOrFail();
-        \Log::info('Updating company hour', $data);
-        return $this->repo->update($companyHour, $data);
+        return $this->repository->updateFirst($data);
     }
 
-    public function destroy()
+    public function delete($companyhour)
     {
-        $companyHour = $this->repo->firstOrFail();
-        return $this->repo->delete($companyHour);
+        return $this->repository->delete($companyhour);
     }
 }

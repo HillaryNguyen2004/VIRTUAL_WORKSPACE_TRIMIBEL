@@ -19,6 +19,9 @@ class CompanyHourServiceProvider extends ServiceProvider
 
     public function register()
     {
-        //
+        $this->app->bind(
+        \NguyenNguyen\CompanyHour\Repositories\CompanyHourRepositoryInterface::class,
+        \NguyenNguyen\CompanyHour\Repositories\CompanyHourRepository::class
+        );
     }
 }

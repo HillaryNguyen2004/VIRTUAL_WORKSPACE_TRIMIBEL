@@ -1,17 +1,23 @@
 <?php
 namespace NguyenNguyen\CompanyHour\Controllers;
 
-use NguyenNguyen\CompanyHour\Models\CompanyHour;
 use Illuminate\Routing\Controller;
-use Illuminate\Http\Request;
 use NguyenNguyen\CompanyHour\Requests\StoreCompanyHourRequest;
+use NguyenNguyen\CompanyHour\Services\CompanyHourService;
+use NguyenNguyen\CompanyHour\Models\CompanyHour;
 
 class CompanyHourController extends Controller
 {
+    protected $companyHourService;
+
+    public function __construct(CompanyHourService $companyHourService)
+    {
+        $this->companyHourService = $companyHourService;
+    }
+
     public function index()
     {
-        // $hours = CompanyHour::all();
-        $hour = CompanyHour::first();
+        $hour = $this->companyHourService->getFirst();
         return view('companyhour::index', compact('hour'));
     }
 
@@ -20,35 +26,27 @@ class CompanyHourController extends Controller
         return view('companyhour::create');
     }
 
-    
     public function store(StoreCompanyHourRequest $request)
     {
-        // Always update the first row or create it if none exists
-        CompanyHour::updateOrCreate(
-            ['id' => CompanyHour::first()?->id], // condition
-            $request->validated()               // values to update/create
-        );
-
+        $this->companyHourService->store($request->validated());
         return redirect()->route('companyhour.index')->with('success', 'Company hour saved!');
     }
 
     public function edit()
     {
-        $companyhour = CompanyHour::firstOrFail();
+        $companyhour = $this->companyHourService->getFirst();
         return view('companyhour::edit', compact('companyhour'));
     }
 
     public function update(StoreCompanyHourRequest $request)
     {
-        // dd('✅ Update reached!', $request->validated());
-        $companyhour = CompanyHour::firstOrFail();
-        $companyhour->update($request->validated());
+        $this->companyHourService->update($request->validated());
         return redirect()->route('companyhour.index')->with('success', 'Updated!');
     }
 
     public function destroy(CompanyHour $companyhour)
     {
-        $companyhour->delete();
+        $this->companyHourService->delete($companyhour);
         return redirect()->route('companyhour.index')->with('success', 'Deleted!');
     }
 }

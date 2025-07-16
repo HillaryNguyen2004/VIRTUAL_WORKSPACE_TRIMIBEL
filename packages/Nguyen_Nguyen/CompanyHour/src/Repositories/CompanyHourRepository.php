@@ -1,39 +1,33 @@
 <?php
+
 namespace NguyenNguyen\CompanyHour\Repositories;
 
 use NguyenNguyen\CompanyHour\Models\CompanyHour;
 
-class CompanyHourRepository
+class CompanyHourRepository implements CompanyHourRepositoryInterface
 {
-    public function first()
+    public function getFirst()
     {
         return CompanyHour::first();
     }
 
-    public function firstOrFail()
-    {
-        return CompanyHour::firstOrFail();
-    }
-
     public function updateOrCreate(array $data)
     {
-        $existing = CompanyHour::first();
-
-        if ($existing) {
-            $existing->update($data);
-            return $existing;
-        }
-
-        return CompanyHour::create($data);
+        return CompanyHour::updateOrCreate(
+            ['id' => CompanyHour::first()?->id],
+            $data
+        );
     }
 
-    public function update(CompanyHour $companyHour, array $data)
+    public function updateFirst(array $data)
     {
-        return $companyHour->update($data);
+        $companyhour = CompanyHour::firstOrFail();
+        $companyhour->update($data);
+        return $companyhour;
     }
 
-    public function delete(CompanyHour $companyHour)
+    public function delete($companyhour)
     {
-        return $companyHour->delete();
+        return $companyhour->delete();
     }
 }
