@@ -7,37 +7,35 @@
 @section('content')
 @role('admin')
 <div class="container py-4">
-    <h2 class="mb-4 fw-bold">All Check-In Logs</h2>
+    <h2 class="mb-4 fw-bold">{{ __('checkin_logs.title') }}</h2>
 
     <!-- Search + Filter -->
     <form method="GET" action="{{ route('users.checkin_index') }}" class="row g-3 align-items-end mb-4">
         <div class="col-md-2">
-            <input type="text" name="username" value="{{ request('username') }}" class="form-control" placeholder="Username">
+            <input type="text" name="username" value="{{ request('username') }}" class="form-control" placeholder="{{ __('checkin_logs.search_placeholder_username') }}">
         </div>
         <div class="col-md-2">
-            <label class="form-label">From:</label>
+            <label class="form-label">{{ __('checkin_logs.filter_label_from') }}</label>
             <input type="date" name="date_from" value="{{ request('date_from') }}" class="form-control">
         </div>
         <div class="col-md-2">
-            <label class="form-label">To:</label>
+            <label class="form-label">{{ __('checkin_logs.filter_label_to') }}</label>
             <input type="date" name="date_to" value="{{ request('date_to') }}" class="form-control">
         </div>
         <div class="col-md-3">
-            <label class="form-label">Status</label>
+            <label class="form-label">{{ __('checkin_logs.filter_label_status') }}</label>
             <select name="status" class="form-select">
-                <option value="">All Statuses</option>
-                <option value="late" {{ request('status') == 'late' ? 'selected' : '' }}>Late</option>
-                <option value="on_time" {{ request('status') == 'on_time' ? 'selected' : '' }}>On Time</option>
+                <option value="">{{ __('checkin_logs.filter_option_all_statuses') }}</option>
+                <option value="late" {{ request('status') == 'late' ? 'selected' : '' }}>{{ __('checkin_logs.filter_option_late') }}</option>
+                <option value="on_time" {{ request('status') == 'on_time' ? 'selected' : '' }}>{{ __('checkin_logs.filter_option_on_time') }}</option>
             </select>
         </div>
         <div class="col-md-3">
             <button class="btn btn-primary w-100" type="submit">
-                <i class="bi bi-search"></i> Filter
+                <i class="bi bi-search"></i> {{ __('checkin_logs.filter_button') }}
             </button>
         </div>
     </form>
-
-
 
     <!-- Table -->
     <div class="card shadow-sm">
@@ -45,12 +43,12 @@
             <table class="table table-bordered table-hover table-striped align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>#</th>
-                        <th>User Name</th>
-                        <th>Date</th>
-                        <th>Check In Time</th>
-                        <th>Check Out Time</th>
-                        <th>Working Hours</th>
+                        <th>{{ __('checkin_logs.table_header_number') }}</th>
+                        <th>{{ __('checkin_logs.table_header_user_name') }}</th>
+                        <th>{{ __('checkin_logs.table_header_date') }}</th>
+                        <th>{{ __('checkin_logs.table_header_check_in_time') }}</th>
+                        <th>{{ __('checkin_logs.table_header_check_out_time') }}</th>
+                        <th>{{ __('checkin_logs.table_header_working_hours') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -78,19 +76,18 @@
                                     @endphp
                                     <span class="badge bg-primary">{{ $workingHours }} hrs</span>
                                 @elseif($log->check_in_time && !$log->check_out_time)
-                                    <span class="badge bg-warning text-dark">Checked In</span>
+                                    <span class="badge bg-warning text-dark">{{ __('checkin_logs.badge_checked_in') }}</span>
                                 @else
-                                    <span class="badge bg-secondary">Not Checked In</span>
+                                    <span class="badge bg-secondary">{{ __('checkin_logs.badge_not_checked_in') }}</span>
                                 @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center text-muted">No check-in records found.</td>
+                            <td colspan="6" class="text-center text-muted">{{ __('checkin_logs.table_no_records') }}</td>
                         </tr>
                     @endforelse
                 </tbody>
-
             </table>
 
             <!-- Pagination -->
@@ -101,15 +98,15 @@
                 <input type="hidden" name="username" value="{{ request('username') }}">
                 <input type="hidden" name="status" value="{{ request('status') }}">
                 <input type="hidden" name="date" value="{{ request('date') }}">
-                <button type="submit" class="btn btn-success">Export to Excel</button>
+                <button type="submit" class="btn btn-success">{{ __('checkin_logs.export_button') }}</button>
             </form>
         </div>
     </div>
 </div>
 @else
 <div class="container py-4">
-    <h4 class="text-danger">Access Denied</h4>
-    <p>You do not have permission to view this page.</p>
+    <h4 class="text-danger">{{ __('checkin_logs.access_denied_title') }}</h4>
+    <p>{{ __('checkin_logs.access_denied_message') }}</p>
 </div>
 @endrole
 @endsection
