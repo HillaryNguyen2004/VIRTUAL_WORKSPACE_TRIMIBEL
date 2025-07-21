@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\DayOffRequest;
+use App\Models\User;
 use Carbon\Carbon;
 
 class DayOffController extends Controller
@@ -40,5 +41,32 @@ class DayOffController extends Controller
         ]);
 
         return redirect()->route('dayoff.request')->with('success', 'Day off request submitted!');
+    }
+    public function staffPendingRequests()
+    {
+        $requests = DayOffRequest::where('status', 'PENDING')->with('user')->get();
+        return view('dayoff.staff_pending', compact('requests'));
+    }
+
+    public function approve($id)
+    {
+        $request = DayOffRequest::findOrFail($id);
+        $request->update([
+            'status' => 'APPROVED',
+            'reviewed_by' => auth()->id(),
+        ]);
+
+        return back()->with('success', 'Day-off request approved.');
+    }
+
+    public function reject($id)
+    {
+        $request = DayOffRequest::findOrFail($id);
+        $request->update([
+            'status' => 'REJECTED',
+            'reviewed_by' => auth()->id(),
+        ]);
+
+        return back()->with('success', 'Day-off request rejected.');
     }
 }

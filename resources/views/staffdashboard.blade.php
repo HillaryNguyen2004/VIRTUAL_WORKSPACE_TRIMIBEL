@@ -30,6 +30,8 @@
     </div>
 </div>
 
+
+
 <div class="container py-4">
     <h1 class="mb-2 fw-bold">{{ __('staff_dashboard.staff_dashboard') }}</h1>
     <p class="mb-4">{{ __('staff_dashboard.welcome_message') }}</p>
@@ -68,6 +70,20 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-md-4 mb-3">
+        <div class="card border-danger border-2" style="border-top:4px solid #ff4d4f;">
+            <div class="card-body">
+                <div class="mb-2" style="font-size:2rem; color:#ff4d4f;"><i class="bi bi-calendar-check"></i></div>
+                <div class="fw-bold mb-2">Review Day-Off Requests</div>
+                <div class="mb-3 text-secondary">Approve or reject your team's day-off requests.</div>
+                <a href="{{ route('dayoff.staff.pending') }}" class="btn w-100" style="background:#ff4d4f;color:#fff;">
+                    <i class="bi bi-calendar"></i> View Requests
+                </a>
+            </div>
+        </div>
+    </div>
+
 
         <div class="col-md-4 mb-3">
             <div class="card border-success border-2" style="border-top:4px solid #00b96b;">

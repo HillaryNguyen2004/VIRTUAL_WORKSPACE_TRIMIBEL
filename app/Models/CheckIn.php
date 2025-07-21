@@ -14,4 +14,10 @@ class CheckIn extends Model
         'check_in_time',
         'check_out_time',
     ];
+    public function user()
+{
+    return $this->belongsTo(User::class, 'user_name', 'name');
+    // Or use 'user_id', 'id' depending on your DB schema
+}
+
 }

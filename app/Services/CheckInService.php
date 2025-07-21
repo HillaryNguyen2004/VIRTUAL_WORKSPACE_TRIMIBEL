@@ -3,7 +3,7 @@ namespace App\Services;
 
 use App\Repositories\CheckInRepositoryInterface;
 use Illuminate\Support\Carbon;
-
+use App\Models\DayOffRequest;
 use App\Models\User;
 use App\Models\CompanyHour;
 
@@ -66,15 +66,37 @@ class CheckInService
             ];
         }
 
+        // $isLate = false;
+        // $workingHour = CompanyHour::first();
+
+        // if ($workingHour) {
+        //     $configuredStart = Carbon::createFromFormat('H:i:s', $workingHour->start_at, 'Asia/Ho_Chi_Minh')
+        //         ->setDate($now->year, $now->month, $now->day);
+
+        //     $isLate = $now->greaterThan($configuredStart);
+        // }
         $isLate = false;
         $workingHour = CompanyHour::first();
 
         if ($workingHour) {
+            // Get user's day off for today
+            $dayOff = DayOffRequest::where('user_id', $user->id)
+                ->where('date', $now->toDateString())
+                ->whereIn('status', ['APPROVED']) // only consider approved ones
+                ->first();
+
+            // Default to company hour
             $configuredStart = Carbon::createFromFormat('H:i:s', $workingHour->start_at, 'Asia/Ho_Chi_Minh')
                 ->setDate($now->year, $now->month, $now->day);
 
+            if ($dayOff && $dayOff->leave_type === 'OFF_HALF') {
+                // Allow noon check-in for half-day off
+                $configuredStart->setTime(12, 0, 0);
+            }
+
             $isLate = $now->greaterThan($configuredStart);
         }
+
 
         // Insert check-in
         $this->checkInRepository->insertCheckIn([

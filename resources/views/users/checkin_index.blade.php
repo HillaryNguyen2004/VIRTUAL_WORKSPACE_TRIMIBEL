@@ -62,6 +62,19 @@
                                     <span class="{{ $log->is_late ? 'text-danger fw-bold' : '' }}">
                                         {{ $log->check_in_time }}
                                     </span>
+                                    <!-- Skip half-day-off badge if user relationship is unavailable -->
+                                    @if (property_exists($log, 'user') && $log->user && method_exists($log->user, 'dayOffRequests'))
+                                        @php
+                                            $hasHalfDayOff = $log->user->dayOffRequests()
+                                                ->where('date', $log->date)
+                                                ->where('leave_type', 'OFF_HALF')
+                                                ->where('status', 'APPROVED')
+                                                ->exists();
+                                        @endphp
+                                        @if ($hasHalfDayOff)
+                                            <span class="badge bg-info text-dark">{{ __('checkin_logs.badge_half_day_off') }}</span>
+                                        @endif
+                                    @endif
                                 @else
                                     -
                                 @endif
@@ -94,11 +107,14 @@
             <div class="mt-3">
                 {{ $checkIns->withQueryString()->links() }}
             </div>
+
+            <!-- Export -->
             <form method="GET" action="{{ route('checkins.export') }}">
                 <input type="hidden" name="username" value="{{ request('username') }}">
                 <input type="hidden" name="status" value="{{ request('status') }}">
-                <input type="hidden" name="date" value="{{ request('date') }}">
-                <button type="submit" class="btn btn-success">{{ __('checkin_logs.export_button') }}</button>
+                <input type="hidden" name="date_from" value="{{ request('date_from') }}">
+                <input type="hidden" name="date_to" value="{{ request('date_to') }}">
+                <button type="submit" class="btn btn-success mt-2">{{ __('checkin_logs.export_button') }}</button>
             </form>
         </div>
     </div>

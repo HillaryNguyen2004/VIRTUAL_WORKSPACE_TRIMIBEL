@@ -80,5 +80,9 @@ public function teamMembers()
     return $this->hasMany(User::class, 'team_leader_id');
 }
 
+public function dayOffRequests()
+{
+    return $this->hasMany(\App\Models\DayOffRequest::class);
+}
 
 }
