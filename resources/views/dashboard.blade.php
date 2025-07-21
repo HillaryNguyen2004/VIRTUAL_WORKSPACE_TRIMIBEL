@@ -30,6 +30,26 @@
         @endif
     </div>
 
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <a href="{{ route('dayoff.request') }}" class="text-decoration-none">
+                <div class="card border-left-warning shadow h-100 py-2">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fas fa-calendar-times fa-2x text-warning"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                {{ __('user_dashboard.request_day_off') }}
+                            </div>
+                            <div class="mb-0 font-weight-bold text-gray-800">{{ __('user_dashboard.click_to_request') }}</div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
     <!-- Content Row -->
     <!-- [everything below remains unchanged] -->
     

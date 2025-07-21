@@ -15,6 +15,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TeamController;
 use App\Services\UserRoleRedirectService;
+use App\Http\Controllers\DayOffController;
 
 // Route::group(['middleware' => ['web', 'core']], function () {
 //     include_once 'admin/user.php';
@@ -51,6 +52,8 @@ Route::get('/dashboard', function (UserRoleRedirectService $redirectService) {
 
 Route::get('/user/dashboard', [DashboardController::class, 'user'])->name('user.dashboard')->middleware('auth');
 
+Route::get('/dayoff/request', [DayOffController::class, 'create'])->name('dayoff.request');
+Route::post('/dayoff/request', [DayOffController::class, 'store'])->name('dayoff.request.store');
 
 Route::middleware(['role:admin|staff'])->group(function () {
 
