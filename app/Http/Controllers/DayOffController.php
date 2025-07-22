@@ -3,7 +3,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\DayOffService;
-
+use App\Http\Requests\StoreDayOffRequest;
 class DayOffController extends Controller
 {
     protected $service;
@@ -18,14 +18,9 @@ class DayOffController extends Controller
         return view('dayoff.request');
     }
 
-    public function store(Request $request)
+    public function store(StoreDayOffRequest $request)
     {
-        $validated = $request->validate([
-            'date' => ['required', 'date', 'after:today'],
-            'leave_type' => ['required', 'in:OFF_FULL,OFF_HALF'],
-            'reason' => ['nullable', 'string'],
-        ]);
-
+         $validated = $request->validated();
         $result = $this->service->createRequest($validated);
 
         if (isset($result['error'])) {
