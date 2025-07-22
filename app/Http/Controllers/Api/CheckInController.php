@@ -30,8 +30,14 @@ class CheckInController extends Controller
    
     public function index(Request $request, CheckInExportService $exportService)
     {
+        // $query = $exportService->getFilteredCheckIns($request);
+        // $checkIns = $query->paginate(3);
+
+        // return view('users.checkin_index', compact('checkIns'));
         $query = $exportService->getFilteredCheckIns($request);
-        $checkIns = $query->paginate(3);
+
+        // Eager load the related user and their dayOffRequests
+        $checkIns = $query->with(['user.dayOffRequests'])->paginate(3);
 
         return view('users.checkin_index', compact('checkIns'));
     }

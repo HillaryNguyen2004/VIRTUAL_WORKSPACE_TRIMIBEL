@@ -62,21 +62,32 @@
                                     <span class="{{ $log->is_late ? 'text-danger fw-bold' : '' }}">
                                         {{ $log->check_in_time }}
                                     </span>
-                                    <!-- Skip half-day-off badge if user relationship is unavailable -->
-                                    @if (property_exists($log, 'user') && $log->user && method_exists($log->user, 'dayOffRequests'))
-                                        @php
-                                            $hasHalfDayOff = $log->user->dayOffRequests()
-                                                ->where('date', $log->date)
-                                                ->where('leave_type', 'OFF_HALF')
-                                                ->where('status', 'APPROVED')
-                                                ->exists();
-                                        @endphp
-                                        @if ($hasHalfDayOff)
-                                            <span class="badge bg-info text-dark">{{ __('checkin_logs.badge_half_day_off') }}</span>
-                                        @endif
+
+                                    @php
+                                        $hasHalfDayOff = $log->user && $log->user->dayOffRequests
+                                            ->where('date', $log->date)
+                                            ->where('leave_type', 'OFF_HALF')
+                                            ->where('status', 'APPROVED')
+                                            ->isNotEmpty();
+                                    @endphp
+
+                                    @if ($hasHalfDayOff)
+                                        <span class="badge bg-info text-dark">Half Day Off</span>
                                     @endif
                                 @else
-                                    -
+                                    @php
+                                        $hasFullDayOff = $log->user && $log->user->dayOffRequests
+                                            ->where('date', $log->date)
+                                            ->where('leave_type', 'OFF_FULL')
+                                            ->where('status', 'APPROVED')
+                                            ->isNotEmpty();
+                                    @endphp
+
+                                    @if ($hasFullDayOff)
+                                        <span class="badge bg-secondary">{{ __('checkin_logs.badge_full_day_off') }}</span>
+                                    @else
+                                        -
+                                    @endif
                                 @endif
                             </td>
                             <td>{{ $log->check_out_time ?? '-' }}</td>

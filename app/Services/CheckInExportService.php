@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Carbon\Carbon;
+use App\Models\CheckIn;
 
 
 class CheckInExportService
@@ -13,7 +14,8 @@ class CheckInExportService
     
     public function getFilteredCheckIns(Request $request)
     {
-        $query = DB::table('check_ins')
+        // $query = DB::table('check_ins')
+        $query = CheckIn::query()
             ->orderByDesc('date')
             ->orderByDesc('check_in_time');
 
