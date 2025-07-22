@@ -34,4 +34,12 @@ class CheckInRepository implements CheckInRepositoryInterface
     {
         DB::table('check_ins')->insert($data);
     }
+    public function getRecentCheckIns(int $limit = 3)
+    {
+        return DB::table('check_ins')
+            ->orderBy('date', 'desc')
+            ->orderBy('check_in_time', 'desc')
+            ->limit($limit)
+            ->get();
+    }
 }
