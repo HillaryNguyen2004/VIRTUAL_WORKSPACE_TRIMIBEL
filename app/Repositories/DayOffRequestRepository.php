@@ -1,11 +1,45 @@
 <?php
 namespace App\Repositories;
-
+use App\Models\DayOffRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 
 class DayOffRequestRepository
 {
+
+    public function findByUserAndDate($userId, $date)
+    {
+        return DayOffRequest::where('user_id', $userId)
+            ->where('date', $date)
+            ->first();
+    }
+
+    public function create(array $data)
+    {
+        return DayOffRequest::create($data);
+    }
+
+    public function getPendingWithUsers()
+    {
+        return DayOffRequest::where('status', 'PENDING')->with('user')->get();
+    }
+
+    public function find($id)
+    {
+        return DayOffRequest::findOrFail($id);
+    }
+
+    public function updateStatus($id, $status, $reviewerId)
+    {
+        $request = $this->find($id);
+        $request->update([
+            'status' => $status,
+            'reviewed_by' => $reviewerId,
+        ]);
+
+        return $request;
+    }
+
     public function getApprovedFullDayOffs(array $filters): Collection
     {
         return DB::table('day_off_requests')

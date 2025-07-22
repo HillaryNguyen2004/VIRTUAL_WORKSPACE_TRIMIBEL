@@ -1,14 +1,18 @@
 <?php
-// app/Http/Controllers/DayOffController.php
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\DayOffRequest;
-use App\Models\User;
-use Carbon\Carbon;
+use App\Services\DayOffService;
 
 class DayOffController extends Controller
 {
+    protected $service;
+
+    public function __construct(DayOffService $service)
+    {
+        $this->service = $service;
+    }
+
     public function create()
     {
         return view('dayoff.request');
@@ -16,57 +20,36 @@ class DayOffController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'date' => ['required', 'date', 'after:today'],
             'leave_type' => ['required', 'in:OFF_FULL,OFF_HALF'],
             'reason' => ['nullable', 'string'],
         ]);
 
-        $userId = auth()->id();
+        $result = $this->service->createRequest($validated);
 
-        $existing = DayOffRequest::where('user_id', $userId)
-            ->where('date', $request->date)
-            ->first();
-
-        if ($existing) {
-            return back()->withErrors(['date' => 'You already made a day-off request for this date.']);
+        if (isset($result['error'])) {
+            return back()->withErrors(['date' => $result['error']]);
         }
-
-        DayOffRequest::create([
-            'user_id' => $userId,
-            'date' => $request->date,
-            'leave_type' => $request->leave_type,
-            'reason' => $request->reason,
-            'status' => 'PENDING',
-        ]);
 
         return redirect()->route('dayoff.request')->with('success', 'Day off request submitted!');
     }
+
     public function staffPendingRequests()
     {
-        $requests = DayOffRequest::where('status', 'PENDING')->with('user')->get();
+        $requests = $this->service->getPendingRequests();
         return view('dayoff.staff_pending', compact('requests'));
     }
 
     public function approve($id)
     {
-        $request = DayOffRequest::findOrFail($id);
-        $request->update([
-            'status' => 'APPROVED',
-            'reviewed_by' => auth()->id(),
-        ]);
-
+        $this->service->approveRequest($id);
         return back()->with('success', 'Day-off request approved.');
     }
 
     public function reject($id)
     {
-        $request = DayOffRequest::findOrFail($id);
-        $request->update([
-            'status' => 'REJECTED',
-            'reviewed_by' => auth()->id(),
-        ]);
-
+        $this->service->rejectRequest($id);
         return back()->with('success', 'Day-off request rejected.');
     }
 }
