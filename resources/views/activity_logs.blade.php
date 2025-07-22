@@ -51,9 +51,9 @@
                     @forelse ($allLogs as $log)
                         <tr>
                             <td>{{ $log->id }}</td>
-                            <td>{{ $log->user->name ?? 'N/A' }}</td>
+                            <td>{{ $log->user_name }}</td>
                             <td>{{ $log->action }}</td>
-                            <td>{{ $log->created_at->format('Y-m-d H:i') }}</td>
+                            <td>{{ \Carbon\Carbon::parse($log->created_at)->format('Y-m-d H:i') }}</td>
                             <td>
                                 <span class="badge bg-info text-dark" title="{{ $log->description }}">
                                     {{ \Illuminate\Support\Str::limit($log->description) }}
