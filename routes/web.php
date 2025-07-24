@@ -56,6 +56,18 @@ Route::get('/dayoff/request', [DayOffController::class, 'create'])->name('dayoff
 Route::post('/dayoff/request', [DayOffController::class, 'store'])->name('dayoff.request.store');
 
 
+// Route::post('/notifications/{id}/read', function ($id) {
+//     auth()->user()->notifications()->where('id', $id)->first()?->markAsRead();
+//     return back();
+// })->name('notifications.read')->middleware('auth');
+
+Route::post('/notifications/clear', function () {
+    cache()->forget('user_' . auth()->id() . '_dayoff_notice');
+    return back();
+})->name('notifications.clear')->middleware('auth');
+
+
+
 Route::middleware(['role:admin|staff'])->group(function () {
 
     // CREATE TASK

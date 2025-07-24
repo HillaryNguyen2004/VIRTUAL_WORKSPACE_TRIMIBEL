@@ -29,4 +29,8 @@ return [
     'invalid_user' => 'Invalid user.',
     'already_checked_in' => 'You have already checked in today.',
     'check_in_success' => 'Checked in successfully.',
+    'success_submit' => 'Day off request submitted!',
+    'success_approve' => 'Day-off request approved.',
+    'success_reject' => 'Day-off request rejected.',
+    'notice_approved' => 'Your day-off request for :date was approved.',
 ];
