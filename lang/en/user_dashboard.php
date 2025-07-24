@@ -19,4 +19,6 @@ return [
     'status_pending' => 'Pending',
     'status_in_progress' => 'In Progress',
     'status_completed' => 'Completed',
+    'request_day_off' => 'Request Day Off',
+    'click_to_request' => 'Click to request',
 ];

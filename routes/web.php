@@ -55,6 +55,7 @@ Route::get('/user/dashboard', [DashboardController::class, 'user'])->name('user.
 Route::get('/dayoff/request', [DayOffController::class, 'create'])->name('dayoff.request');
 Route::post('/dayoff/request', [DayOffController::class, 'store'])->name('dayoff.request.store');
 
+
 Route::middleware(['role:admin|staff'])->group(function () {
 
     // CREATE TASK

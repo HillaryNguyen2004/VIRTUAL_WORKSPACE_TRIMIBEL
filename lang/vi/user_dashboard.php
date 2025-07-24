@@ -19,4 +19,6 @@ return [
     'status_pending' => 'Đang Chờ',
     'status_in_progress' => 'Đang Thực Hiện',
     'status_completed' => 'Hoàn Thành',
+    'request_day_off' => 'Yêu cầu nghỉ phép',
+    'click_to_request' => 'Bấm để gửi yêu cầu',
 ];
