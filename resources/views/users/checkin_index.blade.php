@@ -62,28 +62,28 @@
                                     <span class="{{ $log->is_late ? 'text-danger fw-bold' : '' }}">
                                         {{ $log->check_in_time }}
                                     </span>
+                                @else
+                                    -
+                                @endif
 
-                                    @php
-                                        $hasHalfDayOff = $log->user && $log->user->dayOffRequests
-                                            ->where('date', $log->date)
-                                            ->where('leave_type', 'OFF_HALF')
-                                            ->where('status', 'APPROVED')
-                                            ->isNotEmpty();
-                                    @endphp
+                                {{-- Show badge regardless of check-in --}}
+                                @if ($log->is_half_day_off)
+                                    <span class="badge bg-info text-dark">Half Day Off</span>
+                                @elseif ($log->is_full_day_off)
+                                    <span class="badge bg-secondary">{{ __('checkin_logs.badge_full_day_off') }}</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if ($log->check_in_time)
+                                    <span class="{{ $log->is_late ? 'text-danger fw-bold' : '' }}">
+                                        {{ $log->check_in_time }}
+                                    </span>
 
-                                    @if ($hasHalfDayOff)
+                                    @if ($log->is_half_day_off)
                                         <span class="badge bg-info text-dark">Half Day Off</span>
                                     @endif
                                 @else
-                                    @php
-                                        $hasFullDayOff = $log->user && $log->user->dayOffRequests
-                                            ->where('date', $log->date)
-                                            ->where('leave_type', 'OFF_FULL')
-                                            ->where('status', 'APPROVED')
-                                            ->isNotEmpty();
-                                    @endphp
-
-                                    @if ($hasFullDayOff)
+                                    @if ($log->is_full_day_off)
                                         <span class="badge bg-secondary">{{ __('checkin_logs.badge_full_day_off') }}</span>
                                     @else
                                         -
@@ -92,14 +92,9 @@
                             </td>
                             <td>{{ $log->check_out_time ?? '-' }}</td>
                             <td>
-                                @if ($log->check_in_time && $log->check_out_time)
-                                    @php
-                                        $checkIn = \Carbon\Carbon::parse($log->check_in_time);
-                                        $checkOut = \Carbon\Carbon::parse($log->check_out_time);
-                                        $workingHours = $checkOut->diff($checkIn)->format('%H:%I');
-                                    @endphp
-                                    <span class="badge bg-primary">{{ $workingHours }} hrs</span>
-                                @elseif($log->check_in_time && !$log->check_out_time)
+                                @if ($log->working_hours)
+                                    <span class="badge bg-primary">{{ $log->working_hours }} hrs</span>
+                                @elseif ($log->check_in_time)
                                     <span class="badge bg-warning text-dark">{{ __('checkin_logs.badge_checked_in') }}</span>
                                 @else
                                     <span class="badge bg-secondary">{{ __('checkin_logs.badge_not_checked_in') }}</span>

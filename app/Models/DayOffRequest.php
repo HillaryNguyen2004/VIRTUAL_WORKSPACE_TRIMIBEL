@@ -15,6 +15,9 @@ class DayOffRequest extends Model
         'reason',
         'status',
     ];
+    protected $casts = [
+    'date' => 'date',
+];
 
     public function user()
     {

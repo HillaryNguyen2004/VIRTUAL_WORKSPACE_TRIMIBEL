@@ -38,13 +38,8 @@ class DayOffController extends Controller
 
     public function approve($id)
     {
-        // $this->service->approveRequest($id);
-        // return back()->with('success', 'Day-off request approved.');
+        
         $dayOff = $this->service->approveRequest($id); // assume it returns the updated model
-
-    // if ($dayOff && $dayOff->user) {
-    //     $dayOff->user->notify(new \App\Notifications\DayOffApproved($dayOff->date));
-    // }
     if ($dayOff && $dayOff->user) {
         // Store notification-like message in cache for the user
         cache()->put('user_'.$dayOff->user->id.'_dayoff_notice', __('dayoff.notice_approved', ['date' => $dayOff->date]), now()->addMinutes(10));

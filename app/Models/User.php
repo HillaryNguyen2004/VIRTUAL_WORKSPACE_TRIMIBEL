@@ -85,4 +85,27 @@ public function dayOffRequests()
     return $this->hasMany(\App\Models\DayOffRequest::class);
 }
 
+public function hasHalfDayOffOn($date)
+{
+    return $this->dayOffRequests
+        ->where('date', $date)
+        ->where('leave_type', 'OFF_HALF')
+        ->where('status', 'APPROVED')
+        ->isNotEmpty();
+}
+
+public function hasFullDayOffOn($date)
+{
+    return $this->dayOffRequests
+        ->where('date', $date)
+        ->where('leave_type', 'OFF_FULL')
+        ->where('status', 'APPROVED')
+        ->isNotEmpty();
+}
+
+// public function users()
+//     {
+//         return $this->morphedByMany(User::class, 'model', 'model_has_roles', 'role_id', 'model_id');
+//     }
+
 }
