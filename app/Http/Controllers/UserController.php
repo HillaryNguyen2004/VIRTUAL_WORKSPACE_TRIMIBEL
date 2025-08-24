@@ -33,7 +33,23 @@ class UserController extends Controller
     {
         $users = $this->userRepo->filterUsers($request->filters());
         $allUsers = User::all();
-        return view('users.index', compact('users','allUsers'));
+        $availableUsers = [];
+        foreach ($allUsers as $staff) {
+            if ($staff->hasRole('staff')) {
+                $availableUsers[$staff->id] = $allUsers
+                    ->filter(fn($u) =>
+                        $u->hasRole('user') &&
+                        !$u->hasRole('admin') &&
+                        !$u->hasRole('staff') &&
+                        $u->id !== $staff->id &&
+                        ($u->team_leader_id === null || $u->team_leader_id == 0 || $u->team_leader_id == '')
+                    )
+                    ->values()
+                    ->map(fn($u) => ['id' => $u->id, 'name' => $u->name])
+                    ->all();
+            }
+        }
+        return view('users.index', compact('users','allUsers','availableUsers'));
     }
 
     public function update(UpdateUserRequest $request, User $user)

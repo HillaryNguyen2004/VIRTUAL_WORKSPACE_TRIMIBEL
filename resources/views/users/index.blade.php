@@ -59,6 +59,9 @@
 </div>
 
 @push('scripts')
+<script>
+    window.availableUsers = @json($availableUsers);
+</script>
 <script src="{{ asset('js/user-management.js') }}"></script>
 @endpush
 @endsection
