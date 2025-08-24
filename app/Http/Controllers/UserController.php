@@ -32,7 +32,8 @@ class UserController extends Controller
     public function index(FilterUserRequest $request)
     {
         $users = $this->userRepo->filterUsers($request->filters());
-        return view('users.index', compact('users'));
+        $allUsers = User::all();
+        return view('users.index', compact('users','allUsers'));
     }
 
     public function update(UpdateUserRequest $request, User $user)

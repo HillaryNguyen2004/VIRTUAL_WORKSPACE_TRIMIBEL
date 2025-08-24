@@ -42,7 +42,7 @@
             </thead>
             <tbody>
                 @foreach($users as $user)
-                    @include('users.partials.user_row', compact('user', 'users'))
+                    @include('users.partials.user_row', ['user' => $user, 'users' => $allUsers])
                 @endforeach
             </tbody>
         </table>
