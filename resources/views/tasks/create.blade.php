@@ -55,7 +55,17 @@
             </div>
 
             <div class="d-flex justify-content-end">
-                <a href="{{ route('tasks.index') }}" class="btn btn-outline-secondary me-2">{{ __('task_create.cancel_button') }}</a>
+                @role('admin')
+                    <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary me-2">
+                        {{ __('task_create.cancel_button') }}
+                    </a>
+                @endrole
+
+                @role('staff')
+                    <a href="{{ route('staff.dashboard') }}" class="btn btn-outline-secondary me-2">
+                        {{ __('task_create.cancel_button') }}
+                    </a>
+                @endrole
                 <button type="submit" class="btn btn-primary" style="background:#2563eb;border:none;">
                     <i class="bi bi-save"></i> {{ __('task_create.save_button') }}
                 </button>

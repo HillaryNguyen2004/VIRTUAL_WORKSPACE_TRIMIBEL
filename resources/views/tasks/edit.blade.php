@@ -49,7 +49,12 @@
                 </label>
             </div>
             <div class="d-flex justify-content-end">
-                <a href="{{ route('tasks.index') }}" class="btn btn-outline-secondary me-2">{{ __('task_edit.cancel_button') }}</a>
+                <a href="{{ auth()->user()->hasRole('admin') 
+                            ? route('admin.dashboard') 
+                            : route('staff.dashboard') }}" 
+                class="btn btn-outline-secondary me-2">
+                    {{ __('task_edit.cancel_button') }}
+                </a>
                 <button type="submit" class="btn btn-primary" style="background:#2563eb;border:none;">
                     <i class="bi bi-save"></i> {{ __('task_edit.save_button') }}
                 </button>
