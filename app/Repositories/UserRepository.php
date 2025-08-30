@@ -24,15 +24,21 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         ])->save();
     }
 
-    public function findOrCreateFromGoogle($googleUser): User
+public function findOrCreateFromGoogle($googleUser): User
     {
-        return $this->model->firstOrCreate(
+        $user = $this->model->firstOrCreate(
             ['email' => $googleUser->getEmail()],
             [
                 'name' => $googleUser->getName(),
                 'password' => bcrypt(Str::random(24)),
             ]
         );
+        // If user has no role, assign 'user' role
+        if (!$user->hasAnyRole()) {
+            $user->assignRole('user');
+        }
+
+        return $user;
     }
 
     public function createFromRequest($request): User
