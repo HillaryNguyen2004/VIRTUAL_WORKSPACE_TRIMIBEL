@@ -10,7 +10,7 @@ class DashboardService
     public function getUserDashboardData(User $user): array
     {
         $teamLeader = $user->teamLeader;
-        $teamMembers = $user->teamMembers;
+        $teamMembers = $teamLeader ? $teamLeader->teamMembers : collect();
 
         $assignedTasks = $user->assignedTasks()->get();
 
