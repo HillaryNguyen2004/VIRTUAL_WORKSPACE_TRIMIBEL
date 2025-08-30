@@ -223,6 +223,7 @@
                                 <div id="alertsList">
                                     <!-- notifications will be injected here -->
                                 </div>
+                                <a id="markAllRead" class="dropdown-item text-center small text-primary" href="#">Mark all as read</a>
                                 <a class="dropdown-item text-center small text-gray-500" href="#">Show all alerts</a>
                             </div>
                         </li>
@@ -464,7 +465,8 @@ function loadNotifications() {
 
             data.forEach(notification => {
                 const item = `
-                    <a class="dropdown-item d-flex align-items-center" href="#">
+                    <a class="dropdown-item d-flex align-items-center notification-item" 
+                    href="#" data-id="${notification.id}">
                         <div class="mr-3">
                             <div class="icon-circle bg-primary">
                                 <i class="fas fa-bell text-white"></i>
@@ -489,6 +491,49 @@ function loadNotifications() {
 loadNotifications();
 
 /**
+ * Mark notification as read when clicked
+ */
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.notification-item')) {
+        e.preventDefault();
+        const item = e.target.closest('.notification-item');
+        const id = item.getAttribute('data-id');
+
+        fetch(`/notifications/read/${id}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            }
+        }).then(() => {
+            item.remove(); // remove from dropdown
+            const badge = document.querySelector('#alertsDropdown .badge-counter');
+            const current = parseInt(badge.textContent) || 0;
+            badge.textContent = current > 1 ? current - 1 : '';
+        });
+    }
+});
+
+/**
+ * Mark all notifications as read
+ */
+document.getElementById('markAllRead').addEventListener('click', function(e) {
+    e.preventDefault();
+
+    fetch('/notifications/read-all', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        }
+    }).then(() => {
+        document.getElementById('alertsList').innerHTML = '';
+        document.querySelector('#alertsDropdown .badge-counter').textContent = '';
+    });
+});
+
+
+/**
  * Listen for new broadcast notifications
  */
 Echo.private(`App.Models.User.{{ Auth::id() }}`)
@@ -497,7 +542,8 @@ Echo.private(`App.Models.User.{{ Auth::id() }}`)
         const badge = document.querySelector('#alertsDropdown .badge-counter');
 
         const item = `
-            <a class="dropdown-item d-flex align-items-center" href="#">
+            <a class="dropdown-item d-flex align-items-center notification-item" 
+            href="#" data-id="${notification.id}">
                 <div class="mr-3">
                     <div class="icon-circle bg-primary">
                         <i class="fas fa-bell text-white"></i>
@@ -509,6 +555,7 @@ Echo.private(`App.Models.User.{{ Auth::id() }}`)
                 </div>
             </a>
         `;
+
 
         // Add new notification at the top
         list.insertAdjacentHTML('afterbegin', item);

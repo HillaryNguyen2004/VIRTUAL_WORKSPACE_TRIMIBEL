@@ -71,6 +71,14 @@ Route::get('/notifications/unread', function () {
 })->middleware('auth');
 
 
+Route::post('/notifications/read/{id}', [App\Http\Controllers\NotificationController::class, 'markAsRead'])
+    ->name('notifications.read');
+
+Route::post('/notifications/read-all', [App\Http\Controllers\NotificationController::class, 'markAllAsRead'])
+    ->name('notifications.readAll');
+
+
+
 
 Route::middleware(['role:admin|staff'])->group(function () {
 
