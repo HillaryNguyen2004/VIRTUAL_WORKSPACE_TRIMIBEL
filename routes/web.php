@@ -66,6 +66,10 @@ Route::post('/notifications/clear', function () {
     return back();
 })->name('notifications.clear')->middleware('auth');
 
+Route::get('/notifications/unread', function () {
+    return Auth::user()->unreadNotifications;
+})->middleware('auth');
+
 
 
 Route::middleware(['role:admin|staff'])->group(function () {

@@ -1,6 +1,7 @@
 <?php
 namespace App\Services;
-
+use App\Models\User;
+use App\Notifications\DayOffRequestStatusNotification;
 use App\Repositories\DayOffRequestRepository;
 use Illuminate\Support\Facades\Auth;
 
@@ -34,13 +35,37 @@ class DayOffService
         return $this->repo->getPendingWithUsers();
     }
 
-    public function approveRequest($id)
-    {
-        return $this->repo->updateStatus($id, 'APPROVED', Auth::id());
+    // public function approveRequest($id)
+    // {
+    //     return $this->repo->updateStatus($id, 'APPROVED', Auth::id());
+    // }
+
+    // public function rejectRequest($id)
+    // {
+    //     return $this->repo->updateStatus($id, 'REJECTED', Auth::id());
+    // }
+
+
+public function approveRequest($id)
+{
+    $request = $this->repo->updateStatus($id, 'APPROVED', Auth::id());
+
+    if ($request && $request->user) {
+        $request->user->notify(new DayOffRequestStatusNotification('APPROVED', $request->date));
     }
 
-    public function rejectRequest($id)
-    {
-        return $this->repo->updateStatus($id, 'REJECTED', Auth::id());
+    return $request;
+}
+
+public function rejectRequest($id)
+{
+    $request = $this->repo->updateStatus($id, 'REJECTED', Auth::id());
+
+    if ($request && $request->user) {
+        $request->user->notify(new DayOffRequestStatusNotification('REJECTED', $request->date));
     }
+
+    return $request;
+}
+
 }

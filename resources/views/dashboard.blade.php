@@ -12,22 +12,6 @@
         </a>
     </div>
 
-    @php
-        $cachedNotice = cache('user_' . auth()->id() . '_dayoff_notice');
-    @endphp
-
-    @if ($cachedNotice)
-        <div class="alert alert-info mb-2">
-            {{ $cachedNotice }}
-            <form method="POST" action="{{ route('notifications.clear') }}">
-                @csrf
-                <button class="btn btn-sm btn-light">Dismiss</button>
-            </form>
-        </div>
-    @endif
-
-
-
     <!-- Check In/Out Buttons -->
     <div class="mb-4">
         <div class="mb-2">
