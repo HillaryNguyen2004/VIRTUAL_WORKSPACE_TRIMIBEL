@@ -66,6 +66,18 @@ Route::post('/notifications/clear', function () {
     return back();
 })->name('notifications.clear')->middleware('auth');
 
+Route::get('/notifications/unread', function () {
+    return Auth::user()->unreadNotifications;
+})->middleware('auth');
+
+
+Route::post('/notifications/read/{id}', [App\Http\Controllers\NotificationController::class, 'markAsRead'])
+    ->name('notifications.read');
+
+Route::post('/notifications/read-all', [App\Http\Controllers\NotificationController::class, 'markAllAsRead'])
+    ->name('notifications.readAll');
+
+
 
 
 Route::middleware(['role:admin|staff'])->group(function () {
