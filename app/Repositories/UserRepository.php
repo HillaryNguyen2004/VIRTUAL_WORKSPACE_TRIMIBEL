@@ -5,6 +5,8 @@ use Illuminate\Http\UploadedFile;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rules\Password;
 use Laravel\Socialite\Facades\Socialite;
 use App\Models\ActivityLog;
 use Illuminate\Support\Facades\Auth;
@@ -57,11 +59,21 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
 
     public function createFromRequest($request): User
     {
-        return $this->create([
-            'name' => $request->first_name . ' ' . $request->last_name,
-            'email' => $request->email,
-            'password' => bcrypt($request->password),
+        $data = Validator::make($request->all(), [
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email:rfc,dns', 'unique:users,email'],
+            'password' => ['required', 'confirmed', Password::min(8)->numbers()->symbols()],
+        ])->validate(); // throws on failure
+
+        $user = $this->create([
+            'name' => trim("{$data['first_name']} {$data['last_name']}"),
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
         ]);
+
+        // Ensure the returned value is an instance of App\Models\User
+        return User::find($user->id);
     }
     public function findByEmail(string $email): ?User
     {
@@ -96,7 +108,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         if (!empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('name', 'like', '%' . $filters['search'] . '%')
-                  ->orWhere('email', 'like', '%' . $filters['search'] . '%');
+                    ->orWhere('email', 'like', '%' . $filters['search'] . '%');
             });
         }
 
