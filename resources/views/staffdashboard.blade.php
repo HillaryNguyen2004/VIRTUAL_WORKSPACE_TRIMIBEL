@@ -106,14 +106,14 @@
                 {{ __('staff_dashboard.view_all') }} <i class="bi bi-chevron-right"></i>
             </a>
         </div>
-
         @forelse($tasks as $task)
+        
             <div class="card mb-2">
                 <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center">
                     <div>
                         <div class="fw-bold">{{ $task->title }}</div>
                         <div class="text-secondary">{{ __('staff_dashboard.due_date') }}: {{ $task->due_date }}</div>
-                        <a href="{{ route('tasks.show', $task->id) }}" class="text-primary me-3">{{ __('staff_dashboard.view_details') }}</a>
+                        <a href="{{ route('tasks.show', $task->task_id) }}" class="text-primary me-3">{{ __('staff_dashboard.view_details') }}</a>
                     </div>
                     <span class="badge rounded-pill 
                         @if($task->status === 'pending') bg-warning text-dark 
@@ -128,7 +128,6 @@
             <p class="text-muted">{{ __('staff_dashboard.no_upcoming_tasks') }}</p>
         @endforelse
     </div>
-
     <div class="row mb-4">
         <div class="col-12">
             <div class="card p-4">
@@ -144,7 +143,7 @@
                     <span class="me-2" style="color:#ff4d4f;"><i class="bi bi-x-circle-fill"></i></span>
                     <span>{{ __('staff_dashboard.task_deleted') }}</span>
                     <span class="text-secondary ms-2">{{ __('staff_dashboard.obsolete_campaign_plan') }}</span>
-                    <span class Johansen-auto text-secondary small">{{ __('staff_dashboard.activity_date_2') }}</span>
+                    <span class="ms-auto text-secondary small">{{ __('staff_dashboard.activity_date_2') }}</span>
                 </div>
                 <hr class="my-1">
                 <div class="mb-2 d-flex align-items-center">
