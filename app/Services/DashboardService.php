@@ -21,7 +21,7 @@ class DashboardService
     {
         $tasks = $user->assignedTasks()->get();
         $teamLeader = $user->teamLeader;
-        $teamMembers = $user->teamMembers;
+        $teamMembers = $teamLeader ? $teamLeader->teamMembers : collect();
 
         return compact('tasks', 'teamLeader', 'teamMembers');
     }

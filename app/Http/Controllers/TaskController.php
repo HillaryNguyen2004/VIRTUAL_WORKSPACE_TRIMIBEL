@@ -77,9 +77,20 @@ class TaskController extends Controller
         return view('tasks.staff.index', compact('tasks'));
     }
 
-    public function upcomingTasks()
-    {
-        $tasks = $this->taskService->getUpcomingTasks(auth()->id());
-        return view('staffdashboard', compact('tasks'));
-    }
+    // public function upcomingTasks()
+    // {
+    //     $tasks = $this->taskService->getUpcomingTasks(auth()->id());
+    //     return view('staffdashboard', compact('tasks'));
+    // }
+//     public function upcomingTasks()
+// {
+//     $tasks = $this->taskService->getAllUpcomingTasks();
+//     return view('staffdashboard', compact('tasks'));
+// }
+public function upcomingTasks(Request $request)
+{
+    // Use the same logic as staff index page
+    $tasks = $this->taskService->getTasksForStaff($request, auth()->id());
+    return view('staffdashboard', compact('tasks'));
+}
 }
