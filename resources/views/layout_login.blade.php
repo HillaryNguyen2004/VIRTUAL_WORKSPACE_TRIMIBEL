@@ -11,52 +11,24 @@
 
     <!-- Custom fonts for this template-->
     <link href="{{ asset('vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet" type="text/css">
-    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
 
     <!-- Custom styles for this template-->
-    <link href="{{ asset('css/sb-admin-2.min.css') }}" rel="stylesheet">
-    <style>
-        .bg-login-image {
-            background: url('{{ asset('img/login-bg.jpg') }}');
-            background-position: center;
-            background-size: cover;
-        }
-        @media (max-width: 991.98px) {
-            .bg-login-image {
-                display: none !important;
-            }
-        }
-    </style>
-</head>
-<body class="bg-gradient-primary">
-
-    <div class="container">
-        <div class="row justify-content-center align-items-center" style="min-height: 100vh;">
-            <div class="col-xl-10 col-lg-12 col-md-9">
-                <div class="card o-hidden border-0 shadow-lg my-5">
-                    <div class="card-body p-0">
-                        <div class="row">
-                            <div class="col-lg-6 d-none d-lg-block bg-login-image"></div>
-                            <div class="col-lg-6 d-flex align-items-center">
-                                <div class="p-5 w-100">
-                                    @yield('content')
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
+    <!-- <link href="{{ asset('css/sb-admin-2.min.css') }}" rel="stylesheet"> -->
+    @vite(['resources/css/app.css'])
+    @vite(['resources/utils/submit-form.js'])
     <!-- Bootstrap core JavaScript-->
-    <script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
-    <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-
+    @vite(['public/vendor/jquery/jquery.min.js'])
+    @vite(['public/vendor/bootstrap/js/bootstrap.bundle.min.js'])
     <!-- Core plugin JavaScript-->
-    <script src="{{ asset('vendor/jquery-easing/jquery.easing.min.js') }}"></script>
-
+    @vite(['public/vendor/jquery-easing/jquery.easing.min.js'])
     <!-- Custom scripts for all pages-->
-    <script src="{{ asset('js/sb-admin-2.min.js') }}"></script>
+    @vite(['public/js/sb-admin-2.min.js'])
+</head>
+
+<body class="flex flex-row h-[100vh] p-[35px] justify-between gap-14">
+    @yield('content')
 </body>
+
 </html>
