@@ -33,6 +33,11 @@ return [
     'write_report' => 'Write Report',
     'activity_date_3' => 'May 16, 11:45 AM',
     'access_denied' => 'Access Denied',
-    'no_permission' => 'You do not have permission to view this page.'
+    'no_permission' => 'You do not have permission to view this page.',
+
+    // Chat translations
+    'team_chat' => 'Team Chat',
+    'team_chat_description' => 'Join the team conversation and collaborate.',
+    'open_chat' => 'Open Chat',
 ];
 ?>

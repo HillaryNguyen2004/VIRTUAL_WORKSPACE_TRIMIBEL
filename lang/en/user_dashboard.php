@@ -14,11 +14,15 @@ return [
     'team_members' => 'Team Members',
     'no_team_members' => 'No other team members.',
     'assigned_projects' => 'Assigned Projects',
-    'no_projects_assigned' => 'No projects assigned to you.',
+    'no_projects_assigned' => 'No projects assigned yet.',
     'no_permission' => 'You do not have permission to view this page.',
     'status_pending' => 'Pending',
     'status_in_progress' => 'In Progress',
     'status_completed' => 'Completed',
     'request_day_off' => 'Request Day Off',
     'click_to_request' => 'Click to request',
+
+    // Chat translations
+    'team_chat' => 'Team Chat',
+    'join_team_conversation' => 'Join Team Conversation',
 ];

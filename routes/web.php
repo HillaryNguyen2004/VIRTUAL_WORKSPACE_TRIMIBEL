@@ -143,3 +143,11 @@ Route::get('lang/{locale}', function ($locale) {
     }
     return redirect()->back();
 })->name('lang.switch');
+
+// Chat routes - accessible to all authenticated users
+Route::middleware(['auth'])->group(function () {
+    Route::get('/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
+    Route::get('/chat/conversation/{conversation}', [App\Http\Controllers\ChatController::class, 'show'])->name('chat.conversation');
+    Route::post('/chat/message', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.message.store');
+    Route::post('/chat/create', [App\Http\Controllers\ChatController::class, 'createConversation'])->name('chat.create');
+});
