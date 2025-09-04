@@ -103,6 +103,13 @@ public function hasFullDayOffOn($date)
         ->isNotEmpty();
 }
 
+public function conversations()
+{
+    return $this->belongsToMany(Conversation::class, 'conversation_participants')
+                ->withTimestamps()
+                ->withPivot('last_read_at');
+}
+
 // public function users()
 //     {
 //         return $this->morphedByMany(User::class, 'model', 'model_has_roles', 'role_id', 'model_id');

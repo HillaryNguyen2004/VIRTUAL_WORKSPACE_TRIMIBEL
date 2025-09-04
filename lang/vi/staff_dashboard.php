@@ -17,7 +17,7 @@ return [
     'team_overview' => 'Tổng quan nhóm',
     'team_overview_description' => 'Kiểm tra thành viên nhóm, phân phối công việc và vai trò.',
     'view_team' => 'Xem nhóm',
-    'upcoming_tasks' => 'Công việc sắp tới của bạn',
+    'upcoming_tasks' => 'Công việc sắp tới',
     'view_all' => 'Xem tất cả',
     'due_date' => 'Hạn chót',
     'view_details' => 'Xem chi tiết',
@@ -30,9 +30,14 @@ return [
     'obsolete_campaign_plan' => 'Kế hoạch chiến dịch lỗi thời',
     'activity_date_2' => '17 tháng 5, 9:15 sáng',
     'task_created' => 'Công việc đã tạo',
-    'write_report' => 'Viết báo cáo',
-    'activity_date_3' => '16 tháng 5, 11:45 sáng',
-    'access_denied' => 'Truy cập bị từ chối',
-    'no_permission' => 'Bạn không có quyền xem trang này.'
+    'write_report' => 'Viết Báo Cáo',
+    'activity_date_3' => '16 tháng 5, 11:45 AM',
+    'access_denied' => 'Truy Cập Bị Từ Chối',
+    'no_permission' => 'Bạn không có quyền xem trang này.',
+
+    // Chat translations
+    'team_chat' => 'Chat Nhóm',
+    'team_chat_description' => 'Tham gia cuộc trò chuyện nhóm và cộng tác.',
+    'open_chat' => 'Mở Chat',
 ];
 ?>
