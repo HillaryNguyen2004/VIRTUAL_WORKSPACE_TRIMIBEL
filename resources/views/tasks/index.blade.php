@@ -89,13 +89,18 @@
                                 <i class="bi bi-pencil-square"></i>
                             </a>
                             <form action="{{ route('tasks.destroy', $task->task_id) }}" method="POST" class="d-inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-link p-0 m-0 text-danger" onclick="return confirm('{{ __('admin_task.delete_confirm') }}')">
-                                    <i class="bi bi-trash fs-5"></i>
-                                </button>
+                                    @csrf
+                                    @method('DELETE')
+                                    @role('admin')
+                                        <input type="hidden" name="redirect_to" value="tasks.index">
+                                    @endrole
+                                    @role('staff')
+                                        <input type="hidden" name="redirect_to" value="back">
+                                    @endrole
+                                    <button type="submit" class="btn btn-link p-0 m-0 text-danger" onclick="return confirm('{{ __('admin_task.delete_confirm') }}')">
+                                        <i class="bi bi-trash fs-5"></i>
+                                    </button>
                             </form>
-                        </div>
                     </td>
                 </tr>
                 <tr class="collapse" id="taskDetails{{ $task->task_id }}">

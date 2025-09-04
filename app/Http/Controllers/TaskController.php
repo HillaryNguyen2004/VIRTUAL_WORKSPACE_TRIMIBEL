@@ -54,11 +54,58 @@ class TaskController extends Controller
         // return redirect()->route('tasks.index')->with('success', 'Task updated successfully!');
     }
 
-    public function destroy($id)
-    {
-        $this->taskService->deleteTask($id);
-        return redirect()->route('tasks.index')->with('success', __('messages.task_deleted'));
+    // public function destroy($id)
+    // {
+    //     $this->taskService->deleteTask($id);
+    //     if (request()->has('redirect_to') && request('redirect_to') === 'staff') {
+    //         return redirect()->route('staff.tasks.index')
+    //             ->with('success', 'Task deleted successfully');
+    //     }
+    
+    //     return redirect()->route('tasks.index')
+    //     ->with('success', 'Task deleted successfully');
+    //     // return redirect()->route('tasks.index')->with('success', __('messages.task_deleted'));
+    // }
+
+    // public function destroy($id)
+    // {
+    //     $this->taskService->deleteTask($id);
+
+    //     $redirectTo = request('redirect_to');
+
+    //     if ($redirectTo === 'staff') {
+    //         return redirect()->route('staff.tasks.index')
+    //             ->with('success', __('messages.task_deleted'));
+    //     }
+
+    //     // Default → admin
+    //     return redirect()->route('tasks.index')
+    //         ->with('success', __('messages.task_deleted'));
+    // }
+
+
+    // App\Http\Controllers\TaskController.php
+public function destroy(\Illuminate\Http\Request $request, $id)
+{
+    // Delete via your service/repo
+    $this->taskService->deleteTask($id);
+
+    // Client hint from Blade:
+    $hint = $request->input('redirect_to', 'tasks.index');
+
+    // (Optional but safer) Enforce server-side by role:
+    if (auth()->user()->hasRole('staff')) {
+        return back()->with('success', __('admin_task.deleted_success'));
     }
+
+    if ($hint === 'back') {
+        return back()->with('success', __('admin_task.deleted_success'));
+    }
+
+    return redirect()->route($hint)->with('success', __('admin_task.deleted_success'));
+}
+
+
 
 
     public function index(Request $request)
