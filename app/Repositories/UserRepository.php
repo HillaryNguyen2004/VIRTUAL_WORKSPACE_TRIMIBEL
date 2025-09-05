@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Repositories;
+
 use Illuminate\Http\UploadedFile;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -26,17 +27,17 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         ])->save();
     }
 
-    // public function findOrCreateFromGoogle($googleUser): User
-    // {
-    //     return $this->model->firstOrCreate(
-    //         ['email' => $googleUser->getEmail()],
-    //         [
-    //             'name' => $googleUser->getName(),
-    //             'password' => bcrypt(Str::random(24)),
-    //         ]
-    //     );
-    // }
+    /**
+     * Generate a unique 8-character alphanumeric username.
+     */
+    protected function generateUniqueUsername(): string
+    {
+        do {
+            $username = Str::upper(Str::random(8)); // 8 chars, mix of letters & numbers
+        } while (User::where('username', $username)->exists());
 
+        return $username;
+    }
 
     public function findOrCreateFromGoogle($googleUser): User
     {
@@ -45,6 +46,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
             [
                 'name' => $googleUser->getName(),
                 'password' => bcrypt(Str::random(24)),
+                'username' => $this->generateUniqueUsername(),
             ]
         );
 
@@ -56,25 +58,25 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         return $user;
     }
 
-
     public function createFromRequest($request): User
     {
         $data = Validator::make($request->all(), [
             'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email:rfc,dns', 'unique:users,email'],
-            'password' => ['required', 'confirmed', Password::min(8)->numbers()->symbols()],
+            'last_name'  => ['required', 'string', 'max:255'],
+            'email'      => ['required', 'email:rfc,dns', 'unique:users,email'],
+            'password'   => ['required', 'confirmed', Password::min(8)->numbers()->symbols()],
         ])->validate(); // throws on failure
 
         $user = $this->create([
-            'name' => trim("{$data['first_name']} {$data['last_name']}"),
-            'email' => $data['email'],
+            'name'     => trim("{$data['first_name']} {$data['last_name']}"),
+            'email'    => $data['email'],
             'password' => Hash::make($data['password']),
+            'username' => $this->generateUniqueUsername(),
         ]);
 
-        // Ensure the returned value is an instance of App\Models\User
         return User::find($user->id);
     }
+
     public function findByEmail(string $email): ?User
     {
         return $this->model->where('email', $email)->first();
@@ -93,10 +95,8 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         $extension = $file->getClientOriginalExtension();
         $filename = $cleanName . '_' . $timestamp . '.' . $extension;
 
-        // Move the file to the desired directory
         $file->move(public_path('img/user_avatar/'), $filename);
 
-        // Save the file name in the user_profile_photo column
         $user->user_profile_photo = $filename;
         $user->save();
     }
@@ -108,7 +108,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         if (!empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('name', 'like', '%' . $filters['search'] . '%')
-                    ->orWhere('email', 'like', '%' . $filters['search'] . '%');
+                  ->orWhere('email', 'like', '%' . $filters['search'] . '%');
             });
         }
 
@@ -121,8 +121,6 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         $sortOrder = $filters['sort'] ?? 'asc';
         $query->orderBy('name', in_array($sortOrder, ['asc', 'desc']) ? $sortOrder : 'asc');
 
-        // return $query->get();
         return $query->paginate($perPage)->appends($filters);
     }
-
 }
