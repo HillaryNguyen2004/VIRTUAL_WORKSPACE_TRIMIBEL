@@ -16,9 +16,19 @@ class CheckInService
         $this->checkInRepository = $checkInRepository;
     }
 
-    public function processCheckOut(string $userName): array
+    public function processCheckOut(string $username): array
     {
-        $checkIn = $this->checkInRepository->getTodayCheckIn($userName);
+        $user = User::where('username', $username)->first();
+
+        if (!$user) {
+            return [
+                'status' => false,
+                'message' => __('messages.invalid_user'),
+            ];
+        }
+
+        // Get today's check-in by username
+        $checkIn = $this->checkInRepository->getTodayCheckIn($user->username);
 
         if (!$checkIn) {
             return [
@@ -34,7 +44,10 @@ class CheckInService
             ];
         }
 
-        $this->checkInRepository->updateCheckOut($checkIn->id, Carbon::now('Asia/Ho_Chi_Minh')->toTimeString());
+        $this->checkInRepository->updateCheckOut(
+            $checkIn->id,
+            Carbon::now('Asia/Ho_Chi_Minh')->toTimeString()
+        );
 
         return [
             'status' => true,
@@ -44,7 +57,7 @@ class CheckInService
 
     public function processCheckIn(string $username): array
     {
-        $user = User::where('name', $username)->first();
+        $user = User::where('username', $username)->first();
 
         if (!$user) {
             return [
@@ -58,49 +71,39 @@ class CheckInService
         $now = Carbon::now('Asia/Ho_Chi_Minh');
         $today = $now->toDateString();
 
-        // Check if already checked in today
-        if ($this->checkInRepository->hasCheckedInToday($user->name, $today)) {
+        // Check if already checked in today (by username)
+        if ($this->checkInRepository->hasCheckedInToday($user->username, $today)) {
             return [
                 'status' => false,
                 'message' => __('messages.already_checked_in'),
             ];
         }
 
-        // $isLate = false;
-        // $workingHour = CompanyHour::first();
-
-        // if ($workingHour) {
-        //     $configuredStart = Carbon::createFromFormat('H:i:s', $workingHour->start_at, 'Asia/Ho_Chi_Minh')
-        //         ->setDate($now->year, $now->month, $now->day);
-
-        //     $isLate = $now->greaterThan($configuredStart);
-        // }
         $isLate = false;
         $workingHour = CompanyHour::first();
 
         if ($workingHour) {
-            // Get user's day off for today
             $dayOff = DayOffRequest::where('user_id', $user->id)
                 ->where('date', $now->toDateString())
-                ->whereIn('status', ['APPROVED']) // only consider approved ones
+                ->whereIn('status', ['APPROVED'])
                 ->first();
 
-            // Default to company hour
-            $configuredStart = Carbon::createFromFormat('H:i:s', $workingHour->start_at, 'Asia/Ho_Chi_Minh')
-                ->setDate($now->year, $now->month, $now->day);
+            $configuredStart = Carbon::createFromFormat(
+                'H:i:s',
+                $workingHour->start_at,
+                'Asia/Ho_Chi_Minh'
+            )->setDate($now->year, $now->month, $now->day);
 
             if ($dayOff && $dayOff->leave_type === 'OFF_HALF') {
-                // Allow noon check-in for half-day off
                 $configuredStart->setTime(12, 0, 0);
             }
 
             $isLate = $now->greaterThan($configuredStart);
         }
 
-
-        // Insert check-in
+        // Save NAME into DB (not username)
         $this->checkInRepository->insertCheckIn([
-            'user_name' => $user->name,
+            'user_name' => $user->name, // store full name
             'date' => $today,
             'check_in_time' => $now->toTimeString(),
             'created_at' => $now,
@@ -114,5 +117,4 @@ class CheckInService
             'token' => $token,
         ];
     }
-
 }
