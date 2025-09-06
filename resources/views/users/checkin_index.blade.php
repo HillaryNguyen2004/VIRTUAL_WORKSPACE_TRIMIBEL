@@ -53,10 +53,36 @@
                 </thead>
                 <tbody>
                     @forelse($checkIns as $index => $log)
+                        @php
+                            // Prepare working hours display:
+                            $computedWorking = null;
+
+                            // If an explicit working_hours value exists, use it.
+                            if (!empty($log->working_hours)) {
+                                $computedWorking = $log->working_hours;
+                            } elseif (!empty($log->check_in_time) && !empty($log->check_out_time)) {
+                                try {
+                                    // combine date + times to ensure correct diffs
+                                    $in  = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $log->date . ' ' . $log->check_in_time, 'Asia/Ho_Chi_Minh');
+                                    $out = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $log->date . ' ' . $log->check_out_time, 'Asia/Ho_Chi_Minh');
+
+                                    // if checkout is next day, Carbon will handle diffInSeconds correctly
+                                    $seconds = $out->diffInSeconds($in);
+                                    $hours = intdiv($seconds, 3600);
+                                    $minutes = intdiv($seconds % 3600, 60);
+                                    $computedWorking = sprintf('%02d:%02d', $hours, $minutes);
+                                } catch (\Exception $e) {
+                                    $computedWorking = null;
+                                }
+                            }
+                        @endphp
+
                         <tr>
                             <td>{{ $checkIns->firstItem() + $index }}</td>
                             <td>{{ $log->user_name }}</td>
                             <td>{{ $log->date }}</td>
+
+                            <!-- Check In Time + Badges -->
                             <td>
                                 @if ($log->check_in_time)
                                     <span class="{{ $log->is_late ? 'text-danger fw-bold' : '' }}">
@@ -66,35 +92,31 @@
                                     -
                                 @endif
 
-                                {{-- Show badge regardless of check-in --}}
-                                @if ($log->is_half_day_off)
-                                    <span class="badge bg-info text-dark">Half Day Off</span>
-                                @elseif ($log->is_full_day_off)
-                                    <span class="badge bg-secondary">{{ __('checkin_logs.badge_full_day_off') }}</span>
+                                {{-- Day-off badges shown alongside check-in --}}
+                                @if (!empty($log->is_half_day_off) && $log->is_half_day_off)
+                                    <span class="badge bg-info text-dark ms-1">Half Day Off</span>
+                                @elseif (!empty($log->is_full_day_off) && $log->is_full_day_off)
+                                    <span class="badge bg-secondary ms-1">{{ __('checkin_logs.badge_full_day_off') }}</span>
                                 @endif
                             </td>
-                            <td>
-                                @if ($log->check_in_time)
-                                    <span class="{{ $log->is_late ? 'text-danger fw-bold' : '' }}">
-                                        {{ $log->check_in_time }}
-                                    </span>
 
-                                    @if ($log->is_half_day_off)
-                                        <span class="badge bg-info text-dark">Half Day Off</span>
-                                    @endif
+                            <!-- Check Out Time -->
+                            <td>
+                                @if ($log->check_out_time)
+                                    {{ $log->check_out_time }}
                                 @else
-                                    @if ($log->is_full_day_off)
-                                        <span class="badge bg-secondary">{{ __('checkin_logs.badge_full_day_off') }}</span>
-                                    @else
-                                        -
-                                    @endif
+                                    -
                                 @endif
                             </td>
-                            <td>{{ $log->check_out_time ?? '-' }}</td>
+
+                            <!-- Working Hours -->
                             <td>
-                                @if ($log->working_hours)
-                                    <span class="badge bg-primary">{{ $log->working_hours }} hrs</span>
-                                @elseif ($log->check_in_time)
+                                @if (!empty($computedWorking))
+                                    {{-- If computedWorking is in "HH:MM" format show nicely --}}
+                                    <span class="badge bg-primary">
+                                        {{ $computedWorking }} hrs
+                                    </span>
+                                @elseif ($log->check_in_time && !$log->check_out_time)
                                     <span class="badge bg-warning text-dark">{{ __('checkin_logs.badge_checked_in') }}</span>
                                 @else
                                     <span class="badge bg-secondary">{{ __('checkin_logs.badge_not_checked_in') }}</span>

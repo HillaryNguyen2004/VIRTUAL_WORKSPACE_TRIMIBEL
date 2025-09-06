@@ -1,6 +1,7 @@
 <?php
 namespace App\Repositories;
 use App\Models\CheckIn;
+use App\Models\User; 
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -42,12 +43,12 @@ class CheckInRepository implements CheckInRepositoryInterface
     //         ->limit($limit)
     //         ->get();
     // }
-     public function getTodayCheckIn(string $userName)
-    {
-        return CheckIn::where('user_name', $userName)
-            ->where('date', Carbon::now('Asia/Ho_Chi_Minh')->toDateString())
-            ->first();
-    }
+    //  public function getTodayCheckIn(string $userName)
+    // {
+    //     return CheckIn::where('user_name', $userName)
+    //         ->where('date', Carbon::now('Asia/Ho_Chi_Minh')->toDateString())
+    //         ->first();
+    // }
 
     public function updateCheckOut(int $id, string $time): void
     {
@@ -57,12 +58,12 @@ class CheckInRepository implements CheckInRepositoryInterface
         ]);
     }
 
-    public function hasCheckedInToday(string $username, string $date): bool
-    {
-        return CheckIn::where('user_name', $username)
-            ->where('date', $date)
-            ->exists();
-    }
+    // public function hasCheckedInToday(string $username, string $date): bool
+    // {
+    //     return CheckIn::where('user_name', $username)
+    //         ->where('date', $date)
+    //         ->exists();
+    // }
 
     public function insertCheckIn(array $data): void
     {
@@ -76,4 +77,31 @@ class CheckInRepository implements CheckInRepositoryInterface
             ->limit($limit)
             ->get();
     }
+
+public function getTodayCheckIn(string $username)
+{
+    $user = User::where('username', $username)->first();
+    if (!$user) {
+        return null;
+    }
+
+    return CheckIn::where('user_name', $user->name)  // compare with name
+        ->where('date', now('Asia/Ho_Chi_Minh')->toDateString())
+        ->first();
+}
+
+public function hasCheckedInToday(string $username, string $date)
+{
+    $user = User::where('username', $username)->first();
+    if (!$user) {
+        return false;
+    }
+
+    return CheckIn::where('user_name', $user->name) // compare with name
+        ->where('date', $date)
+        ->exists();
+}
+
+
+
 }

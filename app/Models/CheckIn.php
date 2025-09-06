@@ -12,7 +12,7 @@ class CheckIn extends Model
         'user_name',
         'date',
         'check_in_time',
-        'check_out_time',
+        'check_out_time'
     ];
     public function user()
 {

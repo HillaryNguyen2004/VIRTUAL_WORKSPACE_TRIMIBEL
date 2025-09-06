@@ -19,6 +19,10 @@
                         <div class="col-sm-9">{{ Auth::user()->name }}</div>
                     </div>
                     <div class="row mb-3">
+                        <div class="col-sm-3 font-weight-bold text-gray-600">Username:</div>
+                        <div class="col-sm-9">{{ Auth::user()->username ?? '—' }}</div>
+                    </div>
+                    <div class="row mb-3">
                         <div class="col-sm-3 font-weight-bold text-gray-600">Email:</div>
                         <div class="col-sm-9">{{ Auth::user()->email }}</div>
                     </div>
@@ -36,7 +40,7 @@
                 <div class="card-body">
                     <img src="{{ getUserAvatar(Auth::user()) }}" class="img-fluid rounded-circle mb-3" style="width: 150px;" alt="User Avatar">
                     <h5 class="text-primary">{{ Auth::user()->name }}</h5>
-                    <p class="text-muted mb-0">{{ Auth::user()->email }}</p>
+                    <p class="text-muted mb-0">{{ Auth::user()->username ?? Auth::user()->email }}</p>
                 </div>
             </div>
         </div>
