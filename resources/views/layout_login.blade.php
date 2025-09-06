@@ -27,7 +27,7 @@
     @vite(['public/js/sb-admin-2.min.js'])
 </head>
 
-<body class="flex flex-row h-[100vh] p-[35px] justify-between gap-14">
+<body class="flex flex-row h-screen p-[35px] justify-between gap-14 overflow-auto">
     @yield('content')
 </body>
 
