@@ -1,49 +1,49 @@
-@extends('layouts.app')
+@extends('layout_dashboard')
 
 @section('content')
-<div class="container-fluid">
-    <!-- Page Heading -->
-    <h1 class="h3 mb-4 text-gray-800">User Profile</h1>
-
-    <div class="row">
-        <div class="col-lg-8">
-            <!-- Profile Card -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-primary">Profile Details</h6>
-                    <a href="{{ route('settings') }}" class="btn btn-sm btn-primary">Edit Profile</a>
-                </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-sm-3 font-weight-bold text-gray-600">Full Name:</div>
-                        <div class="col-sm-9">{{ Auth::user()->name }}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-sm-3 font-weight-bold text-gray-600">Username:</div>
-                        <div class="col-sm-9">{{ Auth::user()->username ?? '—' }}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-sm-3 font-weight-bold text-gray-600">Email:</div>
-                        <div class="col-sm-9">{{ Auth::user()->email }}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-sm-3 font-weight-bold text-gray-600">Joined:</div>
-                        <div class="col-sm-9">{{ Auth::user()->created_at->format('F d, Y') }}</div>
-                    </div>
-                </div>
+    <div class="flex flex-col gap-6 w-full">
+        <a href="{{ route('user.dashboard') }}" class="text-[#5D3FD3] text-lg font-medium w-fit">
+            &larr; {{ __('profile.back_to_dashboard') }}
+        </a>
+        <div
+            class="flex flex-col items-center w-full h-fit bg-[#FDFDFF] rounded-2xl shadow-[0_4px_40px_0_rgba(32,27,53,0.1)] animate-fade-in-up [animation-delay:150ms]">
+            <div class="w-full py-3 text-center text-xl bg-[#F1EFFC] text-[#5D3FD3] font-medium rounded-t-2xl relative">
+                <h1>{{ __('profile.profile_title') }}</h1>
             </div>
-        </div>
-
-        <!-- User Avatar -->
-        <div class="col-lg-4">
-            <div class="card shadow mb-4 text-center">
-                <div class="card-body">
-                    <img src="{{ getUserAvatar(Auth::user()) }}" class="img-fluid rounded-circle mb-3" style="width: 150px;" alt="User Avatar">
-                    <h5 class="text-primary">{{ Auth::user()->name }}</h5>
-                    <p class="text-muted mb-0">{{ Auth::user()->username ?? Auth::user()->email }}</p>
-                </div>
+            <div class="flex flex-col items-center justify-center gap-6 py-6 px-8">
+                <img src="{{ getUserAvatar(Auth::user()) }}"
+                    class="w-[150px] h-[150px] object-cover md:w-[200px] md:h-[200px] rounded-full" alt="User Avatar">
+                <dl class="flex flex-col items-center justify-center gap-3 w-full text-sm xl:text-lg">
+                    <div class="flex gap-1">
+                        <dt class="text-gray-500">{{ __('profile.full_name_label') }}:</dt>
+                        <dd class="text-gray-900 break-all" title="{{ Auth::user()->name }}">
+                            {{ Auth::user()->name }}
+                        </dd>
+                    </div>
+                    <div class="flex gap-1">
+                        <dt class="text-gray-500">Username:</dt>
+                        <dd class="text-gray-900 break-all" title="{{ Auth::user()->name }}">
+                            {{ Auth::user()->username }}
+                        </dd>
+                    </div>
+                    <div class="flex gap-1">
+                        <dt class="text-gray-500">{{ __('profile.email_label') }}:</dt>
+                        <dd class="text-gray-900 break-all" title="{{ Auth::user()->email }}">
+                            {{ Auth::user()->email }}
+                        </dd>
+                    </div>
+                    <div class="flex gap-1">
+                        <dt class="text-gray-500">{{ __('profile.joined_label') }}:</dt>
+                        <dd class="text-gray-900 break-all">
+                            {{ Auth::user()->created_at->format('F d, Y') }}
+                        </dd>
+                    </div>
+                </dl>
+                <a href="{{ route('settings') }}"
+                    class="px-4 py-2 w-52 bg-[#5D3FD3] hover:opacity-95 text-white text-center text-sm xl:text-lg rounded-xl shadow-[0_8px_24px_rgba(99,102,241,0.35)] transition">
+                    {{ __('profile.edit_profile_button') }}
+                </a>
             </div>
         </div>
     </div>
-</div>
 @endsection

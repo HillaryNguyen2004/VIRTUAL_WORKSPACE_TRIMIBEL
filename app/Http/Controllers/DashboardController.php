@@ -28,7 +28,7 @@ class DashboardController extends Controller
         $workingHour = CompanyHour::first();
         $data = $this->dashboardService->getUserDashboardData($user);
         // return view('dashboard', array_merge(['user' => $user], $data));
-        return view('dashboard', array_merge(['user' => $user, 'workingHour' => $workingHour], $data));
+        return view('userdashboard', array_merge(['user' => $user, 'workingHour' => $workingHour], $data));
     }
 
     public function upcomingTasks()
