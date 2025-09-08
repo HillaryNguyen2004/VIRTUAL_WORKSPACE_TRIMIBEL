@@ -34,6 +34,7 @@
                     @forelse($assignedTasks as $task)
                         @php
                             $statusClasses = [
+                                'pending' => 'bg-[#FFF3CD] text-[#856404]',
                                 'in_progress' => 'bg-[#F2FBDF] text-[#CBEA8E]',
                                 'completed' => 'bg-[#D3FDE5] text-[#5AE194]',
                             ];
