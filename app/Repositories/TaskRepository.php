@@ -39,5 +39,31 @@ class TaskRepository extends BaseRepository implements TaskRepositoryInterface
             $query->where('user_id', $userId);
         })->whereIn('status', ['pending', 'in_progress'])->get();
     }
+
+    public function updateStatus(int $taskId, string $status, ?int $percentage = null): ?Task
+    {
+        $task = $this->find($taskId);
+
+        if (!$task) {
+            return null;
+        }
+
+        $task->status = $status;
+
+        // only apply percentage if status is "in_progress"
+        if ($status === 'in_progress') {
+            $task->percentage = $percentage ?? 0;
+        } elseif ($status === 'completed') {
+            $task->percentage = 100;
+        } else {
+            $task->percentage = 0;
+        }
+
+        $task->save();
+
+        return $task;
+    }
+
+
 }
 

@@ -5,6 +5,11 @@
 @vite(['resources/utils/user_dashboard/task_dialog.js'])
 @vite(['resources/utils/user_dashboard/show_task_description.js'])
 @vite(['resources/utils/user_dashboard/update_status.js'])
+
+<script>
+    window.updateStatusUrl = @json(route('tasks.updateStatus', ['task' => ':id']));
+</script>
+
 <div class="hidden items-center justify-center fixed h-screen w-screen bg-black/20 z-50" id="task-dialog">
     <div class="flex flex-col gap-8 bg-[#FDFDFF] w-[300px] md:w-[600px] max-h-[400px] rounded-[20px] p-6 animate-fade-in-up [animation-delay:150ms]">
         <div class="flex justify-between">
@@ -20,10 +25,13 @@
             <table class="w-full table-fixed">
                 <thead class="text-sm text-[#D9D9D9] border-b border-[#D9D9D9]">
                     <tr>
-                        <th scope="col" class="w-5/12 text-left font-medium py-2">
+                        <th scope="col" class="w-1/12 text-left font-medium py-2">
+                            ID
+                        </th>
+                        <th scope="col" class="w-4/12 text-left font-medium py-2">
                             {{ __('user_dashboard.tasks') }}
                         </th>
-                        <th scope="col" class="w-6/12 text-left font-medium py-2">
+                        <th scope="col" class="w-5/12 text-left font-medium py-2">
                             {{ __('user_dashboard.task_status') }}
                         </th>
                         <th scope="col" class="w-1/12 text-left font-medium py-2"></th>
@@ -43,7 +51,12 @@
                             $percent = $task->percentage ?? 0;
                         @endphp
 
-                        <tr data-task-id="{{ $task->id }}" aria-expanded="false">
+                        <tr data-task-id="{{ $task->task_id }}" aria-expanded="false">
+                            <td class="py-3 pr-2">
+                                <div class="flex items-center justify-center min-w-0">
+                                    <span class="font-semibold text-[#5D3FD3]">#{{ $task->task_id }}</span>
+                                </div>
+                            </td>
                             <td class="py-3 pr-2">
                                 <div class="flex items-center gap-3 min-w-0">
                                     <span class="break-all" title="{{ $task->title }}">{{ $task->title }}</span>
@@ -52,8 +65,8 @@
 
                             <td class="py-3 pr-2 relative">
                                 <button class="status-btn flex items-center gap-3 w-fit px-2 rounded-2xl text-center {{ $cls }}"
-                                    data-task-id="{{ $task->id }}" aria-haspopup="menu"
-                                    aria-expanded="false" aria-controls="status-menu-{{ $task->id }}">
+                                    data-task-id="{{ $task->task_id }}" aria-haspopup="menu"
+                                    aria-expanded="false" aria-controls="status-menu-{{ $task->task_id }}">
                                     <p>{{ __('user_dashboard.status_' . $task->status) }}</p>
                                     <p class="hidden {{ !($task->status == "in_progress") ? "md:hidden" : "md:inline" }}">
                                         {{ $percent ?? 0 }}%
@@ -61,7 +74,7 @@
                                 </button>
                                 <!-- drop down status update -->
                                 <div
-                                    id="status-menu-{{ $task->id }}"
+                                    id="status-menu-{{ $task->task_id }}"
                                     class="status-menu hidden absolute left-0 mt-2 w-48 md:w-52 bg-[#FDFDFF] border border-gray-200 shadow-xl rounded-2xl p-4 z-50">
                                     <!-- In progress -->
                                     <div class="rounded-2xl">
@@ -75,6 +88,9 @@
                                                     <span>%</span>
                                                 </div>
                                             </div>
+                                            <div id="status-menu-{{ $task->task_id }}"
+                                                class="status-menu hidden absolute left-0 mt-2 w-48 md:w-52 bg-[#FDFDFF] border border-gray-200 shadow-xl rounded-2xl p-4 z-50"
+                                                data-task-id="{{ $task->task_id }}">
                                         </div>
                                         <input type="range" min="0" max="99" step="1"
                                             value="{{ $task->status === 'in_progress' ? $percent : 0 }}"
@@ -100,7 +116,7 @@
 
                             <td class="py-3 pr-2">
                                 <button type="button" class="hover:bg-[#F1EFFC] rounded-full p-1 js-show-desc"
-                                    aria-controls="desc-{{ $task->id }}" aria-expanded="false"
+                                    aria-controls="desc-{{ $task->task_id }}" aria-expanded="false"
                                     title="{{ __('user_dashboard.view_details') ?? 'View details' }}">
                                     <!-- icon -->
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
@@ -112,16 +128,17 @@
                             </td>
                         </tr>
 
-                        <tr id="desc-{{ $task->id }}" class="desc-row hidden" role="region">
-                            <td colspan="3" class="bg-[#F1EFFC]">
+                        <tr id="desc-{{ $task->task_id }}" class="desc-row hidden" role="region">
+                            <td colspan="4" class="bg-[#F1EFFC]">
                                 <div class="px-3 py-2 max-h-[120px] overflow-auto text-gray-700">
+                                    <div class="font-medium mb-1">Task #{{ $task->task_id }} - {{ $task->title }}</div>
                                     {{ $task->description ?? __('user_dashboard.no_description') }}
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="3" class="py-6 text-center text-gray-400">
+                            <td colspan="4" class="py-6 text-center text-gray-400">
                                 {{ __('user_dashboard.no_projects_assigned') }}
                             </td>
                         </tr>
