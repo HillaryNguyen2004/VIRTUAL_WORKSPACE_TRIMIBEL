@@ -30,8 +30,6 @@
     </div>
 </div>
 
-
-
 <div class="container py-4">
     <h1 class="mb-2 fw-bold">{{ __('staff_dashboard.staff_dashboard') }}</h1>
     <p class="mb-4">{{ __('staff_dashboard.welcome_message') }}</p>
@@ -84,7 +82,6 @@
         </div>
     </div>
 
-
         <div class="col-md-4 mb-3">
             <div class="card border-success border-2" style="border-top:4px solid #00b96b;">
                 <div class="card-body">
@@ -120,27 +117,44 @@
             </a>
         </div>
         @forelse($tasks as $task)
-        
             <div class="card mb-2">
-                <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center">
-                    <div>
-                        <div class="fw-bold">{{ $task->title }}</div>
-                        <div class="text-secondary">{{ __('staff_dashboard.due_date') }}: {{ $task->due_date }}</div>
-                        <a href="{{ route('tasks.show', $task->task_id) }}" class="text-primary me-3">{{ __('staff_dashboard.view_details') }}</a>
+                <div class="card-body">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                        <div>
+                            <div class="fw-bold">{{ $task->title }}</div>
+                            <div class="text-secondary">{{ __('staff_dashboard.due_date') }}: {{ $task->due_date }}</div>
+                            <a href="{{ route('tasks.show', $task->task_id) }}" class="text-primary me-3">{{ __('staff_dashboard.view_details') }}</a>
+                        </div>
+                        <span class="badge rounded-pill 
+                            @if($task->status === 'pending') bg-warning text-dark 
+                            @elseif($task->status === 'in_progress') bg-info text-dark 
+                            @elseif($task->status === 'completed') bg-success 
+                            @endif">
+                            {{ ucfirst(str_replace('_', ' ', $task->status)) }}
+                        </span>
                     </div>
-                    <span class="badge rounded-pill 
-                        @if($task->status === 'pending') bg-warning text-dark 
-                        @elseif($task->status === 'in_progress') bg-info text-dark 
-                        @elseif($task->status === 'completed') bg-success 
-                        @endif">
-                        {{ ucfirst(str_replace('_', ' ', $task->status)) }}
-                    </span>
+                    
+                    {{-- Progress bar for in-progress tasks --}}
+                    @if($task->status === 'in_progress' && isset($task->percentage))
+                    <div class="mt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-muted">Progress</small>
+                            <small class="text-muted">{{ $task->percentage }}%</small>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-info" role="progressbar" style="width: {{ $task->percentage }}%;" 
+                                 aria-valuenow="{{ $task->percentage }}" aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
+                    </div>
+                    @endif
                 </div>
             </div>
         @empty
             <p class="text-muted">{{ __('staff_dashboard.no_upcoming_tasks') }}</p>
         @endforelse
     </div>
+    
     <div class="row mb-4">
         <div class="col-12">
             <div class="card p-4">

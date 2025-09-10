@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateTaskRequest;
 use App\Services\TaskService;
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Validation\ValidationException;
 
 class TaskController extends Controller
 {
@@ -140,4 +141,69 @@ public function upcomingTasks(Request $request)
     $tasks = $this->taskService->getTasksForStaff($request, auth()->id());
     return view('staffdashboard', compact('tasks'));
 }
+
+
+
+// public function updateStatus(Request $request, $id)
+// {
+//     $request->validate([
+//         'status' => 'required|in:pending,in_progress,completed',
+//         'percentage' => 'nullable|integer|min:0|max:100',
+//     ]);
+
+//     $task = $this->taskService->updateStatus(
+//         $id,
+//         $request->status,
+//         $request->percentage
+//     );
+
+//     if (!$task) {
+//         return response()->json(['success' => false, 'message' => 'Task not found'], 404);
+//     }
+
+//     return response()->json([
+//         'success' => true,
+//         'message' => 'Task status updated successfully',
+//         'task' => $task
+//     ]);
+// }
+
+public function updateStatus(Request $request, $id)
+{
+    try {
+        $request->validate([
+            'status' => 'required|in:pending,in_progress,completed',
+            'percentage' => 'nullable|integer|min:0|max:100',
+        ]);
+    } catch (ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed',
+            'errors'  => $e->errors(),
+        ], 422);
+    }
+
+    $task = $this->taskService->updateStatus(
+        $id,
+        $request->status,
+        $request->percentage
+    );
+
+    if (!$task) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Task not found'
+        ], 404);
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Task status updated successfully',
+        'task'    => $task
+    ]);
+}
+
+
+
+
 }

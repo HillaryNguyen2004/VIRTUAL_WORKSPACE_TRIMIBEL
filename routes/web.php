@@ -151,3 +151,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/chat/message', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.message.store');
     Route::post('/chat/create', [App\Http\Controllers\ChatController::class, 'createConversation'])->name('chat.create');
 });
+
+
+// Task status update route
+// Route::post('/tasks/{id}/status', [TaskController::class, 'updateStatus'])->name('tasks.updateStatus');
+// In your routes file (web.php)
+Route::post('/tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.updateStatus');
+

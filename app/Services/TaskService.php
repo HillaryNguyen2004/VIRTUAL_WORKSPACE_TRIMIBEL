@@ -3,7 +3,7 @@ namespace App\Services;
 use App\Models\Task;
 use App\Repositories\TaskRepositoryInterface;
 use Illuminate\Http\Request;
-
+use App\Repositories\TaskRepository;
 class TaskService
 {
     protected $taskRepo;
@@ -130,5 +130,12 @@ public function getFilteredTasks(Request $request)
 
     return $query->paginate(3); // or ->paginate(10);
 }
+
+
+public function updateStatus(int $taskId, string $status, ?int $percentage = null)
+{
+    return $this->taskRepo->updateStatus($taskId, $status, $percentage);
+}
+
 
 }
