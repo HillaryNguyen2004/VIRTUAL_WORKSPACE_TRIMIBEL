@@ -1,6 +1,6 @@
 <?php
 return [
-    'title' => 'Dashboard',
+    'title' => 'User Dashboard',
     'heading' => 'Dashboard',
     'generate_report' => 'Generate Report',
     'earnings_monthly' => 'Earnings / month',
