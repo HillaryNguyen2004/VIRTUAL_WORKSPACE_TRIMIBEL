@@ -15,4 +15,5 @@ return [
     'cancel_button' => 'Hủy',
     'save_button' => 'Lưu Công Việc',
     'another_tag_placeholder' => 'Thẻ Khác',
+    'back_to_task'=> 'Quay Lại Công Việc',
 ];

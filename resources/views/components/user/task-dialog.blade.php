@@ -42,7 +42,7 @@
                     @forelse($assignedTasks as $task)
                         @php
                             $statusClasses = [
-                                'pending' => 'bg-[#FFF3CD] text-[#856404]',
+                                'pending' => 'bg-gray-100 text-gray-400',
                                 'in_progress' => 'bg-[#F2FBDF] text-[#CBEA8E]',
                                 'completed' => 'bg-[#D3FDE5] text-[#5AE194]',
                             ];
@@ -88,9 +88,9 @@
                                                     <span>%</span>
                                                 </div>
                                             </div>
-                                            <div id="status-menu-{{ $task->task_id }}"
+                                            <!-- <div id="status-menu-{{ $task->task_id }}"
                                                 class="status-menu hidden absolute left-0 mt-2 w-48 md:w-52 bg-[#FDFDFF] border border-gray-200 shadow-xl rounded-2xl p-4 z-50"
-                                                data-task-id="{{ $task->task_id }}">
+                                                data-task-id="{{ $task->task_id }}"> -->
                                         </div>
                                         <input type="range" min="0" max="99" step="1"
                                             value="{{ $task->status === 'in_progress' ? $percent : 0 }}"

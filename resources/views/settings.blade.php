@@ -1,8 +1,7 @@
 @extends('layout_dashboard')
-@vite(['public/vendor/jquery/jquery.min.js'])
-@vite(['resources/utils/settings/upload_image.js'])
-@vite(['resources/utils/settings/update_detail.js'])
 @section('content')
+    @vite(['resources/utils/settings/upload_image.js'])
+    @vite(['resources/utils/settings/update_detail.js'])
     <div class="flex flex-col gap-6 w-full h-fit">
         <a href="{{ route('profile') }}" class="text-[#5D3FD3] text-lg font-medium w-fit">
             &larr; {{ __('settings.back_to_profile') }}
@@ -50,7 +49,7 @@
                     </div>
 
                     <button id="upload-btn" type="submit"
-                        class="px-4 py-2 w-full sm:w-52 bg-[#5D3FD3] hover:opacity-95 text-white text-center text-sm xl:text-lg rounded-xl shadow-[0_8px_24px_rgba(99,102,241,0.35)] transition">
+                        class="px-4 py-2 w-full sm:w-52 bg-[#5D3FD3] hover:opacity-95 text-white text-center rounded-xl shadow-[0_8px_24px_rgba(99,102,241,0.35)] transition">
                         {{ __('settings.upload_image_button') }}
                     </button>
                 </form>
@@ -100,7 +99,7 @@
                     <button 
                         id="update-detail-btn"
                         type="submit"
-                        class="px-4 py-2 w-full sm:w-52 bg-[#5D3FD3] hover:opacity-95 text-white text-center text-sm xl:text-lg rounded-xl shadow-[0_8px_24px_rgba(99,102,241,0.35)] transition">
+                        class="px-4 py-2 w-full sm:w-52 bg-[#5D3FD3] hover:opacity-95 text-white text-center rounded-xl shadow-[0_8px_24px_rgba(99,102,241,0.35)] transition">
                         {{ __('profile.edit_profile_button') }}
                     </button>
                 </form>
