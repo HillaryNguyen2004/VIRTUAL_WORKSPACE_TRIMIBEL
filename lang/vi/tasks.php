@@ -1,14 +1,14 @@
 <?php
 return [
-    'my_tasks' => 'Công việc của tôi',
-    'search' => 'Tìm kiếm',
+    'upcoming_tasks' => 'Công Việc Sắp Tới',
+    'search_placeholder' => 'Tìm kiếm...',
     'status' => 'Trạng thái',
     'sort' => 'Sắp xếp',
     'apply' => 'Áp dụng',
     'all_tasks' => 'Tất cả công việc được giao cho nhóm của tôi',
-    'task_id' => 'ID CÔNG VIỆC',
-    'task_name' => 'TÊN CÔNG VIỆC',
-    'due_date' => 'NGÀY HẾT HẠN',
+    'task_id' => 'ID',
+    'task_name' => 'TÊN',
+    'due_date' => 'NGÀY KẾT THÚC',
     'active' => 'HOẠT ĐỘNG',
     'actions' => 'HÀNH ĐỘNG',
     'description' => 'Mô tả',
@@ -32,6 +32,11 @@ return [
     'no_description' => 'Không có mô tả',
     'active_yes' => 'Hoạt động',
     'active_no' => 'Không hoạt động',
-    'confirm_delete' => 'Bạn có chắc chắn muốn xóa công việc này không?'
+    'confirm_delete' => 'Bạn có chắc chắn muốn xóa công việc này không?',
+    'view'=> 'Xem',
+    'edit'=> 'Cập nhật',
+    'delete'=> 'Xoá',
+    'filter'=> 'Lọc',
+    'reset' => 'Làm mới',
 ];
 ?>

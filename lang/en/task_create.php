@@ -15,4 +15,5 @@ return [
     'cancel_button' => 'Cancel',
     'save_button' => 'Save Task',
     'another_tag_placeholder' => 'Another Tag',
+    'back_to_task'=> 'Back to Tasks',
 ];

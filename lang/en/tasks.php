@@ -1,13 +1,13 @@
 <?php
 return [
-    'my_tasks' => 'My Tasks',
-    'search' => 'Search',
+    'upcoming_tasks' => 'Upcoming Tasks',
+    'search_placeholder' => 'Search...',
     'status' => 'Status',
     'sort' => 'Sort',
     'apply' => 'Apply',
     'all_tasks' => 'All Tasks Assigned to My Team',
-    'task_id' => 'TASK ID',
-    'task_name' => 'TASK NAME',
+    'task_id' => 'ID',
+    'task_name' => 'NAME',
     'due_date' => 'DUE DATE',
     'active' => 'ACTIVE',
     'actions' => 'ACTIONS',
@@ -32,6 +32,11 @@ return [
     'no_description' => 'No description',
     'active_yes' => 'Active',
     'active_no' => 'Inactive',
-    'confirm_delete' => 'Are you sure you want to delete this task?'
+    'confirm_delete' => 'Are you sure you want to delete this task?',
+    'view'=> 'View',
+    'edit'=> 'Edit',
+    'delete'=> 'Delete',
+    'filter'=> 'Filter',
+    'reset' => 'Reset',
 ];
 ?>

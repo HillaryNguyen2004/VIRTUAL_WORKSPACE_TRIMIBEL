@@ -2,7 +2,17 @@
 
 @section('content')
     <div class="flex flex-col gap-6 w-full">
-        <a href="{{ route('user.dashboard') }}" class="text-[#5D3FD3] text-lg font-medium w-fit">
+        @php
+            use Illuminate\Support\Facades\Route;
+
+            $dashRoute = 'user.dashboard';
+            if (auth()->user()->hasRole('admin') && Route::has('admin.dashboard')) {
+                $dashRoute = 'admin.dashboard';
+            } elseif (auth()->user()->hasRole('staff') && Route::has('staff.dashboard')) {
+                $dashRoute = 'staff.dashboard';
+            }
+        @endphp
+        <a href="{{ route($dashRoute) }}" class="text-[#5D3FD3] text-lg font-medium w-fit">
             &larr; {{ __('profile.back_to_dashboard') }}
         </a>
         <div

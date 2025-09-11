@@ -40,26 +40,28 @@
 </head>
 
 @stack('scripts')
+
 <body id="page-top" class="flex flex-row">
     <!-- Side bar -->
     <div class="flex flex-row fixed xl:static h-screen w-screen xl:w-fit z-[-1] xl:z-40" id="rounded-sidebar">
-        <nav
-            class="flex flex-col gap-[79px] -translate-x-full xl:translate-x-0 bg-[#FDFDFF] w-fit h-screen border-r border-[#F1EFFC] p-5 z-40 transition duration-300" id="sidebar">
+        <nav class="flex flex-col gap-[79px] -translate-x-full xl:translate-x-0 bg-[#FDFDFF] w-fit h-screen border-r border-[#F1EFFC] p-5 z-40 transition duration-300"
+            id="sidebar">
             <div class="w-full text-center md:text-left">Logo</div>
             <ul class="flex flex-col gap-[18px] justify-start sm:w-[220px]">
                 <li>
-                    <!-- <a href="{{ route('user.dashboard') }}"
-                        class="flex items-center gap-4 px-4 py-4 bg-[#F1EFFC] rounded-xl cursor-pointer">
-                        <svg viewBox="0 0 128 128" class="h-5 w-5 text-[#5D3FD3]" fill="none" stroke="currentColor"
-                            stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="8" y="8" width="112" height="112" rx="14" />
-                            <path d="M72 20V108M72 64H108" />
-                        </svg>
-                        <span class="text-[#5D3FD3] hidden md:inline">{{ __('app.dashboard') }}</span>
-                    </a> -->
-                    <x-nav-link href="{{ route('user.dashboard') }}" :active="request()->routeIs('user.dashboard')">
-                        <svg viewBox="0 0 128 128" class="h-5 w-5" fill="none" stroke="currentColor"
-                            stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+                    @php
+                        use Illuminate\Support\Facades\Route;
+
+                        $dashRoute = 'user.dashboard';
+                        if (auth()->user()->hasRole('admin') && Route::has('admin.dashboard')) {
+                            $dashRoute = 'admin.dashboard';
+                        } elseif (auth()->user()->hasRole('staff') && Route::has('staff.dashboard')) {
+                            $dashRoute = 'staff.dashboard';
+                        }
+                    @endphp
+                    <x-nav-link href="{{ route($dashRoute) }}" :active="request()->routeIs(['*.dashboard'])">
+                        <svg viewBox="0 0 128 128" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="12"
+                            stroke-linecap="round" stroke-linejoin="round">
                             <!-- outer rounded square -->
                             <rect x="8" y="8" width="112" height="112" rx="14" />
                             <!-- inner dividers: left big panel + right stacked panels -->
@@ -69,20 +71,21 @@
                     </x-nav-link>
                 </li>
                 <li>
-                    <a href="{{ route('chat.index') }}" class="flex items-center gap-4 px-4 py-4 hover:bg-gray-100 rounded-xl cursor-pointer">
+                    <x-nav-link href="{{ route('chat.index') }}" :active="request()->routeIs('chat.index')"
+                        class="flex items-center gap-4 px-4 py-4 hover:bg-gray-100 rounded-xl cursor-pointer">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5">
                             <path
                                 d="M115.9 448.9C83.3 408.6 64 358.4 64 304C64 171.5 178.6 64 320 64C461.4 64 576 171.5 576 304C576 436.5 461.4 544 320 544C283.5 544 248.8 536.8 217.4 524L101 573.9C97.3 575.5 93.5 576 89.5 576C75.4 576 64 564.6 64 550.5C64 546.2 65.1 542 67.1 538.3L115.9 448.9zM153.2 418.7C165.4 433.8 167.3 454.8 158 471.9L140 505L198.5 479.9C210.3 474.8 223.7 474.7 235.6 479.6C261.3 490.1 289.8 496 319.9 496C437.7 496 527.9 407.2 527.9 304C527.9 200.8 437.8 112 320 112C202.2 112 112 200.8 112 304C112 346.8 127.1 386.4 153.2 418.7z" />
                         </svg>
                         <span class="hidden md:inline">{{ __('app.chat_box') }}</span>
-                    </a>
+                    </x-nav-link>
                 </li>
             </ul>
         </nav>
         <div class="hidden fixed bg-black/20 h-screen w-screen z-30" id="sidebar-bg-addition"></div>
     </div>
     <!-- Main content -->
-    <div class="flex flex-col w-full">
+    <div class="flex flex-col w-full h-screen">
         <!-- Top bar -->
         <nav
             class="flex justify-between xl:justify-end pl-10 pr-10 xl:pr-[64px] py-3 shadow-[0_4px_40px_0_rgba(206,197,242,0.2)]">
@@ -196,14 +199,14 @@
             </ul>
         </nav>
         <!-- Content -->
-        <div class="flex px-12 lg:px-20 py-8 overflow-auto justify-center w-full">
+        <div class="flex px-12 lg:px-20 py-8 overflow-y-scroll justify-center w-full">
             @yield('content')
         </div>
     </div>
     <div id="alerts" class="flex flex-col gap-2 items-end fixed top-5 right-5 z-[60]"></div>
-    <x-team-member-dialog :teamMembers="$teamMembers ?? collect()" />
-    <x-task-dialog :assignedTasks="$assignedTasks ?? collect()" />
-    <x-request-dayoff-dialog />
+    <x-user.team-member-dialog :teamMembers="$teamMembers ?? collect()" />
+    <x-user.task-dialog :assignedTasks="$assignedTasks ?? collect()" />
+    <x-user.request-dayoff-dialog />
 
     <!-- <script>
 
