@@ -196,7 +196,7 @@
                         <tr id="taskDetails{{ $task->task_id }}" class="detail-row hidden">
                             <td colspan="5" class="bg-gray-50 p-4">
                                 <div class="grid gap-4">
-                                    <div class="h-[300px] overflow-auto">
+                                    <div class="h-fit max-h-[200px] overflow-auto">
                                         <strong class="text-gray-600">{{ __('tasks.description') }}:</strong>
                                         <div class="mt-1 text-gray-400 break-all">
                                             {{ $task->description ?? __('tasks.no_description') }}
