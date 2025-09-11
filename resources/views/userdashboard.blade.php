@@ -11,7 +11,7 @@
             <!-- Request day off button -->
             <button
                 id="open-request-dayoff"
-                class="flex justify-center items-center rounded-[10px] w-40 h-fit p-3 bg-[#5D3FD3] text-[#FDFDFF] hover:opacity-95 shadow-[0_4px_30px_0_rgba(36,20,99,0.2)] text-[15px] transition-all">
+                class="flex justify-center items-center rounded-[10px] w-40 h-fit p-3 bg-[#5D3FD3] text-[#FDFDFF] hover:opacity-95 shadow-[0_4px_30px_0_rgba(36,20,99,0.2)] text-[15px] transition">
                 {{ __('user_dashboard.request_day_off') }}
             </button>
         </div>
@@ -146,7 +146,7 @@
                     </div>
                     <div class="flex flex-col gap-4 w-full">
                         <p class="text-[#D9D9D9]">{{ __('user_dashboard.name_label') }}</p>
-                        <div class="h-[1px] w-full bg-[#D9D9D9]"></div>
+                        <div class="h-px w-full bg-[#D9D9D9]"></div>
                         @if($teamMembers->isNotEmpty())
                             <ul class="flex flex-col gap-4">
                                 @foreach($teamMembers->take(3) as $member)
@@ -184,11 +184,12 @@
                         <p>{{ __('user_dashboard.tasks') }}</p>
                         <p>{{ __('user_dashboard.task_status') }}</p>
                     </div>
-                    <div class="h-[1px] w-full bg-[#D9D9D9]"></div>
+                    <div class="h-px w-full bg-[#D9D9D9]"></div>
                     @if ($assignedTasks->isNotEmpty())
                         @foreach ($assignedTasks->take(3) as $task)
                             @php
                                 $statusClasses = [
+                                    'pending' => 'bg-gray-100 text-gray-400',
                                     'in_progress' => 'bg-[#F2FBDF] text-[#CBEA8E]',
                                     'completed' => 'bg-[#D3FDE5] text-[#5AE194]',
                                 ];
@@ -198,7 +199,7 @@
                             <ul class="flex flex-col gap-4">
                                 <li class="flex items-center justify-between gap-2">
                                     <p class="break-all">{{ $task->title }}</p>
-                                    <div class="w-fit h-fit px-2 rounded-2xl text-center {{ $cls }}">
+                                    <div class="w-fit h-fit px-3 py-1 rounded-full text-sm text-center {{ $cls }}">
                                         {{ __('user_dashboard.status_' . $task->status) }}
                                     </div>
                                 </li>
@@ -212,10 +213,6 @@
         </div>
     </div>
     @else
-        <div class="container py-5">
-            <div class="alert alert-danger text-center">
-                <h4>{{ __('user_dashboard.no_permission') }}</h4>
-            </div>
-        </div>
+        <h4>{{ __('user_dashboard.no_permission') }}</h4>
     @endrole
 @endsection

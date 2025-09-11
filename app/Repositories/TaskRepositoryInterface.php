@@ -14,4 +14,5 @@ interface TaskRepositoryInterface
     public function delete(Task $task): bool;
     public function getTasksForUser(int $userId);
     public function getUpcomingTasks(int $userId);
+    public function updateStatus(int $taskId, string $status, ?int $percentage = null): ?Task;
 }
