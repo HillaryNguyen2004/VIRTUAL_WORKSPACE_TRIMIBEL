@@ -42,6 +42,22 @@
         </div>
     </div>
 
+    <!-- Chat Section -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card border-info border-2" style="border-top:4px solid #17a2b8;">
+                <div class="card-body">
+                    <div class="mb-2" style="font-size:2rem; color:#17a2b8;"><i class="bi bi-chat-dots"></i></div>
+                    <div class="fw-bold mb-2">{{ __('admin_dashboard.team_chat') }}</div>
+                    <div class="mb-3 text-secondary">{{ __('admin_dashboard.team_chat_description') }}</div>
+                    <a href="{{ route('chat.index') }}" class="btn w-100" style="background:#17a2b8;color:#fff;">
+                        <i class="bi bi-chat"></i> {{ __('admin_dashboard.open_chat') }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Management Panels -->
     <div class="row mb-4">
         <div class="col-md-6 mb-3">

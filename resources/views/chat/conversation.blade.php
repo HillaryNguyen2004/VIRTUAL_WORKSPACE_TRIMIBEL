@@ -26,11 +26,32 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header bg-light">
-                    <h6 class="mb-0">
-                        <i class="bi bi-chat-dots text-info"></i> 
-                        {{ $conversation->display_name }}
-                        <small class="text-muted">({{ $conversation->participants->count() }} participants)</small>
-                    </h6>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i class="bi bi-chat-dots text-info"></i> 
+                            {{ $conversation->display_name }}
+                            <small class="text-muted">({{ $conversation->participants->count() }} participants)</small>
+                        </h6>
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <small id="searchResults" class="text-muted search-info" style="display: none;"></small>
+                            </div>
+                            <div class="input-group" style="width: 250px;">
+                                <input type="text" 
+                                       class="form-control form-control-sm" 
+                                       id="searchInput"
+                                       placeholder="Search messages..."
+                                       style="border-radius: 0.375rem 0 0 0.375rem;">
+                                <button class="btn btn-outline-secondary btn-sm" 
+                                        type="button" 
+                                        id="clearSearch"
+                                        style="border-radius: 0 0.375rem 0.375rem 0;"
+                                        title="Clear search">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="card-body" style="height: 400px; overflow-y: auto;" id="chatMessages">
@@ -120,6 +141,12 @@ document.getElementById('messageForm').addEventListener('submit', function(e) {
             chatMessages.appendChild(messageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
             messageInput.value = '';
+            
+            // Reapply search filter if there's an active search
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput && searchInput.value.trim() !== '') {
+                searchMessages(searchInput.value.toLowerCase().trim());
+            }
         }
     })
     .catch(error => {
@@ -132,6 +159,150 @@ document.getElementById('messageForm').addEventListener('submit', function(e) {
 document.addEventListener('DOMContentLoaded', function() {
     const chatMessages = document.getElementById('chatMessages');
     chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    // Initialize search functionality
+    initializeSearch();
 });
+
+function initializeSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const clearSearchBtn = document.getElementById('clearSearch');
+    const chatMessages = document.getElementById('chatMessages');
+    
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        searchMessages(searchTerm);
+    });
+    
+    // Clear search
+    clearSearchBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        searchMessages('');
+        searchInput.focus();
+    });
+    
+    // Enter key to search
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            searchInput.value = '';
+            searchMessages('');
+        }
+    });
+}
+
+function searchMessages(searchTerm) {
+    const messageElements = document.querySelectorAll('#chatMessages .mb-3');
+    const searchResults = document.getElementById('searchResults');
+    let foundCount = 0;
+    
+    messageElements.forEach(messageEl => {
+        const messageContent = messageEl.textContent.toLowerCase();
+        const isMatch = searchTerm === '' || messageContent.includes(searchTerm);
+        
+        if (isMatch) {
+            messageEl.style.display = 'block';
+            messageEl.style.backgroundColor = '';
+            foundCount++;
+            
+            // Highlight search term if not empty
+            if (searchTerm !== '') {
+                highlightSearchTerm(messageEl, searchTerm);
+                messageEl.style.backgroundColor = '#fff3cd'; // Light yellow background
+            } else {
+                removeHighlight(messageEl);
+            }
+        } else {
+            messageEl.style.display = 'none';
+        }
+    });
+    
+    // Update search results info
+    if (searchTerm !== '') {
+        searchResults.style.display = 'block';
+        if (foundCount === 0) {
+            searchResults.textContent = 'No messages found';
+            searchResults.className = 'text-danger search-info';
+        } else {
+            searchResults.textContent = `${foundCount} message${foundCount !== 1 ? 's' : ''} found`;
+            searchResults.className = 'text-success search-info';
+        }
+    } else {
+        searchResults.style.display = 'none';
+    }
+    
+    // Update search input styling based on results
+    const searchInput = document.getElementById('searchInput');
+    if (searchTerm !== '' && foundCount === 0) {
+        searchInput.style.borderColor = '#dc3545'; // Red border if no results
+        searchInput.title = 'No messages found';
+    } else {
+        searchInput.style.borderColor = '';
+        searchInput.title = searchTerm !== '' ? `${foundCount} message(s) found` : '';
+    }
+}
+
+function highlightSearchTerm(element, searchTerm) {
+    const messageContentDiv = element.querySelector('.mt-1');
+    if (messageContentDiv) {
+        const originalText = messageContentDiv.textContent;
+        const regex = new RegExp(`(${escapeRegExp(searchTerm)})`, 'gi');
+        const highlightedText = originalText.replace(regex, '<mark>$1</mark>');
+        messageContentDiv.innerHTML = highlightedText;
+    }
+}
+
+function removeHighlight(element) {
+    const messageContentDiv = element.querySelector('.mt-1');
+    if (messageContentDiv) {
+        // Store original text if not already stored
+        if (!messageContentDiv.dataset.originalText) {
+            messageContentDiv.dataset.originalText = messageContentDiv.textContent;
+        }
+        messageContentDiv.innerHTML = messageContentDiv.dataset.originalText;
+    }
+}
+
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 </script>
+
+<style>
+/* Search highlight styling */
+mark {
+    background-color: #ffeb3b !important;
+    color: #000 !important;
+    padding: 1px 2px;
+    border-radius: 2px;
+}
+
+/* Search input focus styling */
+#searchInput:focus {
+    border-color: #17a2b8 !important;
+    box-shadow: 0 0 0 0.2rem rgba(23, 162, 184, 0.25) !important;
+}
+
+/* Clear search button hover */
+#clearSearch:hover {
+    background-color: #e9ecef !important;
+}
+
+/* Message highlighting animation */
+.mb-3 {
+    transition: background-color 0.3s ease;
+}
+
+/* No results state */
+.no-results {
+    border-color: #dc3545 !important;
+}
+
+/* Search results info */
+.search-info {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+</style>
+
 @endsection

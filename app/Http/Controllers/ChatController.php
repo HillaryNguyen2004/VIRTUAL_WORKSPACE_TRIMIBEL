@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
@@ -73,46 +74,79 @@ class ChatController extends Controller
 
     public function createConversation(Request $request)
     {
-        $request->validate([
+        $validationRules = [
             'type' => 'required|in:direct,group',
-            'name' => 'required_if:type,group|string|max:255',
             'participants' => 'required|array|min:1',
             'participants.*' => 'exists:users,id'
-        ]);
+        ];
 
-        // For direct messages, check if conversation already exists between these users
-        if ($request->type === 'direct' && count($request->participants) === 1) {
+        // Only validate name if type is group
+        if ($request->type === 'group') {
+            $validationRules['name'] = 'required|string|max:255';
+        }
+
+        $request->validate($validationRules);
+
+        // For direct messages, ensure exactly one participant is selected
+        if ($request->type === 'direct') {
+            if (count($request->participants) !== 1) {
+                return back()->with('error', 'Please select exactly one person for direct message.');
+            }
+
             $otherUserId = $request->participants[0];
+            
+            // Check if user is trying to create conversation with themselves
+            if ($otherUserId == auth()->id()) {
+                return back()->with('error', 'You cannot create a conversation with yourself.');
+            }
             
             // Find existing direct conversation between current user and selected user
             $existingConversation = Conversation::where('type', 'direct')
                 ->whereHas('participants', function($query) {
                     $query->where('user_id', auth()->id());
-                })
+                }, '=', 1)
                 ->whereHas('participants', function($query) use ($otherUserId) {
                     $query->where('user_id', $otherUserId);
-                })
-                ->whereDoesntHave('participants', function($query) use ($otherUserId) {
-                    $query->whereNotIn('user_id', [auth()->id(), $otherUserId]);
-                })
+                }, '=', 1)
+                ->has('participants', '=', 2) // Ensure only 2 participants
                 ->first();
 
             if ($existingConversation) {
-                return redirect()->route('chat.conversation', $existingConversation);
+                return redirect()->route('chat.conversation', $existingConversation)
+                    ->with('info', 'Conversation already exists.');
             }
         }
 
-        // Create new conversation
-        $conversation = Conversation::create([
-            'name' => $request->name,
-            'type' => $request->type,
-            'created_by' => auth()->id()
-        ]);
+        try {
+            // Create new conversation
+            $conversation = Conversation::create([
+                'name' => $request->type === 'group' ? $request->name : null,
+                'type' => $request->type,
+                'created_by' => auth()->id()
+            ]);
 
-        // Add current user and selected participants
-        $participants = array_unique(array_merge($request->participants, [auth()->id()]));
-        $conversation->participants()->attach($participants);
+            // Add participants
+            $participants = $request->participants;
+            
+            // Always include current user
+            if (!in_array(auth()->id(), $participants)) {
+                $participants[] = auth()->id();
+            }
 
-        return redirect()->route('chat.conversation', $conversation);
+            // Add participants to the conversation
+            foreach ($participants as $userId) {
+                $conversation->participants()->attach($userId, [
+                    'joined_at' => now(),
+                    'last_read_at' => now()
+                ]);
+            }
+
+            return redirect()->route('chat.conversation', $conversation)
+                ->with('success', 'Conversation created successfully.');
+                
+        } catch (\Exception $e) {
+            Log::error('Error creating conversation: ' . $e->getMessage());
+            return back()->with('error', 'Failed to create conversation. Please try again.');
+        }
     }
 }
