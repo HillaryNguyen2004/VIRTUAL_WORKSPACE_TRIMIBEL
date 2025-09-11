@@ -73,5 +73,8 @@ return [
     'set_company_hours' => 'Set Working Hours',
     'manage_hours_policies' => 'Manage Working Hours Policies',
     'create_new_company_hours' => 'Set New Company Hours',
+    'team_chat' => 'Team Chat',
+    'team_chat_description' => 'Communicate with your team members in real-time.',
+    'open_chat' => 'Open Chat',
 ];
 ?>

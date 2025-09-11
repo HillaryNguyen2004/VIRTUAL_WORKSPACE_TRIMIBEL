@@ -72,5 +72,8 @@ return [
     'set_company_hours' => 'Thiết lập giờ làm việc',
     'manage_hours_policies' => 'Quản lý chính sách thời gian làm việc',
     'create_new_company_hours' => 'Tạo giờ làm việc mới',
+    'team_chat' => 'Chat Nhóm',
+    'team_chat_description' => 'Giao tiếp với các thành viên trong nhóm theo thời gian thực.',
+    'open_chat' => 'Mở Chat',
 ];
 ?>
