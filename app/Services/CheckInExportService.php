@@ -14,18 +14,14 @@ class CheckInExportService
     
     public function getFilteredCheckIns(Request $request)
     {
-        // $query = DB::table('check_ins')
         $query = CheckIn::query()
+            ->select('check_ins.*') // Ensure we select from check_ins table
             ->orderByDesc('date')
             ->orderByDesc('check_in_time');
 
         if ($request->filled('username')) {
             $query->where('user_name', 'like', '%' . $request->username . '%');
         }
-
-        // if ($request->filled('date')) {
-        //     $query->where('date', $request->date);
-        // }
 
         // ✅ Filter by date range
         if ($request->filled('date_from') && $request->filled('date_to')) {
@@ -38,9 +34,26 @@ class CheckInExportService
 
         if ($request->filled('status')) {
             if ($request->status === 'late') {
-                $query->where('is_late', true);
+                // Join with company_hours to check if late
+                $query->join('company_hours', function($join) {
+                    // We assume there's only one company_hours record
+                    $join->on('company_hours.id', '=', DB::raw('(SELECT MIN(id) FROM company_hours)'));
+                })
+                ->whereRaw("
+                    check_ins.check_in_time IS NOT NULL 
+                    AND STR_TO_DATE(CONCAT(check_ins.date, ' ', check_ins.check_in_time), '%Y-%m-%d %H:%i:%s') > 
+                        STR_TO_DATE(CONCAT(check_ins.date, ' ', company_hours.start_at), '%Y-%m-%d %H:%i:%s') + INTERVAL 5 MINUTE
+                ");
             } elseif ($request->status === 'on_time') {
-                $query->where('is_late', false);
+                // Join with company_hours to check if on time
+                $query->join('company_hours', function($join) {
+                    $join->on('company_hours.id', '=', DB::raw('(SELECT MIN(id) FROM company_hours)'));
+                })
+                ->whereRaw("
+                    check_ins.check_in_time IS NOT NULL 
+                    AND STR_TO_DATE(CONCAT(check_ins.date, ' ', check_ins.check_in_time), '%Y-%m-%d %H:%i:%s') <= 
+                        STR_TO_DATE(CONCAT(check_ins.date, ' ', company_hours.start_at), '%Y-%m-%d %H:%i:%s') + INTERVAL 5 MINUTE
+                ");
             }
         }
 
