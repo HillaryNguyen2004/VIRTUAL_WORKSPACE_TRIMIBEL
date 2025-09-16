@@ -18,7 +18,7 @@
             <form id="request-dayoff-form" method="POST" action="{{ route('dayoff.request.store') }}" novalidate>
                 @csrf
 
-                <div class="p-6 flex flex-col gap-6">
+                <div class="p-6 flex flex-col items-center gap-6 w-full">
                     <div class="flex flex-col gap-2 w-full">
                         <label for="date" class="form-label">{{ __('request_day_off.select_date_label') }}</label>
                         <input type="date" name="date" id="date"
@@ -26,7 +26,7 @@
                             min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}" value="{{ old('date') }}">
                     </div>
 
-                    <div class="flex flex-col gap-2">
+                    <div class="flex flex-col gap-2 w-full">
                         <label for="leave_type" class="form-label">{{ __('request_day_off.leave_type_label') }}</label>
                         <select name="leave_type" id="leave_type"
                             class="block w-full rounded-xl border border-gray-300 px-4 py-3 cursor-pointer hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition @error('leave_type') is-invalid @enderror">
@@ -39,19 +39,17 @@
                         </select>
                     </div>
 
-                    <div class="flex flex-col gap-2">
+                    <div class="flex flex-col gap-2 w-full">
                         <label for="reason" class="form-label">{{ __('request_day_off.reason_optional_label') }}</label>
                         <input name="reason" id="reason"
                             class="block w-full rounded-xl border border-gray-300 px-4 py-3 placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition"
                             placeholder="{{ __('request_day_off.reason_example') }}">{{ old('reason') }}</input>
                     </div>
 
-                    <div class="text-center pt-2">
-                        <button type="submit"
-                            class="btn btn-primary px-4 py-2 bg-[#5D3FD3] hover:opacity-95 text-white rounded-xl shadow-[0_8px_24px_rgba(99,102,241,0.35)] transition">
-                            {{ __('request_day_off.submit_request') }}
-                        </button>
-                    </div>
+                    <button type="submit"
+                        class="px-4 py-2 w-full bg-[#5D3FD3] hover:opacity-95 text-white rounded-xl shadow-[0_8px_24px_rgba(99,102,241,0.35)] transition">
+                        {{ __('request_day_off.submit_request') }}
+                    </button>
                 </div>
             </form>
         </div>

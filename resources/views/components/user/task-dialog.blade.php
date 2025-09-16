@@ -64,7 +64,7 @@
                             </td>
 
                             <td class="py-3 pr-2 relative">
-                                <button class="status-btn flex items-center gap-3 w-fit px-2 rounded-2xl text-center {{ $cls }}"
+                                <button class="status-btn flex items-center gap-3 w-fit px-3 py-1 rounded-2xl text-center {{ $cls }}"
                                     data-task-id="{{ $task->task_id }}" aria-haspopup="menu"
                                     aria-expanded="false" aria-controls="status-menu-{{ $task->task_id }}">
                                     <p>{{ __('user_dashboard.status_' . $task->status) }}</p>

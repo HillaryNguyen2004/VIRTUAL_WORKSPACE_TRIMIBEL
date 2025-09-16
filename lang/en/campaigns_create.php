@@ -16,4 +16,5 @@ return [
     'update_campaign' => 'Update Campaign',
     'save_and_schedule' => 'Save & Schedule',
     'sync_with_template' => 'Sync with Template',
+    'back_to_campaigns' => 'Back to Campaigns',
 ];

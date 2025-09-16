@@ -19,4 +19,8 @@ return [
     'confirm_send' => 'Gửi chiến dịch này ngay bây giờ?',
     'reset' => 'Gửi lại',
     'confirm_reset' => 'Đặt lại trạng thái gửi?',
+    'search_placeholder' => 'Tìm bằng tên',
+    'all_status'=> 'Tất cả trạng thái',
+    'newest'=> 'Mới nhất',
+    'oldest'=> 'Lâu nhất',
 ];

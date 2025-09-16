@@ -21,4 +21,8 @@ return [
         'export_button' => 'Xuất ra Excel',
         'access_denied_title' => 'Truy Cập Bị Từ Chối',
         'access_denied_message' => 'Bạn không có quyền xem trang này.',
+        'total_check_in' => 'Tổng điểm danh',
+        'on_time' => 'Đúng giờ',
+        'late_arrivals' => 'Trễ giờ',
+        'late_rate' => 'Tỷ lệ trễ',
 ];

@@ -1,31 +1,17 @@
-@extends('layouts.app')
-@if ($errors->any())
-    <div class="alert alert-danger mt-2">
-        <ul>
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-@endif
+@extends('layout_dashboard')
 @section('content')
-<div class="container">
-    <h1>Add Company Hour</h1>
-
-    <form method="POST" action="{{ route('companyhour.store') }}">
-        @csrf
-        <div class="form-group">
-            <label for="start_at">Start Time</label>
-            <input type="time" name="start_at" id="start_at" class="form-control" required>
-        </div>
-
-        <div class="form-group mt-3">
-            <label for="end_at">End Time</label>
-            <input type="time" name="end_at" id="end_at" class="form-control" required>
-        </div>
-
-        <button type="submit" class="btn btn-primary mt-4">Save</button>
-        <a href="{{ route('companyhour.index') }}" class="btn btn-secondary mt-4">Back</a>
-    </form>
-</div>
+    <x-action-layout :route="'companyhour.index'" :title="'company_hour.back_to_company_hour'">
+        {{-- error message --}}
+        @if ($errors->any())
+            <ul class="flex flex-col gap-2">
+                @foreach ($errors->all() as $error)
+                    <li
+                        class="bg-red-50 text-red-400 border border-red-400 text-lg text-center px-3 py-2 rounded-2xl w-full animate-fade-in-up [animation-delay:150ms]">
+                        {{ __('create_user.error_message', ['error' => $error]) }}
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+        <x-companyhour::form-action :title="__('company_hour.add_btn')" :formAction="route('companyhour.store')" />
+    </x-action-layout>
 @endsection

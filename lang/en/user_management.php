@@ -8,6 +8,7 @@ return [
     'sort_label' => 'Sort',
     'sort_asc' => 'A → Z',
     'sort_desc' => 'Z → A',
+    'default_sort'=> 'Default',
     'search_button' => 'Search',
     'reset_button' => 'Reset',
     'username_column' => 'USERNAME',

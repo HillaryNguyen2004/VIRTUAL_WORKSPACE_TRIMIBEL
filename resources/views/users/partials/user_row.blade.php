@@ -11,7 +11,7 @@
     }
     $isStaff = $role === 'staff';
     $teamLeader = $user->team_leader_id ? $users->firstWhere('id', $user->team_leader_id) : null;
-    $teamMembers = $users->filter(fn($u) => $u->team_leader_id === $user->id);
+    $teamMembers = isset($user) ? $users->filter(fn($u) => $u->team_leader_id === $user->id) : collect();
 @endphp
 
 <tr>

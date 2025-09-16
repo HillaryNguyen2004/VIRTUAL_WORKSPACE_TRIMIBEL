@@ -6,7 +6,7 @@ return [
     'assign_team_members' => 'Assign Team Members',
     'select_member' => '-- Select Member --',
     'remove_member' => '🗑',
-    'add_member' => '➕ Add Member',
+    'add_member' => 'Add Member',
     'save_button' => 'Save',
     'team_members_label' => 'Team Members:',
     'no_team_members' => 'No team members assigned.',

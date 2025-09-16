@@ -1,5 +1,6 @@
 <?php
 return [
+    'back_to_user' => 'Back to Users',
     'title' => 'Create New User',
     'create_new_user' => 'Create a New User',
     'name_label' => 'Full Name',

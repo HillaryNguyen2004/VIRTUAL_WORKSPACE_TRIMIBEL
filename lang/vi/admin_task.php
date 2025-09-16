@@ -4,8 +4,8 @@ return [
     'all_tasks' => 'Tất Cả',
     'add_new_task' => '+ Thêm Mới',
     'search_placeholder' => 'Tìm theo tên',
-    'filter_by_assignee' => '-- Lọc theo người giao --',
-    'sort_by' => '-- Sắp xếp --',
+    'filter_by_assignee' => 'Lọc theo người giao',
+    'sort_by' => 'Sắp xếp',
     'sort_task_name' => 'Tên',
     'sort_due_date' => 'Hạn',
 

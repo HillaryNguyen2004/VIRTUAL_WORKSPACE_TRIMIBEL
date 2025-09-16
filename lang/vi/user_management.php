@@ -8,6 +8,7 @@ return [
     'sort_label' => 'Sắp Xếp',
     'sort_asc' => 'A → Z',
     'sort_desc' => 'Z → A',
+    'default_sort'=> 'Mặc định',
     'search_button' => 'Tìm Kiếm',
     'reset_button' => 'Đặt Lại',
     'username_column' => 'TÊN NGƯỜI DÙNG',

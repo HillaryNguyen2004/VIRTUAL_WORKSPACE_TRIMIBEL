@@ -21,4 +21,8 @@ return [
         'export_button' => 'Export to Excel',
         'access_denied_title' => 'Access Denied',
         'access_denied_message' => 'You do not have permission to view this page.',
+        'total_check_in' => 'Total Check-in',
+        'on_time' => 'On time',
+        'late_arrivals' => 'Late Arrivals',
+        'late_rate' => 'Late rate',
 ];

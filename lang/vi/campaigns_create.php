@@ -16,4 +16,5 @@ return [
     'update_campaign' => 'Cập nhật Chiến dịch',
     'save_and_schedule' => 'Lưu & Lên lịch',
     'sync_with_template' => 'Đồng bộ với Mẫu',
+    'back_to_campaigns' => 'Quay Lại Chiến Dịch',
 ];

@@ -5,13 +5,7 @@
     $formAction = $action ?? ($isEdit ? route('tasks.update', $task) : route('tasks.store'));
 @endphp
 
-<div
-    class="flex flex-col items-center w-full h-fit bg-[#FDFDFF] rounded-2xl shadow-[0_4px_40px_0_rgba(32,27,53,0.1)] animate-fade-in-up [animation-delay:150ms]">
-    {{-- title --}}
-    <div class="w-full py-3 text-center text-xl bg-[#F1EFFC] text-[#5D3FD3] font-medium rounded-t-2xl relative">
-        <h1>{{ $title }}</h1>
-    </div>
-
+<x-form-layout :title="$title">
     {{-- form --}}
     <form action="{{ $formAction }}" method="POST" class="flex flex-col items-center gap-3 w-full py-6 px-8">
         @csrf
@@ -78,8 +72,8 @@
             </div>
         </div>
         <button type="submit"
-            class="px-4 py-2 w-full sm:w-52 bg-[#5D3FD3] hover:opacity-95 text-white text-center rounded-xl shadow-[0_8px_24px_rgba(99,102,241,0.35)] transition">
+            class="px-4 py-2 mt-4 w-full sm:w-52 bg-[#5D3FD3] hover:opacity-95 text-white text-center rounded-xl shadow-[0_8px_24px_rgba(99,102,241,0.35)] transition">
             {{ __('task_create.save_button') }}
         </button>
     </form>
-</div>
+</x-form-layout>

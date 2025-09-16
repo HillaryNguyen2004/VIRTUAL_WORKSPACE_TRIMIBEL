@@ -1,5 +1,6 @@
 <?php
 return [
+    'back_to_user' => 'Quay Lại Người Dùng',
     'title' => 'Tạo Người Dùng Mới',
     'create_new_user' => 'Tạo Người Dùng Mới',
     'name_label' => 'Họ và Tên',

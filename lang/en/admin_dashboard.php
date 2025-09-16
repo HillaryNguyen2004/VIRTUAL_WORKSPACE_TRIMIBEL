@@ -1,6 +1,7 @@
 <?php
 return [
-    'admin_dashboard' => 'Admin Dashboard',
+    'admin_dashboard' => 'Dashboard',
+    'admin'=> 'ADMIN',
     'welcome_message' => 'Welcome to the Task Management & User Administration Panel.',
     'pending_tasks' => 'Pending Tasks',
     'active_projects' => 'Active Projects',

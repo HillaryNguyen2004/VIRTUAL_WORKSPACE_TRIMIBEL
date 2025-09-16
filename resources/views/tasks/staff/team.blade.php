@@ -12,11 +12,7 @@
         }
     @endphp
     @role('staff')
-    <div class="flex flex-col gap-6 w-full">
-        <a href="{{ route($dashRoute) }}" class="text-[#5D3FD3] text-xl font-medium w-fit">
-            &larr; {{ __('profile.back_to_dashboard') }}
-        </a>
-
+    <x-action-layout :route="$dashRoute" :title="'profile.back_to_dashboard'">
         {{-- title --}}
         <h2 class="font-medium text-[28px] md:text-[32px]">{{ __('staff_team.my_team') }}</h2>
 
@@ -58,7 +54,7 @@
                 @endforeach
             </div>
         @endif
-    </div>
+    </x-action-layout>
     <!-- <div class="container py-4">
                         <h2 class="mb-4">{{ __('staff_team.my_team') }}</h2>
 
