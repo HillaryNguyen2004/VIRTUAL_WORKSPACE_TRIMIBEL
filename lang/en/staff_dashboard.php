@@ -1,6 +1,6 @@
 <?php
 return [
-    'title' => 'Staff Dashboard',
+    'title' => 'Dashboard',
     'task_management' => 'Task Management',
     'staff' => 'STAFF',
     'dashboard' => 'Dashboard',

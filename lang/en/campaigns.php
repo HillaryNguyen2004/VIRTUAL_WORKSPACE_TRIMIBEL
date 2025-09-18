@@ -19,4 +19,7 @@ return [
     'confirm_send' => 'Send this campaign now?',
     'reset' => 'Resend',
     'confirm_reset' => 'Reset send status?',
+    'all_status'=> 'All status',
+    'newest'=> 'Newest first',
+    'oldest'=> 'Oldest first',
 ];

@@ -1,7 +1,7 @@
 @extends('layout_dashboard')
 
 @section('content')
-    @vite(['resources/utils/staff_task/toggle_view_task.js'])
+    @vite(['resources/utils/toggle_view.js'])
     @php
         use Illuminate\Support\Facades\Route;
 
@@ -13,10 +13,7 @@
         }
     @endphp
     @role('staff')
-    <div class="flex flex-col gap-6 w-full">
-        <a href="{{ route($dashRoute) }}" class="text-[#5D3FD3] text-xl font-medium w-fit">
-            &larr; {{ __('profile.back_to_dashboard') }}
-        </a>
+    <x-action-layout :route="$dashRoute" :title="'profile.back_to_dashboard'">
         <div class="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center w-full">
             <h2 class="font-medium text-[28px] md:text-[32px]">{{ __('tasks.upcoming_tasks') }}</h2>
             <a href="{{ route('tasks.create') }}"
@@ -30,7 +27,7 @@
         </div>
 
         {{-- Search & Filter Bar --}}
-        <form class="flex flex-wrap gap-2 animate-fade-in-up [animation-delay:150ms]" action="">
+        <form class="flex flex-wrap gap-2 animate-fade-in-up [animation-delay:150ms]" method="GET">
             <input type="text" name="search" id="search" placeholder="{{ __('tasks.search_placeholder') }}"
                 value="{{ request('search') }}"
                 class="rounded-xl text-sm md:text-base border border-gray-300 px-4 py-2 placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
@@ -78,15 +75,6 @@
         </form>
         <div
             class="overflow-x-auto rounded-2xl border border-gray-300 shadow-[0_4px_40px_0_rgba(32,27,53,0.1)] animate-fade-in-up [animation-delay:200ms]">
-            @php
-                $badgeBase = 'flex gap-2 items-center justify-center w-40 px-3 py-1 rounded-full text-sm';
-                $statusMap = [
-                    'pending' => $badgeBase . ' bg-gray-100 text-gray-400',
-                    'in_progress' => $badgeBase . ' bg-[#F2FBDF] text-[#CBEA8E]',
-                    'completed' => $badgeBase . ' bg-[#D3FDE5] text-[#5AE194]',
-                ];
-            @endphp
-
             <table class="w-full">
                 <thead class="bg-gray-100 text-gray-500 w uppercase tracking-wide text-sm">
                     <tr>
@@ -102,10 +90,10 @@
                     @forelse($tasks as $task)
                         @php
                             $overdue = \Illuminate\Support\Carbon::parse($task->due_date)->isPast() && $task->status !== 'completed';
-                            $statusClass = $statusMap[$task->status] ?? $statusMap['pending'];
+                            $status = $task->status;
                         @endphp
 
-                        <tr>
+                        <tr class="h-fit">
                             {{-- Name --}}
                             <td class="py-3 pl-4 pr-3">
                                 <div class="max-w-xs truncate" title="{{ $task->title }}">{{ $task->title }}</div>
@@ -113,36 +101,36 @@
 
                             {{-- Due date + overdue --}}
                             <td class="py-3 px-3 whitespace-nowrap">
-                                {{ \Illuminate\Support\Carbon::parse($task->due_date)->toDateString() }}
-                                @if($overdue)
-                                    <span class="inline-flex items-center ml-2" title="{{ __('tasks.overdue') }}"
-                                        aria-label="{{ __('tasks.overdue') }}">
-                                        {{-- red warning triangle --}}
-                                        <svg viewBox="0 0 20 20" class="w-4 h-4 text-red-500" fill="currentColor"
-                                            aria-hidden="true">
+                                <p class="flex gap-2">
+                                    {{ \Illuminate\Support\Carbon::parse($task->due_date)->toDateString() }}
+                                    @if($overdue)
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-red-500 align-middle">
                                             <path
-                                                d="M9.05 2.94a1.5 1.5 0 0 1 1.9 0l7.5 6.32a1.5 1.5 0 0 1-.95 2.66H2.5a1.5 1.5 0 0 1-.95-2.66l7.5-6.32zM11 8v3H9V8h2zm0 5v2H9v-2h2z" />
+                                                d="M320 64C334.7 64 348.2 72.1 355.2 85L571.2 485C577.9 497.4 577.6 512.4 570.4 524.5C563.2 536.6 550.1 544 536 544L104 544C89.9 544 76.8 536.6 69.6 524.5C62.4 512.4 62.1 497.4 68.8 485L284.8 85C291.8 72.1 305.3 64 320 64zM320 416C302.3 416 288 430.3 288 448C288 465.7 302.3 480 320 480C337.7 480 352 465.7 352 448C352 430.3 337.7 416 320 416zM320 224C301.8 224 287.3 239.5 288.6 257.7L296 361.7C296.9 374.2 307.4 384 319.9 384C332.5 384 342.9 374.3 343.8 361.7L351.2 257.7C352.5 239.5 338.1 224 319.8 224z" />
                                         </svg>
-                                    </span>
-                                @endif
+                                    @endif
+                                </p>
                             </td>
 
                             {{-- Status pill --}}
                             <td class="py-3 px-3">
-                                <div class="{{ $statusClass }}">
-                                    <p>{{ __('tasks.' . $task->status) }}</p>
-                                    <p class="hidden {{ !($task->status == "in_progress") ? "md:hidden" : "md:inline" }}">
-                                        {{ $task->percentage ?? 0 }}%
-                                    </p>
-                                </div>
+                                @if ($status === 'pending')
+                                    <x-status-pill textColor="text-gray-500"
+                                        bgColor="bg-gray-100">{{ __('tasks.pending') }}</x-status-pill>
+                                @elseif ($status === 'completed')
+                                    <x-status-pill textColor="text-[#5AE194]"
+                                        bgColor="bg-[#D3FDE5]">{{ __('tasks.completed') }}</x-status-pill>
+                                @else
+                                    <x-status-pill textColor="text-[#CBEA8E]" bgColor="bg-[#F2FBDF]">
+                                        <p>{{ __('tasks.in_progress') }}</p>
+                                        <p>{{ $task->percentage ?? 0 }}%</p>
+                                    </x-status-pill>
+                                @endif
                             </td>
 
                             {{-- Active --}}
                             <td class="py-3 px-3">
-                                <input type="checkbox"
-                                    class="h-4 w-4 rounded border-gray-300" {{ $task->active ? 'checked' : '' }} disabled aria-checked="{{ $task->active ? 'true' : 'false' }}">
-                                <!-- <span
-                                    class="text-gray-900">{{ $task->active ? __('tasks.active_yes') : __('tasks.active_no') }}</span> -->
+                                <input type="checkbox" class="h-4 w-4 rounded border-gray-300" {{ $task->active ? 'checked' : '' }} disabled aria-checked="{{ $task->active ? 'true' : 'false' }}">
                             </td>
 
                             {{-- Actions --}}
@@ -244,169 +232,8 @@
                 </div>
             @endif
         </div>
-    </div>
-    <!-- <div class="container py-4">
-                                                                                    <h1 class="mb-4 fw-bold">{{ __('tasks.my_tasks') }}</h1>
-
-                                                                                    {{-- Search & Filter Bar --}}
-                                                                                    <form method="GET" action="{{ route('tasks.staff.index') }}" class="card shadow-sm p-4 mb-4">
-                                                                                        <div class="row gy-3">
-                                                                                            {{-- Search --}}
-                                                                                            <div class="col-md-4">
-                                                                                                <label for="search" class="form-label fw-semibold text-primary">🔍 {{ __('tasks.search') }}</label>
-                                                                                                <input type="text" name="search" id="search" class="form-control" placeholder="{{ __('tasks.search') }}..." value="{{ request('search') }}">
-                                                                                            </div>
-
-                                                                                            {{-- Status Filter --}}
-                                                                                            <div class="col-md-3">
-                                                                                                <label for="status" class="form-label fw-semibold text-primary">📋 {{ __('tasks.status') }}</label>
-                                                                                                <select name="status" id="status" class="form-select">
-                                                                                                    <option value="">{{ __('tasks.all_statuses') }}</option>
-                                                                                                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>{{ __('tasks.pending') }}</option>
-                                                                                                    <option value="in_progress" {{ request('status') == 'in_progress' ? 'selected' : '' }}>{{ __('tasks.in_progress') }}</option>
-                                                                                                    <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>{{ __('tasks.completed') }}</option>
-                                                                                                </select>
-                                                                                            </div>
-
-                                                                                            {{-- Sort --}}
-                                                                                            <div class="col-md-3">
-                                                                                                <label for="sort" class="form-label fw-semibold text-primary">⬇️ {{ __('tasks.sort') }}</label>
-                                                                                                <select name="sort" id="sort" class="form-select">
-                                                                                                    <option value="">{{ __('tasks.default_sort') }}</option>
-                                                                                                    <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>{{ __('tasks.name_asc') }}</option>
-                                                                                                    <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>{{ __('tasks.name_desc') }}</option>
-                                                                                                    <option value="due_asc" {{ request('sort') == 'due_asc' ? 'selected' : '' }}>{{ __('tasks.due_asc') }}</option>
-                                                                                                    <option value="due_desc" {{ request('sort') == 'due_desc' ? 'selected' : '' }}>{{ __('tasks.due_desc') }}</option>
-                                                                                                </select>
-                                                                                            </div>
-
-                                                                                            {{-- Submit --}}
-                                                                                            <div class="col-md-2 d-grid align-self-end">
-                                                                                                <button type="submit" class="btn btn-primary">
-                                                                                                    <i class="bi bi-funnel-fill me-1"></i> {{ __('tasks.apply') }}
-                                                                                                </button>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </form>
-
-                                                                                    {{-- Task Table --}}
-                                                                                    <div class="card p-4 mb-4">
-                                                                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                                                                            <strong>{{ __('tasks.all_tasks') }}</strong>
-                                                                                        </div>
-                                                                                        <table class="table align-middle">
-                                                                                            <thead>
-                                                                                                <tr>
-                                                                                                    <th>{{ __('tasks.task_id') }}</th>
-                                                                                                    <th>{{ __('tasks.task_name') }}</th>
-                                                                                                    <th>{{ __('tasks.due_date') }}</th>
-                                                                                                    <th>{{ __('tasks.status') }}</th>
-                                                                                                    <th>{{ __('tasks.active') }}</th>
-                                                                                                    <th>{{ __('tasks.actions') }}</th>
-                                                                                                </tr>
-                                                                                            </thead>
-                                                                                            <tbody>
-                                                                                                @forelse($tasks as $task)
-                                                                                                <tr>
-                                                                                                    <td>{{ $task->task_id }}</td>
-                                                                                                    <td>{{ $task->title }}</td>
-                                                                                                    <td>
-                                                                                                        {{ $task->due_date }}
-                                                                                                        @if(\Carbon\Carbon::parse($task->due_date)->isPast() && $task->status !== 'completed')
-                                                                                                            <span class="badge bg-danger ms-2">{{ __('tasks.overdue') }}</span>
-                                                                                                        @endif
-                                                                                                    </td>
-                                                                                                    <td>
-                                                                                                        @if($task->status === 'pending')
-                                                                                                            <span class="badge bg-warning text-dark">{{ __('tasks.pending') }}</span>
-                                                                                                        @elseif($task->status === 'in_progress')
-                                                                                                            <span class="badge bg-info text-dark">{{ __('tasks.in_progress') }}</span>
-                                                                                                        @elseif($task->status === 'completed')
-                                                                                                            <span class="badge bg-success">{{ __('tasks.completed') }}</span>
-                                                                                                        @endif
-                                                                                                    </td>
-                                                                                                    <td>
-                                                                                                        @if($task->active)
-                                                                                                            <span class="badge bg-success">{{ __('tasks.active_yes') }}</span>
-                                                                                                        @else
-                                                                                                            <span class="badge bg-secondary">{{ __('tasks.active_no') }}</span>
-                                                                                                        @endif
-                                                                                                    </td>
-                                                                                                    <td class="d-flex gap-2">
-                                                                                                        {{-- View button --}}
-                                                                                                        <button class="btn btn-sm btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#taskDetails{{ $task->task_id }}" aria-expanded="false" aria-controls="taskDetails{{ $task->task_id }}">
-                                                                                                            <i class="fas fa-eye text-primary fs-5"></i>
-                                                                                                        </button>
-
-                                                                                                        {{-- Edit button with permission --}}
-                                                                                                        @can('task.edit')
-                                                                                                        <a href="{{ route('tasks.edit', $task->task_id) }}" class="btn btn-sm btn-link">
-                                                                                                            <i class="fas fa-edit text-success fs-5"></i>
-                                                                                                        </a>
-                                                                                                        @endcan
-
-                                                                                                        {{-- Delete button with permission --}}
-                                                                                                        @can('task.delete')
-                                                                                                        <form action="{{ route('tasks.destroy', $task->task_id) }}" method="POST" onsubmit="return confirm('{{ __('tasks.confirm_delete') }}');">
-                                                                                                            @csrf
-                                                                                                            @method('DELETE')
-                                                                                                            <button type="submit" class="btn btn-sm btn-link">
-                                                                                                                <i class="fas fa-trash text-danger fs-5"></i>
-                                                                                                            </button>
-                                                                                                        </form>
-                                                                                                        @endcan
-                                                                                                    </td>
-                                                                                                </tr>
-                                                                                                <tr>
-                                                                                                    <td colspan="6" class="p-0 border-0">
-                                                                                                        <div class="collapse" id="taskDetails{{ $task->task_id }}">
-                                                                                                            <div class="p-3 bg-light">
-                                                                                                                <div class="row">
-                                                                                                                    <div class="col-md-6">
-                                                                                                                        <strong>{{ __('tasks.description') }}:</strong>
-                                                                                                                        <div>{{ $task->description ?? __('tasks.no_description') }}</div>
-                                                                                                                    </div>
-                                                                                                                    <div class="col-md-6">
-                                                                                                                        <strong>{{ __('tasks.tags') }}:</strong>
-                                                                                                                        <div>
-                                                                                                                            @if(!empty($task->tags))
-                                                                                                                                @foreach(json_decode($task->tags, true) as $tag)
-                                                                                                                                    <span class="badge bg-primary">{{ $tag }}</span>
-                                                                                                                                @endforeach
-                                                                                                                            @else
-                                                                                                                                <span class="text-muted">{{ __('tasks.no_tags') }}</span>
-                                                                                                                            @endif
-                                                                                                                        </div>
-                                                                                                                    </div>
-                                                                                                                </div>
-                                                                                                                <hr class="my-3">
-                                                                                                                <strong>{{ __('tasks.assigned_users') }}:</strong>
-                                                                                                                <ul>
-                                                                                                                    @forelse($task->assignedUsers as $user)
-                                                                                                                        <li>{{ $user->name }} ({{ $user->email }})</li>
-                                                                                                                    @empty
-                                                                                                                        <li class="text-muted">{{ __('tasks.no_users') }}</li>
-                                                                                                                    @endforelse
-                                                                                                                </ul>
-                                                                                                            </div>
-                                                                                                        </div>
-                                                                                                    </td>
-                                                                                                </tr>
-                                                                                                @empty
-                                                                                                    <tr>
-                                                                                                        <td colspan="6" class="text-center text-muted">{{ __('tasks.no_tasks') }}</td>
-                                                                                                    </tr>
-                                                                                                @endforelse
-                                                                                            </tbody>
-                                                                                        </table>
-                                                                                        @if ($tasks->hasPages())
-                                                                                            <div class="mt-3 d-flex justify-content-center">
-                                                                                                {{ $tasks->withQueryString()->links('pagination::bootstrap-5') }}
-                                                                                            </div>
-                                                                                        @endif
-                                                                                    </div>
-                                                                                </div> -->
+    </x-action-layout>
     <!-- @else
-                                                                                    <p>{{ __('tasks.no_permission') }}</p>
-                                                                                @endrole -->
+                                                                                        <p>{{ __('tasks.no_permission') }}</p>
+                                                                                    @endrole -->
 @endsection

@@ -1,6 +1,6 @@
 <?php
 return [
-    'title' => 'Bảng Điều Khiển Nhân Viên',
+    'title' => 'Bảng Điều Khiển',
     'task_management' => 'Quản lý công việc',
     'staff' => 'NHÂN VIÊN',
     'dashboard' => 'Bảng Điều Khiển',

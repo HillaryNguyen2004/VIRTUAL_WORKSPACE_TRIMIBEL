@@ -1,21 +1,7 @@
 @extends('layout_dashboard')
 
 @section('content')
-    @php
-        use Illuminate\Support\Facades\Route;
-
-        $dashRoute = 'user.dashboard';
-        if (auth()->user()->hasRole('admin') && Route::has('admin.dashboard')) {
-            $dashRoute = 'admin.dashboard';
-        } elseif (auth()->user()->hasRole('staff') && Route::has('staff.dashboard')) {
-            $dashRoute = 'staff.dashboard';
-        }
-    @endphp
-    <div class="flex flex-col gap-6 w-full">
-        <a href="{{ route('tasks.staff.index') }}" class="text-[#5D3FD3] text-xl font-medium w-fit">
-            &larr; {{ __('task_create.back_to_task') }}
-        </a>
-
+    <x-action-layout :route="'tasks.staff.index'" :title="'task_create.back_to_task'">
         @if(session('success'))
             <div
                 class="bg-[#D6F5E3] text-[#5AE194] border border-[#5AE194] text-lg text-center px-3 py-2 rounded-2xl w-full animate-fade-in-up [animation-delay:150ms]">
@@ -24,7 +10,7 @@
 
         <x-staff.task-form :title="__('task_create.title')" :action="route('tasks.store')"
             :staff-users="$staffUsers"></x-staff.task-form>
-    </div>
+    </x-action-layout>
     <!-- <div class="container py-4">
                 <h1 class="mb-4 fw-bold">{{ __('task_create.title') }}</h1>
 

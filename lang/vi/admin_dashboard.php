@@ -1,6 +1,7 @@
 <?php
 return [
-    'admin_dashboard' => 'Bảng điều khiển quản trị',
+    'admin_dashboard' => 'Bảng Điều Khiển',
+    'admin'=> 'QUẢN TRỊ VIÊN',
     'welcome_message' => 'Chào mừng bạn đến với Bảng quản lý công việc và quản trị người dùng.',
     'pending_tasks' => 'Công việc đang chờ',
     'active_projects' => 'Dự án đang hoạt động',

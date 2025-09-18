@@ -85,7 +85,7 @@
         <div class="hidden fixed bg-black/20 h-screen w-screen z-30" id="sidebar-bg-addition"></div>
     </div>
     <!-- Main content -->
-    <div class="flex flex-col w-full h-screen">
+    <div class="flex flex-col w-full h-screen overflow-y-scroll">
         <!-- Top bar -->
         <nav
             class="flex justify-between xl:justify-end pl-10 pr-10 xl:pr-[64px] py-3 shadow-[0_4px_40px_0_rgba(206,197,242,0.2)]">
@@ -199,7 +199,7 @@
             </ul>
         </nav>
         <!-- Content -->
-        <div class="flex px-12 lg:px-20 py-8 overflow-y-scroll justify-center w-full">
+        <div class="flex px-12 lg:px-20 py-8 justify-center w-full">
             @yield('content')
         </div>
     </div>
