@@ -80,6 +80,15 @@
                         <span class="hidden md:inline">{{ __('app.chat_box') }}</span>
                     </x-nav-link>
                 </li>
+                <li>
+                    <x-nav-link href="{{ route('meet') }}" :active="request()->routeIs('meet')"
+                        class="flex items-center gap-4 px-4 py-4 hover:bg-gray-100 rounded-xl cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14v-4zM5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                        <span class="hidden md:inline">{{ __('app.video_chat') }}</span>
+                    </x-nav-link>
+                </li>
             </ul>
         </nav>
         <div class="hidden fixed bg-black/20 h-screen w-screen z-30" id="sidebar-bg-addition"></div>

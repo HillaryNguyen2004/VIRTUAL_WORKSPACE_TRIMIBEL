@@ -16,6 +16,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\TeamController;
 use App\Services\UserRoleRedirectService;
 use App\Http\Controllers\DayOffController;
+use App\Http\Controllers\MeetingController;
 
 // Route::group(['middleware' => ['web', 'core']], function () {
 //     include_once 'admin/user.php';
@@ -158,3 +159,20 @@ Route::middleware(['auth'])->group(function () {
 // In your routes file (web.php)
 Route::post('/tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.updateStatus');
 
+// Video Chat
+Route::get('/meet', function () {
+    return view('video-chat.index');
+})->name('meet');
+
+Route::post("/createMeeting", [MeetingController::class, 'createMeeting'])->name("createMeeting");
+
+Route::post("/validateMeeting", [MeetingController::class, 'validateMeeting'])->name("validateMeeting");
+
+Route::get("/meeting/{meetingId}", function($meetingId) {
+
+    $METERED_DOMAIN = env('METERED_DOMAIN');
+    return view('video-chat.meeting', [
+        'METERED_DOMAIN' => $METERED_DOMAIN,
+        'MEETING_ID' => $meetingId
+    ]);
+});
