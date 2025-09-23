@@ -12,8 +12,9 @@
         "laravel/socialite": "^5.21",
         "laravel/tinker": "^2.7",
         "maatwebsite/excel": "^1.1",
-        "nguyen_nguyen/company-hour": "dev-sprint4",
+        "nguyen_nguyen/company-hour": "dev-develop",
         "phpoffice/phpspreadsheet": "^4.4",
+        "pusher/pusher-php-server": "^7.2",
         "spatie/laravel-permission": "^6.20",
         "tymon/jwt-auth": "^2.2"
     },
