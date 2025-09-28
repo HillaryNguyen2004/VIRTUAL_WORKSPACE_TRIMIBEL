@@ -48,6 +48,10 @@ Route::middleware(['auth:sanctum'])->prefix('chat')->group(function () {
     Route::get('/users/search', [ChatController::class, 'searchUsers']);
     Route::get('/users/online', [ChatController::class, 'getOnlineUsers']);
     
+    // File upload routes
+    Route::post('/conversations/{conversation}/upload-file', [ChatController::class, 'uploadFile']);
+    Route::post('/conversations/{conversation}/upload-image', [ChatController::class, 'uploadImage']);
+    
     // Video meeting integration
     Route::post('/conversations/{conversation}/video-call', [ChatController::class, 'createVideoCall']);
     Route::post('/conversations/{conversation}/join-video', [ChatController::class, 'joinVideoCall']);

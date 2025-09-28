@@ -21,10 +21,12 @@
         <script>
             window.METERED_DOMAIN = "{{ $METERED_DOMAIN }}";
             window.MEETING_ID = "{{ $MEETING_ID }}";
-
         </script>
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        
+        <!-- Include Metered video functionality -->
+        <script src="{{ asset('js/metered-meeting.js') }}"></script>
 
 
     </head>
