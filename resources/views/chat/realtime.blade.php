@@ -259,6 +259,28 @@
     display: inline-block;
     margin-right: 5px;
 }
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
 </style>
 @endpush
 
@@ -305,11 +327,17 @@ class RealtimeChatApp {
         await this.loadConversations();
         await this.loadOnlineUsers();
         
+        // Setup real-time listeners (disabled - using polling instead)
+        // this.setupRealtimeListeners();
+        
         // Setup polling for messages (fallback for real-time)
         this.setupPolling();
         
         // Setup UI event handlers
         this.setupEventHandlers();
+        
+        // Request notification permission
+        this.requestNotificationPermission();
         
         console.log('Chat initialized');
     }
@@ -358,6 +386,20 @@ class RealtimeChatApp {
                 content,
                 type
             });
+            
+            if (response.data.success) {
+                // Reload conversations to update last message and timestamp
+                await this.loadConversations();
+                
+                // If this is the current conversation, reload messages
+                if (this.currentConversation && this.currentConversation.id === conversationId) {
+                    const data = await this.loadMessages(conversationId);
+                    if (data) {
+                        this.renderMessages(data.messages);
+                    }
+                }
+            }
+            
             return response.data.success;
         } catch (error) {
             console.error('Error sending message:', error);
@@ -376,6 +418,10 @@ class RealtimeChatApp {
                 const conversation = response.data.data.conversation;
                 this.conversations.set(conversation.id, conversation);
                 this.renderConversations();
+                
+                // Show success notification
+                this.showNotification(`Conversation created: ${conversation.display_name || conversation.name || 'New Chat'}`);
+                
                 return conversation;
             }
         } catch (error) {
@@ -423,6 +469,157 @@ class RealtimeChatApp {
             console.error('Error creating video call:', error);
             return false;
         }
+    }
+
+    // Real-time Event Listeners
+    setupRealtimeListeners() {
+        if (typeof Echo === 'undefined') {
+            console.warn('Laravel Echo not available. Real-time features disabled.');
+            return;
+        }
+
+        // Listen for new conversations created for this user
+        Echo.private(`user.{{ Auth::id() }}`)
+            .listen('conversation.created', (e) => {
+                console.log('New conversation created:', e.conversation);
+                
+                // Add the new conversation to our local data
+                this.conversations.set(e.conversation.id, e.conversation);
+                
+                // Re-render the conversations list
+                this.renderConversations();
+                
+                // Show notification
+                this.showNotification(`New conversation: ${e.conversation.display_name || e.conversation.name || 'New Chat'}`);
+            });
+
+        // Listen for new messages in conversations we're part of
+        this.conversations.forEach((conversation) => {
+            this.joinConversationChannel(conversation.id);
+        });
+    }
+
+    joinConversationChannel(conversationId) {
+        if (typeof Echo === 'undefined') return;
+        
+        Echo.private(`conversation.${conversationId}`)
+            .listen('message.sent', (e) => {
+                console.log('New message received:', e.message);
+                
+                // Update conversation with new message
+                const conversation = this.conversations.get(conversationId);
+                if (conversation) {
+                    conversation.last_message = e.message;
+                    conversation.updated_at = e.message.created_at;
+                    this.conversations.set(conversationId, conversation);
+                    
+                    // Re-render conversations to update last message
+                    this.renderConversations();
+                    
+                    // If this is the current conversation, add message to chat
+                    if (this.currentConversation && this.currentConversation.id === conversationId) {
+                        this.addMessageToChat(e.message);
+                    }
+                    
+                    // Show notification if not current conversation
+                    if (!this.currentConversation || this.currentConversation.id !== conversationId) {
+                        this.showNotification(`New message from ${e.message.user.name}`);
+                    }
+                }
+            })
+            .listen('user.typing', (e) => {
+                // Handle typing indicators
+                if (this.currentConversation && this.currentConversation.id === conversationId) {
+                    this.showTypingIndicator(e.user, e.typing);
+                }
+            });
+    }
+
+    addMessageToChat(message) {
+        const container = document.getElementById('messages-container');
+        if (!container) return;
+        
+        const isOwn = message.user.id === this.currentUserId;
+        const messageHtml = `
+            <div class="message ${isOwn ? 'own-message' : 'other-message'} mb-3">
+                <div class="d-flex ${isOwn ? 'justify-content-end' : 'justify-content-start'}">
+                    <div class="message-content ${isOwn ? 'bg-primary text-white' : 'bg-light'} p-2 rounded" style="max-width: 70%;">
+                        ${!isOwn ? `<div class="small text-muted mb-1">${message.user.name}</div>` : ''}
+                        <div>${message.content}</div>
+                        <div class="small ${isOwn ? 'text-white-50' : 'text-muted'} mt-1">
+                            ${this.formatTime(message.created_at)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.insertAdjacentHTML('beforeend', messageHtml);
+        this.scrollToBottom();
+    }
+
+    showTypingIndicator(user, isTyping) {
+        const container = document.getElementById('typing-indicator');
+        if (!container) return;
+        
+        if (isTyping && user.id !== this.currentUserId) {
+            container.innerHTML = `<div class="text-muted small">${user.name} is typing...</div>`;
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+        }
+    }
+
+    requestNotificationPermission() {
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    console.log('Notification permission granted');
+                }
+            });
+        }
+    }
+
+    showNotification(message) {
+        // Simple notification - you can enhance this with toast notifications
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Chat Notification', {
+                body: message,
+                icon: '/favicon.ico'
+            });
+        } else {
+            // Show in-app notification instead
+            this.showInAppNotification(message);
+        }
+    }
+
+    showInAppNotification(message) {
+        // Create a simple toast notification
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification';
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 9999;
+            max-width: 300px;
+            animation: slideInRight 0.3s ease-out;
+        `;
+        toast.textContent = message;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'slideOutRight 0.3s ease-in';
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 300);
+        }, 3000);
     }
 
     // UI Rendering Methods
@@ -476,6 +673,9 @@ class RealtimeChatApp {
             if (!data) return;
 
             this.currentConversation = data.conversation;
+            
+            // Join conversation channel for real-time updates
+            this.joinConversationChannel(conversationId);
             
             // Update UI
             this.renderConversationHeader();
@@ -637,13 +837,62 @@ class RealtimeChatApp {
 
     // Setup polling for updates (fallback for real-time)
     setupPolling() {
-        // Poll for new messages every 3 seconds
+        // Poll for updates every 5 seconds
         this.pollInterval = setInterval(async () => {
+            // Check for new conversations
+            await this.checkForNewConversations();
+            
+            // Check for new messages in current conversation
             if (this.currentConversation) {
                 await this.checkForNewMessages();
             }
+            
+            // Update online users
             await this.loadOnlineUsers();
-        }, 3000);
+        }, 5000);
+    }
+
+    async checkForNewConversations() {
+        try {
+            const response = await axios.get(`${this.apiUrl}/conversations`);
+            if (response.data && response.data.success) {
+                const newConversations = response.data.data.conversations;
+                const currentCount = this.conversations.size;
+                
+                // Clear and repopulate conversations
+                this.conversations.clear();
+                newConversations.forEach(conv => {
+                    this.conversations.set(conv.id, conv);
+                });
+                
+                // If we have new conversations, re-render
+                if (newConversations.length > currentCount) {
+                    this.renderConversations();
+                    
+                    // Show notification for new conversation
+                    if (newConversations.length > currentCount) {
+                        const latestConv = newConversations[0]; // Assuming newest is first
+                        this.showNotification(`New conversation: ${latestConv.display_name || latestConv.name || 'New Chat'}`);
+                    }
+                } else if (newConversations.length !== currentCount || this.hasConversationUpdates(newConversations)) {
+                    // Re-render if count changed or conversations were updated
+                    this.renderConversations();
+                }
+            }
+        } catch (error) {
+            console.error('Error checking for new conversations:', error);
+        }
+    }
+
+    hasConversationUpdates(newConversations) {
+        // Check if any conversation has been updated (last message, etc.)
+        for (const conv of newConversations) {
+            const existing = this.conversations.get(conv.id);
+            if (existing && existing.updated_at !== conv.updated_at) {
+                return true;
+            }
+        }
+        return false;
     }
 
     async checkForNewMessages() {
