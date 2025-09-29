@@ -249,7 +249,7 @@ class ChatController extends Controller
 
             $message = $conversation->messages()->create([
                 'user_id' => $user->id,
-                'content' => $request->content,
+                'content' => $request->input('content'),
                 'type' => $request->type ?? 'text'
             ]);
 
