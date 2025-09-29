@@ -29,7 +29,7 @@
                     </h5>
 
                     {{-- checkbox permission --}}
-                    <div class="flex justify-between gap-3">
+                    <div class="flex flex-wrap justify-between gap-3">
                         @foreach ($permissions as $permission)
                             <div class="flex gap-2">
                                 <input type="checkbox" name="permissions[]"

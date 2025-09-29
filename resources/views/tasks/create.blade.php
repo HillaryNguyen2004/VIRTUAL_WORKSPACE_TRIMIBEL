@@ -1,7 +1,15 @@
 @extends('layout_dashboard')
 
 @section('content')
-    <x-action-layout :route="'tasks.staff.index'" :title="'task_create.back_to_task'">
+    @php
+        use Illuminate\Support\Facades\Route;
+
+        $dashRoute = 'tasks.staff.index';
+        if (auth()->user()->hasRole('admin') && Route::has('tasks.index')) {
+            $dashRoute = 'tasks.index';
+        }
+    @endphp
+    <x-action-layout :route="$dashRoute" :title="'task_create.back_to_task'">
         @if(session('success'))
             <div
                 class="bg-[#D6F5E3] text-[#5AE194] border border-[#5AE194] text-lg text-center px-3 py-2 rounded-2xl w-full animate-fade-in-up [animation-delay:150ms]">
