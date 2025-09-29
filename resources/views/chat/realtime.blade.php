@@ -69,58 +69,21 @@
 
                 <!-- Message Input -->
                 <div class="card-footer" id="message-input-container" style="display: none;">
-                    <form id="message-form" class="d-flex gap-2 align-items-end">
-                        <div class="flex-grow-1">
-                            <textarea 
-                                class="form-control" 
-                                id="message-input" 
-                                placeholder="Type a message..." 
-                                rows="1"
-                                style="resize: none; overflow-y: hidden;"
-                            ></textarea>
-                        </div>
-                        
-                        <!-- File Upload Controls -->
-                        <div class="d-flex gap-1">
-                            <button type="button" class="btn btn-outline-secondary" id="image-upload-btn" title="Send Image">
-                                <i class="fas fa-image"></i>
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary" id="file-upload-btn" title="Send File">
-                                <i class="fas fa-paperclip"></i>
-                            </button>
-                            <button type="button" class="btn btn-success" id="video-call-btn" title="Start Video Call">
-                                <i class="fas fa-video"></i>
-                            </button>
-                            <button type="submit" class="btn btn-primary" id="send-btn">
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
-                        </div>
+                    <form id="message-form" class="d-flex gap-2">
+                        <textarea 
+                            class="form-control" 
+                            id="message-input" 
+                            placeholder="Type a message..." 
+                            rows="1"
+                            style="resize: none; overflow-y: hidden;"
+                        ></textarea>
+                        <button type="submit" class="btn btn-primary" id="send-btn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                        <button type="button" class="btn btn-success" id="video-call-btn" title="Start Video Call">
+                            <i class="fas fa-video"></i>
+                        </button>
                     </form>
-                    
-                    <!-- Hidden File Inputs -->
-                    <input type="file" id="image-input" accept="image/*" style="display: none;" multiple>
-                    <input type="file" id="file-input" style="display: none;" multiple>
-                    
-                    <!-- File Preview Area -->
-                    <div id="file-preview-container" class="mt-2" style="display: none;">
-                        <div class="border rounded p-2">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <small class="text-muted">Files to send:</small>
-                                <button type="button" class="btn btn-sm btn-outline-danger" id="clear-files-btn">
-                                    <i class="fas fa-times"></i> Clear All
-                                </button>
-                            </div>
-                            <div id="file-preview-list"></div>
-                            <div class="mt-2">
-                                <input type="text" class="form-control form-control-sm" id="file-caption" placeholder="Add a caption (optional)">
-                            </div>
-                            <div class="mt-2 text-end">
-                                <button type="button" class="btn btn-sm btn-primary" id="send-files-btn">
-                                    <i class="fas fa-paper-plane"></i> Send Files
-                                </button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -248,102 +211,6 @@
 .video-call-message {
     background-color: #e8f5e8;
     border: 1px solid #4caf50;
-}
-
-/* File Upload Styles */
-.file-preview-item {
-    display: flex;
-    align-items: center;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    margin-bottom: 8px;
-    background-color: #f8f9fa;
-}
-
-.file-preview-item img {
-    max-width: 50px;
-    max-height: 50px;
-    object-fit: cover;
-    border-radius: 4px;
-    margin-right: 10px;
-}
-
-.file-preview-info {
-    flex-grow: 1;
-    min-width: 0;
-}
-
-.file-preview-name {
-    font-weight: 500;
-    font-size: 0.9rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.file-preview-size {
-    font-size: 0.75rem;
-    color: #666;
-}
-
-.file-preview-remove {
-    margin-left: 10px;
-}
-
-/* Message File/Image Styles */
-.message-image {
-    max-width: 300px;
-    max-height: 200px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: transform 0.2s;
-}
-
-.message-image:hover {
-    transform: scale(1.02);
-}
-
-.message-file {
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background-color: #f8f9fa;
-    max-width: 300px;
-    text-decoration: none;
-    color: inherit;
-}
-
-.message-file:hover {
-    background-color: #e9ecef;
-    text-decoration: none;
-    color: inherit;
-}
-
-.file-icon {
-    font-size: 2rem;
-    margin-right: 10px;
-    color: #666;
-}
-
-.file-details {
-    flex-grow: 1;
-    min-width: 0;
-}
-
-.file-name {
-    font-weight: 500;
-    font-size: 0.9rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.file-size {
-    font-size: 0.75rem;
-    color: #666;
     border-radius: 8px;
     padding: 15px;
     margin: 10px 0;
@@ -496,136 +363,6 @@ class RealtimeChatApp {
             console.error('Error sending message:', error);
             return false;
         }
-    }
-
-    // File Upload Methods
-    selectedFiles = new Map();
-
-    handleFileSelection(files, type) {
-        Array.from(files).forEach(file => {
-            if (type === 'image' && !file.type.startsWith('image/')) {
-                alert('Please select only image files');
-                return;
-            }
-            
-            const fileId = Date.now() + '_' + Math.random();
-            this.selectedFiles.set(fileId, { file, type });
-        });
-        
-        this.renderFilePreview();
-        this.showFilePreview();
-    }
-
-    renderFilePreview() {
-        const container = document.getElementById('file-preview-list');
-        container.innerHTML = '';
-        
-        this.selectedFiles.forEach((fileData, fileId) => {
-            const { file, type } = fileData;
-            const fileSize = this.formatFileSize(file.size);
-            
-            const previewItem = document.createElement('div');
-            previewItem.className = 'file-preview-item';
-            
-            let previewContent = '';
-            if (type === 'image') {
-                const imageUrl = URL.createObjectURL(file);
-                previewContent = `<img src="${imageUrl}" alt="${file.name}">`;
-            } else {
-                previewContent = `<i class="fas fa-file file-icon"></i>`;
-            }
-            
-            previewItem.innerHTML = `
-                ${previewContent}
-                <div class="file-preview-info">
-                    <div class="file-preview-name">${file.name}</div>
-                    <div class="file-preview-size">${fileSize}</div>
-                </div>
-                <button type="button" class="btn btn-sm btn-outline-danger file-preview-remove" data-file-id="${fileId}">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-            
-            // Add remove handler
-            previewItem.querySelector('.file-preview-remove').addEventListener('click', () => {
-                this.selectedFiles.delete(fileId);
-                this.renderFilePreview();
-                if (this.selectedFiles.size === 0) {
-                    this.hideFilePreview();
-                }
-            });
-            
-            container.appendChild(previewItem);
-        });
-    }
-
-    showFilePreview() {
-        document.getElementById('file-preview-container').style.display = 'block';
-    }
-
-    hideFilePreview() {
-        document.getElementById('file-preview-container').style.display = 'none';
-    }
-
-    clearFileSelection() {
-        this.selectedFiles.clear();
-        this.hideFilePreview();
-        document.getElementById('image-input').value = '';
-        document.getElementById('file-input').value = '';
-        document.getElementById('file-caption').value = '';
-    }
-
-    async sendSelectedFiles() {
-        if (this.selectedFiles.size === 0 || !this.currentConversation) return;
-        
-        const caption = document.getElementById('file-caption').value.trim();
-        const sendBtn = document.getElementById('send-files-btn');
-        const originalText = sendBtn.innerHTML;
-        
-        sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-        sendBtn.disabled = true;
-        
-        try {
-            for (const [fileId, fileData] of this.selectedFiles) {
-                const { file, type } = fileData;
-                const formData = new FormData();
-                
-                if (type === 'image') {
-                    formData.append('image', file);
-                } else {
-                    formData.append('file', file);
-                }
-                
-                if (caption) {
-                    formData.append('caption', caption);
-                }
-                
-                const endpoint = type === 'image' ? 'upload-image' : 'upload-file';
-                await axios.post(`${this.apiUrl}/conversations/${this.currentConversation.id}/${endpoint}`, formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    }
-                });
-            }
-            
-            this.clearFileSelection();
-            await this.loadMessages(this.currentConversation.id);
-            
-        } catch (error) {
-            console.error('Error sending files:', error);
-            alert('Failed to send files. Please try again.');
-        } finally {
-            sendBtn.innerHTML = originalText;
-            sendBtn.disabled = false;
-        }
-    }
-
-    formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
     async createConversation(type, participantIds, name = null) {
@@ -812,53 +549,6 @@ class RealtimeChatApp {
             `;
         }
 
-        if (message.type === 'image') {
-            const metadata = message.metadata || {};
-            const imageUrl = metadata.image_url || '';
-            const caption = message.content || '';
-            
-            return `
-                <div class="${messageClass}">
-                    <div class="message-content">
-                        ${imageUrl ? `<img src="${imageUrl}" alt="${metadata.image_name || 'Image'}" class="message-image" onclick="window.open('${imageUrl}', '_blank')">` : ''}
-                        ${caption ? `<div class="mt-2">${caption}</div>` : ''}
-                    </div>
-                    <div class="message-info">
-                        ${isOwn ? 'You' : message.user.name} • ${this.formatTime(message.created_at)}
-                    </div>
-                </div>
-            `;
-        }
-
-        if (message.type === 'file') {
-            const metadata = message.metadata || {};
-            const fileUrl = metadata.file_url || '';
-            const fileName = metadata.file_name || 'File';
-            const fileSize = metadata.file_size ? this.formatFileSize(metadata.file_size) : '';
-            const caption = message.content || '';
-            
-            return `
-                <div class="${messageClass}">
-                    <div class="message-content">
-                        ${fileUrl ? `
-                            <a href="${fileUrl}" target="_blank" class="message-file">
-                                <i class="fas fa-file file-icon"></i>
-                                <div class="file-details">
-                                    <div class="file-name">${fileName}</div>
-                                    ${fileSize ? `<div class="file-size">${fileSize}</div>` : ''}
-                                </div>
-                                <i class="fas fa-download ml-2"></i>
-                            </a>
-                        ` : ''}
-                        ${caption && caption !== `Sent a file: ${fileName}` ? `<div class="mt-2">${caption}</div>` : ''}
-                    </div>
-                    <div class="message-info">
-                        ${isOwn ? 'You' : message.user.name} • ${this.formatTime(message.created_at)}
-                    </div>
-                </div>
-            `;
-        }
-
         return `
             <div class="${messageClass}">
                 <div class="message-content">
@@ -902,33 +592,6 @@ class RealtimeChatApp {
                 // Simple redirect to video meeting page
                 window.open('/meet', '_blank');
             }
-        });
-
-        // File upload buttons
-        document.getElementById('image-upload-btn').addEventListener('click', () => {
-            document.getElementById('image-input').click();
-        });
-
-        document.getElementById('file-upload-btn').addEventListener('click', () => {
-            document.getElementById('file-input').click();
-        });
-
-        // File input handlers
-        document.getElementById('image-input').addEventListener('change', (e) => {
-            this.handleFileSelection(e.target.files, 'image');
-        });
-
-        document.getElementById('file-input').addEventListener('change', (e) => {
-            this.handleFileSelection(e.target.files, 'file');
-        });
-
-        // File preview controls
-        document.getElementById('clear-files-btn').addEventListener('click', () => {
-            this.clearFileSelection();
-        });
-
-        document.getElementById('send-files-btn').addEventListener('click', () => {
-            this.sendSelectedFiles();
         });
 
         // New conversation modal
