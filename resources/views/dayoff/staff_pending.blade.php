@@ -25,7 +25,7 @@
         @endif
 
         <!-- Content -->
-        <div class="flex flex-wrap items-center justify-center gap-3 w-full">
+        <div class="flex flex-wrap items-center gap-3 w-full">
             @forelse($requests as $req)
                 <div
                     class="flex flex-col gap-2 bg-[#FDFDFF] shadow-[0_4px_40px_0_rgba(32,27,53,0.1)] rounded-[20px] py-5 px-6 animate-fade-in-up [animation-delay:150ms]">

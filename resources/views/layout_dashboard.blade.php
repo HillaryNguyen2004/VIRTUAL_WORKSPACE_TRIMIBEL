@@ -34,6 +34,7 @@
     @vite(['resources/utils/dashboard_layout/switch_lang.js'])
     @vite(['resources/utils/dashboard_layout/dropdown_profile.js'])
     @vite(['resources/utils/dashboard_layout/toggle_sidebar.js'])
+    @vite(['resources/utils/dashboard_layout/dropdown_notification.js'])
 
     <!-- User dashboard -->
     @vite(['resources/utils/user_dashboard/check_in_out_api.js'])
@@ -83,8 +84,10 @@
                 <li>
                     <x-nav-link href="{{ route('meet') }}" :active="request()->routeIs('meet')"
                         class="flex items-center gap-4 px-4 py-4 hover:bg-gray-100 rounded-xl cursor-pointer">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14v-4zM5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path
+                                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14v-4zM5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
                         <span class="hidden md:inline">{{ __('app.video_chat') }}</span>
                     </x-nav-link>
@@ -129,7 +132,7 @@
                             </svg>
                         </button>
 
-                        <div id="langList" class="absolute right-0 z-20 mt-2 w-36 origin-top-right rounded-xl bg-white shadow-lg ring-1 ring-black/5
+                        <div id="langList" class="absolute left-1/2 -translate-x-1/2 z-20 mt-2 w-36 origin-top rounded-xl bg-white shadow-lg ring-1 ring-black/5
                                 hidden" role="menu" aria-labelledby="langButton">
                             <a href="{{ route('lang.switch', 'en') }}"
                                 class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-t-xl"
@@ -141,15 +144,46 @@
                     </div>
                 </li>
                 <li>
-                    <button class="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-6 h-6 fill-[#D9D8DD]">
-                            <path
-                                d="M320 64C302.3 64 288 78.3 288 96L288 99.2C215 114 160 178.6 160 256L160 277.7C160 325.8 143.6 372.5 113.6 410.1L103.8 422.3C98.7 428.6 96 436.4 96 444.5C96 464.1 111.9 480 131.5 480L508.4 480C528 480 543.9 464.1 543.9 444.5C543.9 436.4 541.2 428.6 536.1 422.3L526.3 410.1C496.4 372.5 480 325.8 480 277.7L480 256C480 178.6 425 114 352 99.2L352 96C352 78.3 337.7 64 320 64zM258 528C265.1 555.6 290.2 576 320 576C349.8 576 374.9 555.6 382 528L258 528z" />
-                        </svg>
-                    </button>
+                    <div class="relative" id="notificationMenu">
+                        <button id="notificationBtn" class="flex items-center px-1 py-1 rounded-full hover:bg-gray-100"
+                            type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="notificationPanel">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
+                                class="w-[26px] h-[26px] fill-[#D9D8DD]">
+                                <path
+                                    d="M320 64C302.3 64 288 78.3 288 96L288 99.2C215 114 160 178.6 160 256L160 277.7C160 325.8 143.6 372.5 113.6 410.1L103.8 422.3C98.7 428.6 96 436.4 96 444.5C96 464.1 111.9 480 131.5 480L508.4 480C528 480 543.9 464.1 543.9 444.5C543.9 436.4 541.2 428.6 536.1 422.3L526.3 410.1C496.4 372.5 480 325.8 480 277.7L480 256C480 178.6 425 114 352 99.2L352 96C352 78.3 337.7 64 320 64zM258 528C265.1 555.6 290.2 576 320 576C349.8 576 374.9 555.6 382 528L258 528z" />
+                            </svg>
+                            <span id="notificationBadge"
+                                class="flex justify-center items-center absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-red-500 text-[9px] font-semibold text-white">
+                            </span>
+                        </button>
+
+                        <div id="notificationPanel" class="absolute left-1/2 -translate-x-1/2 z-20 mt-2 w-60 md:w-64 lg:w-96 origin-top rounded-xl bg-white shadow-lg ring-1 ring-black/5
+                                hidden" role="menu" aria-labelledby="notificationBtn">
+                            <div class="flex flex-wrap items-center justify-between gap-2 py-3 px-4 w-full">
+                                <h6 class="font-medium">Notifications</h6>
+                                <button id="markAllRead" class="text-sm text-[#5D3FD3]">Mark all as read</button>
+                            </div>
+
+                            <div class="border-t border-gray-200"></div>
+
+                            <div id="alertsList" class="h-fit max-h-80 overflow-scroll my-2">
+                                {{-- notifications will be injected here --}}
+                            </div>
+
+                            <p id="emptyState" class="hidden px-4 py-6 text-center text-sm text-gray-400">
+                                No new notifications
+                            </p>
+
+                            <div class="border-t border-gray-200"></div>
+
+                            <div class="flex items-center justify-center py-3 px-4">
+                                <button class="w-full rounded-md py-2 text-sm text-blue-600 hover:bg-blue-50">Show all notifications</button>
+                            </div>
+                        </div>
+                    </div>
                 </li>
                 <li>
-                    <div class="w-[1px] h-5 bg-[#D9D8DD]"></div>
+                    <div class="w-px h-5 bg-[#D9D8DD]"></div>
                 </li>
                 <li class="relative list-none" id="userMenu">
                     <button id="userButton" type="button" class="inline-flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-gray-100
@@ -164,7 +198,7 @@
                     </button>
 
                     <div id="userList"
-                        class="absolute right-0 z-20 mt-2 w-[190px] h-fit origin-top-right rounded-xl bg-white shadow-lg ring-1 ring-black/5 hidden"
+                        class="absolute right-0 z-20 mt-2 w-48 h-fit origin-top-right rounded-xl bg-white shadow-lg ring-1 ring-black/5 hidden"
                         role="menu" aria-labelledby="userButton">
                         <a href="{{ route('profile') }}"
                             class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-t-xl"
@@ -212,9 +246,13 @@
             @yield('content')
         </div>
     </div>
+    {{-- alert toast --}}
     <div id="alerts" class="flex flex-col gap-2 items-end fixed top-5 right-5 z-[60]"></div>
+    {{-- team member dialog --}}
     <x-user.team-member-dialog :teamMembers="$teamMembers ?? collect()" />
+    {{-- task dialog --}}
     <x-user.task-dialog :assignedTasks="$assignedTasks ?? collect()" />
+    {{-- request day off dialog --}}
     <x-user.request-dayoff-dialog />
 
     <!-- <script>
