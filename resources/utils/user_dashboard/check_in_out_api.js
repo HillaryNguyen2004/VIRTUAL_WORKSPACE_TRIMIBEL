@@ -1,5 +1,10 @@
 import { showToast } from "../show-toast.js";
 
+// Get CSRF token from meta tag
+function getCSRFToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+}
+
 document.getElementById("checkInBtn")?.addEventListener("click", () => {
     const username = document.getElementById("usernameInput").value.trim();
 
@@ -12,7 +17,8 @@ document.getElementById("checkInBtn")?.addEventListener("click", () => {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            Accept: "application/json",
+            "Accept": "application/json",
+            "X-CSRF-TOKEN": getCSRFToken() // Add CSRF token
         },
         body: JSON.stringify({ username }),
     })
@@ -21,7 +27,7 @@ document.getElementById("checkInBtn")?.addEventListener("click", () => {
             if (ok && body.token) {
                 localStorage.setItem("api_token", body.token);
                 showToast(body.message || "Check-in success", "success", 5000);
-                username.value = "";
+                document.getElementById("usernameInput").value = ""; // Fixed this line
             } else {
                 showToast(body.message || "Check-in failed", "error", 5000);
             }
@@ -45,9 +51,10 @@ document.getElementById("checkOutBtn")?.addEventListener("click", () => {
     fetch("/api/check-out", {
         method: "POST",
         headers: {
-            Authorization: "Bearer " + token,
+            "Authorization": "Bearer " + token,
             "Content-Type": "application/json",
-            Accept: "application/json",
+            "Accept": "application/json",
+            "X-CSRF-TOKEN": getCSRFToken() // Add CSRF token
         },
         body: JSON.stringify({ username }),
     })
@@ -58,7 +65,7 @@ document.getElementById("checkOutBtn")?.addEventListener("click", () => {
                 ok ? "success" : "error"
             );
 
-            if (ok) username.value = "";
+            if (ok) document.getElementById("usernameInput").value = ""; // Fixed this line
         })
         .catch(() => showToast("Something wrong. Please try again.", "error"));
 });
