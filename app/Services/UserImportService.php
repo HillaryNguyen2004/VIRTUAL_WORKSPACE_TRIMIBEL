@@ -31,10 +31,11 @@ class UserImportService
                 }
 
                 $user = User::create([
-                    'name' => $name,
-                    'email' => $email,
+                    'name'     => $name,
+                    'email'    => $email,
                     'password' => Hash::make($password ?: Str::random(10)),
-                    'roles' => $roles ?: 'user',
+                    'roles'    => $roles ?: 'user',
+                    'username' => $this->generateUniqueUsername(),
                 ]);
 
                 if (in_array($roles, ['admin', 'staff', 'user'])) {
@@ -53,7 +54,7 @@ class UserImportService
     public function downloadTemplate()
     {
         $headers = [
-            'Content-Type' => 'text/csv',
+            'Content-Type'        => 'text/csv',
             'Content-Disposition' => 'attachment; filename="user_import_template.csv"',
         ];
 
@@ -65,5 +66,22 @@ class UserImportService
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Generate a unique alphanumeric username
+     */
+    private function generateUniqueUsername(): string
+    {
+        do {
+            // Option A: Random alphanumeric, uppercase
+            $username = Str::upper(Str::random(8));
+
+            // Option B: Sequential "userX"
+            // $username = 'user' . (User::max('id') + 1);
+
+        } while (User::where('username', $username)->exists());
+
+        return $username;
     }
 }
