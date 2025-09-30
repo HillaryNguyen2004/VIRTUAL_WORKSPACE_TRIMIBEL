@@ -46,7 +46,9 @@ class ChatController extends Controller
                 ->map(function($conversation) use ($user) {
                     // Set display name
                     if ($conversation->type === 'direct') {
-                        $otherUser = $conversation->participants->first();
+                        // For direct chats, get the other user (not current user)
+                        $allParticipants = $conversation->participants()->get();
+                        $otherUser = $allParticipants->where('id', '!=', $user->id)->first();
                         $conversation->display_name = $otherUser ? $otherUser->name : 'Unknown User';
                     } else {
                         $conversation->display_name = $conversation->name ?? 'Group Chat';
@@ -90,16 +92,28 @@ class ChatController extends Controller
 
             // For direct conversations, check if one already exists
             if ($request->type === 'direct' && count($participantIds) === 2) {
+                // Find existing direct conversation between exactly these two users
                 $existing = Conversation::where('type', 'direct')
                     ->whereHas('participants', function($query) use ($participantIds) {
-                        $query->whereIn('user_id', $participantIds);
-                    }, '=', 2)
+                        $query->where('user_id', $participantIds[0]);
+                    })
+                    ->whereHas('participants', function($query) use ($participantIds) {
+                        $query->where('user_id', $participantIds[1]);
+                    })
+                    ->has('participants', '=', 2) // Ensure exactly 2 participants
                     ->first();
 
                 if ($existing) {
+                    // Set display name properly
+                    $otherUser = $existing->participants->where('id', '!=', $user->id)->first();
+                    $existing->display_name = $otherUser ? $otherUser->name : 'Unknown User';
+                    
                     return response()->json([
                         'success' => true,
-                        'data' => ['conversation' => $existing->load('participants', 'lastMessage.user')]
+                        'data' => [
+                            'conversation' => $existing->load('participants', 'lastMessage.user'),
+                            'existing' => true,
+                        ]
                     ]);
                 }
             }
@@ -122,6 +136,14 @@ class ChatController extends Controller
             });
 
             $conversation->load('participants', 'lastMessage.user');
+
+            // Set display name for the response
+            if ($conversation->type === 'direct') {
+                $otherUser = $conversation->participants->where('id', '!=', $user->id)->first();
+                $conversation->display_name = $otherUser ? $otherUser->name : 'Unknown User';
+            } else {
+                $conversation->display_name = $conversation->name ?? 'Group Chat';
+            }
 
             // Broadcast to all participants
             foreach ($participantIds as $participantId) {

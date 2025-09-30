@@ -9,7 +9,7 @@ class Conversation extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'type', 'created_by'];
+    protected $fillable = ['name', 'type', 'created_by', 'display_name'];
 
     public function participants()
     {

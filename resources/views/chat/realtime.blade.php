@@ -416,11 +416,17 @@ class RealtimeChatApp {
             });
             if (response.data.success) {
                 const conversation = response.data.data.conversation;
+                const isExisting = response.data.data.existing || false;
+                
                 this.conversations.set(conversation.id, conversation);
                 this.renderConversations();
                 
-                // Show success notification
-                this.showNotification(`Conversation created: ${conversation.display_name || conversation.name || 'New Chat'}`);
+                // Show appropriate notification
+                if (isExisting) {
+                    this.showNotification(`Redirected to existing conversation: ${conversation.display_name || conversation.name || 'Chat'}`);
+                } else {
+                    this.showNotification(`Conversation created: ${conversation.display_name || conversation.name || 'New Chat'}`);
+                }
                 
                 return conversation;
             }

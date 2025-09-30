@@ -104,41 +104,57 @@ class ChatController extends Controller
             $existingConversation = Conversation::where('type', 'direct')
                 ->whereHas('participants', function($query) {
                     $query->where('user_id', auth()->id());
-                }, '=', 1)
+                })
                 ->whereHas('participants', function($query) use ($otherUserId) {
                     $query->where('user_id', $otherUserId);
-                }, '=', 1)
-                ->has('participants', '=', 2) // Ensure only 2 participants
+                })
+                ->has('participants', '=', 2) // Ensure exactly 2 participants
                 ->first();
 
             if ($existingConversation) {
                 return redirect()->route('chat.conversation', $existingConversation)
-                    ->with('info', 'Conversation already exists.');
+                    ->with('info', 'Redirected to existing conversation.');
             }
         }
 
         try {
-            // Create new conversation
-            $conversation = Conversation::create([
-                'name' => $request->type === 'group' ? $request->name : null,
-                'type' => $request->type,
-                'created_by' => auth()->id()
-            ]);
-
-            // Add participants
-            $participants = $request->participants;
-            
-            // Always include current user
-            if (!in_array(auth()->id(), $participants)) {
-                $participants[] = auth()->id();
-            }
-
-            // Add participants to the conversation
-            foreach ($participants as $userId) {
-                $conversation->participants()->attach($userId, [
-                    'joined_at' => now(),
-                    'last_read_at' => now()
+            if ($request->type === 'direct') {
+                // For direct messages, get the other user's name for display
+                $otherUser = User::findOrFail($otherUserId);
+                
+                // Create new conversation
+                $conversation = Conversation::create([
+                    'name' => null,
+                    'type' => 'direct',
+                    'created_by' => auth()->id(),
+                    'display_name' => $otherUser->name
                 ]);
+
+                // Add participants
+                $conversation->participants()->attach([auth()->id(), $otherUserId]);
+            } else {
+                // Create new conversation
+                $conversation = Conversation::create([
+                    'name' => $request->name,
+                    'type' => $request->type,
+                    'created_by' => auth()->id()
+                ]);
+
+                // Add participants
+                $participants = $request->participants;
+                
+                // Always include current user
+                if (!in_array(auth()->id(), $participants)) {
+                    $participants[] = auth()->id();
+                }
+
+                // Add participants to the conversation
+                foreach ($participants as $userId) {
+                    $conversation->participants()->attach($userId, [
+                        'joined_at' => now(),
+                        'last_read_at' => now()
+                    ]);
+                }
             }
 
             return redirect()->route('chat.conversation', $conversation)
