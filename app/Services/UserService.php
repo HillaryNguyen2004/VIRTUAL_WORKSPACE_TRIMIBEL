@@ -56,25 +56,67 @@ class UserService
         return $user->delete();
     }
 
+    // public function createUser(array $data): User
+    // {
+    //     $password = Hash::make(Str::random(12));
+
+    //     $user = $this->userRepo->create([
+    //         'name' => $data['name'],
+    //         'email' => $data['email'],
+    //         'password' => $password,
+    //         'team_leader_id' => $data['team_leader_id'] ?? null,
+    //     ]);
+
+    //     $user->assignRole($data['roles']);
+    //     ActivityLog::create([
+    //     'user_id' => Auth::id(), // admin performing the creation
+    //     'action' => 'User Created',
+    //     'description' => "Admin created a {$data['roles']} with ID {$user->id} and email {$user->email}."
+    // ]);
+
+    //     return $user;
+    // }
+
     public function createUser(array $data): User
-    {
-        $password = Hash::make(Str::random(12));
+{
+    $password = Hash::make(Str::random(12));
 
-        $user = $this->userRepo->create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => $password,
-            'team_leader_id' => $data['team_leader_id'] ?? null,
-        ]);
+    // Generate unique username
+    $username = $this->generateUniqueUsername();
 
-        $user->assignRole($data['roles']);
-        ActivityLog::create([
-        'user_id' => Auth::id(), // admin performing the creation
-        'action' => 'User Created',
-        'description' => "Admin created a {$data['roles']} with ID {$user->id} and email {$user->email}."
+    $user = $this->userRepo->create([
+        'name'          => $data['name'],
+        'email'         => $data['email'],
+        'password'      => $password,
+        'team_leader_id'=> $data['team_leader_id'] ?? null,
+        'username'      => $username,
     ]);
 
-        return $user;
-    }
+    $user->assignRole($data['roles']);
+
+    ActivityLog::create([
+        'user_id'    => Auth::id(), // admin performing the creation
+        'action'     => 'User Created',
+        'description'=> "Admin created a {$data['roles']} with ID {$user->id}, email {$user->email}, and username {$user->username}.",
+    ]);
+
+    return $user;
+}
+
+    /**
+     * Generate a unique alphanumeric username.
+     */
+    private function generateUniqueUsername(): string
+{
+    do {
+        // Example: random string of 6–10 chars (letters + numbers, no special chars)
+        $username = Str::upper(Str::random(8)); 
+        // Or if you want "userX" pattern:
+        // $username = 'user' . (User::max('id') + 1);
+    } while (User::where('username', $username)->exists());
+
+    return $username;
+}
+
 
 }
