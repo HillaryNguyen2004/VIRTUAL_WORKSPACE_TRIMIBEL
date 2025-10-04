@@ -1,7 +1,7 @@
 <?php
 return [
         'title' => 'Tất Cả Nhật Ký Điểm Danh',
-        'search_placeholder_username' => 'Tên Người Dùng',
+        'search_placeholder_username' => 'Tìm theo tên người dùng',
         'filter_label_from' => 'Từ:',
         'filter_label_to' => 'Đến:',
         'filter_label_status' => 'Trạng Thái',

@@ -1,7 +1,7 @@
 <?php
 return [
     'upcoming_tasks' => 'Upcoming Tasks',
-    'search_placeholder' => 'Search...',
+    'search_placeholder' => 'Search by task name',
     'status' => 'Status',
     'sort' => 'Sort',
     'apply' => 'Apply',

@@ -3,7 +3,6 @@ import { showToast } from "../show-toast.js";
 $(function () {
     const $dialog = $("#request-dayoff-dialog");
     const $open = $("#open-request-dayoff");
-    const $close = $("#close-request-dayoff");
     const $form = $("#request-dayoff-form");
     const $submit = $("#submitBtn");
     const txt = $submit.text();
@@ -24,7 +23,7 @@ $(function () {
         e.preventDefault();
         openDialog();
     });
-    $close.on("click", (e) => {
+    $dialog.on("click", ".close-request-dayoff", (e) => {
         e.preventDefault();
         closeDialog();
     });
