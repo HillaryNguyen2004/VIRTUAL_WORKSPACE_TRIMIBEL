@@ -101,6 +101,78 @@ $(function () {
 
     loadNotifications();
 
+    // Request notification permission for browser notifications
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+
+    // Set up real-time notifications if Echo is available
+    if (typeof window.Echo !== 'undefined') {
+        // Get user ID from meta tag or data attribute
+        const userId = $('meta[name="user-id"]').attr('content') || document.body.dataset.userId;
+        
+        console.log('Setting up real-time notifications for user:', userId);
+        
+        if (userId) {
+            try {
+                window.Echo.private(`App.Models.User.${userId}`)
+                    .notification((notification) => {
+                        console.log('New notification received:', notification);
+                        console.log('Notification type:', typeof notification);
+                        console.log('Notification keys:', Object.keys(notification));
+                        
+                        // Create notification object in expected format
+                        const notificationData = {
+                            id: notification.id || Date.now(), // fallback ID if not provided
+                            data: {
+                                message: notification.message || 'You have a new notification',
+                                date: notification.date || new Date().toLocaleString()
+                            }
+                        };
+                        
+                        console.log('Processed notification data:', notificationData);
+                        
+                        // Add the new notification to the list
+                        const newItem = renderItem(notificationData);
+                        
+                        $list.prepend(newItem);
+                        
+                        // Update badge count
+                        const currentCount = $list.find(".notification-item").length;
+                        setBadge(currentCount);
+                        
+                        // Show the list and hide empty state
+                        $list.removeClass("hidden");
+                        $empty.addClass("hidden");
+                        
+                        // Show browser notification if permission granted
+                        if (Notification.permission === 'granted') {
+                            new Notification('New Notification', {
+                                body: notification.message || 'You have a new notification',
+                                icon: '/favicon.ico'
+                            });
+                        }
+                    })
+                    .error((error) => {
+                        console.error('Echo notification channel error:', error);
+                    });
+                    
+                console.log('Real-time notification listener set up successfully');
+            } catch (error) {
+                console.error('Error setting up Echo notification listener:', error);
+                // Fallback to polling
+                setInterval(loadNotifications, 30000);
+            }
+        } else {
+            console.warn('User ID not found, cannot set up real-time notifications');
+            setInterval(loadNotifications, 30000);
+        }
+    } else {
+        console.warn('Laravel Echo not available, using polling fallback');
+        // Fallback: poll for new notifications every 30 seconds
+        setInterval(loadNotifications, 30000);
+    }
+
     // Delegate click: mark one as read
     $list.on("click", ".notification-item", function () {
         const $item = $(this);

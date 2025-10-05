@@ -9,6 +9,7 @@
     <meta name="author" content="">
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="user-id" content="{{ Auth::id() }}">
 
     <title>@yield('title') - {{ __('app.title') }}</title>
 
@@ -334,41 +335,6 @@ document.getElementById('markAllRead').addEventListener('click', function(e) {
         document.querySelector('#alertsDropdown .badge-counter').textContent = '';
     });
 });
-
-
-/**
- * Listen for new broadcast notifications
- */
-Echo.private(`App.Models.User.{{ Auth::id() }}`)
-    .notification((notification) => {
-        const list = document.getElementById('alertsList');
-        const badge = document.querySelector('#alertsDropdown .badge-counter');
-
-        const item = `
-            <a class="dropdown-item d-flex align-items-center notification-item" 
-            href="#" data-id="${notification.id}">
-                <div class="mr-3">
-                    <div class="icon-circle bg-primary">
-                        <i class="fas fa-bell text-white"></i>
-                    </div>
-                </div>
-                <div>
-                    <div class="small text-gray-500">${notification.date}</div>
-                    <span class="font-weight-bold">${notification.message}</span>
-                </div>
-            </a>
-        `;
-
-
-        // Add new notification at the top
-        list.insertAdjacentHTML('afterbegin', item);
-
-        // Increment badge counter
-        const current = parseInt(badge.textContent) || 0;
-        badge.textContent = current + 1;
-    });
-
-
 
 
 </script> -->

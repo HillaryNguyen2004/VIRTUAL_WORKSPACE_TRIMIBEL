@@ -78,6 +78,28 @@ Route::post('/notifications/read/{id}', [App\Http\Controllers\NotificationContro
 Route::post('/notifications/read-all', [App\Http\Controllers\NotificationController::class, 'markAllAsRead'])
     ->name('notifications.readAll');
 
+// Test route for real-time notifications (remove in production)
+Route::get('/test-notification', function () {
+    $user = Auth::user();
+    $user->notify(new \App\Notifications\TaskAssignedNotification(
+        999,
+        'Test Task for Real-time Notifications',
+        'System Test'
+    ));
+    return response()->json(['message' => 'Test notification sent']);
+})->middleware('auth')->name('test.notification');
+
+// Test route for task notification specifically
+Route::get('/test-task-notification', function () {
+    $user = Auth::user();
+    $user->notify(new \App\Notifications\TaskAssignedNotification(
+        998,
+        'Test Task Assignment Notification',
+        Auth::user()->name
+    ));
+    return response()->json(['message' => 'Task notification sent', 'user_id' => $user->id]);
+})->middleware('auth')->name('test.task.notification');
+
 
 
 
