@@ -28,28 +28,25 @@
     @vite(['public/vendor/bootstrap/js/bootstrap.bundle.min.js'])
     <!-- Core plugin JavaScript-->
     @vite(['public/vendor/jquery-easing/jquery.easing.min.js'])
-    <!-- Custom scripts for all pages-->
-    @vite(['public/js/sb-admin-2.min.js'])
 
     <!-- Dashboard layout -->
     @vite(['resources/utils/dashboard_layout/switch_lang.js'])
     @vite(['resources/utils/dashboard_layout/dropdown_profile.js'])
     @vite(['resources/utils/dashboard_layout/toggle_sidebar.js'])
     @vite(['resources/utils/dashboard_layout/dropdown_notification.js'])
+    @vite(['resources/utils/dashboard_layout/scroll_to_top.js'])
 
     <!-- User dashboard -->
     @vite(['resources/utils/user_dashboard/check_in_out_api.js'])
 </head>
 
-@stack('scripts')
-
-<body id="page-top" class="flex flex-row">
+<body class="flex flex-row">
     <!-- Side bar -->
     <div class="flex flex-row fixed xl:static h-screen w-screen xl:w-fit z-[-1] xl:z-40" id="rounded-sidebar">
         <nav class="flex flex-col gap-[79px] -translate-x-full xl:translate-x-0 bg-[#FDFDFF] w-fit h-screen border-r border-[#F1EFFC] p-5 z-40 transition duration-300"
             id="sidebar">
             <div class="w-full text-center md:text-left">Logo</div>
-            <ul class="flex flex-col gap-[18px] justify-start sm:w-[220px]">
+            <ul class="flex flex-col gap-[18px] justify-start md:w-[220px]">
                 <li>
                     @php
                         use Illuminate\Support\Facades\Route;
@@ -107,7 +104,7 @@
         <div class="hidden fixed bg-black/20 h-screen w-screen z-30" id="sidebar-bg-addition"></div>
     </div>
     <!-- Main content -->
-    <div class="flex flex-col w-full h-screen overflow-y-scroll">
+    <div id="main-scroll" class="flex flex-col w-full h-screen overflow-y-scroll">
         <!-- Top bar -->
         <nav
             class="flex justify-between xl:justify-end pl-10 pr-10 xl:pr-[64px] py-3 shadow-[0_4px_40px_0_rgba(206,197,242,0.2)]">
@@ -259,6 +256,25 @@
     </div>
     {{-- alert toast --}}
     <div id="alerts" class="flex flex-col gap-2 items-end fixed top-5 right-5 z-[60]"></div>
+
+    {{-- scroll to top + chatbot button --}}
+    <div class="fixed bottom-5 right-5 flex flex-col gap-3 z-50">
+        {{-- Chatbot button --}}
+        <button id="chatbot-btn" title="Chat Bot" class="w-11 h-11 md:w-12 md:h-12 flex items-center justify-center rounded-full bg-[#5D3FD3] hover:opacity-95 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 md:w-6 md:h-6 fill-white">
+                <path
+                    d="M352 64C352 46.3 337.7 32 320 32C302.3 32 288 46.3 288 64L288 128L192 128C139 128 96 171 96 224L96 448C96 501 139 544 192 544L448 544C501 544 544 501 544 448L544 224C544 171 501 128 448 128L352 128L352 64zM160 432C160 418.7 170.7 408 184 408L216 408C229.3 408 240 418.7 240 432C240 445.3 229.3 456 216 456L184 456C170.7 456 160 445.3 160 432zM280 432C280 418.7 290.7 408 304 408L336 408C349.3 408 360 418.7 360 432C360 445.3 349.3 456 336 456L304 456C290.7 456 280 445.3 280 432zM400 432C400 418.7 410.7 408 424 408L456 408C469.3 408 480 418.7 480 432C480 445.3 469.3 456 456 456L424 456C410.7 456 400 445.3 400 432zM224 240C250.5 240 272 261.5 272 288C272 314.5 250.5 336 224 336C197.5 336 176 314.5 176 288C176 261.5 197.5 240 224 240zM368 288C368 261.5 389.5 240 416 240C442.5 240 464 261.5 464 288C464 314.5 442.5 336 416 336C389.5 336 368 314.5 368 288zM64 288C64 270.3 49.7 256 32 256C14.3 256 0 270.3 0 288L0 384C0 401.7 14.3 416 32 416C49.7 416 64 401.7 64 384L64 288zM608 256C590.3 256 576 270.3 576 288L576 384C576 401.7 590.3 416 608 416C625.7 416 640 401.7 640 384L640 288C640 270.3 625.7 256 608 256z" />
+            </svg>
+        </button>
+
+        {{-- Scroll to top button --}}
+        <button id="scroll-to-top-btn" title="{{ __('app.scroll_to_top') }}" class="w-11 h-11 md:w-12 md:h-12 flex items-center justify-center rounded-full bg-[#5D3FD3] hover:opacity-95 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 md:w-6 md:h-6 fill-white">
+                <path
+                    d="M342.6 81.4C330.1 68.9 309.8 68.9 297.3 81.4L137.3 241.4C124.8 253.9 124.8 274.2 137.3 286.7C149.8 299.2 170.1 299.2 182.6 286.7L288 181.3L288 552C288 569.7 302.3 584 320 584C337.7 584 352 569.7 352 552L352 181.3L457.4 286.7C469.9 299.2 490.2 299.2 502.7 286.7C515.2 274.2 515.2 253.9 502.7 241.4L342.7 81.4z" />
+            </svg>
+        </button>
+    </div>
 
     {{-- team member dialog --}}
     <x-user.team-member-dialog :teamMembers="$teamMembers ?? collect()" />
