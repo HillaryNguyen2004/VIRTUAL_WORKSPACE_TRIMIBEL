@@ -178,7 +178,8 @@
                             <div class="border-t border-gray-200"></div>
 
                             <div class="flex items-center justify-center py-3 px-4">
-                                <button class="w-full rounded-md py-2 text-sm text-blue-600 hover:bg-blue-50">Show all notifications</button>
+                                <button class="w-full rounded-md py-2 text-sm text-blue-600 hover:bg-blue-50">Show all
+                                    notifications</button>
                             </div>
                         </div>
                     </div>
@@ -249,6 +250,7 @@
     </div>
     {{-- alert toast --}}
     <div id="alerts" class="flex flex-col gap-2 items-end fixed top-5 right-5 z-[60]"></div>
+
     {{-- team member dialog --}}
     <x-user.team-member-dialog :teamMembers="$teamMembers ?? collect()" />
     {{-- task dialog --}}
@@ -256,85 +258,10 @@
     {{-- request day off dialog --}}
     <x-user.request-dayoff-dialog />
 
+    @isset($user)
+        @include('users.update', ['users' => $users ?? collect()])
+    @endisset
     <!-- <script>
-
-function loadNotifications() {
-    fetch('/notifications/unread')
-        .then(res => res.json())
-        .then(data => {
-            const list = document.getElementById('alertsList');
-            const badge = document.querySelector('#alertsDropdown .badge-counter');
-
-            list.innerHTML = ''; // clear first
-
-            data.forEach(notification => {
-                const item = `
-                    <a class="dropdown-item d-flex align-items-center notification-item" 
-                    href="#" data-id="${notification.id}">
-                        <div class="mr-3">
-                            <div class="icon-circle bg-primary">
-                                <i class="fas fa-bell text-white"></i>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="small text-gray-500">${notification.data.date}</div>
-                            <span class="font-weight-bold">${notification.data.message}</span>
-                        </div>
-                    </a>
-                `;
-                list.insertAdjacentHTML('beforeend', item);
-            });
-
-            // Update badge count
-            badge.textContent = data.length > 0 ? data.length : '';
-        })
-        .catch(err => console.error('Error loading notifications:', err));
-}
-
-// Run on page load
-loadNotifications();
-
-/**
- * Mark notification as read when clicked
- */
-document.addEventListener('click', function(e) {
-    if (e.target.closest('.notification-item')) {
-        e.preventDefault();
-        const item = e.target.closest('.notification-item');
-        const id = item.getAttribute('data-id');
-
-        fetch(`/notifications/read/${id}`, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json'
-            }
-        }).then(() => {
-            item.remove(); // remove from dropdown
-            const badge = document.querySelector('#alertsDropdown .badge-counter');
-            const current = parseInt(badge.textContent) || 0;
-            badge.textContent = current > 1 ? current - 1 : '';
-        });
-    }
-});
-
-/**
- * Mark all notifications as read
- */
-document.getElementById('markAllRead').addEventListener('click', function(e) {
-    e.preventDefault();
-
-    fetch('/notifications/read-all', {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Accept': 'application/json'
-        }
-    }).then(() => {
-        document.getElementById('alertsList').innerHTML = '';
-        document.querySelector('#alertsDropdown .badge-counter').textContent = '';
-    });
-});
 
 
 </script> -->

@@ -16,14 +16,16 @@
     <x-action-layout :route="$dashRoute" :title="'profile.back_to_dashboard'">
         <div class="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center w-full">
             <h2 class="font-medium text-[28px] md:text-[32px]">{{ __('tasks.upcoming_tasks') }}</h2>
-            <a href="{{ route('tasks.create') }}"
-                class="flex items-center justify-center gap-1 w-fit h-fit bg-[#5D3FD3] text-white px-3 py-1 rounded-xl hover:opacity-95">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h4 fill-white">
-                    <path
-                        d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z" />
-                </svg>
-                {{ __('staff_dashboard.new_task') }}
-            </a>
+            @can('task.create')
+                <a href="{{ route('tasks.create') }}"
+                    class="flex items-center justify-center gap-1 w-fit h-fit bg-[#5D3FD3] text-white px-3 py-1 rounded-xl hover:opacity-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h4 fill-white">
+                        <path
+                            d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z" />
+                    </svg>
+                    {{ __('staff_dashboard.new_task') }}
+                </a>
+            @endcan
         </div>
 
         {{-- Search & Filter Bar --}}

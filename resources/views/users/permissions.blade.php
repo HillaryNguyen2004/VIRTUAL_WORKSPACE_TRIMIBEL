@@ -14,6 +14,12 @@
     <x-action-layout :route="$dashRoute" :title="'profile.back_to_dashboard'">
         <h2 class="font-medium text-[28px] md:text-[32px]">{{ __('user_permission.title') }}</h2>
 
+        @if(session('success'))
+            <div
+                class="bg-[#D6F5E3] text-[#5AE194] border border-[#5AE194] text-lg text-center px-3 py-2 rounded-2xl w-full animate-fade-in-up [animation-delay:150ms]">
+                {{ session('success') }}</div>
+        @endif
+
         @foreach ($roles as $role)
             @if ($role->name !== 'admin')
                 <form action="{{ route('admin.permissions.update') }}"

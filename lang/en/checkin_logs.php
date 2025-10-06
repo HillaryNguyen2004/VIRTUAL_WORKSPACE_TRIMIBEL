@@ -1,7 +1,7 @@
 <?php
 return [
         'title' => 'All Check-In Logs',
-        'search_placeholder_username' => 'Username',
+        'search_placeholder_username' => 'Search by username',
         'filter_label_from' => 'From:',
         'filter_label_to' => 'To:',
         'filter_label_status' => 'Status',

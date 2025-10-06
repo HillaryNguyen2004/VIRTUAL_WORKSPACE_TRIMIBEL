@@ -1,7 +1,7 @@
 <?php
 return [
     'upcoming_tasks' => 'Công Việc Sắp Tới',
-    'search_placeholder' => 'Tìm kiếm...',
+    'search_placeholder' => 'Tìm theo tên công việc',
     'status' => 'Trạng thái',
     'sort' => 'Sắp xếp',
     'apply' => 'Áp dụng',

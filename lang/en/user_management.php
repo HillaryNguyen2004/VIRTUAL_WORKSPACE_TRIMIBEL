@@ -1,8 +1,9 @@
 <?php
 return [
     'title' => 'User Management',
-    'search_placeholder' => 'Search username or email',
+    'search_placeholder' => 'Search by username or email',
     'all_roles' => 'All Roles',
+    'admin_role' => 'Admin',
     'staff_role' => 'Staff',
     'user_role' => 'User',
     'sort_label' => 'Sort',
@@ -11,7 +12,7 @@ return [
     'default_sort'=> 'Default',
     'search_button' => 'Search',
     'reset_button' => 'Reset',
-    'username_column' => 'USERNAME',
+    'username_column' => 'FULL NAME',
     'email_column' => 'EMAIL',
     'role_column' => 'ROLE',
     'actions_column' => 'ACTIONS',

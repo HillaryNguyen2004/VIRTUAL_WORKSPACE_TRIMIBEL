@@ -43,47 +43,51 @@
 
         <div class="flex flex-wrap gap-2 items-end animate-fade-in-up [animation-delay:150ms]">
             {{-- search bar + filter --}}
-            <form class="flex flex-wrap gap-2 items-end" method="GET">
-                <input type="text" name="username" value="{{ request('username') }}"
-                    class="rounded-xl text-sm md:text-base border border-gray-300 px-4 h-[42px] placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition"
-                    placeholder="{{ __('checkin_logs.search_placeholder_username') }}">
-                <div class="flex flex-col gap-1">
-                    <label>{{ __('checkin_logs.filter_label_from') }}</label>
-                    <input type="date" name="date_from" value="{{ request('date_from') }}"
-                        class="rounded-xl text-sm md:text-base border border-gray-300 px-4 h-[42px] placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
+            <form class="flex flex-col gap-2" method="GET">
+                <div class="flex flex-wrap gap-2">
+                    <div class="flex flex-col gap-1">
+                        <label>{{ __('checkin_logs.filter_label_from') }}</label>
+                        <input type="date" name="date_from" value="{{ request('date_from') }}"
+                            class="rounded-xl text-sm md:text-base border border-gray-300 px-4 h-[42px] placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label>{{ __('checkin_logs.filter_label_to') }}</label>
+                        <input type="date" name="date_to" value="{{ request('date_to') }}"
+                            class="rounded-xl text-sm md:text-base border border-gray-300 px-4 h-[42px] placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
+                    </div>
                 </div>
-                <div class="flex flex-col gap-1">
-                    <label>{{ __('checkin_logs.filter_label_to') }}</label>
-                    <input type="date" name="date_to" value="{{ request('date_to') }}"
+                <div class="flex flex-wrap gap-2">
+                    <input type="text" name="username" value="{{ request('username') }}"
+                        class="rounded-xl text-sm md:text-base border border-gray-300 px-4 h-[42px] placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition"
+                        placeholder="{{ __('checkin_logs.search_placeholder_username') }}">
+                    <select name="status"
                         class="rounded-xl text-sm md:text-base border border-gray-300 px-4 h-[42px] placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
-                </div>
-                <select name="status"
-                    class="rounded-xl text-sm md:text-base border border-gray-300 px-4 h-[42px] placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
-                    <option value="">{{ __('checkin_logs.filter_option_all_statuses') }}</option>
-                    <option value="late" {{ request('status') == 'late' ? 'selected' : '' }}>
-                        {{ __('checkin_logs.filter_option_late') }}
-                    </option>
-                    <option value="on_time" {{ request('status') == 'on_time' ? 'selected' : '' }}>
-                        {{ __('checkin_logs.filter_option_on_time') }}
-                    </option>
-                </select>
-                <div class="flex gap-2">
-                    <!-- filter -->
-                    <button type="submit" title="{{ __('tasks.filter') }}"
-                        class="border px-3 h-[42px] rounded-xl border-gray-300 hover:border-[#6b4fda] hover:bg-[#F1EFFC] transition">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
-                            <path
-                                d="M96 128C83.1 128 71.4 135.8 66.4 147.8C61.4 159.8 64.2 173.5 73.4 182.6L256 365.3L256 480C256 488.5 259.4 496.6 265.4 502.6L329.4 566.6C338.6 575.8 352.3 578.5 364.3 573.5C376.3 568.5 384 556.9 384 544L384 365.3L566.6 182.7C575.8 173.5 578.5 159.8 573.5 147.8C568.5 135.8 556.9 128 544 128L96 128z" />
-                        </svg>
-                    </button>
-                    <!-- reset -->
-                    <a href="{{ route('users.checkin_index') }}" title="{{ __('tasks.reset') }}"
-                        class="flex items-center justify-center border px-3 h-[42px] rounded-xl border-gray-300 hover:border-[#6b4fda] hover:bg-[#F1EFFC] transition">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
-                            <path
-                                d="M88 256L232 256C241.7 256 250.5 250.2 254.2 241.2C257.9 232.2 255.9 221.9 249 215L202.3 168.3C277.6 109.7 386.6 115 455.8 184.2C530.8 259.2 530.8 380.7 455.8 455.7C380.8 530.7 259.3 530.7 184.3 455.7C174.1 445.5 165.3 434.4 157.9 422.7C148.4 407.8 128.6 403.4 113.7 412.9C98.8 422.4 94.4 442.2 103.9 457.1C113.7 472.7 125.4 487.5 139 501C239 601 401 601 501 501C601 401 601 239 501 139C406.8 44.7 257.3 39.3 156.7 122.8L105 71C98.1 64.2 87.8 62.1 78.8 65.8C69.8 69.5 64 78.3 64 88L64 232C64 245.3 74.7 256 88 256z" />
-                        </svg>
-                    </a>
+                        <option value="">{{ __('checkin_logs.filter_option_all_statuses') }}</option>
+                        <option value="late" {{ request('status') == 'late' ? 'selected' : '' }}>
+                            {{ __('checkin_logs.filter_option_late') }}
+                        </option>
+                        <option value="on_time" {{ request('status') == 'on_time' ? 'selected' : '' }}>
+                            {{ __('checkin_logs.filter_option_on_time') }}
+                        </option>
+                    </select>
+                    <div class="flex gap-2">
+                        <!-- filter -->
+                        <button type="submit" title="{{ __('tasks.filter') }}"
+                            class="border px-3 h-[42px] rounded-xl border-gray-300 hover:border-[#6b4fda] hover:bg-[#F1EFFC] transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
+                                <path
+                                    d="M96 128C83.1 128 71.4 135.8 66.4 147.8C61.4 159.8 64.2 173.5 73.4 182.6L256 365.3L256 480C256 488.5 259.4 496.6 265.4 502.6L329.4 566.6C338.6 575.8 352.3 578.5 364.3 573.5C376.3 568.5 384 556.9 384 544L384 365.3L566.6 182.7C575.8 173.5 578.5 159.8 573.5 147.8C568.5 135.8 556.9 128 544 128L96 128z" />
+                            </svg>
+                        </button>
+                        <!-- reset -->
+                        <a href="{{ route('users.checkin_index') }}" title="{{ __('tasks.reset') }}"
+                            class="flex items-center justify-center border px-3 h-[42px] rounded-xl border-gray-300 hover:border-[#6b4fda] hover:bg-[#F1EFFC] transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
+                                <path
+                                    d="M88 256L232 256C241.7 256 250.5 250.2 254.2 241.2C257.9 232.2 255.9 221.9 249 215L202.3 168.3C277.6 109.7 386.6 115 455.8 184.2C530.8 259.2 530.8 380.7 455.8 455.7C380.8 530.7 259.3 530.7 184.3 455.7C174.1 445.5 165.3 434.4 157.9 422.7C148.4 407.8 128.6 403.4 113.7 412.9C98.8 422.4 94.4 442.2 103.9 457.1C113.7 472.7 125.4 487.5 139 501C239 601 401 601 501 501C601 401 601 239 501 139C406.8 44.7 257.3 39.3 156.7 122.8L105 71C98.1 64.2 87.8 62.1 78.8 65.8C69.8 69.5 64 78.3 64 88L64 232C64 245.3 74.7 256 88 256z" />
+                            </svg>
+                        </a>
+                    </div>
                 </div>
             </form>
 
