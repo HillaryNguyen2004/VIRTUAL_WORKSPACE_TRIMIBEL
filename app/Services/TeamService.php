@@ -4,6 +4,7 @@ use App\Models\User;
 use App\Models\Task;
 use App\Notifications\TaskAssignedNotification;
 use App\Repositories\TeamRepositoryInterface;
+use Illuminate\Support\Facades\Log;
 
 class TeamService
 {
@@ -86,23 +87,28 @@ class TeamService
         // idempotent attach through repository
         $assigned = $this->teamRepo->assignTaskToUser($userId, $taskId);
 
-        // defensive fetch
-        $task = Task::findOrFail($taskId);
-        $user = User::findOrFail($userId);
+        // Only send notification if this is a new assignment
+        if ($assigned) {
+            // defensive fetch
+            $task = Task::findOrFail($taskId);
+            $user = User::findOrFail($userId);
 
-        $assignedBy = auth()->check() ? auth()->user()->name : 'System';
+            $assignedBy = auth()->check() ? auth()->user()->name : 'System';
 
-        try {
-            // Always attempt to notify when an assignment action is performed
-            $user->notify(new TaskAssignedNotification(
-                $task->id,
-                $task->name,
-                $assignedBy
-            ));
-            Log::info("Notification sent for task {$taskId} -> user {$userId}");
-        } catch (\Throwable $e) {
-            Log::error("Failed to notify user {$userId} about task {$taskId}: " . $e->getMessage());
-            // Do not throw here — the assignment succeeded; we logged the error
+            try {
+                // Send notification for new assignment
+                $user->notify(new TaskAssignedNotification(
+                    $task->id,
+                    $task->name,
+                    $assignedBy
+                ));
+                Log::info("Notification sent for new task assignment: task {$taskId} -> user {$userId}");
+            } catch (\Throwable $e) {
+                Log::error("Failed to notify user {$userId} about task {$taskId}: " . $e->getMessage());
+                // Do not throw here — the assignment succeeded; we logged the error
+            }
+        } else {
+            Log::info("User {$userId} already assigned to task {$taskId}, no notification sent");
         }
 
         return (bool) $assigned;

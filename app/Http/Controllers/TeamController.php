@@ -30,7 +30,7 @@ class TeamController extends Controller
     {
         $data = $request->validatedData();
 
-        $assigned = $this->teamRepo->assignTaskToUser($data['user_id'], $data['task_id']);
+        $assigned = $this->teamService->assignTaskToUser($data['user_id'], $data['task_id']);
 
         return redirect()->route('team.overview')
             ->with('success', $assigned ? __('messages.task_assigned') : __('messages.task_already_assigned'));

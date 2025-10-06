@@ -5,7 +5,6 @@ namespace App\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\BroadcastMessage;
-use Illuminate\Support\Str;
 
 class TaskAssignedNotification extends Notification
 {
@@ -34,7 +33,7 @@ class TaskAssignedNotification extends Notification
             'task_name'   => $this->taskName,
             'assigned_by' => $this->assignedBy,
             'message'     => "You have been assigned to task '{$this->taskName}' by {$this->assignedBy}.",
-            'date'        => now()->toDateTimeString(),
+            'date'        => now()->format('Y-m-d H:i:s'),
         ];
     }
 
@@ -46,8 +45,13 @@ class TaskAssignedNotification extends Notification
 
     public function toBroadcast($notifiable)
     {
-        // Broadcast payload — Laravel will use default private channel for the notifiable.
-        return new BroadcastMessage($this->toDatabase($notifiable) + ['id' => (string) Str::uuid()]);
+        return new BroadcastMessage([
+            'task_id'     => $this->taskId,
+            'task_name'   => $this->taskName,
+            'assigned_by' => $this->assignedBy,
+            'message'     => "You have been assigned to task '{$this->taskName}' by {$this->assignedBy}.",
+            'date'        => now()->format('Y-m-d H:i:s'),
+        ]);
     }
 
     // <-- removed broadcastOn() entirely (use Laravel default private channel)
