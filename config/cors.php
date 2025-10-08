@@ -19,9 +19,13 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => env('APP_ENV') === 'production' 
+        ? explode(',', env('CORS_ALLOWED_ORIGINS', env('APP_URL')))
+        : ['*'],
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => env('APP_ENV') === 'production' 
+        ? explode(',', env('CORS_ALLOWED_PATTERNS', ''))
+        : [],
 
     'allowed_headers' => ['*'],
 
@@ -29,6 +33,6 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    'supports_credentials' => true,
 
 ];

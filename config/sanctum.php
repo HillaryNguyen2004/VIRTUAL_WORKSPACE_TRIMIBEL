@@ -16,9 +16,10 @@ return [
     */
 
     'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
-        '%s%s',
-        'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
-        Sanctum::currentApplicationUrlWithPort()
+        '%s%s%s',
+        env('APP_ENV') === 'local' ? 'localhost,localhost:3000,localhost:8000,127.0.0.1,127.0.0.1:8000,::1,laravel.test,' : '',
+        parse_url(env('APP_URL'), PHP_URL_HOST) . (parse_url(env('APP_URL'), PHP_URL_PORT) ? ':' . parse_url(env('APP_URL'), PHP_URL_PORT) : ''),
+        env('FRONTEND_URL') ? ',' . parse_url(env('FRONTEND_URL'), PHP_URL_HOST) . (parse_url(env('FRONTEND_URL'), PHP_URL_PORT) ? ':' . parse_url(env('FRONTEND_URL'), PHP_URL_PORT) : '') : ''
     ))),
 
     /*
