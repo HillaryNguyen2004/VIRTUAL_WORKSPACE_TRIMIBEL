@@ -1,5 +1,6 @@
 import './bootstrap';
 import jquery from 'jquery';
+// import.meta.glob('../utils/**/*.js', { eager: true });
 
 let meetingJoined = false;
 const meeting = new Metered.Meeting();

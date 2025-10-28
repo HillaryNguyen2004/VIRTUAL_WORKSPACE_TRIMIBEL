@@ -17,7 +17,11 @@ $(function () {
             headers: { Accept: "application/json" },
         })
             .done((res) => {
-                showToast(res?.message || "Updated detail successfully", "success", 5000);
+                showToast(
+                    res?.message || "Updated detail successfully",
+                    "success",
+                    5000
+                );
                 // window.location.reload();
             })
             .fail((error) => {
@@ -25,7 +29,9 @@ $(function () {
                 showToast(msg, "error");
             })
             .always(() => {
-                $btn.prop("disabled", false).removeClass("opacity-50").text(txt);
+                $btn.prop("disabled", false)
+                    .removeClass("opacity-50")
+                    .text(txt);
             });
     });
 });

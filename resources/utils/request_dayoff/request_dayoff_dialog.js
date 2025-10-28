@@ -35,7 +35,10 @@ $(function () {
     // submit (AJAX)
     $form.on("submit", function (e) {
         e.preventDefault();
-        $submit.prop("disabled", true).addClass("opacity-50").text("Sending...");
+        $submit
+            .prop("disabled", true)
+            .addClass("opacity-50")
+            .text("Sending...");
 
         const fd = new FormData(this); // includes CSRF & form fields
 
@@ -55,10 +58,16 @@ $(function () {
                 this.reset();
             })
             .fail((error) => {
-                showToast(error.responseJSON?.message || "Submitted failed", "error");
+                showToast(
+                    error.responseJSON?.message || "Submitted failed",
+                    "error"
+                );
             })
             .always(() => {
-                $submit.prop("disabled", false).removeClass("opacity-50").text(txt);
+                $submit
+                    .prop("disabled", false)
+                    .removeClass("opacity-50")
+                    .text(txt);
             });
     });
 });

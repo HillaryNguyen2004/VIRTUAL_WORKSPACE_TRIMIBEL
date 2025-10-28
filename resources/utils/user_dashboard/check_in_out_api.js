@@ -2,7 +2,9 @@ import { showToast } from "../show-toast.js";
 
 // Get CSRF token from meta tag
 function getCSRFToken() {
-    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    return document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute("content");
 }
 
 document.getElementById("checkInBtn")?.addEventListener("click", () => {
@@ -17,8 +19,8 @@ document.getElementById("checkInBtn")?.addEventListener("click", () => {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "Accept": "application/json",
-            "X-CSRF-TOKEN": getCSRFToken() // Add CSRF token
+            Accept: "application/json",
+            "X-CSRF-TOKEN": getCSRFToken(), // Add CSRF token
         },
         body: JSON.stringify({ username }),
     })
@@ -32,7 +34,9 @@ document.getElementById("checkInBtn")?.addEventListener("click", () => {
                 showToast(body.message || "Check-in failed", "error", 5000);
             }
         })
-        .catch((error) => showToast(error || "Something wrong. Please try again.", "error"));
+        .catch((error) =>
+            showToast(error || "Something wrong. Please try again.", "error")
+        );
 });
 
 document.getElementById("checkOutBtn")?.addEventListener("click", () => {
@@ -51,10 +55,10 @@ document.getElementById("checkOutBtn")?.addEventListener("click", () => {
     fetch("/api/check-out", {
         method: "POST",
         headers: {
-            "Authorization": "Bearer " + token,
+            Authorization: "Bearer " + token,
             "Content-Type": "application/json",
-            "Accept": "application/json",
-            "X-CSRF-TOKEN": getCSRFToken() // Add CSRF token
+            Accept: "application/json",
+            "X-CSRF-TOKEN": getCSRFToken(), // Add CSRF token
         },
         body: JSON.stringify({ username }),
     })
