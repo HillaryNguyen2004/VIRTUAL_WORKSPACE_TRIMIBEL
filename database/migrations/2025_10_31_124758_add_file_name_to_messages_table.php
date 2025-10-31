@@ -14,10 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('messages', function (Blueprint $table) {
-            $table->string('file_name')->nullable()->after('metadata');
-            $table->string('file_path')->nullable()->after('file_name');
-            $table->string('file_size')->nullable()->after('file_path');
-            $table->string('file_type')->nullable()->after('file_size');
+            //
         });
     }
 
@@ -29,7 +26,7 @@ return new class extends Migration
     public function down()
     {
         Schema::table('messages', function (Blueprint $table) {
-            $table->dropColumn(['file_name', 'file_path', 'file_size', 'file_type']);
+            //
         });
     }
 };

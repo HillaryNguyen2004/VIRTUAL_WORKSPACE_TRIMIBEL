@@ -15,10 +15,17 @@ use App\Models\User;
 use App\Events\MessageSent;
 use App\Events\UserTyping;
 use App\Events\UserStatusChanged;
+use App\Services\ChatFileService;
 use Carbon\Carbon;
 
 class ChatController extends Controller
 {
+    protected $chatFileService;
+
+    public function __construct(ChatFileService $chatFileService)
+    {
+        $this->chatFileService = $chatFileService;
+    }
     /**
      * Get all conversations for the authenticated user
      */
@@ -293,6 +300,128 @@ class ChatController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to send message'
+            ], 500);
+        }
+    }
+
+    /**
+     * Send a file message
+     */
+    public function sendFile(Request $request, Conversation $conversation)
+    {
+        $request->validate([
+            'file' => 'required|file|max:10240', // 10MB max
+            'content' => 'nullable|string|max:500' // Optional message with file
+        ]);
+
+        try {
+            $user = Auth::user();
+
+            if (!$conversation->participants->contains($user->id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Access denied'
+                ], 403);
+            }
+
+            // Upload file
+            $fileData = $this->chatFileService->uploadFile($request->file('file'), $conversation->id);
+
+            // Create message with file
+            $message = $conversation->messages()->create([
+                'user_id' => $user->id,
+                'content' => $request->input('content', 'File: ' . $fileData['file_name']),
+                'type' => 'file',
+                'file_name' => $fileData['file_name'],
+                'file_path' => $fileData['file_path'],
+                'file_size' => $fileData['file_size'],
+                'file_type' => $fileData['file_type']
+            ]);
+
+            $message->load('user');
+
+            // Update conversation timestamp
+            $conversation->touch();
+
+            // Broadcast the message
+            broadcast(new MessageSent($message, $conversation))->toOthers();
+
+            return response()->json([
+                'success' => true,
+                'data' => ['message' => $message]
+            ], 201);
+
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error sending file: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send file'
+            ], 500);
+        }
+    }
+
+    /**
+     * Send an image message
+     */
+    public function sendImage(Request $request, Conversation $conversation)
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240', // 10MB max
+            'content' => 'nullable|string|max:500' // Optional caption
+        ]);
+
+        try {
+            $user = Auth::user();
+
+            if (!$conversation->participants->contains($user->id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Access denied'
+                ], 403);
+            }
+
+            // Upload image
+            $imageData = $this->chatFileService->uploadImage($request->file('image'), $conversation->id);
+
+            // Create message with image
+            $message = $conversation->messages()->create([
+                'user_id' => $user->id,
+                'content' => $request->input('content', 'Image: ' . $imageData['file_name']),
+                'type' => 'image',
+                'file_name' => $imageData['file_name'],
+                'file_path' => $imageData['file_path'],
+                'file_size' => $imageData['file_size'],
+                'file_type' => $imageData['file_type']
+            ]);
+
+            $message->load('user');
+
+            // Update conversation timestamp
+            $conversation->touch();
+
+            // Broadcast the message
+            broadcast(new MessageSent($message, $conversation))->toOthers();
+
+            return response()->json([
+                'success' => true,
+                'data' => ['message' => $message]
+            ], 201);
+
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error sending image: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send image'
             ], 500);
         }
     }
