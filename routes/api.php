@@ -42,6 +42,8 @@ Route::middleware(['auth:sanctum'])->prefix('chat')->group(function () {
     Route::post('/conversations', [ChatController::class, 'createConversation']);
     Route::get('/conversations/{conversation}', [ChatController::class, 'getConversation']);
     Route::post('/conversations/{conversation}/messages', [ChatController::class, 'sendMessage']);
+    Route::post('/conversations/{conversation}/files', [ChatController::class, 'sendFile']);
+    Route::post('/conversations/{conversation}/images', [ChatController::class, 'sendImage']);
     Route::get('/conversations/{conversation}/messages', [ChatController::class, 'getMessages']);
     Route::post('/conversations/{conversation}/read', [ChatController::class, 'markAsRead']);
     Route::post('/conversations/{conversation}/typing', [ChatController::class, 'setTyping']);

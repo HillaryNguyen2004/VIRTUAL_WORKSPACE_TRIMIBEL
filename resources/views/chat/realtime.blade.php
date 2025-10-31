@@ -69,14 +69,63 @@
 
                 <!-- Message Input -->
                 <div class="card-footer" id="message-input-container" style="display: none;">
-                    <form id="message-form" class="d-flex gap-2">
-                        <textarea 
-                            class="form-control" 
-                            id="message-input" 
-                            placeholder="Type a message..." 
-                            rows="1"
-                            style="resize: none; overflow-y: hidden;"
-                        ></textarea>
+                    <!-- File preview area -->
+                    <div id="file-preview" class="mb-2" style="display: none;">
+                        <div class="bg-light p-2 rounded border">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div id="file-info" class="d-flex align-items-center">
+                                    <i id="file-icon" class="me-2"></i>
+                                    <span id="file-name"></span>
+                                    <small id="file-size" class="text-muted ms-2"></small>
+                                </div>
+                                <button type="button" class="btn btn-sm text-danger" onclick="clearFileSelection()">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                            <div id="image-preview" style="display: none;">
+                                <img id="preview-img" class="mt-2 rounded" style="max-width: 200px; max-height: 100px;">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form id="message-form" class="d-flex gap-2 align-items-end">
+                        <!-- File upload buttons -->
+                        <div class="btn-group-vertical">
+                            <button type="button" 
+                                    class="btn btn-outline-secondary btn-sm mb-1" 
+                                    title="Send Image"
+                                    onclick="document.getElementById('image-input').click()">
+                                <i class="bi bi-image"></i>
+                            </button>
+                            <button type="button" 
+                                    class="btn btn-outline-secondary btn-sm" 
+                                    title="Send File"
+                                    onclick="document.getElementById('file-input').click()">
+                                <i class="bi bi-paperclip"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Hidden file inputs -->
+                        <input type="file" 
+                               id="image-input" 
+                               accept="image/*" 
+                               style="display: none;"
+                               onchange="handleFileSelectRealtime(this, 'image')">
+                        <input type="file" 
+                               id="file-input" 
+                               style="display: none;"
+                               onchange="handleFileSelectRealtime(this, 'file')">
+                        
+                        <div class="flex-grow-1">
+                            <textarea 
+                                class="form-control" 
+                                id="message-input" 
+                                placeholder="Type a message..." 
+                                rows="1"
+                                style="resize: none; overflow-y: hidden;"
+                            ></textarea>
+                        </div>
+                        
                         <button type="submit" class="btn btn-primary" id="send-btn">
                             <i class="fas fa-paper-plane"></i>
                         </button>
@@ -755,16 +804,64 @@ class RealtimeChatApp {
             `;
         }
 
+        // Handle file and image messages
+        let messageContent = '';
+        if (message.type === 'image' && message.file_path) {
+            const imageUrl = '/storage/' + message.file_path;
+            messageContent = `
+                <div class="message-image mb-2">
+                    <img src="${imageUrl}" 
+                         alt="${message.file_name || 'Image'}" 
+                         class="img-fluid rounded"
+                         style="max-width: 250px; max-height: 150px; cursor: pointer;"
+                         onclick="openImageModal('${imageUrl}', '${message.file_name || 'Image'}')"
+                         loading="lazy">
+                    ${message.file_name ? `<div class="text-muted small mt-1">${message.file_name}</div>` : ''}
+                </div>
+                ${message.content && message.content !== 'Image: ' + message.file_name ? `<div>${message.content}</div>` : ''}
+            `;
+        } else if (message.type === 'file' && message.file_path) {
+            const fileUrl = '/storage/' + message.file_path;
+            const fileSize = message.file_size ? this.formatFileSize(message.file_size) : '';
+            messageContent = `
+                <div class="message-file p-2 bg-light rounded border">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-file-earmark fs-5 me-2 text-primary"></i>
+                        <div class="flex-grow-1">
+                            <div class="fw-medium small">${message.file_name || 'File'}</div>
+                            ${fileSize ? `<div class="text-muted" style="font-size: 0.75rem;">${fileSize}</div>` : ''}
+                        </div>
+                        <a href="${fileUrl}" 
+                           download="${message.file_name || 'file'}"
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-download"></i>
+                        </a>
+                    </div>
+                </div>
+                ${message.content && message.content !== 'File: ' + message.file_name ? `<div class="mt-2">${message.content}</div>` : ''}
+            `;
+        } else {
+            messageContent = message.content;
+        }
+
         return `
             <div class="${messageClass}">
                 <div class="message-content">
-                    ${message.content}
+                    ${messageContent}
                 </div>
                 <div class="message-info">
                     ${isOwn ? 'You' : message.user.name} • ${this.formatTime(message.created_at)}
                 </div>
             </div>
         `;
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
     showChatArea() {
@@ -811,6 +908,11 @@ class RealtimeChatApp {
         const input = document.getElementById('message-input');
         const message = input.value.trim();
         
+        // Check if we have a file selected
+        if (window.selectedFile && window.selectedFileType) {
+            return await this.sendFileMessage();
+        }
+        
         if (!message || !this.currentConversation) return;
 
         const success = await this.sendMessage(this.currentConversation.id, message);
@@ -818,6 +920,58 @@ class RealtimeChatApp {
             input.value = '';
             input.style.height = 'auto';
         }
+    }
+
+    async sendFileMessage() {
+        if (!this.currentConversation || !window.selectedFile) return;
+
+        const formData = new FormData();
+        const messageInput = document.getElementById('message-input');
+        const content = messageInput.value.trim();
+
+        if (content) {
+            formData.append('content', content);
+        }
+
+        if (window.selectedFileType === 'image') {
+            formData.append('image', window.selectedFile);
+        } else {
+            formData.append('file', window.selectedFile);
+        }
+
+        const sendBtn = document.getElementById('send-btn');
+        const originalContent = sendBtn.innerHTML;
+        
+        try {
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            const endpoint = window.selectedFileType === 'image' 
+                ? `${this.apiUrl}/conversations/${this.currentConversation.id}/images`
+                : `${this.apiUrl}/conversations/${this.currentConversation.id}/files`;
+
+            const response = await axios.post(endpoint, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            if (response.data.success) {
+                messageInput.value = '';
+                messageInput.style.height = 'auto';
+                clearFileSelection();
+                this.addMessageToDisplay(response.data.data.message);
+                return true;
+            }
+        } catch (error) {
+            console.error('File upload error:', error);
+            this.showToast('Failed to send file', 'error');
+        } finally {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = originalContent;
+        }
+        
+        return false;
     }
 
     sendTypingIndicator() {
@@ -1134,6 +1288,77 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// File upload functions for real-time chat
+window.selectedFile = null;
+window.selectedFileType = null;
+
+function handleFileSelectRealtime(input, type) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // File size validation (10MB)
+    if (file.size > 10485760) {
+        alert('File size must be less than 10MB');
+        input.value = '';
+        return;
+    }
+
+    window.selectedFile = file;
+    window.selectedFileType = type;
+
+    // Show file preview
+    const preview = document.getElementById('file-preview');
+    const fileName = document.getElementById('file-name');
+    const fileSize = document.getElementById('file-size');
+    const fileIcon = document.getElementById('file-icon');
+    const imagePreview = document.getElementById('image-preview');
+    const previewImg = document.getElementById('preview-img');
+
+    fileName.textContent = file.name;
+    fileSize.textContent = formatFileSize(file.size);
+
+    if (type === 'image') {
+        fileIcon.className = 'bi bi-image-fill text-primary me-2';
+        
+        // Show image preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            imagePreview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    } else {
+        fileIcon.className = 'bi bi-file-earmark text-primary me-2';
+        imagePreview.style.display = 'none';
+    }
+
+    preview.style.display = 'block';
+    
+    // Update placeholder text
+    const messageInput = document.getElementById('message-input');
+    messageInput.placeholder = type === 'image' ? 'Add a caption (optional)...' : 'Add a message (optional)...';
+}
+
+function clearFileSelection() {
+    window.selectedFile = null;
+    window.selectedFileType = null;
+    
+    document.getElementById('file-preview').style.display = 'none';
+    document.getElementById('image-input').value = '';
+    document.getElementById('file-input').value = '';
+    
+    const messageInput = document.getElementById('message-input');
+    messageInput.placeholder = 'Type a message...';
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
 // Cleanup on page unload
 window.addEventListener('beforeunload', function() {
     if (chatApp) {
@@ -1141,4 +1366,29 @@ window.addEventListener('beforeunload', function() {
     }
 });
 </script>
+
+<!-- Image Modal for viewing full-size images -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageModalTitle">Image</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalImage" class="img-fluid" alt="Full size image">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Image modal function
+function openImageModal(imageSrc, imageName) {
+    document.getElementById('modalImage').src = imageSrc;
+    document.getElementById('imageModalTitle').textContent = imageName;
+    new bootstrap.Modal(document.getElementById('imageModal')).show();
+}
+</script>
+
 @endpush
