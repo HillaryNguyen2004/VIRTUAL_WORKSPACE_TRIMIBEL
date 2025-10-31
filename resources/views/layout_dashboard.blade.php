@@ -93,6 +93,15 @@
                         <span class="hidden md:inline">{{ __('app.video_chat') }}</span>
                     </x-nav-link>
                 </li>
+                <li>
+                    <x-nav-link href="{{ route('team-progress') }}" :active="request()->routeIs('team-progress')"
+                        class="flex items-center gap-4 px-4 py-4 hover:bg-gray-100 rounded-xl cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                        <span class="hidden md:inline">Team Progress</span>
+                    </x-nav-link>
+                </li>
             </ul>
         </nav>
         <div class="hidden fixed bg-black/20 h-screen w-screen z-30" id="sidebar-bg-addition"></div>

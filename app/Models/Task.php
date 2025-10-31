@@ -22,4 +22,24 @@ class Task extends Model
     // return $this->belongsToMany(User::class, 'task_user', 'task_id', 'user_id', 'task_id', 'id')->withTimestamps();
     return $this->belongsToMany(User::class, 'task_user', 'task_id', 'user_id');
 }
+
+public function users()
+{
+    return $this->belongsToMany(User::class, 'task_user', 'task_id', 'user_id');
+}
+
+
+// public function getPercentageAttribute($value)
+//     {
+//         return $value ?? 0;
+//     }
+
+//     // Check if task is overdue
+//     public function getIsOverdueAttribute()
+//     {
+//         return $this->due_date && 
+//                $this->due_date < now() && 
+//                $this->status !== 'completed';
+//     }
+
 }

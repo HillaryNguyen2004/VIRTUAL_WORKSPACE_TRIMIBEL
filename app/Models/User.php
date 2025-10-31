@@ -116,4 +116,81 @@ public function conversations()
 //         return $this->morphedByMany(User::class, 'model', 'model_has_roles', 'role_id', 'model_id');
 //     }
 
+// Check if user is a team leader
+    public function isTeamLeader()
+    {
+        return is_null($this->team_leader_id) || 
+               User::where('team_leader_id', $this->id)->exists();
+    }
+
+
+  
+
+    // Accessors for progress tracking
+//     public function getTotalTasksCountAttribute()
+//     {
+//         // Combine both assigned tasks and direct tasks
+//         return $this->assignedTasks->count() + $this->tasks->count();
+//     }
+
+//     public function getCompletedTasksCountAttribute()
+//     {
+//         $assignedCompleted = $this->assignedTasks->where('status', 'completed')->count();
+//         $directCompleted = $this->tasks->where('status', 'completed')->count();
+        
+//         return $assignedCompleted + $directCompleted;
+//     }
+
+//     public function getCompletionRateAttribute()
+//     {
+//         $total = $this->total_tasks_count;
+//         if ($total === 0) return 0;
+        
+//         return round(($this->completed_tasks_count / $total) * 100, 1);
+//     }
+
+//     public function getStatusAttribute()
+//     {
+//         $tasks = $this->assignedTasks->merge($this->tasks);
+        
+//         if ($tasks->isEmpty()) {
+//             return 'inactive';
+//         }
+
+//         $completedTasks = $tasks->where('status', 'completed')->count();
+//         $totalTasks = $tasks->count();
+//         $completionRate = ($completedTasks / $totalTasks) * 100;
+
+//         // Check for overdue tasks
+//         $overdueTasks = $tasks->filter(function ($task) {
+//             return $task->due_date && 
+//                    $task->due_date < now() && 
+//                    $task->status !== 'completed';
+//         });
+
+//         if ($overdueTasks->count() > 0) {
+//             return 'overdue';
+//         }
+
+//         if ($completionRate >= 80) {
+//             return 'active';
+//         } elseif ($completionRate >= 50) {
+//             return 'busy';
+//         } else {
+//             return 'needs_help';
+//         }
+//     }
+
+// // ...existing code...
+// public function tasks()
+// {
+//     // If your tasks table has `user_id` as the owner/creator FK:
+//     return $this->hasMany(\App\Models\Task::class, 'user_id');
+
+//     // If your tasks table uses a different column (example: created_by):
+//     // return $this->hasMany(\App\Models\Task::class, 'created_by');
+
+//     // If tasks are related via a pivot (already have assignedTasks), do not duplicate.
+// }
+// ...existing code...
 }
