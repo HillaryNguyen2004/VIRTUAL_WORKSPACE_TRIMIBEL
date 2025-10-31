@@ -1,0 +1,40 @@
+service: manage-user
+
+provider:
+  name: aws
+  region: us-east-1
+  runtime: provided.al2
+  environment:
+    APP_ENV: production
+    APP_DEBUG: 'false'
+    APP_KEY: ${env:APP_KEY}
+    APP_URL: ${env:APP_URL}
+    # set below with actual values in CI/environment
+    DATABASE_URL: ${env:DATABASE_URL}
+    AWS_BUCKET: ${env:AWS_BUCKET}
+    AWS_ACCESS_KEY_ID: ${env:AWS_ACCESS_KEY_ID}
+    AWS_SECRET_ACCESS_KEY: ${env:AWS_SECRET_ACCESS_KEY}
+
+plugins:
+  - ./vendor/bref/bref
+
+functions:
+  website:
+    handler: public/index.php
+    layers:
+      - ${bref:layer.php-81-fpm}    # pick PHP version that matches your app
+    events:
+      - httpApi: '*'
+    timeout: 30
+
+  artisan:
+    handler: artisan
+    layers:
+      - ${bref:layer.php-81}
+
+package:
+  exclude:
+    - node_modules/**
+    - tests/**
+    - .github/**
+    - .git/**

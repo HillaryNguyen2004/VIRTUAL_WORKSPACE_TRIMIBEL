@@ -17,6 +17,7 @@ use App\Http\Controllers\TeamController;
 use App\Services\UserRoleRedirectService;
 use App\Http\Controllers\DayOffController;
 use App\Http\Controllers\MeetingController;
+use App\Http\Controllers\TeamProgressController;
 
 // Route::group(['middleware' => ['web', 'core']], function () {
 //     include_once 'admin/user.php';
@@ -217,3 +218,6 @@ Route::get("/meeting/{meetingId}", function($meetingId) {
         'MEETING_ID' => $meetingId
     ]);
 });
+
+// routes/web.php
+Route::get('/team-progress', [TeamProgressController::class, 'index'])->name('team-progress');
