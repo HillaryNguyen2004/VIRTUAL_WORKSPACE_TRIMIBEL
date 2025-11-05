@@ -431,14 +431,34 @@ class RealtimeChatApp {
 
     async sendMessage(conversationId, content, type = 'text') {
         try {
+            console.log('Sending message, current conversations:', this.conversations.size);
             const response = await axios.post(`${this.apiUrl}/conversations/${conversationId}/messages`, {
                 content,
                 type
             });
             
             if (response.data.success) {
-                // Reload conversations to update last message and timestamp
-                await this.loadConversations();
+                const newMessage = response.data.data.message;
+                console.log('Message sent successfully:', newMessage);
+                
+                // Update the conversation in our local data with the new message
+                if (this.conversations.has(conversationId)) {
+                    const conversation = this.conversations.get(conversationId);
+                    conversation.last_message = newMessage;
+                    conversation.updated_at = newMessage.created_at;
+                    this.conversations.set(conversationId, conversation);
+                    console.log('Updated conversation locally:', conversation);
+                }
+                
+                // Re-render conversations to update sidebar immediately
+                console.log('Calling renderConversations()');
+                this.renderConversations();
+                
+                // Also reload all conversations to ensure we have the latest data
+                setTimeout(() => {
+                    console.log('Reloading conversations from server');
+                    this.loadConversations();
+                }, 100);
                 
                 // If this is the current conversation, reload messages
                 if (this.currentConversation && this.currentConversation.id === conversationId) {
@@ -680,8 +700,15 @@ class RealtimeChatApp {
     // UI Rendering Methods
     renderConversations() {
         const container = document.getElementById('conversations-list');
+        if (!container) {
+            console.warn('Conversations list container not found');
+            return;
+        }
+        
         const conversations = Array.from(this.conversations.values())
             .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+
+        console.log('Rendering conversations:', conversations.length);
 
         if (conversations.length === 0) {
             container.innerHTML = `
@@ -696,30 +723,44 @@ class RealtimeChatApp {
             return;
         }
 
-        container.innerHTML = conversations.map(conv => `
-            <div class="conversation-item ${this.currentConversation?.id === conv.id ? 'active' : ''}" 
-                 onclick="chatApp.switchToConversation(${conv.id})" 
-                 data-conversation-id="${conv.id}">
-                <div class="d-flex align-items-center">
-                    <div class="me-3">
-                        ${conv.type === 'group' ? 
-                            '<i class="fas fa-users text-primary"></i>' : 
-                            '<i class="fas fa-user text-secondary"></i>'
-                        }
-                    </div>
-                    <div class="flex-grow-1">
-                        <div class="fw-bold">${conv.display_name || conv.name}</div>
-                        <div class="text-muted small">
-                            ${conv.last_message ? conv.last_message.content.substring(0, 50) + '...' : 'No messages yet'}
+        container.innerHTML = conversations.map(conv => {
+            // Calculate display name for each conversation
+            let displayName = conv.display_name || conv.name;
+            if (!displayName && conv.type === 'direct') {
+                // For direct messages, find the other participant
+                const otherParticipant = conv.participants?.find(p => p.id !== this.currentUserId);
+                displayName = otherParticipant ? otherParticipant.name : 'Unknown User';
+            } else if (!displayName) {
+                displayName = conv.type === 'group' ? 'Group Chat' : 'Conversation';
+            }
+            
+            return `
+                <div class="conversation-item ${this.currentConversation?.id === conv.id ? 'active' : ''}" 
+                     onclick="chatApp.switchToConversation(${conv.id})" 
+                     data-conversation-id="${conv.id}">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            ${conv.type === 'group' ? 
+                                '<i class="fas fa-users text-primary"></i>' : 
+                                '<i class="fas fa-user text-secondary"></i>'
+                            }
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">${displayName}</div>
+                            <div class="text-muted small">
+                                ${conv.last_message ? conv.last_message.content.substring(0, 50) + '...' : 'No messages yet'}
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="text-muted small">${this.formatTime(conv.updated_at)}</div>
+                            ${conv.unread_count > 0 ? `<span class="badge bg-primary">${conv.unread_count}</span>` : ''}
                         </div>
                     </div>
-                    <div class="text-end">
-                        <div class="text-muted small">${this.formatTime(conv.updated_at)}</div>
-                        ${conv.unread_count > 0 ? `<span class="badge bg-primary">${conv.unread_count}</span>` : ''}
-                    </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
+        
+        console.log('Conversations rendered successfully');
     }
 
     async switchToConversation(conversationId) {
@@ -753,6 +794,17 @@ class RealtimeChatApp {
     renderConversationHeader() {
         if (!this.currentConversation) return;
 
+        // Calculate display name if not already set
+        let displayName = this.currentConversation.display_name || this.currentConversation.name;
+        
+        if (!displayName && this.currentConversation.type === 'direct') {
+            // For direct messages, find the other participant
+            const otherParticipant = this.currentConversation.participants?.find(p => p.id !== this.currentUserId);
+            displayName = otherParticipant ? otherParticipant.name : 'Unknown User';
+        } else if (!displayName) {
+            displayName = this.currentConversation.type === 'group' ? 'Group Chat' : 'Conversation';
+        }
+
         document.getElementById('chat-header').innerHTML = `
             <div class="d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center">
@@ -763,9 +815,9 @@ class RealtimeChatApp {
                         }
                     </div>
                     <div>
-                        <h6 class="mb-0">${this.currentConversation.display_name || this.currentConversation.name}</h6>
+                        <h6 class="mb-0">${displayName}</h6>
                         <small class="text-muted">
-                            ${this.currentConversation.participants.length} participants
+                            ${this.currentConversation.participants?.length || 0} participants
                         </small>
                     </div>
                 </div>
@@ -957,10 +1009,28 @@ class RealtimeChatApp {
             });
 
             if (response.data.success) {
+                const newMessage = response.data.data.message;
+                
+                // Update the conversation in our local data with the new message
+                if (this.conversations.has(this.currentConversation.id)) {
+                    const conversation = this.conversations.get(this.currentConversation.id);
+                    conversation.last_message = newMessage;
+                    conversation.updated_at = newMessage.created_at;
+                    this.conversations.set(this.currentConversation.id, conversation);
+                }
+                
+                // Re-render conversations to update sidebar immediately
+                this.renderConversations();
+                
+                // Also reload all conversations to ensure we have the latest data
+                setTimeout(() => {
+                    this.loadConversations();
+                }, 100);
+                
                 messageInput.value = '';
                 messageInput.style.height = 'auto';
                 clearFileSelection();
-                this.addMessageToDisplay(response.data.data.message);
+                this.addMessageToDisplay(newMessage);
                 return true;
             }
         } catch (error) {
