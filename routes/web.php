@@ -221,3 +221,4 @@ Route::get("/meeting/{meetingId}", function($meetingId) {
 
 // routes/web.php
 Route::get('/team-progress', [TeamProgressController::class, 'index'])->name('team-progress');
+Route::get('/user-tasks/{userId}', [App\Http\Controllers\TaskController::class, 'getUserTasks'])->name('user.tasks');

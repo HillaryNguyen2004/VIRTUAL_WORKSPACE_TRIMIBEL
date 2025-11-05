@@ -156,14 +156,38 @@
                                 {{ ucfirst(str_replace('_', ' ', $user->status)) }}
                             </span>
                         </td>
+                        <!-- ✅ Fixed Action Buttons -->
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button onclick="viewUserTasks({{ $user->id }})" class="text-blue-600 hover:text-blue-900 mr-3">
-                                View Tasks
-                            </button>
-                            @if($currentUser->hasRole('staff'))
-                                <button class="text-indigo-600 hover:text-indigo-900">Assign Task</button>
+                            @if(auth()->user()->hasRole('staff'))
+                                {{-- Staff viewing --}}
+                                @if($user->hasRole('user'))
+                                    <!-- Staff can view & assign users -->
+                                    <button onclick="viewUserTasks({{ $user->id }})" class="text-blue-600 hover:text-blue-900 mr-3">
+                                        View Tasks
+                                    </button>
+                                    <a href="{{ route('team.overview', ['user_id' => $user->id]) }}" 
+                                    class="text-indigo-600 hover:text-indigo-900">
+                                        Assign Task
+                                    </a>
+                                @elseif($user->hasRole('staff'))
+                                    <!-- Staff can only view other staff -->
+                                    <button onclick="viewUserTasks({{ $user->id }})" class="text-blue-600 hover:text-blue-900">
+                                        View Tasks
+                                    </button>
+                                @else
+                                    <span class="text-gray-500 italic">No actions available</span>
+                                @endif
+
+                            @elseif(auth()->user()->hasRole('user'))
+                                {{-- User viewing (can only view) --}}
+                                <button onclick="viewUserTasks({{ $user->id }})" class="text-blue-600 hover:text-blue-900">
+                                    View Tasks
+                                </button>
+                            @else
+                                <span class="text-gray-500 italic">No actions available</span>
                             @endif
                         </td>
+
                     </tr>
                     @empty
                     <tr>
@@ -231,8 +255,64 @@
 </div>
 
 <script>
-function viewUserTasks(userId) {
-    alert('View tasks for user ID: ' + userId);
+async function viewUserTasks(userId) {
+    // Fetch tasks for this user
+    try {
+        const response = await fetch(`/user-tasks/${userId}`);
+        const tasks = await response.json();
+
+        // If no tasks found
+        if (tasks.length === 0) {
+            showTaskDropdown(userId, []);
+            return;
+        }
+
+        showTaskDropdown(userId, tasks);
+    } catch (error) {
+        console.error('Error fetching user tasks:', error);
+        alert('Could not load tasks.');
+    }
+}
+
+function showTaskDropdown(userId, tasks) {
+    // Remove any existing dropdown
+    const existing = document.getElementById('taskDropdown');
+    if (existing) existing.remove();
+
+    // Create dropdown container
+    const dropdown = document.createElement('div');
+    dropdown.id = 'taskDropdown';
+    dropdown.className = 'fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50';
+
+    // Build content
+    const content = document.createElement('div');
+    content.className = 'bg-white rounded-xl shadow-lg p-6 w-96';
+
+    content.innerHTML = `
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">Tasks Assigned to User #${userId}</h2>
+        ${tasks.length > 0
+            ? `
+            <select class="w-full border rounded-lg p-2 text-gray-700 mb-4">
+                ${tasks.map(task => `
+                    <option value="${task.task_id}">
+                        ${task.title} — ${task.status} (Due: ${task.due_date || 'N/A'})
+                    </option>
+                `).join('')}
+            </select>
+            `
+            : `<p class="text-gray-600 mb-4">No tasks assigned.</p>`
+        }
+        <div class="flex justify-end">
+            <button onclick="document.getElementById('taskDropdown').remove()" 
+                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                Close
+            </button>
+        </div>
+    `;
+
+    dropdown.appendChild(content);
+    document.body.appendChild(dropdown);
 }
 </script>
+
 @endsection
