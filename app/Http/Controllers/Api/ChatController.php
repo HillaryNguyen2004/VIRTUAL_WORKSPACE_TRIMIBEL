@@ -196,6 +196,15 @@ class ChatController extends Controller
                 }
             ]);
 
+            // Set display name properly
+            if ($conversation->type === 'direct') {
+                // For direct chats, get the other user (not current user)
+                $otherUser = $conversation->participants->where('id', '!=', $user->id)->first();
+                $conversation->display_name = $otherUser ? $otherUser->name : 'Unknown User';
+            } else {
+                $conversation->display_name = $conversation->name ?? 'Group Chat';
+            }
+
             // Mark as read
             $this->markConversationAsRead($conversation, $user);
 
