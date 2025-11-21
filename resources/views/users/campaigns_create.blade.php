@@ -1,7 +1,7 @@
 @extends('layout_dashboard')
 
 @section('content')
-    @vite(['resources/utils/admin/select_all_users.js'])
+    @vite(['resources/js/admin/select_all_users.js'])
     <x-action-layout :route="'campaigns.index'" :title="'campaigns_create.back_to_campaigns'">
         {{-- success message --}}
         @if(session('success'))

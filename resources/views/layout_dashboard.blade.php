@@ -30,14 +30,17 @@
     @vite(['public/vendor/jquery-easing/jquery.easing.min.js'])
 
     <!-- Dashboard layout -->
-    @vite(['resources/utils/dashboard_layout/switch_lang.js'])
-    @vite(['resources/utils/dashboard_layout/dropdown_profile.js'])
-    @vite(['resources/utils/dashboard_layout/toggle_sidebar.js'])
-    @vite(['resources/utils/dashboard_layout/dropdown_notification.js'])
-    @vite(['resources/utils/dashboard_layout/scroll_to_top.js'])
+    @vite([
+        'resources/js/dashboard_layout/switch_lang.js', 
+        'resources/js/dashboard_layout/dropdown_profile.js', 
+        'resources/js/dashboard_layout/toggle_sidebar.js',
+        'resources/js/dashboard_layout/dropdown_notification.js',
+        'resources/js/dashboard_layout/scroll_to_top.js',
+        'resources/js/chat_bot.js'
+    ])
 
     <!-- User dashboard -->
-    @vite(['resources/utils/user_dashboard/check_in_out_api.js'])
+    @vite(['resources/js/user_dashboard/check_in_out_api.js'])
 </head>
 
 <body class="flex flex-row">
@@ -93,7 +96,8 @@
                 <li>
                     <x-nav-link href="{{ route('team-progress') }}" :active="request()->routeIs('team-progress')"
                         class="flex items-center gap-4 px-4 py-4 hover:bg-gray-100 rounded-xl cursor-pointer">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                         </svg>
                         <span class="hidden md:inline">Team Progress</span>
@@ -258,17 +262,84 @@
     <div id="alerts" class="flex flex-col gap-2 items-end fixed top-5 right-5 z-[60]"></div>
 
     {{-- scroll to top + chatbot button --}}
-    <div class="fixed bottom-5 right-5 flex flex-col gap-3 z-50">
-        {{-- Chatbot button --}}
-        <button id="chatbot-btn" title="Chat Bot" class="w-11 h-11 md:w-12 md:h-12 flex items-center justify-center rounded-full bg-[#5D3FD3] hover:opacity-95 transition">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 md:w-6 md:h-6 fill-white">
-                <path
-                    d="M352 64C352 46.3 337.7 32 320 32C302.3 32 288 46.3 288 64L288 128L192 128C139 128 96 171 96 224L96 448C96 501 139 544 192 544L448 544C501 544 544 501 544 448L544 224C544 171 501 128 448 128L352 128L352 64zM160 432C160 418.7 170.7 408 184 408L216 408C229.3 408 240 418.7 240 432C240 445.3 229.3 456 216 456L184 456C170.7 456 160 445.3 160 432zM280 432C280 418.7 290.7 408 304 408L336 408C349.3 408 360 418.7 360 432C360 445.3 349.3 456 336 456L304 456C290.7 456 280 445.3 280 432zM400 432C400 418.7 410.7 408 424 408L456 408C469.3 408 480 418.7 480 432C480 445.3 469.3 456 456 456L424 456C410.7 456 400 445.3 400 432zM224 240C250.5 240 272 261.5 272 288C272 314.5 250.5 336 224 336C197.5 336 176 314.5 176 288C176 261.5 197.5 240 224 240zM368 288C368 261.5 389.5 240 416 240C442.5 240 464 261.5 464 288C464 314.5 442.5 336 416 336C389.5 336 368 314.5 368 288zM64 288C64 270.3 49.7 256 32 256C14.3 256 0 270.3 0 288L0 384C0 401.7 14.3 416 32 416C49.7 416 64 401.7 64 384L64 288zM608 256C590.3 256 576 270.3 576 288L576 384C576 401.7 590.3 416 608 416C625.7 416 640 401.7 640 384L640 288C640 270.3 625.7 256 608 256z" />
-            </svg>
-        </button>
+    <div class="fixed bottom-5 right-5 flex flex-col items-end gap-3 z-50">
+        <div class="flex flex-col items-end gap-2">
+            {{-- Chatbot chat box --}}
+            <div id="chatbot-chatbox"
+                class="w-[450px] h-[600px] mr-5 bg-white rounded-bl-2xl rounded-tl-2xl rounded-tr-2xl shadow-2xl border flex flex-col transition-all duration-300 ease-out 
+                transform opacity-0 translate-y-4 scale-95 pointer-events-none invisible">
+                {{-- Header --}}
+                <div
+                    class="flex items-center justify-between gap-3 bg-gradient-to-tl from-[#F1EFFC] to-[#5D3FD3] h-20 rounded-t-2xl px-6 shrink-0">
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center justify-center rounded-full p-2 border bg-white">
+                            <img src="{{ asset('img/bot.png') }}" alt="" class="w-8 h-8">
+                        </div>
+                        <div>
+                            <p class="text-lg text-white font-semibold">Bot Bot</p>
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-green-500 border"></div>
+                                <p class="text-sm text-white">Online now</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="close-bot-btn"
+                        class="rounded-full p-1 hover:bg-[#F1EFFC] fill-gray-100 hover:fill-[#5D3FD3] cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-6 h-6">
+                            <path
+                                d="M96 320C96 302.3 110.3 288 128 288L512 288C529.7 288 544 302.3 544 320C544 337.7 529.7 352 512 352L128 352C110.3 352 96 337.7 96 320z" />
+                        </svg>
+                    </button>
+                </div>
+
+                {{-- Chat (scrollable) --}}
+                <div id="chat-section" class="flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-3">
+                    {{-- bot message --}}
+                    <div class="flex items-end gap-2">
+                        <div class="flex items-center justify-center rounded-full p-2 border bg-white">
+                            <img src="{{ asset('img/bot.png') }}" alt="" class="w-6 h-6">
+                        </div>
+                        <div class="max-w-72 shadow-lg rounded-2xl px-3 py-2 border border-gray-300">
+                            Hi, how can I help you?
+                        </div>
+                    </div>
+
+                    {{-- user message --}}
+                    <div class="flex justify-end">
+                        <div class="max-w-80 shadow-lg rounded-2xl px-3 py-2 bg-[#5D3FD3] text-white">
+                            Hi, how can I help you? Hi, how can I help you? Hi, how can I help you? Hi, how can I help
+                            you? Hi, how can I help you? Hi, how can I help you? Hi, how can I help you? Hi, how can I
+                            help you?
+                        </div>
+                    </div>
+                </div>
+
+                {{-- send section --}}
+                <div class="h-20 px-3 py-2 border-t border-gray-300 shrink-0 flex items-center gap-2">
+                    <input type="text" placeholder="Type a message…"
+                        class="flex-1 rounded-xl px-3 py-2 border border-gray-300 placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3]" />
+                    <button class="p-2 rounded-full bg-[#5D3FD3] fill-white hover:opacity-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5">
+                            <path
+                                d="M568.4 37.7C578.2 34.2 589 36.7 596.4 44C603.8 51.3 606.2 62.2 602.7 72L424.7 568.9C419.7 582.8 406.6 592 391.9 592C377.7 592 364.9 583.4 359.6 570.3L295.4 412.3C290.9 401.3 292.9 388.7 300.6 379.7L395.1 267.3C400.2 261.2 399.8 252.3 394.2 246.7C388.6 241.1 379.6 240.7 373.6 245.8L261.2 340.1C252.1 347.7 239.6 349.7 228.6 345.3L70.1 280.8C57 275.5 48.4 262.7 48.4 248.5C48.4 233.8 57.6 220.7 71.5 215.7L568.4 37.7z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            {{-- Chatbot button --}}
+            <button id="chatbot-btn" title="Chat Bot"
+                class="w-11 h-11 md:w-12 md:h-12 flex items-center justify-center rounded-full bg-[#5D3FD3] hover:opacity-95 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 md:w-6 md:h-6 fill-white">
+                    <path
+                        d="M352 64C352 46.3 337.7 32 320 32C302.3 32 288 46.3 288 64L288 128L192 128C139 128 96 171 96 224L96 448C96 501 139 544 192 544L448 544C501 544 544 501 544 448L544 224C544 171 501 128 448 128L352 128L352 64zM160 432C160 418.7 170.7 408 184 408L216 408C229.3 408 240 418.7 240 432C240 445.3 229.3 456 216 456L184 456C170.7 456 160 445.3 160 432zM280 432C280 418.7 290.7 408 304 408L336 408C349.3 408 360 418.7 360 432C360 445.3 349.3 456 336 456L304 456C290.7 456 280 445.3 280 432zM400 432C400 418.7 410.7 408 424 408L456 408C469.3 408 480 418.7 480 432C480 445.3 469.3 456 456 456L424 456C410.7 456 400 445.3 400 432zM224 240C250.5 240 272 261.5 272 288C272 314.5 250.5 336 224 336C197.5 336 176 314.5 176 288C176 261.5 197.5 240 224 240zM368 288C368 261.5 389.5 240 416 240C442.5 240 464 261.5 464 288C464 314.5 442.5 336 416 336C389.5 336 368 314.5 368 288zM64 288C64 270.3 49.7 256 32 256C14.3 256 0 270.3 0 288L0 384C0 401.7 14.3 416 32 416C49.7 416 64 401.7 64 384L64 288zM608 256C590.3 256 576 270.3 576 288L576 384C576 401.7 590.3 416 608 416C625.7 416 640 401.7 640 384L640 288C640 270.3 625.7 256 608 256z" />
+                </svg>
+            </button>
+        </div>
 
         {{-- Scroll to top button --}}
-        <button id="scroll-to-top-btn" title="{{ __('app.scroll_to_top') }}" class="w-11 h-11 md:w-12 md:h-12 flex items-center justify-center rounded-full bg-[#5D3FD3] hover:opacity-95 transition">
+        <button id="scroll-to-top-btn" title="{{ __('app.scroll_to_top') }}"
+            class="w-11 h-11 md:w-12 md:h-12 flex items-center justify-center rounded-full bg-[#5D3FD3] hover:opacity-95 transition">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 md:w-6 md:h-6 fill-white">
                 <path
                     d="M342.6 81.4C330.1 68.9 309.8 68.9 297.3 81.4L137.3 241.4C124.8 253.9 124.8 274.2 137.3 286.7C149.8 299.2 170.1 299.2 182.6 286.7L288 181.3L288 552C288 569.7 302.3 584 320 584C337.7 584 352 569.7 352 552L352 181.3L457.4 286.7C469.9 299.2 490.2 299.2 502.7 286.7C515.2 274.2 515.2 253.9 502.7 241.4L342.7 81.4z" />

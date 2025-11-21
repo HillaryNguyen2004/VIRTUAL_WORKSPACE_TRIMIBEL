@@ -1,7 +1,7 @@
 @extends('layout_dashboard')
 
 @section('content')
-    @vite(['resources/utils/admin/close_info_alert.js'])
+    @vite(['resources/js/admin/close_info_alert.js'])
     @php
         use Illuminate\Support\Facades\Route;
 

@@ -17,7 +17,7 @@
     <!-- Custom styles for this template-->
     <!-- <link href="{{ asset('css/sb-admin-2.min.css') }}" rel="stylesheet"> -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @vite(['resources/utils/submit-form.js'])
+    @vite(['resources/js/submit-form.js'])
     <!-- Bootstrap core JavaScript-->
     @vite(['public/vendor/jquery/jquery.min.js'])
     @vite(['public/vendor/bootstrap/js/bootstrap.bundle.min.js'])

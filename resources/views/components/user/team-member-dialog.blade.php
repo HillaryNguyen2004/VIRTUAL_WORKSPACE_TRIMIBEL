@@ -2,7 +2,7 @@
   'teamMembers' => collect(),
 ])
 
-@vite(['resources/utils/user_dashboard/team_member_dialog.js'])
+@vite(['resources/js/user_dashboard/team_member_dialog.js'])
 <div class="hidden items-center justify-center fixed h-screen w-screen bg-black/20 z-50" id="team-member-dialog">
     <div class="flex flex-col gap-8 bg-[#FDFDFF] w-[300px] md:w-[600px] max-h-[400px] rounded-[20px] p-6 animate-fade-in-up [animation-delay:150ms]">
         <div class="flex justify-between">

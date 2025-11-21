@@ -19,11 +19,11 @@ $(function () {
     };
 
     // open / close
-    $open.on("click", (e) => {
+    $open.on("click", function (e) {
         e.preventDefault();
         openDialog();
     });
-    $dialog.on("click", ".close-request-dayoff", (e) => {
+    $dialog.on("click", ".close-request-dayoff", function (e) {
         e.preventDefault();
         closeDialog();
     });
