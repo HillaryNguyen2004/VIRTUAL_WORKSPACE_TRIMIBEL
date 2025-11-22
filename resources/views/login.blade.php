@@ -1,7 +1,7 @@
 @extends('layout_login')
 @section('title', 'Login')
 @section('content')
-    @vite(['resources/utils/toggle_pwd.js'])
+    @vite(['resources/js/toggle_pwd.js'])
     <!-- Logo -->
     <div class="fixed top-10 left-10 z-50">Logo</div>
     <!-- Left -->

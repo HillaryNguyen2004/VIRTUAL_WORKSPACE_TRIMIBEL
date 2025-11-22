@@ -5,6 +5,7 @@
 /storage/*.key
 /vendor
 .env
+.env.example
 .env.backup
 .env.production
 .phpunit.result.cache
@@ -48,3 +49,6 @@ yarn-error.log
 # Misc
 .DS_Store
 *.pem
+.vercel
+
+.venv/

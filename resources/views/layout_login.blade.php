@@ -16,15 +16,14 @@
 
     <!-- Custom styles for this template-->
     <!-- <link href="{{ asset('css/sb-admin-2.min.css') }}" rel="stylesheet"> -->
-    @vite(['resources/css/app.css'])
-    @vite(['resources/utils/submit-form.js'])
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/js/submit-form.js'])
     <!-- Bootstrap core JavaScript-->
     @vite(['public/vendor/jquery/jquery.min.js'])
     @vite(['public/vendor/bootstrap/js/bootstrap.bundle.min.js'])
     <!-- Core plugin JavaScript-->
     @vite(['public/vendor/jquery-easing/jquery.easing.min.js'])
-    <!-- Custom scripts for all pages-->
-    @vite(['public/js/sb-admin-2.min.js'])
+
 </head>
 
 <body class="flex flex-row h-screen p-[35px] justify-between gap-14 overflow-auto">

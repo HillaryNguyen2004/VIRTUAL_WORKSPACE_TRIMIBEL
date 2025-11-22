@@ -1,9 +1,9 @@
 @extends('layout_login')
 @section('title', 'Register')
 @section('content')
-    @vite(['resources/utils/validate_pwd.js'])
-    @vite(['resources/utils/toggle_pwd.js'])
-    @vite(['resources/utils/toggle_confirm_pwd.js'])
+    @vite(['resources/js/validate_pwd.js'])
+    @vite(['resources/js/toggle_pwd.js'])
+    @vite(['resources/js/toggle_confirm_pwd.js'])
     <!-- Left -->
     <div class="bg-panel-left-gradient rounded-3xl min-h-[70vh] w-1/2 md:block hidden"></div>
 
