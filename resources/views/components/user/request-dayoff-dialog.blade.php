@@ -1,4 +1,4 @@
-@vite(['resources/utils/request_dayoff/request_dayoff_dialog.js'])
+@vite(['resources/js/request_dayoff/request_dayoff_dialog.js'])
 
 <div id="request-dayoff-dialog" class="hidden items-center justify-center fixed h-screen w-screen bg-black/20 z-50">
     <div

@@ -1,7 +1,7 @@
 @extends('layout_dashboard')
 @section('content')
-    @vite(['resources/utils/settings/upload_image.js'])
-    @vite(['resources/utils/settings/update_detail.js'])
+    @vite(['resources/js/settings/upload_image.js'])
+    @vite(['resources/js/settings/update_detail.js'])
     <div class="flex flex-col gap-6 w-full h-fit">
         <a href="{{ route('profile') }}" class="text-[#5D3FD3] text-lg font-medium w-fit">
             &larr; {{ __('settings.back_to_profile') }}

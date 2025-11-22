@@ -2,9 +2,9 @@
   'assignedTasks' => collect(),
 ])
 
-@vite(['resources/utils/user_dashboard/task_dialog.js'])
-@vite(['resources/utils/user_dashboard/show_task_description.js'])
-@vite(['resources/utils/user_dashboard/update_status.js'])
+@vite(['resources/js/user_dashboard/task_dialog.js'])
+@vite(['resources/js/user_dashboard/show_task_description.js'])
+@vite(['resources/js/user_dashboard/update_status.js'])
 
 <script>
     window.updateStatusUrl = @json(route('tasks.updateStatus', ['task' => ':id']));

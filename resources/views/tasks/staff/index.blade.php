@@ -1,7 +1,7 @@
 @extends('layout_dashboard')
 
 @section('content')
-    @vite(['resources/utils/toggle_view.js'])
+    @vite(['resources/js/toggle_view.js'])
     @php
         use Illuminate\Support\Facades\Route;
 

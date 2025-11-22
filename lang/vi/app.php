@@ -58,4 +58,5 @@ return [
     'logout_modal_body' => 'Chọn "Đăng Xuất" dưới đây nếu bạn sẵn sàng kết thúc phiên làm việc hiện tại.',
     'cancel' => 'Hủy',
     'chat_box' => 'Khung Chat',
+    'scroll_to_top' => 'Cuộn Lên Đầu Trang',
 ];

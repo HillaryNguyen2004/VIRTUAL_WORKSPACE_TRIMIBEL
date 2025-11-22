@@ -3,8 +3,8 @@
     @include('partials.headers.admin')
 @endsection -->
 @section('content')
-    @vite(['resources/utils/toggle_view.js'])
-    @vite(['resources/utils/admin/toggle_update_user.js'])
+    @vite(['resources/js/toggle_view.js'])
+    @vite(['resources/js/admin/toggle_update_user.js'])
     @php
         use Illuminate\Support\Facades\Route;
 
