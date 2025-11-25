@@ -22,7 +22,7 @@
 
     <!-- Custom styles for this template-->
     <!-- <link href="{{ asset('css/sb-admin-2.min.css') }}" rel="stylesheet"> -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/css/dashboard.css'])
     <!-- Bootstrap core JavaScript-->
     @vite(['public/vendor/jquery/jquery.min.js'])
     @vite(['public/vendor/bootstrap/js/bootstrap.bundle.min.js'])
@@ -31,8 +31,8 @@
 
     <!-- Dashboard layout -->
     @vite([
-        'resources/js/dashboard_layout/switch_lang.js', 
-        'resources/js/dashboard_layout/dropdown_profile.js', 
+        'resources/js/dashboard_layout/switch_lang.js',
+        'resources/js/dashboard_layout/dropdown_profile.js',
         'resources/js/dashboard_layout/toggle_sidebar.js',
         'resources/js/dashboard_layout/dropdown_notification.js',
         'resources/js/dashboard_layout/scroll_to_top.js',
@@ -265,8 +265,7 @@
     <div class="fixed bottom-5 right-5 flex flex-col items-end gap-3 z-50">
         <div class="flex flex-col items-end gap-2">
             {{-- Chatbot chat box --}}
-            <div id="chatbot-chatbox"
-                class="w-[450px] h-[600px] mr-5 bg-white rounded-bl-2xl rounded-tl-2xl rounded-tr-2xl shadow-2xl border flex flex-col transition-all duration-300 ease-out 
+            <div id="chatbot-chatbox" class="hidden w-[450px] h-[600px] mr-5 bg-white rounded-bl-2xl rounded-tl-2xl rounded-tr-2xl shadow-2xl border flex-col transition-all duration-300 ease-out 
                 transform opacity-0 translate-y-4 scale-95 pointer-events-none invisible">
                 {{-- Header --}}
                 <div
@@ -303,22 +302,29 @@
                             Hi, how can I help you?
                         </div>
                     </div>
-
-                    {{-- user message --}}
-                    <div class="flex justify-end">
-                        <div class="max-w-80 shadow-lg rounded-2xl px-3 py-2 bg-[#5D3FD3] text-white">
-                            Hi, how can I help you? Hi, how can I help you? Hi, how can I help you? Hi, how can I help
-                            you? Hi, how can I help you? Hi, how can I help you? Hi, how can I help you? Hi, how can I
-                            help you?
+                    <!-- <div id="chatbot-typing-template">
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center justify-center rounded-full p-2 border bg-white">
+                                <img src="{{ asset('img/bot.png') }}" alt="Bot" class="w-6 h-6">
+                            </div>
+                            <div class="max-w-72 shadow-lg rounded-2xl px-3 h-8 border border-gray-300">
+                                <div class="flex items-center justify-center gap-1 h-full w-full">
+                                    <span class="chat-typing-dot"></span>
+                                    <span class="chat-typing-dot"></span>
+                                    <span class="chat-typing-dot"></span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    </div> -->
                 </div>
 
                 {{-- send section --}}
                 <div class="h-20 px-3 py-2 border-t border-gray-300 shrink-0 flex items-center gap-2">
-                    <input type="text" placeholder="Type a message…"
+                    <input id="chatbot-input" type="text" placeholder="Type a message…"
                         class="flex-1 rounded-xl px-3 py-2 border border-gray-300 placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3]" />
-                    <button class="p-2 rounded-full bg-[#5D3FD3] fill-white hover:opacity-95">
+
+                    <button id="chatbot-send-btn" type="button"
+                        class="p-2 rounded-full bg-[#5D3FD3] fill-white hover:opacity-95">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5">
                             <path
                                 d="M568.4 37.7C578.2 34.2 589 36.7 596.4 44C603.8 51.3 606.2 62.2 602.7 72L424.7 568.9C419.7 582.8 406.6 592 391.9 592C377.7 592 364.9 583.4 359.6 570.3L295.4 412.3C290.9 401.3 292.9 388.7 300.6 379.7L395.1 267.3C400.2 261.2 399.8 252.3 394.2 246.7C388.6 241.1 379.6 240.7 373.6 245.8L261.2 340.1C252.1 347.7 239.6 349.7 228.6 345.3L70.1 280.8C57 275.5 48.4 262.7 48.4 248.5C48.4 233.8 57.6 220.7 71.5 215.7L568.4 37.7z" />
@@ -361,6 +367,10 @@
 
 
 </script> -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        window.CHAT_LANG = "{{ app()->getLocale() }}"; // "en" or "vi"
+    </script>
 
 </body>
 
