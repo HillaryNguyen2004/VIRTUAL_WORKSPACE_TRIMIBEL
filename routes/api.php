@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\CheckInController;
 use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\Api\ChatbotController;
 
 /*
 |--------------------------------------------------------------------------
@@ -54,3 +55,6 @@ Route::middleware(['auth:sanctum'])->prefix('chat')->group(function () {
     Route::post('/conversations/{conversation}/video-call', [ChatController::class, 'createVideoCall']);
     Route::post('/conversations/{conversation}/join-video', [ChatController::class, 'joinVideoCall']);
 });
+
+// Chat bot
+Route::post('/chat-bot', [ChatbotController::class, 'chatBot']);
