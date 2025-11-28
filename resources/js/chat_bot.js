@@ -58,7 +58,7 @@ $(function () {
 
     const appendUserMessage = (text) => {
         const $bubble = $(
-            '<div class="max-w-80 shadow-lg rounded-2xl px-3 py-2 bg-[#5D3FD3] text-white"></div>'
+            '<div class="max-w-96 shadow-lg rounded-2xl px-3 py-2 bg-[#5D3FD3] text-white"></div>'
         ).text(text);
 
         const $wrapper = $('<div class="flex justify-end"></div>').append(
@@ -75,7 +75,7 @@ $(function () {
         ).append('<img src="/img/bot.png" alt="" class="w-6 h-6">');
 
         const $bubble = $(
-            '<div class="max-w-72 shadow-lg rounded-2xl px-3 py-2 border border-gray-300"></div>'
+            '<div class="max-w-96 shadow-lg rounded-2xl px-3 py-2 border border-gray-300 whitespace-pre-line"></div>'
         ).text(text);
 
         const $wrapper = $('<div class="flex items-end gap-2"></div>')
@@ -104,7 +104,7 @@ $(function () {
         );
 
         const $bubble = $(
-            '<div class="max-w-72 shadow-lg rounded-2xl px-3 h-8 border border-gray-300"></div>'
+            '<div class="max-w-96 shadow-lg rounded-2xl px-3 h-8 border border-gray-300"></div>'
         ).append($dots);
 
         const $wrapper = $('<div class="flex items-center gap-2"></div>')

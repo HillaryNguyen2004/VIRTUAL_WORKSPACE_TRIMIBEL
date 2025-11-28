@@ -265,7 +265,7 @@
     <div class="fixed bottom-5 right-5 flex flex-col items-end gap-3 z-50">
         <div class="flex flex-col items-end gap-2">
             {{-- Chatbot chat box --}}
-            <div id="chatbot-chatbox" class="hidden w-[450px] h-[600px] mr-5 bg-white rounded-bl-2xl rounded-tl-2xl rounded-tr-2xl shadow-2xl border flex-col transition-all duration-300 ease-out 
+            <div id="chatbot-chatbox" class="hidden w-[550px] h-[650px] mr-5 bg-white rounded-bl-2xl rounded-tl-2xl rounded-tr-2xl shadow-2xl border flex-col transition-all duration-300 ease-out 
                 transform opacity-0 translate-y-4 scale-95 pointer-events-none invisible">
                 {{-- Header --}}
                 <div
@@ -298,7 +298,7 @@
                         <div class="flex items-center justify-center rounded-full p-2 border bg-white">
                             <img src="{{ asset('img/bot.png') }}" alt="" class="w-6 h-6">
                         </div>
-                        <div class="max-w-72 shadow-lg rounded-2xl px-3 py-2 border border-gray-300">
+                        <div class="max-w-96 shadow-lg rounded-2xl px-3 py-2 border border-gray-300">
                             Hi, how can I help you?
                         </div>
                     </div>
