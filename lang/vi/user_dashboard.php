@@ -2,6 +2,7 @@
 return [
     'title' => 'Bảng Điều Khiển Người Dùng',
     'heading' => 'Bảng Điều Khiển',
+    'subheading' => 'Tổng quan về hoạt động và thống kê của bạn',
     'generate_report' => 'Tạo Báo Cáo',
     'request_day_off' => 'Yêu Cầu Nghỉ Phép',
     'click_to_request' => 'Nhấp để yêu cầu',
@@ -16,6 +17,7 @@ return [
     'no_team_leader' => 'Không có trưởng nhóm được chỉ định.',
     'no_team_members' => 'Không có thành viên nhóm nào khác.',
     'assigned_projects' => 'Công Việc Được Giao',
+    'task_search_placeholder' => 'Tìm kiếm theo ID hoặc Tên Công Việc...',
     'status_pending' => 'Đang chờ',
     'status_in_progress' => 'Đang tiến hành',
     'status_completed' => 'Hoàn thành',

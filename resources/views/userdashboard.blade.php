@@ -3,216 +3,250 @@
 
 @section('content')
     @role('user')
-    <div class="flex flex-col gap-[25px] w-full">
-        <!-- First section -->
-        <div class="flex flex-col gap-2 sm:flex-row sm:justify-between items-center w-full">
-            <!-- Heading -->
-            <h2 class="font-medium text-[32px]">{{ __('user_dashboard.heading') }}</h2>
-            <!-- Request day off button -->
+    {{-- Main Container --}}
+    {{-- We assume the body background is handled by 'layout_dashboard', but if not, 
+         you can add 'bg-canvas' to this wrapper to see your lavender background --}}
+    <div class="flex flex-col gap-6 w-full max-w-7xl mx-auto text-main">
+        
+        <div class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center w-full">
+            <div>
+                <h2 class="font-bold text-3xl text-main tracking-tight">{{ __('user_dashboard.heading') }}</h2>
+                <p class="text-muted-500 text-sm mt-1">{{ __('user_dashboard.subheading') }}</p>
+            </div>
+            
             <button
                 id="open-request-dayoff"
-                class="flex justify-center items-center rounded-[10px] w-40 h-fit p-3 bg-[#5D3FD3] text-[#FDFDFF] hover:opacity-95 shadow-[0_4px_30px_0_rgba(36,20,99,0.2)] text-[15px] transition">
+                class="group flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-white font-medium shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover focus:ring-4 focus:ring-primary/30 active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform group-hover:-translate-y-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
                 {{ __('user_dashboard.request_day_off') }}
             </button>
         </div>
 
-        <!-- Second section -->
-        <div class="flex flex-col sm:flex-row gap-4 w-full">
-            <!-- Check attendence -->
-            <div
-                class="flex flex-col justify-between w-full sm:w-2/5 h-[320px] sm:h-[285px] bg-[#FDFDFF] shadow-[0_4px_40px_0_rgba(32,27,53,0.1)] rounded-[20px] py-5 px-6 animate-fade-in-up [animation-delay:150ms]">
-                <div class="flex flex-col gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-10 h-10 fill-[#5D3FD3]">
-                        <path
-                            d="M528 320C528 434.9 434.9 528 320 528C205.1 528 112 434.9 112 320C112 205.1 205.1 112 320 112C434.9 112 528 205.1 528 320zM64 320C64 461.4 178.6 576 320 576C461.4 576 576 461.4 576 320C576 178.6 461.4 64 320 64C178.6 64 64 178.6 64 320zM296 184L296 320C296 328 300 335.5 306.7 340L402.7 404C413.7 411.4 428.6 408.4 436 397.3C443.4 386.2 440.4 371.4 429.3 364L344 307.2L344 184C344 170.7 333.3 160 320 160C306.7 160 296 170.7 296 184z" />
-                    </svg>
-                    <p class="text-xl">{{ __('user_dashboard.check_attendence') }}</p>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
+            
+            <div class="lg:col-span-5 xl:col-span-4 flex flex-col justify-between h-full min-h-[320px] border bg-white border-muted-200 shadow-lg shadow-main/5 hover:border-accent/50 hover:shadow-accent/10 rounded-2xl p-6 relative overflow-hidden animate-fade-in-up">
+                {{-- Decorative background element using your Primary color --}}
+                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-primary/10 rounded-full blur-2xl opacity-50"></div>
+
+                <div class="relative z-10">
+                    <div class="flex items-center gap-3 mb-4">
+                        <h3 class="text-lg font-semibold text-main">{{ __('user_dashboard.check_attendence') }}</h3>
+                    </div>
+                    
                     @if ($workingHour)
-                        <p class="text-[#D3D3D3]">{{ __('user_dashboard.working_hour') }}:
+                        <div class="inline-flex items-center px-3 py-1 rounded-full bg-muted-100 text-muted-600 text-sm font-medium">
+                            <svg class="w-4 h-4 mr-1.5 text-muted-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             {{ \Carbon\Carbon::createFromFormat('H:i:s', $workingHour->start_at)->format('H:i') }} -
                             {{ \Carbon\Carbon::createFromFormat('H:i:s', $workingHour->end_at)->format('H:i') }}
-                        </p>
+                        </div>
                     @endif
                 </div>
-                <div class="flex flex-col gap-3">
-                    <input type="text" id="usernameInput" placeholder="{{ __('user_dashboard.enter_username') }}"
-                        class="block w-full bg-transparent placeholder-[#D3D3D3] border border-[#D3D3D3] py-2 px-[10px] rounded-lg hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] text-lg transition">
-                    <div class="flex gap-[11px]">
+
+                <div class="flex flex-col gap-4 mt-6 relative z-10">
+                    <div>
+                        <label for="usernameInput" class="sr-only">{{ __('user_dashboard.enter_username') }}</label>
+                        <input type="text" id="usernameInput" placeholder="{{ __('user_dashboard.enter_username') }}"
+                            class="block w-full bg-canvas border border-muted-200 text-main py-3 px-4 rounded-xl placeholder-muted-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        {{-- Used 'accent' (Cyan) for Check In to act as a vibrant 'Go' button --}}
                         <button id="checkInBtn"
-                            class="w-full bg-[#5AE194] hover:bg-[#53d48b] rounded-[10px] p-[5px] text-lg text-[#FDFDFF] font-medium transition-all">Check
-                            In</button>
+                            class="flex justify-center items-center gap-2 w-full bg-accent hover:bg-accent-hover text-white rounded-xl py-2.5 font-medium transition-colors shadow-lg shadow-accent/20">
+                            Check In
+                        </button>
+                        {{-- Used 'muted' for Check Out to signify neutral/leaving state --}}
                         <button id="checkOutBtn"
-                            class="w-full bg-[#CBEA8E] hover:bg-[#c3e088] rounded-[10px] p-[5px] text-lg text-[#FDFDFF] font-medium transition-all">Check
-                            Out</button>
+                            class="flex justify-center items-center gap-2 w-full bg-muted-100 hover:bg-muted-200 text-muted-600 rounded-xl py-2.5 font-medium transition-colors">
+                            Check Out
+                        </button>
                     </div>
                 </div>
             </div>
-            <!-- Summary -->
-            <div
-                class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full sm:w-3/5 sm:h-[285px] animate-fade-in-up [animation-delay:200ms]">
-                <!-- Card 1 -->
-                <div class="rounded-2xl bg-[#FDFDFF] p-6 shadow-[0_4px_40px_0_rgba(32,27,53,0.1)]">
-                    <div class="flex items-center justify-center sm:justify-between w-full h-full">
-                        <div class="flex flex-col items-center justify-center sm:items-start sm:justify-normal">
-                            <p class="text-gray-600">{{ __('user_dashboard.earnings_monthly') }}</p>
-                            <p class="mt-2 text-[20px] sm:text-[25px] font-bold">$40,000</p>
-                        </div>
-                        <!-- icon -->
-                        <svg class="h-8 w-8 text-[#5D3FD3] hidden sm:block" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="4" width="18" height="18" rx="2" />
-                            <path d="M16 2v4M8 2v4M3 10h18" />
-                        </svg>
-                    </div>
-                </div>
 
-                <!-- Card 2 -->
-                <div class="rounded-2xl bg-[#FDFDFF] p-6 shadow-[0_4px_40px_0_rgba(32,27,53,0.1)]">
-                    <div class="flex items-center justify-center sm:justify-between w-full h-full">
-                        <div class="flex flex-col items-center justify-center sm:items-start sm:justify-normal">
-                            <p class="text-gray-600">{{ __('user_dashboard.earnings_annual') }}</p>
-                            <p class="mt-2 text-[20px] sm:text-[25px] font-bold">$215,000</p>
-                        </div>
-                        <svg class="h-8 w-8 text-[#5D3FD3] hidden sm:block" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <path d="M12 1v22M17 5H9a3 3 0 000 6h6a3 3 0 010 6H7" />
-                        </svg>
-                    </div>
-                </div>
+            <div class="lg:col-span-7 xl:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in-up [animation-delay:100ms]">
+                @php
+                    // We map these to your new palette
+                    $statCards = [
+                        [
+                            'label' => __('user_dashboard.earnings_monthly'),
+                            'value' => '$40,000',
+                            'icon' => '<path d="M16 2v4M8 2v4M3 10h18" />',
+                            'color' => 'text-accent', // Cyan
+                            'bg' => 'bg-accent/10',
+                            'hover' => 'hover:border-accent/50 hover:shadow-accent/5',
+                        ],
+                        [
+                            'label' => __('user_dashboard.earnings_annual'),
+                            'value' => '$215,000',
+                            'icon' => '<path d="M12 1v22M17 5H9a3 3 0 000 6h6a3 3 0 010 6H7" />',
+                            'color' => 'text-accent', // Cyan
+                            'bg' => 'bg-accent/10',
+                            'hover' => 'hover:border-accent/50 hover:shadow-accent/5',
+                        ],
+                        [
+                            'label' => __('user_dashboard.tasks'),
+                            'value' => '50%',
+                            'icon' => '<path d="M8 7h8M4 3h16v18H4z" /><path d="m9 14 2 2 4-5" />',
+                            'color' => 'text-secondary', // Blue
+                            'bg' => 'bg-secondary/10',
+                            'hover' => 'hover:border-secondary/30 hover:shadow-secondary/10',
+                        ],
+                        [
+                            'label' => __('user_dashboard.pending_requests'),
+                            'value' => '18',
+                            'icon' => '<rect x="3" y="4" width="18" height="16" rx="2" /><path d="M7 8h10" />',
+                            'color' => 'text-secondary', // Blue
+                            'bg' => 'bg-secondary/10',
+                            'hover' => 'hover:border-secondary/30 hover:shadow-secondary/10',
+                        ],
+                    ];
+                @endphp
 
-                <!-- Card 3 -->
-                <div class="rounded-2xl bg-[#FDFDFF] p-6 shadow-[0_4px_40px_0_rgba(32,27,53,0.1)]">
-                    <div class="flex items-center justify-center sm:justify-between w-full h-full">
-                        <div class="flex flex-col items-center justify-center sm:items-start sm:justify-normal">
-                            <p class="text-gray-600">{{ __('user_dashboard.tasks') }}</p>
-                            <p class="mt-2 text-[20px] sm:text-[25px] font-bold">50%</p>
+                @foreach($statCards as $card)
+                <div class="bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 {{ $card['hover'] }} transition-all duration-300 group">
+                    <div class="flex items-start h-full justify-between">
+                        <div class="flex flex-col justify-between h-full">
+                            <p class="text-muted-500 font-medium text-sm">{{ $card['label'] }}</p>
+                            <p class="text-3xl font-bold text-main tracking-tight">{{ $card['value'] }}</p>
                         </div>
-                        <svg class="h-8 w-8 text-[#5D3FD3] hidden sm:block" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <path d="M8 7h8M4 3h16v18H4z" />
-                            <path d="m9 14 2 2 4-5" />
-                        </svg>
+                        <div class="p-3 rounded-xl {{ $card['bg'] }} {{ $card['color'] }} group-hover:scale-110 transition-transform duration-300">
+                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                {!! $card['icon'] !!}
+                            </svg>
+                        </div>
                     </div>
                 </div>
-
-                <!-- Card 4 -->
-                <div class="rounded-2xl bg-[#FDFDFF] p-6 shadow-[0_4px_40px_0_rgba(32,27,53,0.1)]">
-                    <div class="flex items-center justify-center sm:justify-between w-full h-full">
-                        <div class="flex flex-col items-center justify-center sm:items-start sm:justify-normal">
-                            <p class="text-gray-600">{{ __('user_dashboard.pending_requests') }}</p>
-                            <p class="mt-2 text-[20px] sm:text-[25px] font-bold">18</p>
-                        </div>
-                        <svg class="h-8 w-8 text-[#5D3FD3] hidden sm:block" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="4" width="18" height="16" rx="2" />
-                            <path d="M7 8h10" />
-                        </svg>
-                    </div>
-                </div>
+                @endforeach
             </div>
         </div>
-        <!-- Third section -->
-        <div class="flex flex-col sm:flex-row w-full h-fit gap-3">
-            <!-- Team leader + team member -->
-            <div class="flex flex-col sm:flex-row w-full {{ !empty($teamLeader) ? 'sm:w-3/5' : 'sm:w-2/5' }} gap-3">
-                <!-- Team leader -->
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full animate-fade-in-up [animation-delay:200ms]">
+            
+            <div class="lg:col-span-5 xl:col-span-4 flex flex-col gap-6">
                 @if ($teamLeader)
-                    <div
-                        class="flex flex-col items-center justify-between w-full sm:w-2/5 bg-[#FDFDFF] shadow-[0_4px_40px_0_rgba(32,27,53,0.1)] rounded-[20px] py-8 px-2 animate-fade-in-up [animation-delay:250ms]">
-                        <div class="flex flex-col items-center justify-center gap-7">
-                            <img src="/img/undraw_profile_2.svg" alt="leader_avatar" class="w-[100px] h-[100px] rounded-full">
-                            <div class="flex flex-col items-center">
-                                <p class="text-[20px] font-medium">{{ $teamLeader->name }}</p>
-                                <p class="text-[#D3D3D3]">{{ __('user_dashboard.team_leader') }}</p>
-                            </div>
+                    <div class="bg-white border border-muted-200 shadow-lg shadow-main/5 rounded-2xl p-6 flex flex-col items-center text-center">
+                        <div class="relative">
+                            <div class="absolute inset-0 bg-primary/20 rounded-full blur-lg opacity-50"></div>
+                            <img src="/img/undraw_profile_2.svg" alt="leader_avatar" class="relative w-20 h-20 rounded-full border-4 border-white shadow-lg shadow-main/5 object-cover">
                         </div>
-                        <a href="mailto:{{ $teamLeader->email }}" class="truncate block text-[#D3D3D3] text-center w-full hover:underline"
-                            title="{{ $teamLeader->email }}">
+                        
+                        <div class="mt-4">
+                            <h4 class="text-lg font-bold text-main">{{ $teamLeader->name }}</h4>
+                            <span class="inline-block mt-1 px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full uppercase tracking-wide">
+                                {{ __('user_dashboard.team_leader') }}
+                            </span>
+                        </div>
+                        
+                        <a href="mailto:{{ $teamLeader->email }}" class="mt-3 text-muted-500 text-sm hover:text-primary transition-colors flex items-center justify-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                             {{ $teamLeader->email }}
                         </a>
                     </div>
                 @endif
-                <!-- Team member -->
-                <div
-                    class="flex flex-col items-center gap-8 {{ !empty($teamLeader) ? 'sm:w-3/5 w-full' : 'w-full' }} bg-[#FDFDFF] shadow-[0_4px_40px_0_rgba(32,27,53,0.1)] rounded-[20px] p-[24px] animate-fade-in-up {{ !empty($teamLeader) ? '[animation-delay:300ms]' : '[animation-delay:250ms]' }}">
-                    <div class="flex items-center justify-between w-full">
-                        <p class="text-[20px] font-medium">{{ __('user_dashboard.team_members') }}</p>
-                        <button id="open-team-member">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
-                                <path
-                                    d="M408 64L552 64C565.3 64 576 74.7 576 88L576 232C576 241.7 570.2 250.5 561.2 254.2C552.2 257.9 541.9 255.9 535 249L496 210L409 297C399.6 306.4 384.4 306.4 375.1 297L343.1 265C333.7 255.6 333.7 240.4 343.1 231.1L430.1 144.1L391.1 105.1C384.2 98.2 382.2 87.9 385.9 78.9C389.6 69.9 398.3 64 408 64zM232 576L88 576C74.7 576 64 565.3 64 552L64 408C64 398.3 69.8 389.5 78.8 385.8C87.8 382.1 98.1 384.2 105 391L144 430L231 343C240.4 333.6 255.6 333.6 264.9 343L296.9 375C306.3 384.4 306.3 399.6 296.9 408.9L209.9 495.9L248.9 534.9C255.8 541.8 257.8 552.1 254.1 561.1C250.4 570.1 241.7 576 232 576z" />
+
+                <div class="bg-white border border-muted-200 shadow-lg shadow-main/5 hover:border-primary/30 hover:shadow-primary/10 transition-all duration-300 rounded-2xl p-6 flex-1">
+                    <div class="flex items-center justify-between mb-6">
+                        <h4 class="text-lg font-bold text-main">{{ __('user_dashboard.team_members') }}</h4>
+                        <button id="open-team-member" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                             </svg>
                         </button>
                     </div>
-                    <div class="flex flex-col gap-4 w-full">
-                        <p class="text-[#D9D9D9]">{{ __('user_dashboard.name_label') }}</p>
-                        <div class="h-px w-full bg-[#D9D9D9]"></div>
-                        @if($teamMembers->isNotEmpty())
-                            <ul class="flex flex-col gap-4">
-                                @foreach($teamMembers->take(3) as $member)
-                                    <li>
-                                        <div class="flex items-center gap-3 min-w-0">
-                                            <div
-                                                class="h-8 w-8 rounded-full bg-gray-200 grid place-items-center text-gray-600 uppercase">
-                                                {{ mb_substr($member->name ?? '', 0, 1) }}
-                                            </div>
-                                            <span class="break-all" title="{{ $member->name }}">{{ $member->name }}</span>
-                                        </div>
-                                    </li>
-                                @endforeach
-                            </ul>
-                        @else
-                            <p>{{ __('user_dashboard.no_team_members') }}</p>
-                        @endif
-                    </div>
+                    
+                    @if($teamMembers->isNotEmpty())
+                        <ul class="flex flex-col gap-4">
+                            @foreach($teamMembers->take(3) as $member)
+                                <li class="flex items-center gap-4 group">
+                                    <div class="h-10 w-10 rounded-full bg-muted-100 text-muted-600 border border-muted-200 grid place-items-center font-bold text-sm shadow-lg shadow-main/5 group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-colors">
+                                        {{ mb_substr($member->name ?? '', 0, 1) }}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-main truncate" title="{{ $member->name }}">
+                                            {{ $member->name }}
+                                        </p>
+                                        <p class="text-xs text-muted-400 truncate">Member</p>
+                                    </div>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <div class="text-center py-6 text-muted-400 text-sm">
+                            {{ __('user_dashboard.no_team_members') }}
+                        </div>
+                    @endif
                 </div>
             </div>
-            <!-- Tasks -->
-            <div
-                class="flex flex-col items-center gap-8 w-full bg-[#FDFDFF] shadow-[0_4px_40px_0_rgba(32,27,53,0.1)] rounded-[20px] p-[24px] animate-fade-in-up {{ !empty($teamLeader) ? 'sm:w-2/5 [animation-delay:350ms]' : 'sm:w-3/5 [animation-delay:300ms]' }}">
-                <div class="flex items-center justify-between w-full">
-                    <p class="text-[20px] font-medium">{{ __('user_dashboard.assigned_projects') }}</p>
-                    <button id="open-task">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
-                            <path
-                                d="M408 64L552 64C565.3 64 576 74.7 576 88L576 232C576 241.7 570.2 250.5 561.2 254.2C552.2 257.9 541.9 255.9 535 249L496 210L409 297C399.6 306.4 384.4 306.4 375.1 297L343.1 265C333.7 255.6 333.7 240.4 343.1 231.1L430.1 144.1L391.1 105.1C384.2 98.2 382.2 87.9 385.9 78.9C389.6 69.9 398.3 64 408 64zM232 576L88 576C74.7 576 64 565.3 64 552L64 408C64 398.3 69.8 389.5 78.8 385.8C87.8 382.1 98.1 384.2 105 391L144 430L231 343C240.4 333.6 255.6 333.6 264.9 343L296.9 375C306.3 384.4 306.3 399.6 296.9 408.9L209.9 495.9L248.9 534.9C255.8 541.8 257.8 552.1 254.1 561.1C250.4 570.1 241.7 576 232 576z" />
+
+            <div class="lg:col-span-7 xl:col-span-8 bg-white border border-muted-200 shadow-lg shadow-main/5 hover:border-primary/30 hover:shadow-primary/10 transition-all duration-300 rounded-2xl p-6 h-max">
+                <div class="flex items-center justify-between mb-6">
+                    <h4 class="text-lg font-bold text-main">{{ __('user_dashboard.assigned_projects') }}</h4>
+                    <button id="open-task" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                         </svg>
                     </button>
                 </div>
-                <div class="flex flex-col gap-4 w-full">
-                    <div class="flex items-center justify-between gap-2 w-full text-[#D9D9D9]">
-                        <p>{{ __('user_dashboard.tasks') }}</p>
-                        <p>{{ __('user_dashboard.task_status') }}</p>
-                    </div>
-                    <div class="h-px w-full bg-[#D9D9D9]"></div>
-                    @if ($assignedTasks->isNotEmpty())
-                        @foreach ($assignedTasks->take(3) as $task)
-                            @php
-                                $statusClasses = [
-                                    'pending' => 'bg-gray-100 text-gray-400',
-                                    'in_progress' => 'bg-[#F2FBDF] text-[#CBEA8E]',
-                                    'completed' => 'bg-[#D3FDE5] text-[#5AE194]',
-                                ];
 
-                                $cls = $statusClasses[$task->status];
-                            @endphp
-                            <ul class="flex flex-col gap-4">
-                                <li class="flex items-center justify-between gap-2">
-                                    <p class="break-all">{{ $task->title }}</p>
-                                    <div class="w-fit h-fit px-3 py-1 rounded-full text-sm text-center {{ $cls }}">
-                                        {{ __('user_dashboard.status_' . $task->status) }}
+                <div class="w-full">
+                    <div class="grid grid-cols-12 gap-4 pb-3 border-b border-muted-200 text-xs font-semibold text-muted-400 uppercase tracking-wider">
+                        <div class="col-span-8">{{ __('user_dashboard.tasks') }}</div>
+                        <div class="col-span-4 text-right">{{ __('user_dashboard.task_status') }}</div>
+                    </div>
+                    
+                    @if ($assignedTasks->isNotEmpty())
+                        <ul class="flex flex-col divide-y divide-muted-100">
+                            @foreach ($assignedTasks->take(3) as $task)
+                                @php
+                                    // Mapping statuses to your specific palette
+                                    $statusConfig = [
+                                        // Pending -> Muted/Neutral
+                                        'pending' => ['bg' => 'bg-muted-100', 'text' => 'text-muted-600', 'ring' => 'ring-muted-500/10'],
+                                        // In Progress -> Secondary (Blue)
+                                        'in_progress' => ['bg' => 'bg-secondary/10', 'text' => 'text-secondary', 'ring' => 'ring-secondary/20'],
+                                        // Completed -> Accent (Cyan) 
+                                        'completed' => ['bg' => 'bg-accent/10', 'text' => 'text-accent', 'ring' => 'ring-accent/20'],
+                                    ];
+                                    
+                                    $currentStatus = $statusConfig[$task->status] ?? $statusConfig['pending'];
+                                @endphp
+                                <li class="grid grid-cols-12 gap-4 py-4 items-center hover:bg-canvas transition-colors px-2 rounded-lg -mx-2">
+                                    <div class="col-span-8 flex items-center gap-3">
+                                        {{-- Small indicator dot --}}
+                                        <div class="w-2 h-2 rounded-full {{ str_replace('bg-', 'bg-', $currentStatus['text']) }} opacity-50"></div>
+                                        <p class="text-sm font-medium text-main truncate" title="{{ $task->title }}">{{ $task->title }}</p>
+                                    </div>
+                                    <div class="col-span-4 flex justify-end">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $currentStatus['bg'] }} {{ $currentStatus['text'] }} ring-1 ring-inset {{ $currentStatus['ring'] }}">
+                                            {{ __('user_dashboard.status_' . $task->status) }}
+                                        </span>
                                     </div>
                                 </li>
-                            </ul>
-                        @endforeach
+                            @endforeach
+                        </ul>
                     @else
-                        <p>{{ __('user_dashboard.no_projects_assigned') }}</p>
+                        <div class="text-center py-10">
+                            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted-100 mb-3">
+                                <svg class="w-6 h-6 text-muted-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                            </div>
+                            <p class="text-muted-500 text-sm">{{ __('user_dashboard.no_projects_assigned') }}</p>
+                        </div>
                     @endif
                 </div>
             </div>
         </div>
     </div>
     @else
-        <h4>{{ __('user_dashboard.no_permission') }}</h4>
+        <div class="flex items-center justify-center min-h-[400px]">
+            <div class="text-center">
+                <div class="inline-block p-4 rounded-full bg-danger/10 text-danger mb-4">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <h4 class="text-xl font-bold text-main">{{ __('user_dashboard.no_permission') }}</h4>
+                <p class="text-muted-500 mt-2">You do not have the required role to view this dashboard.</p>
+            </div>
+        </div>
     @endrole
 @endsection
