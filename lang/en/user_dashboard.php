@@ -2,6 +2,7 @@
 return [
     'title' => 'User Dashboard',
     'heading' => 'Dashboard',
+    'subheading' => 'Overview of your activities and stats',
     'generate_report' => 'Generate Report',
     'earnings_monthly' => 'Earnings / month',
     'earnings_annual' => 'Earnings / year',
@@ -14,6 +15,7 @@ return [
     'team_members' => 'Team Members',
     'no_team_members' => 'No other team members.',
     'assigned_projects' => 'Assigned Tasks',
+    'task_search_placeholder' => 'Search by ID or Task Title...',
     'no_projects_assigned' => 'No task assigned yet.',
     'no_permission' => 'You do not have permission to view this page.',
     'status_pending' => 'Pending',
@@ -25,7 +27,7 @@ return [
     // Chat translations
     'team_chat' => 'Team Chat',
     'join_team_conversation' => 'Join Team Conversation',
-    'check_attendence' => 'Check attendence',
+    'check_attendence' => 'Check attendance',
     'working_hour' => 'Working hour',
     'enter_username' => 'Enter your username',
     'task_status' => 'Status',

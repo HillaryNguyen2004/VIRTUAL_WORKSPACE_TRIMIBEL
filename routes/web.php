@@ -202,22 +202,33 @@ Route::middleware(['auth'])->group(function () {
 Route::post('/tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.updateStatus');
 
 // Video Chat
-Route::get('/meet', function () {
-    return view('video-chat.index');
-})->name('meet');
+// Route::get('meeting', function () {
+//     return view('video-chat.index');
+// })->name('meet');
+
+Route::get('/meeting', [MeetingController::class, 'index'])->name('meeting');
+
+Route::get('/meetings/history', [MeetingController::class, 'history'])->name('meetings.history');
 
 Route::post("/createMeeting", [MeetingController::class, 'createMeeting'])->name("createMeeting");
-
 Route::post("/validateMeeting", [MeetingController::class, 'validateMeeting'])->name("validateMeeting");
 
-Route::get("/meeting/{meetingId}", function($meetingId) {
+// Route::get("/meeting/{meetingId}", function($meetingId) {
 
-    $METERED_DOMAIN = env('METERED_DOMAIN');
-    return view('video-chat.meeting', [
-        'METERED_DOMAIN' => $METERED_DOMAIN,
-        'MEETING_ID' => $meetingId
-    ]);
-});
+//     $METERED_DOMAIN = env('METERED_DOMAIN');
+//     return view('video-chat.meeting', [
+//         'METERED_DOMAIN' => $METERED_DOMAIN,
+//         'MEETING_ID' => $meetingId
+//     ]);
+// });
+
+// Route 1: The Lobby Page
+Route::get('/meeting/{meetingId}', [MeetingController::class, 'showLobby'])
+     ->name('meeting.lobby');
+
+// Route 2: The Meeting Room Page
+Route::get('/meeting/{meetingId}/room', [MeetingController::class, 'showMeetingRoom'])
+     ->name('meeting.room');
 
 // routes/web.php
 Route::get('/team-progress', [TeamProgressController::class, 'index'])->name('team-progress');

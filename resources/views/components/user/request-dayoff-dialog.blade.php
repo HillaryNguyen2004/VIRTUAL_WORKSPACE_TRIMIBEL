@@ -1,57 +1,67 @@
 @vite(['resources/js/request_dayoff/request_dayoff_dialog.js'])
 
-<div id="request-dayoff-dialog" class="hidden items-center justify-center fixed h-screen w-screen bg-black/20 z-50">
+<div id="request-dayoff-dialog" class="hidden items-center justify-center fixed h-screen w-screen bg-black/50 z-50">
     <div
-        class="flex flex-col items-center w-[280px] sm:w-[300px] md:w-[400px] lg:w-[500px] h-fit bg-[#FDFDFF] rounded-2xl shadow-[0_4px_40px_0_rgba(32,27,53,0.1)] animate-fade-in-up [animation-delay:150ms]">
-        <!-- title -->
-        <div class="w-full py-3 text-center md:text-xl bg-[#F1EFFC] text-[#5D3FD3] font-medium rounded-t-2xl relative">
-            <h2>{{ __('request_day_off.form_title') }}</h2>
-            <button class="close-request-dayoff absolute top-2 right-5 p-2 rounded-full hover:bg-violet-200 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 md:w-5 md:h-5 fill-[#5D3FD3]">
-                    <path
-                        d="M183.1 137.4C170.6 124.9 150.3 124.9 137.8 137.4C125.3 149.9 125.3 170.2 137.8 182.7L275.2 320L137.9 457.4C125.4 469.9 125.4 490.2 137.9 502.7C150.4 515.2 170.7 515.2 183.2 502.7L320.5 365.3L457.9 502.6C470.4 515.1 490.7 515.1 503.2 502.6C515.7 490.1 515.7 469.8 503.2 457.3L365.8 320L503.1 182.6C515.6 170.1 515.6 149.8 503.1 137.3C490.6 124.8 470.3 124.8 457.8 137.3L320.5 274.7L183.1 137.4z" />
+        class="flex flex-col w-[320px] sm:w-[380px] md:w-[450px] bg-white rounded-2xl shadow-xl animate-fade-in-up [animation-delay:150ms] overflow-hidden">
+        
+        <div class="w-full px-6 py-4 flex items-center justify-between border-b border-muted-200 bg-white">
+            <h2 class="text-lg font-bold text-main">{{ __('request_day_off.form_title') }}</h2>
+            <button class="close-request-dayoff p-2 rounded-full text-muted-400 hover:text-primary hover:bg-muted-50 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
-        <!-- form -->
+        
         <div class="w-full">
             <form id="request-dayoff-form" method="POST" action="{{ route('dayoff.request.store') }}" novalidate>
                 @csrf
-                <div class="p-6 flex flex-col items-center gap-6 w-full">
-                    <div class="flex flex-col gap-2 w-full">
-                        <label for="date" class="text-sm md:text-base">{{ __('request_day_off.select_date_label') }}</label>
+                <div class="p-6 flex flex-col gap-5 w-full">
+                    
+                    {{-- Date Input --}}
+                    <div class="flex flex-col gap-1.5 w-full">
+                        <label for="date" class="text-sm font-medium text-main">{{ __('request_day_off.select_date_label') }}</label>
                         <input type="date" name="date" id="date"
-                            class="text-sm md:text-base block w-full rounded-xl border border-gray-300 px-4 py-3 cursor-pointer hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition @error('date') is-invalid @enderror"
+                            class="text-sm block w-full rounded-xl bg-canvas border border-muted-200 px-4 py-3 text-main cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all @error('date') border-danger text-danger @enderror"
                             min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}" value="{{ old('date') }}">
                     </div>
 
-                    <div class="flex flex-col gap-2 w-full">
-                        <label for="leave_type" class="text-sm md:text-base">{{ __('request_day_off.leave_type_label') }}</label>
-                        <select name="leave_type" id="leave_type"
-                            class="text-sm md:text-base block w-full rounded-xl border border-gray-300 px-4 py-3 cursor-pointer hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition @error('leave_type') is-invalid @enderror">
-                            <option value="OFF_FULL" {{ old('leave_type') == 'OFF_FULL' ? 'selected' : '' }}>
-                                {{ __('request_day_off.full_day') }}
-                            </option>
-                            <option value="OFF_HALF" {{ old('leave_type') == 'OFF_HALF' ? 'selected' : '' }}>
-                                {{ __('request_day_off.half_day') }}
-                            </option>
-                        </select>
+                    {{-- Leave Type Select --}}
+                    <div class="flex flex-col gap-1.5 w-full">
+                        <label for="leave_type" class="text-sm font-medium text-main">{{ __('request_day_off.leave_type_label') }}</label>
+                        <div class="relative">
+                            <select name="leave_type" id="leave_type"
+                                class="text-sm block w-full rounded-xl bg-canvas border border-muted-200 px-4 py-3 text-main appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all @error('leave_type') border-danger text-danger @enderror">
+                                <option value="OFF_FULL" {{ old('leave_type') == 'OFF_FULL' ? 'selected' : '' }}>
+                                    {{ __('request_day_off.full_day') }}
+                                </option>
+                                <option value="OFF_HALF" {{ old('leave_type') == 'OFF_HALF' ? 'selected' : '' }}>
+                                    {{ __('request_day_off.half_day') }}
+                                </option>
+                            </select>
+                            {{-- Custom Chevron --}}
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-500">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="flex flex-col gap-2 w-full">
-                        <label for="reason" class="text-sm md:text-base">{{ __('request_day_off.reason_optional_label') }}</label>
-                        <input name="reason" id="reason"
-                            class="text-sm md:text-base block w-full rounded-xl border border-gray-300 px-4 py-3 placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition"
-                            placeholder="{{ __('request_day_off.reason_example') }}">{{ old('reason') }}</input>
+                    {{-- Reason Input --}}
+                    <div class="flex flex-col gap-1.5 w-full">
+                        <label for="reason" class="text-sm font-medium text-main">{{ __('request_day_off.reason_optional_label') }}</label>
+                        <textarea name="reason" id="reason" rows="3"
+                            class="text-sm block w-full rounded-xl bg-canvas border border-muted-200 px-4 py-3 text-main placeholder-muted-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+                            placeholder="{{ __('request_day_off.reason_example') }}">{{ old('reason') }}</textarea>
                     </div>
 
-                    <div class="flex flex-col md:flex-row justify-end gap-2 w-full">
-                        <button type="submit"
-                            class="text-sm px-4 py-2 bg-[#5D3FD3] hover:opacity-95 text-white rounded-lg shadow-[0_8px_24px_rgba(99,102,241,0.35)] transition">
-                            {{ __('request_day_off.submit_request') }}
-                        </button>
-                        <button type="button" class="close-request-dayoff px-4 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-200 transition">
+                    {{-- Actions --}}
+                    <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 w-full">
+                        <button type="button" class="close-request-dayoff w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-medium text-muted-600 hover:bg-muted-100 transition-colors">
                             {{ __('app.cancel') }}
+                        </button>
+                        <button type="submit"
+                            class="w-full sm:w-auto px-6 py-2.5 bg-primary hover:bg-primary-hover text-white text-sm font-bold rounded-xl shadow-lg shadow-primary/25 transition-all active:scale-95">
+                            {{ __('request_day_off.submit_request') }}
                         </button>
                     </div>
                 </div>
@@ -59,64 +69,3 @@
         </div>
     </div>
 </div>
-<!-- <div class="container py-5">
-                        <div class="row justify-content-center">
-                            <div class="col-md-8">
-                                <div class="card shadow border-primary">
-                                    <div class="card-header bg-primary text-white text-center">
-                                        <h3 class="mb-0">Request a Day Off</h3>
-                                    </div>
-                                    <div class="card-body">
-
-                                        @if(session('success'))
-                                            <div class="alert alert-primary text-center">
-                                                {{ session('success') }}
-                                            </div>
-                                        @endif
-
-                                        <form method="POST" action="{{ route('dayoff.request.store') }}">
-                                            @csrf
-
-                                            <div class="mb-3">
-                                                <label for="date" class="form-label">Select Date</label>
-                                                <input type="date" name="date" id="date"
-                                                    class="form-control @error('date') is-invalid @enderror"
-                                                    min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}"
-                                                    value="{{ old('date') }}">
-                                                @error('date')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label for="leave_type" class="form-label">Leave Type</label>
-                                                <select name="leave_type" id="leave_type"
-                                                    class="form-select @error('leave_type') is-invalid @enderror">
-                                                    <option value="OFF_FULL" {{ old('leave_type') == 'OFF_FULL' ? 'selected' : '' }}>Full Day</option>
-                                                    <option value="OFF_HALF" {{ old('leave_type') == 'OFF_HALF' ? 'selected' : '' }}>Half Day</option>
-                                                </select>
-                                                @error('leave_type')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label for="reason" class="form-label">Reason (Optional)</label>
-                                                <textarea name="reason" id="reason"
-                                                    class="form-control"
-                                                    rows="4"
-                                                    placeholder="E.g. Medical appointment, family emergency, etc.">{{ old('reason') }}</textarea>
-                                            </div>
-
-                                            <div class="text-center pt-2">
-                                                <button type="submit" class="btn btn-primary px-4 py-2">
-                                                    Submit Request
-                                                </button>
-                                            </div>
-                                        </form>
-
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div> -->

@@ -945,7 +945,7 @@ class RealtimeChatApp {
         document.getElementById('video-call-btn').addEventListener('click', async () => {
             if (this.currentConversation) {
                 // Simple redirect to video meeting page
-                window.open('/meet', '_blank');
+                window.open('/meeting', '_blank');
             }
         });
 

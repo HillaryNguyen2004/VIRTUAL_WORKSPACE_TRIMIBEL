@@ -1,19 +1,62 @@
+
+
+
 @extends('layout_login')
-@section('title', 'Register')
+@section('title', __('register.page_title'))
 @section('content')
     @vite(['resources/js/validate_pwd.js'])
     @vite(['resources/js/toggle_pwd.js'])
     @vite(['resources/js/toggle_confirm_pwd.js'])
     <!-- Left -->
-    <div class="bg-panel-left-gradient rounded-3xl min-h-[70vh] w-1/2 md:block hidden"></div>
+    <div class="bg-panel-right-gradient rounded-3xl w-1/2 min-h-[70vh] lg:block hidden"></div>
 
-    <!-- Logo -->
-    <div class="fixed top-10 right-10 z-50">Logo</div>
     <!-- Right -->
-    <div class="h-full w-full md:w-1/2">
-        <div class="flex flex-col items-center xl:justify-center py-16 px-4 w-full h-full">
-            <h1 class="text-3xl font-medium text-gray-900 text-center">Create new account</h1>
-            <p class="mt-2 text-center text-gray-500">Fill the form below to sign up</p>
+    <div class="h-full w-full lg:w-1/2">
+        <!-- Logo -->
+        <div class="flex z-50 w-full justify-between">
+            Logo
+            <ul><li>
+                @php $currentLocale = app()->getLocale(); @endphp
+                <div class="relative" id="langMenu">
+                    <button id="langButton" type="button" class="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-md font-medium text-gray-700
+                            hover:bg-gray-100 focus:outline-none" aria-haspopup="menu" aria-expanded="false">
+                        @if ($currentLocale === 'en')
+                            <div class="flex items-center gap-1">
+                                <div>🇺🇸</div>
+                                <!-- <span class="hidden lg:inline"> {{ __('app.lang_english') }}</span> -->
+                            </div>
+                        @else
+                            <div class="flex items-center gap-1">
+                                <div>🇻🇳</div>
+                                <!-- <span class="hidden lg:inline"> {{ __('app.lang_vietnamese') }}</span> -->
+                            </div>
+                        @endif
+
+                        <!-- chevron -->
+                        <svg class="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                            <path
+                                d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" />
+                        </svg>
+                    </button>
+
+                    <div id="langList" class="absolute right-0 z-20 mt-2 w-36 origin-top rounded-xl bg-white shadow-lg ring-1 ring-black/5
+                            hidden" role="menu" aria-labelledby="langButton">
+                        <a href="{{ route('lang.switch', 'en') }}"
+                            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-t-xl"
+                            role="menuitem">🇺🇸 {{ __('app.lang_english') }}</a>
+                        <a href="{{ route('lang.switch', 'vi') }}"
+                            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-b-xl"
+                            role="menuitem">🇻🇳 {{ __('app.lang_vietnamese') }}</a>
+                    </div>
+                </div>
+            </li></ul>
+        </div>
+
+        <!-- Content -->
+        <div class="flex flex-col items-center justify-center w-full h-full pb-10 m-auto sm:w-[440px]">
+
+            <h1 class="text-3xl font-medium text-gray-900 text-center">{{ __('register.create_new_account') }}</h1>
+            <p class="mt-2 text-center text-gray-500">{{ __('register.subheading') }}</p>
 
             <!-- @if (session('status'))
                         <div class="mt-6 rounded-lg bg-green-50 text-green-700 px-4 py-3">{{ session('status') }}</div>
@@ -29,14 +72,14 @@
                     @endif -->
 
             <form method="POST" action="{{ route('register.post') }}"
-                class="flex flex-col items-center justify-center mt-5 space-y-6 w-full md:w-80 lg:w-[500px]">
+                class="flex flex-col items-center justify-center mt-5 space-y-6 w-full ">
                 @csrf
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
                     <!-- First name -->
                     <div>
-                        <label for="first_name" class="block text-sm font-medium text-gray-700">First Name</label>
-                        <input id="first_name" name="first_name" type="text" placeholder="First Name" class="text-sm md:text-base mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3
+                        <label for="first_name" class="block text-sm font-medium text-gray-700">{{ __('register.first_name') }}</label>
+                        <input id="first_name" name="first_name" type="text" placeholder="{{ __('register.enter_first_name') }}" class="text-sm md:text-base mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3
                                    placeholder-gray-400 hover:border-gray-400 focus:outline-none
                                    focus:border-[#5D3FD3] transition text-[#5D3FD3]" />
                         @error('first_name')
@@ -46,8 +89,8 @@
 
                     <!-- Last name -->
                     <div>
-                        <label for="last_name" class="block text-sm font-medium text-gray-800">Last Name</label>
-                        <input id="last_name" name="last_name" type="text" placeholder="Last Name" class="text-sm md:text-base mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3
+                        <label for="last_name" class="block text-sm font-medium text-gray-800">{{ __('register.last_name') }}</label>
+                        <input id="last_name" name="last_name" type="text" placeholder="{{ __('register.enter_last_name') }}" class="text-sm md:text-base mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3
                                    placeholder-gray-400 hover:border-gray-400 focus:outline-none
                                    focus:border-[#5D3FD3] transition text-[#5D3FD3]" />
                         @error('last_name')
@@ -56,9 +99,9 @@
                     </div>
 
                     <!-- Email -->
-                    <div class="md:col-span-2">
-                        <label for="email" class="block text-sm font-medium text-gray-800">Email</label>
-                        <input id="email" name="email" type="email" placeholder="Email" class="text-sm md:text-base mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3
+                    <div class="col-span-2">
+                        <label for="email" class="block text-sm font-medium text-gray-800">{{ __('register.email') }}</label>
+                        <input id="email" name="email" type="email" placeholder="{{ __('register.enter_email') }}" class="text-sm md:text-base mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3
                                    placeholder-gray-400 hover:border-gray-400 focus:outline-none
                                    focus:border-[#5D3FD3] transition text-[#5D3FD3]" />
                         @error('email')
@@ -67,10 +110,10 @@
                     </div>
 
                     <!-- Password -->
-                    <div>
-                        <label for="password" class="block text-sm font-medium text-gray-800">Password</label>
+                    <div class="col-span-2">
+                        <label for="password" class="block text-sm font-medium text-gray-800">{{ __('register.password') }}</label>
                         <div class="relative">
-                            <input id="password" name="password" type="password" placeholder="Password" class="text-sm md:text-base mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 pr-12
+                            <input id="password" name="password" type="password" placeholder="{{ __('register.enter_password') }}" class="text-sm md:text-base mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 pr-12
                                             placeholder-gray-400 hover:border-gray-400 focus:outline-none
                                             focus:border-[#5D3FD3] transition text-[#5D3FD3]" />
                             <button type="button" id="togglePwd" class="absolute inset-y-0 right-2 p-3"
@@ -90,10 +133,28 @@
                                 </svg>
                             </button>
                         </div>
-                        <ul id="validate-pwd" class="mt-1 ml-2 space-y-1 text-[12px] hidden">
-                            <li id="at-least-8-words" class="text-gray-300">At least 8 words</li>
-                            <li id="at-least-1-spe-char" class="text-gray-300">At least 1 special charater</li>
-                            <li id="at-least-1-number" class="text-gray-300">At least 1 number</li>
+                        <ul id="validate-pwd" class="mt-2 ml-2 space-y-1 text-[12px] hidden">
+                            <li id="at-least-8-words" class="text-gray-300 flex items-center gap-2">
+                                <svg data-icon="ok" viewBox="0 0 1024 1024" class="w-2 h-2 md:w-2.5 md:h-2.5" fill="currentColor">
+                                    <path 
+                                        d="M864 240.5l-512 512-224-224-112 112 336 336 624-624z" />
+                                </svg>
+                                {{ __('register.at_least_8_characters') }}
+                            </li>
+                            <li id="at-least-1-spe-char" class="text-gray-300 flex items-center gap-2">
+                                <svg data-icon="ok" viewBox="0 0 1024 1024" class="w-2 h-2 md:w-2.5 md:h-2.5" fill="currentColor">
+                                    <path 
+                                        d="M864 240.5l-512 512-224-224-112 112 336 336 624-624z" />
+                                </svg>
+                                {{ __('register.at_least_1_special_character') }}
+                            </li>
+                            <li id="at-least-1-number" class="text-gray-300 flex items-center gap-2">
+                                <svg data-icon="ok" viewBox="0 0 1024 1024" class="w-2 h-2 md:w-2.5 md:h-2.5" fill="currentColor">
+                                    <path 
+                                        d="M864 240.5l-512 512-224-224-112 112 336 336 624-624z" />
+                                </svg>
+                                {{ __('register.at_least_1_number') }}
+                            </li>
                         </ul>
                         @error('password')
                             <span class="text-red-400 text-xs">{{ $message }}</span>
@@ -101,13 +162,13 @@
                     </div>
 
                     <!-- Confirm password -->
-                    <div>
+                    <div class="col-span-2">
                         <label for="password_confirmation" class="block text-sm font-medium text-gray-800">
-                            Confirm password
+                            {{ __('register.confirm_password') }}
                         </label>
                         <div class="relative">
                             <input id="password_confirmation" name="password_confirmation" type="password"
-                                placeholder="Confirm password" class="text-sm md:text-base mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 pr-12
+                                placeholder="{{ __('register.confirm_password') }}" class="text-sm md:text-base mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 pr-12
                                             placeholder-gray-400 hover:border-gray-400 focus:outline-none
                                             focus:border-[#5D3FD3] transition text-[#5D3FD3]" />
                             <button type="button" id="toggleConfirmPwd" class="absolute inset-y-0 right-2 p-3"
@@ -127,7 +188,7 @@
                                 </svg>
                             </button>
                         </div>
-                        <p id="pwd-match" class="mt-1 ml-2 text-[12px] text-gray-300 hidden">Password match</p>
+                        <p id="pwd-match" class="mt-1 ml-2 text-[12px] text-gray-300 hidden">{{ __('register.password_match') }}</p>
                     </div>
                 </div>
 
@@ -140,21 +201,21 @@
                     <svg data-spinner class="hidden w-4 h-4 md:h-5 md:w-5 animate-spin" viewBox="0 0 24 24" fill="none">
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                     </svg>
-                    <span data-label>Signup</span>
+                    <span data-label>{{ __('register.signup') }}</span>
                 </button>
 
                 <!-- Route to login -->
                 <p class="text-center text-xs md:text-sm text-gray-500">
-                    Already have account?
+                    {{ __('register.already_have_account') }}
                     <a href="{{ route('login') }}" class="text-[#5D3FD3] hover:underline font-medium">
-                        Login here
+                        {{ __('register.login_here') }}
                     </a>
                 </p>
 
                 <!-- Divider -->
                 <div class="my-6 flex items-center gap-3 w-full md:w-80 lg:w-[450px]">
                     <div class="h-px flex-1 bg-gray-200"></div>
-                    <span class="text-xs text-gray-400">OR</span>
+                    <span class="text-xs text-gray-400">{{ __('register.or') }}</span>
                     <div class="h-px flex-1 bg-gray-200"></div>
                 </div>
 
@@ -162,7 +223,7 @@
                 <a href="{{ route('google.login') }}"
                     class="mt-6 w-fit mx-auto flex items-center gap-2 rounded-xl bg-white hover:bg-[#f8f8f8] border border-gray-200 px-4 py-2 shadow-[4px_4px_20px_0_rgba(109,82,216,0.2)] transition">
                     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="" class="h-4 w-4">
-                    <span class="text-xs md:text-sm font-medium text-gray-700">Register with Google</span>
+                    <span class="text-xs md:text-sm font-medium text-gray-700">{{ __('register.register_with_google') }}</span>
                 </a>
             </form>
         </div>

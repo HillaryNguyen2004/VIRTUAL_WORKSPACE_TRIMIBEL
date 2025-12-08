@@ -57,6 +57,6 @@ return [
     'logout_modal_title' => 'Ready to Leave?',
     'logout_modal_body' => 'Select "Logout" below if you are ready to end your current session.',
     'cancel' => 'Cancel',
-    'chat_box' => 'Chat Box',
-    'scroll_to_top' => 'Scroll to Top',
+    'chat_box' => 'Messages',
+    'video_chat' => 'Video Meeting',
 ];
