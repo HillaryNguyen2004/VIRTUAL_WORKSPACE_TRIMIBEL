@@ -23,10 +23,15 @@
     @vite(['public/vendor/bootstrap/js/bootstrap.bundle.min.js'])
     <!-- Core plugin JavaScript-->
     @vite(['public/vendor/jquery-easing/jquery.easing.min.js'])
+    <!-- Custom scripts for all pages-->
+    @vite(['public/js/sb-admin-2.min.js'])
 
+    <!-- Dashboard layout -->
+    @vite(['resources/js/dashboard_layout/switch_lang.js'])
+    
 </head>
 
-<body class="flex flex-row h-screen p-[35px] justify-between gap-14 overflow-auto">
+<body class="flex flex-row h-screen p-[35px] lg:justify-between justify-center gap-9 overflow-auto">
     @yield('content')
 </body>
 

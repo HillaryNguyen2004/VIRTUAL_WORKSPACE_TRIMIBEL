@@ -4,7 +4,7 @@ return [
     'select_date_label' => 'Select Date',
     'leave_type_label' => 'Leave Type',
     'reason_optional_label' => 'Reason (Optional)',
-    'submit_request' => 'Submit Request',
+    'submit_request' => 'Submit',
     'full_day' => 'Full Day',
     'half_day' => 'Half Day',
     'reason_example' => 'e.g., Family matters, illness, etc.',

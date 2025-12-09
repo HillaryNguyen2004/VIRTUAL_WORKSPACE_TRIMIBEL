@@ -64,6 +64,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const taskId = row.getAttribute("data-task-id");
         const menu = btn.closest(".status-menu");
 
+        //Pending button
+        if (btn.dataset.status === "pending") {
+            await updateTaskStatus(taskId, "pending", 0);
+        }
+
         // Apply button (from in_progress menu)
         if (btn.textContent.trim() === "Apply") {
             const range = menu.querySelector(".range");
@@ -80,7 +85,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 updateStatus();
 
-// ====== AJAX helper ======
 // ====== AJAX helper ======
 async function updateTaskStatus(taskId, status, percentage = null) {
     try {

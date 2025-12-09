@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const specialCharRegex = /[^A-Za-z0-9]/;
 
     const toggle = (el, ok) => {
-        el.classList.toggle("text-[#5D3FD3]", ok);
+        el.classList.toggle("text-[#5AE194]", ok);
         el.classList.toggle("text-gray-300", !ok);
     };
 
@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const ok = a === b && b.length > 0;
 
         if (pwd_match) {
-            pwd_match.classList.toggle("text-[#5D3FD3]", ok);
+            pwd_match.classList.toggle("text-[#5AE194]", ok);
             pwd_match.classList.toggle("text-rose-500", bothTyped && !ok);
             pwd_match.classList.toggle("text-gray-300", !bothTyped);
         }
@@ -42,12 +42,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const update = () => {
-        const hasPwd = (pwd?.value ?? "").length > 0;
-        // const hasConfirm = (pwd_confirmation?.value ?? "").length > 0;
+        const hasPwd = 1;
 
         // show/hide blocks
         validatePwdBlock?.classList.toggle("hidden", !hasPwd);
-        // pwd_match?.classList.toggle("hidden", !hasConfirm);
     };
 
     pwd?.addEventListener("input", () => {
@@ -63,5 +61,5 @@ document.addEventListener("DOMContentLoaded", () => {
     // run once
     validatePwd();
     // validateMatch();
-    update();
+    // update();
 });
