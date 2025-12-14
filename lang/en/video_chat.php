@@ -7,7 +7,7 @@ return [
     'join_section_title' => 'Join an existing session',
     'join_section_desc' => 'Enter the meeting code shared by the host.',
     'placeholder' => 'Enter Meeting ID...',
-    'join_button' => 'Join Meeting',
+    'join_button' => 'Join',
     
     // Create Section
     'create_section_title' => 'Start a new meeting',

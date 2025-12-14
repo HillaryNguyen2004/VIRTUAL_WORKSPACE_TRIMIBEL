@@ -59,4 +59,9 @@ return [
     'cancel' => 'Hủy',
     'chat_box' => 'Tin nhắn',
     'video_chat' => 'Họp video',
+
+    'notifications' => 'Thông báo',
+    'no_new_notifications' => 'Không có thông báo mới',
+    'show_all_notifications' => 'Hiện tất cả thông báo',
+    'mark_all_as_read' => 'Đánh dấu tất cả đã đọc',
 ];

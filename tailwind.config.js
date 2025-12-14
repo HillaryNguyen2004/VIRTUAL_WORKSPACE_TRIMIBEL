@@ -16,6 +16,7 @@ module.exports = {
           DEFAULT: '#5347CC', 
           hover: '#4538A8',   
           light: '#766CD6',   
+
         },
         secondary: {
           DEFAULT: '#4896FE', 
@@ -56,6 +57,8 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/container-queries'),
+  ],
 }
 
