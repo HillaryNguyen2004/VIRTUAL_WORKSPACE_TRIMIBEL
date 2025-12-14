@@ -6,6 +6,8 @@ $(function () {
     const $sendBtn = $("#chatbot-send-btn");
 
     let chatLang = window.CHAT_LANG || "en";
+    let userId = window.AUTH_USER_ID | "";
+    let userRole = window.AUTH_USER_ROLE || "guest";
     let $typingBubble = null;
 
     const openBox = () => {
@@ -58,7 +60,7 @@ $(function () {
 
     const appendUserMessage = (text) => {
         const $bubble = $(
-            '<div class="max-w-96 shadow-lg rounded-2xl px-3 py-2 bg-[#5D3FD3] text-white"></div>'
+            '<div class="max-w-[280px] shadow-lg rounded-2xl px-3 py-2 bg-[#5D3FD3] text-white text-sm whitespace-pre-line"></div>'
         ).text(text);
 
         const $wrapper = $('<div class="flex justify-end"></div>').append(
@@ -75,7 +77,7 @@ $(function () {
         ).append('<img src="/img/bot.png" alt="" class="w-6 h-6">');
 
         const $bubble = $(
-            '<div class="max-w-96 shadow-lg rounded-2xl px-3 py-2 border border-gray-300 whitespace-pre-line"></div>'
+            '<div class="max-w-[280px] shadow-lg rounded-2xl px-3 py-2 border border-gray-300 bg-gray-50 text-sm whitespace-pre-line"></div>'
         ).text(text);
 
         const $wrapper = $('<div class="flex items-end gap-2"></div>')
@@ -104,7 +106,7 @@ $(function () {
         );
 
         const $bubble = $(
-            '<div class="max-w-96 shadow-lg rounded-2xl px-3 h-8 border border-gray-300"></div>'
+            '<div class="max-w-[280px] shadow-lg rounded-2xl px-3 h-8 border border-gray-300 bg-gray-50"></div>'
         ).append($dots);
 
         const $wrapper = $('<div class="flex items-center gap-2"></div>')
@@ -135,12 +137,19 @@ $(function () {
         // show typing skeleton
         showTypingBubble();
 
+        // payload to send request
+        const payload = {
+            message: message,
+            k: 5,
+            lang: chatLang,
+            user_id: userId.toString(),
+            user_role: userRole,
+        }
+        
+        console.log("payload: ", payload);
+
         axios
-            .post("/api/chat-bot", {
-                message: message,
-                k: 5,
-                lang: chatLang,
-            })
+            .post("/api/chat-bot", payload)
             .then((res) => {
                 const data = res.data;
                 // remove skeleton

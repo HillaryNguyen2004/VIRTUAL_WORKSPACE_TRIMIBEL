@@ -6,6 +6,8 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1)
     k: int | None = Field(default=None, gt=0, le=50)
     lang: str | None = None
+    user_id: str | None = None
+    user_role: str | None = None
 
 class Citation(BaseModel):
     rank: int
