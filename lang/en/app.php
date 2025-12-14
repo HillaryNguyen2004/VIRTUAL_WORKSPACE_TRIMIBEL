@@ -59,4 +59,9 @@ return [
     'cancel' => 'Cancel',
     'chat_box' => 'Messages',
     'video_chat' => 'Video Meeting',
+
+    'notifications' => 'Notifications',
+    'no_new_notifications' => 'No new notifications',
+    'show_all_notifications' => 'Show all notifications',
+    'mark_all_as_read' => 'Mark all as read',
 ];

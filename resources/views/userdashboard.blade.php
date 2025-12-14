@@ -6,9 +6,9 @@
     {{-- Main Container --}}
     {{-- We assume the body background is handled by 'layout_dashboard', but if not, 
          you can add 'bg-canvas' to this wrapper to see your lavender background --}}
-    <div class="flex flex-col gap-6 w-full max-w-7xl mx-auto text-main">
+    <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
         
-        <div class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center w-full">
+        <div class="flex flex-col gap-4 @2xl:flex-row @2xl:justify-between @2xl:items-center w-full">
             <div>
                 <h2 class="font-bold text-3xl text-main tracking-tight">{{ __('user_dashboard.heading') }}</h2>
                 <p class="text-muted-500 text-sm mt-1">{{ __('user_dashboard.subheading') }}</p>
@@ -24,9 +24,9 @@
             </button>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
+        <div class="grid grid-cols-1 @4xl:grid-cols-12 gap-6 w-full">
             
-            <div class="lg:col-span-5 xl:col-span-4 flex flex-col justify-between h-full min-h-[320px] border bg-white border-muted-200 shadow-lg shadow-main/5 hover:border-accent/50 hover:shadow-accent/10 rounded-2xl p-6 relative overflow-hidden animate-fade-in-up">
+            <div class="@4xl:col-span-5 flex flex-col justify-between h-full min-h-[320px] border bg-white border-muted-200 shadow-lg shadow-main/5 hover:border-accent/50 hover:shadow-accent/10 rounded-2xl p-6 relative overflow-hidden animate-fade-in-up">
                 {{-- Decorative background element using your Primary color --}}
                 <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-primary/10 rounded-full blur-2xl opacity-50"></div>
 
@@ -65,7 +65,7 @@
                 </div>
             </div>
 
-            <div class="lg:col-span-7 xl:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in-up [animation-delay:100ms]">
+            <div class="@4xl:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in-up [animation-delay:100ms]">
                 @php
                     // We map these to your new palette
                     $statCards = [
@@ -122,9 +122,9 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full animate-fade-in-up [animation-delay:200ms]">
+        <div class="grid grid-cols-1 @4xl:grid-cols-12 gap-6 w-full animate-fade-in-up [animation-delay:200ms]">
             
-            <div class="lg:col-span-5 xl:col-span-4 flex flex-col gap-6">
+            <div class="@4xl:col-span-5 flex flex-col gap-6">
                 @if ($teamLeader)
                     <div class="bg-white border border-muted-200 shadow-lg shadow-main/5 rounded-2xl p-6 flex flex-col items-center text-center">
                         <div class="relative">
@@ -180,7 +180,7 @@
                 </div>
             </div>
 
-            <div class="lg:col-span-7 xl:col-span-8 bg-white border border-muted-200 shadow-lg shadow-main/5 hover:border-primary/30 hover:shadow-primary/10 transition-all duration-300 rounded-2xl p-6 h-max">
+            <div class="@4xl:col-span-7 bg-white border border-muted-200 shadow-lg shadow-main/5 hover:border-primary/30 hover:shadow-primary/10 transition-all duration-300 rounded-2xl p-6 h-max">
                 <div class="flex items-center justify-between mb-6">
                     <h4 class="text-lg font-bold text-main">{{ __('user_dashboard.assigned_projects') }}</h4>
                     <button id="open-task" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
