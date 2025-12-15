@@ -5,6 +5,7 @@
         "build": "vite build"
     },
     "devDependencies": {
+        "@tailwindcss/container-queries": "^0.1.1",
         "autoprefixer": "^10.4.21",
         "axios": "^1.13.0",
         "fast-glob": "^3.3.3",

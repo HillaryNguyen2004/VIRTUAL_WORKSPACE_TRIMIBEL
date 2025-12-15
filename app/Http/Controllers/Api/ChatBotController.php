@@ -15,6 +15,7 @@ class ChatbotController extends Controller
             'message' => 'required|string',
             'k' => 'nullable|integer',
             'lang' => 'nullable|string',
+            'user_id' => 'nullable|string',
         ]);
 
         try {
@@ -24,6 +25,7 @@ class ChatbotController extends Controller
                     'message' => $data['message'],
                     'k' => $data['k'] ?? 5,
                     'lang' => $data['lang'] ?? 'en',
+                    'user_id' => $data['user_id'] ?? null,
                 ]
             );
 
