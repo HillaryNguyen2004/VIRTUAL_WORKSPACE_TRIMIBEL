@@ -12,7 +12,7 @@ def healthz():
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
     try:
-        text, cits = rag_answer(req.message, req.k, req.lang)
+        text, cits = rag_answer(req.message, req.k, req.lang, req.user_id, req.user_role)
         return ChatResponse(
             answer=text,
             citations=[Citation(**c) for c in cits]

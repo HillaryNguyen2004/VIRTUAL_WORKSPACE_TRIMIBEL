@@ -339,7 +339,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        window.CHAT_LANG = "{{ app()->getLocale() }}"; 
+        window.CHAT_LANG = "{{ app()->getLocale() }}";
+        window.AUTH_USER_ID = "{{ Auth::id() }}";
+        window.AUTH_USER_ROLE = "{{ Auth::user()->roles()->pluck('name')->first() }}";
 
         function toggleRightSidebar() {
             const sidebar = document.getElementById('right-sidebar');
