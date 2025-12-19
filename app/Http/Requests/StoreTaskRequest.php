@@ -3,30 +3,48 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Models\User;
+
 
 class StoreTaskRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
-    public function authorize(): bool
-    {
-        return true; // You can replace this with role check if needed
-    }
+    // public function authorize(): bool
+    // {
+    //     return true; // You can replace this with role check if needed
+    // }
 
     /**
      * Get the validation rules that apply to the request.
      */
+    // public function rules(): array
+    // {
+    //     return [
+    //         'title' => 'required|string|max:255',
+    //         'assignee' => 'required|exists:users,id',
+    //         'due_date' => 'required|date|after_or_equal:today',
+    //         'description' => 'nullable|string',
+    //         'active' => 'nullable|boolean',
+    //     ];
+    // }
+
     public function rules(): array
     {
         return [
-            'title' => 'required|string|max:255',
-            'assignee' => 'required|exists:users,id',
-            'due_date' => 'required|date|after_or_equal:today',
-            'description' => 'nullable|string',
-            'active' => 'nullable|boolean',
+            'title'      => 'required|string|max:255',
+            'project_id' => 'required|exists:projects,id',
+            'assignees'  => 'required|array',
+            'assignees.*'=> 'exists:users,id',
+            'due_date'   => 'required|date|after_or_equal:today',
+            'description'=> 'nullable|string',
+            'active'     => 'nullable|boolean',
         ];
     }
+
+
+
 
     /**
      * Prepare and format the validated data for storage.
@@ -51,4 +69,22 @@ class StoreTaskRequest extends FormRequest
             'due_date.after_or_equal' => 'The due date must be today or a future date.',
         ];
     }
+
+    public function authorize(): bool
+    {
+        $user = auth()->user();
+
+        // Admin can assign anyone
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+
+        // Staff: can only assign their team members
+        $teamUserIds = User::where('team_leader_id', $user->id)->pluck('id')->toArray();
+
+        return collect($this->assignees)->every(
+            fn ($id) => in_array($id, $teamUserIds)
+        );
+    }
+
 }

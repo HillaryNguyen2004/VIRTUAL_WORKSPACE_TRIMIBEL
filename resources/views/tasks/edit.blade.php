@@ -1,83 +1,185 @@
 @extends('layout_dashboard')
 
 @section('content')
-    @php
-        use Illuminate\Support\Facades\Route;
+@php
+    if (auth()->user()->hasRole('admin')) {
+        $dashRoute = 'tasks.index';        
+    } else {
+        $dashRoute = 'tasks.staff.index'; 
+    }
+@endphp
 
-        $dashRoute = 'tasks.staff.index';
-        if (auth()->user()->hasRole('admin') && Route::has('tasks.index')) {
-            $dashRoute = 'tasks.index';
-        }
-    @endphp
-    <x-action-layout :route="$dashRoute" :title="'task_create.back_to_task'">
-        @if(session('success'))
-            <div
-                class="bg-[#D6F5E3] text-[#5AE194] border border-[#5AE194] text-lg text-center px-3 py-2 rounded-2xl w-full animate-fade-in-up [animation-delay:150ms]">
-                {{ session('success') }}</div>
-        @endif
+<x-action-layout :route="$dashRoute" :title="__('task_edit.back_to_task')">
 
-        <x-staff.task-form :title="__('task_edit.title')" :action="route('tasks.update', $task)"
-            :staff-users="$staffUsers" :task="$task"></x-staff.task-form>
-    </x-action-layout>
-    <!-- <div class="container py-4">
-        <h1 class="mb-4 fw-bold">{{ __('task_edit.title') }}</h1>
-        <form action="{{ route('tasks.update', $task) }}" method="POST">
-            @csrf
-            @method('PUT')
-            <div class="card p-4 mb-4">
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">{{ __('task_edit.task_name_label') }} *</label>
-                        <input type="text" name="title" class="form-control" value="{{ old('title', $task->title) }}" required>
-                    </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-6 mb-3 mb-md-0">
-                        <label class="form-label fw-bold">{{ __('task_edit.assignee_label') }} *</label>
-                        <select name="assignee" class="form-control" required>
-                            <option value="">{{ __('task_edit.select_assignee') }}</option>
-                            @foreach($staffUsers as $user)
-                                <option value="{{ $user->id }}" {{ $task->assigned_user_id == $user->id ? 'selected' : '' }}>
-                                    {{ $user->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">{{ __('task_edit.due_date_label') }} *</label>
-                        <input type="date" name="due_date" class="form-control" value="{{ old('due_date', $task->due_date) }}" required>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">{{ __('task_edit.description_label') }}</label>
-                    <textarea name="description" class="form-control" rows="3">{{ old('description', $task->description) }}</textarea>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">{{ __('task_edit.status_label') }}</label>
-                    <select name="status" class="form-control" required>
-                        <option value="pending" {{ $task->status == 'pending' ? 'selected' : '' }}>{{ __('task_edit.status_pending') }}</option>
-                        <option value="in_progress" {{ $task->status == 'in_progress' ? 'selected' : '' }}>{{ __('task_edit.status_in_progress') }}</option>
-                        <option value="completed" {{ $task->status == 'completed' ? 'selected' : '' }}>{{ __('task_edit.status_completed') }}</option>
-                    </select>
-                </div>
-                <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" name="active" id="active" value="1" {{ $task->active ? 'checked' : '' }}>
-                    <label class="form-check-label" for="active">
-                        {{ __('task_edit.active_label') }}
-                    </label>
-                </div>
-                <div class="d-flex justify-content-end">
-                    <a href="{{ auth()->user()->hasRole('admin') 
-                                ? route('admin.dashboard') 
-                                : route('staff.dashboard') }}" 
-                    class="btn btn-outline-secondary me-2">
-                        {{ __('task_edit.cancel_button') }}
-                    </a>
-                    <button type="submit" class="btn btn-primary" style="background:#2563eb;border:none;">
-                        <i class="bi bi-save"></i> {{ __('task_edit.save_button') }}
-                    </button>
-                </div>
-            </div>
-        </form>
-    </div> -->
+    {{-- Success --}}
+    @if(session('success'))
+        <div class="bg-[#D6F5E3] text-[#5AE194] border border-[#5AE194]
+                    text-lg text-center px-3 py-2 rounded-2xl w-full mb-4">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    {{-- Errors --}}
+    @if ($errors->any())
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <ul class="list-disc pl-5">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <form method="POST" action="{{ route('tasks.update', $task) }}" class="space-y-6">
+        @csrf
+        @method('PUT')
+
+        {{-- Title --}}
+        <div>
+            <label class="block font-semibold mb-1">
+                {{ __('task_edit.task_name_label') }} *
+            </label>
+            <input
+                type="text"
+                name="title"
+                value="{{ old('title', $task->title) }}"
+                class="w-full rounded-xl border px-3 py-2"
+                required
+            >
+        </div>
+
+        {{-- Project --}}
+        <div>
+            <label class="block font-semibold mb-1">
+                {{ __('task_edit.project_label') }} *
+            </label>
+            <select
+                name="project_id"
+                class="w-full rounded-xl border px-3 py-2"
+                required
+            >
+                <option value="">Select project</option>
+                @foreach($projects as $project)
+                    <option
+                        value="{{ $project->id }}"
+                        @selected(old('project_id', $task->project_id) == $project->id)
+                    >
+                        {{ $project->name ?? $project->title }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        {{-- Assignees --}}
+        <div>
+            <label class="block font-semibold mb-1">
+                {{ __('task_edit.assignee_label') }} *
+            </label>
+
+            <select
+                name="assignees[]"
+                multiple
+                class="w-full rounded-xl border px-3 py-2 h-40"
+            >
+                @php
+                    $assignedIds = old(
+                        'assignees',
+                        $task->assignedUsers->pluck('id')->toArray()
+                    );
+                @endphp
+
+                @foreach($assignees as $user)
+                    <option
+                        value="{{ $user->id }}"
+                        @selected(in_array($user->id, $assignedIds))
+                    >
+                        {{ $user->name }}
+                    </option>
+                @endforeach
+            </select>
+
+            <p class="text-sm text-gray-500 mt-1">
+                Hold <strong>Ctrl</strong> (Windows) or <strong>Cmd</strong> (Mac) to select multiple users
+            </p>
+        </div>
+
+        {{-- Due date --}}
+        <div>
+            <label class="block font-semibold mb-1">
+                {{ __('task_edit.due_date_label') }} *
+            </label>
+            <input
+                type="date"
+                name="due_date"
+                value="{{ old('due_date', $task->due_date) }}"
+                class="w-full rounded-xl border px-3 py-2"
+                required
+            >
+        </div>
+
+        {{-- Description --}}
+        <div>
+            <label class="block font-semibold mb-1">
+                {{ __('task_edit.description_label') }}
+            </label>
+            <textarea
+                name="description"
+                rows="4"
+                class="w-full rounded-xl border px-3 py-2"
+            >{{ old('description', $task->description) }}</textarea>
+        </div>
+
+        {{-- Status --}}
+        <div>
+            <label class="block font-semibold mb-1">
+                {{ __('task_edit.status_label') }}
+            </label>
+            <select
+                name="status"
+                class="w-full rounded-xl border px-3 py-2"
+            >
+                <option value="pending"     @selected($task->status === 'pending')>
+                    {{ __('task_edit.status_pending') }}
+                </option>
+                <option value="in_progress" @selected($task->status === 'in_progress')>
+                    {{ __('task_edit.status_in_progress') }}
+                </option>
+                <option value="completed"   @selected($task->status === 'completed')>
+                    {{ __('task_edit.status_completed') }}
+                </option>
+            </select>
+        </div>
+
+        {{-- Active --}}
+        <div class="flex items-center gap-2">
+            <input
+                type="checkbox"
+                name="active"
+                value="1"
+                id="active"
+                class="rounded"
+                {{ old('active', $task->active) ? 'checked' : '' }}
+            >
+            <label for="active" class="font-semibold">
+                {{ __('task_edit.active_label') }}
+            </label>
+        </div>
+
+        {{-- Actions --}}
+        <div class="flex justify-end gap-3 pt-4">
+            <a href="{{ route($dashRoute) }}"
+               class="px-4 py-2 rounded-xl border">
+                {{ __('task_edit.cancel_button') }}
+            </a>
+
+            <button
+                type="submit"
+                class="px-6 py-2 rounded-xl text-white bg-blue-600 hover:bg-blue-700"
+            >
+                {{ __('task_edit.save_button') }}
+            </button>
+        </div>
+
+    </form>
+</x-action-layout>
 @endsection

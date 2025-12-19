@@ -11,7 +11,7 @@ class UpdateTaskRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true; // You can change this to use role-based checks (e.g., auth()->user()->hasRole('admin'))
+        return true;
     }
 
     /**
@@ -19,36 +19,38 @@ class UpdateTaskRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $user = auth()->user();
+        
+        $rules = [
             'title' => 'required|string|max:255',
-            'assignee' => 'required|exists:users,id',
+            'project_id' => 'required|exists:projects,id',
             'due_date' => 'required|date',
             'description' => 'nullable|string',
-            'active' => 'nullable|boolean',
             'status' => 'required|in:pending,in_progress,completed',
+            'active' => 'boolean',
         ];
+        
+        // If user is admin, assignees are required
+        if ($user->hasRole('admin')) {
+            $rules['assignees'] = 'required|array|min:1';
+            $rules['assignees.*'] = 'exists:users,id';
+        } else {
+            // For staff, assignees are optional
+            $rules['assignees'] = 'nullable|array';
+            $rules['assignees.*'] = 'exists:users,id';
+        }
+        
+        return $rules;
     }
 
     /**
-     * Format validated data for repository update
+     * Get custom messages for validator errors.
      */
-    public function formatted(): array
+    public function messages(): array
     {
-        $data = $this->validated();
-
-        $formatted = [
-            'title' => $data['title'],
-            'description' => $data['description'] ?? null,
-            'due_date' => $data['due_date'],
-            'status' => $data['status'],
-            'active' => $this->has('active') ? 1 : 0,
+        return [
+            'assignees.required' => 'At least one assignee is required.',
+            'assignees.min' => 'Please select at least one assignee.',
         ];
-
-        // Only include assigned_user_id if current user is admin
-        if (auth()->user()->hasRole('admin')) {
-            $formatted['assigned_user_id'] = $data['assignee'];
-        }
-
-        return $formatted;
     }
 }
