@@ -97,6 +97,9 @@ class TaskService
                 $task->assignedUsers()->sync($data['assignees']);
             }
 
+            if ($task->project) {
+                $task->project->recalculateCompletion();
+            }
             return $task->refresh();
         });
     }
@@ -199,8 +202,36 @@ class TaskService
      * UPDATE STATUS (AJAX)
      * ==============================
      */
+    // public function updateStatus(int $taskId, string $status, ?int $percentage = null): ?Task
+    // {
+    //     $task = $this->taskRepo->updateStatus($taskId, $status, $percentage);
+
+    //     if ($task && $task->project) {
+    //         $task->project->recalculateCompletion();
+    //     }
+
+    //     return $task;
+    // }
+
     public function updateStatus(int $taskId, string $status, ?int $percentage = null): ?Task
     {
-        return $this->taskRepo->updateStatus($taskId, $status, $percentage);
+        // 1. Update task FIRST
+        $this->taskRepo->updateStatus($taskId, $status, $percentage);
+
+        // 2. Reload task with fresh data
+        $task = Task::with('project')->find($taskId);
+
+        if (!$task) {
+            return null;
+        }
+
+        // 3. Recalculate project progress
+        if ($task->project) {
+            $task->project->recalculateCompletion();
+        }
+
+        return $task;
     }
+
+    
 }

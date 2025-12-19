@@ -195,12 +195,31 @@ class TaskController extends Controller
      * STAFF DASHBOARD – UPCOMING TASKS
      * ==============================
      */
-    public function upcomingTasks(Request $request)
-    {
-        $tasks = $this->taskService->getTasksForStaff($request, auth()->id());
+    // public function upcomingTasks(Request $request)
+    // {
+    //     $tasks = $this->taskService->getTasksForStaff($request, auth()->id());
 
-        return view('staffdashboard', compact('tasks'));
+    //     return view('staffdashboard', compact('tasks'));
+    // }
+
+    public function upcomingTasks()
+    {
+        $projects = Project::with(['tasks'])
+            ->where('staff_id', auth()->id())
+            ->latest()
+            ->take(3)
+            ->get();
+
+        // Calculate completion percentage for each project
+        // foreach ($projects as $project) {
+        //     $totalTasks = $project->tasks->count();
+        //     $completedTasks = $project->tasks->where('status', 'completed')->count();
+        //     $project->completion_percentage = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100) : 0;
+        // }
+
+        return view('staffdashboard', compact('projects'));
     }
+
 
     /**
      * ==============================
