@@ -267,9 +267,9 @@ class TaskController extends Controller
     public function getUserTasks($userId)
     {
         $tasks = \DB::table('task_user')
-            ->join('tasks', 'task_user.task_id', '=', 'tasks.task_id')
+            ->join('tasks', 'task_user.task_id', '=', 'tasks.id')
             ->where('task_user.user_id', $userId)
-            ->select('tasks.task_id', 'tasks.title', 'tasks.status', 'tasks.due_date')
+            ->select('tasks.id', 'tasks.title', 'tasks.status', 'tasks.start_date', 'tasks.due_date')
             ->get();
 
         return response()->json($tasks);

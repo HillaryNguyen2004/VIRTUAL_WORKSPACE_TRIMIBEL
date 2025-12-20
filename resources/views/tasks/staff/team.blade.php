@@ -42,7 +42,7 @@
                                 required>
                                 <option value="">{{ __('staff_team.select_task') }}</option>
                                 @foreach($staffTasks as $task)
-                                    <option value="{{ $task->task_id }}" @selected(old('member_id', $member->id ?? null) == $task->assigned_user_id)>{{ $task->title }}</option>
+                                    <option value="{{ $task->id }}" @selected(old('member_id', $member->id ?? null) == $task->assigned_user_id)>{{ $task->title }}</option>
                                 @endforeach
                             </select>
                             <button type="submit"

@@ -37,10 +37,12 @@ class ProjectController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'title'       => 'required|string|max:255',
+            'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'staff_id'    => 'required|exists:users,id',
-            'status'      => 'nullable|in:active,inactive',
+            'staff_id' => 'required|exists:users,id',
+            'status' => 'nullable|in:active,inactive',
+            'start_date' => 'required|date',
+            'due_date' => 'required|date'
         ]);
 
         $this->projectService->createProject($validated);
@@ -67,10 +69,12 @@ class ProjectController extends Controller
     public function update(Request $request, int $id)
     {
         $validated = $request->validate([
-            'title'       => 'required|string|max:255',
+            'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'staff_id'    => 'required|exists:users,id',
-            'status'      => 'required|in:active,inactive',
+            'staff_id' => 'required|exists:users,id',
+            'status' => 'required|in:active,inactive',
+            'start_date' => 'required|date',
+            'due_date' => 'required|date'
         ]);
 
         $this->projectService->updateProject($id, $validated);

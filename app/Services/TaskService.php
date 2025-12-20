@@ -41,12 +41,13 @@ class TaskService
 
             // 1. Create task
             $task = $this->taskRepo->create([
-                'title'       => $data['title'],
+                'title' => $data['title'],
                 'description' => $data['description'] ?? null,
-                'project_id'  => $data['project_id'],
-                'due_date'    => $data['due_date'],
-                'status'      => 'pending',
-                'active'      => $data['active'] ?? 0,
+                'project_id' => $data['project_id'],
+                'start_date' => $data['start_date'],
+                'due_date' => $data['due_date'],
+                'status' => 'pending',
+                'active' => $data['active'] ?? 0,
             ]);
 
             // 2. Attach users (pivot table)
@@ -85,11 +86,12 @@ class TaskService
 
             // 1. Update task fields
             $this->taskRepo->update($task, [
-                'title'       => $data['title'],
+                'title' => $data['title'],
                 'description' => $data['description'] ?? null,
-                'project_id'  => $data['project_id'],
-                'due_date'    => $data['due_date'],
-                'active'      => $data['active'] ?? 0,
+                'project_id' => $data['project_id'],
+                'start_date' => $data['start_date'],
+                'due_date' => $data['due_date'],
+                'active' => $data['active'] ?? 0,
             ]);
 
             // 2. Sync assignees
@@ -146,6 +148,12 @@ class TaskService
             case 'name_desc':
                 $query->orderBy('title', 'desc');
                 break;
+            case 'start_asc':
+                $query->orderBy('start_date', 'asc');
+                break;
+            case 'start_desc':
+                $query->orderBy('start_date', 'desc');
+                break;
             case 'due_asc':
                 $query->orderBy('due_date', 'asc');
                 break;
@@ -182,6 +190,10 @@ class TaskService
 
         if ($request->filled('search')) {
             $query->where('title', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('start_date', $request->start_date);
         }
 
         if ($request->filled('due_date')) {
@@ -233,5 +245,5 @@ class TaskService
         return $task;
     }
 
-    
+
 }

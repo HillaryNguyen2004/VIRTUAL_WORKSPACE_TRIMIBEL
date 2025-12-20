@@ -39,6 +39,18 @@
             </select>
         </div>
 
+        {{-- Start date --}}
+        <div class="mb-4">
+            <label class="block font-medium mb-1">{{ __('projects.start_date') }}</label>
+            <input type="date" name="start_date" class="w-full border rounded-lg px-3 py-2">
+        </div>
+
+        {{-- Due date --}}
+        <div class="mb-4">
+            <label class="block font-medium mb-1">{{ __('projects.due_date') }}</label>
+            <input type="date" name="due_date" class="w-full border rounded-lg px-3 py-2">
+        </div>
+
         <div class="flex justify-end gap-3">
             <a href="{{ route('projects.index') }}"
                class="px-4 py-2 border rounded-lg">

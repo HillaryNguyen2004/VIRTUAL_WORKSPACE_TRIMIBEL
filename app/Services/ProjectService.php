@@ -22,11 +22,13 @@ class ProjectService
         $this->ensureStaff($data['staff_id']);
 
         return $this->projectRepo->create([
-            'title'       => $data['title'],
+            'title' => $data['title'],
             'description' => $data['description'] ?? null,
-            'staff_id'    => $data['staff_id'],
-            'status'      => $data['status'] ?? 'active',
-            'progress'    => 0,
+            'staff_id' => $data['staff_id'],
+            'status' => $data['status'] ?? 'active',
+            'progress' => 0,
+            'start_date' => $data['start_date'],
+            'due_date' => $data['due_date']
         ]);
     }
 

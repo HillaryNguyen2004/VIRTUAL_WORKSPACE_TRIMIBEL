@@ -103,6 +103,20 @@
             </p>
         </div>
 
+        {{-- Start date --}}
+        <div>
+            <label class="block font-semibold mb-1">
+                {{ __('task_edit.start_date_label') }} *
+            </label>
+            <input
+                type="date"
+                name="start_date"
+                value="{{ old('due_date', $task->start_date) }}"
+                class="w-full rounded-xl border px-3 py-2"
+                required
+            >
+        </div>
+
         {{-- Due date --}}
         <div>
             <label class="block font-semibold mb-1">

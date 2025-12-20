@@ -37,6 +37,7 @@ class StoreTaskRequest extends FormRequest
             'project_id' => 'required|exists:projects,id',
             'assignees'  => 'required|array',
             'assignees.*'=> 'exists:users,id',
+            'start_date' => 'required|date',
             'due_date'   => 'required|date|after_or_equal:today',
             'description'=> 'nullable|string',
             'active'     => 'nullable|boolean',

@@ -217,7 +217,7 @@
                     );
                 })
                 ->with('users')
-                ->orderBy('task_id', 'desc')
+                ->orderBy('id', 'desc')
                 ->limit(5)
                 ->get();
             @endphp
@@ -294,7 +294,7 @@ function showTaskDropdown(userId, tasks) {
             ? `
             <select class="w-full border rounded-lg p-2 text-gray-700 mb-4">
                 ${tasks.map(task => `
-                    <option value="${task.task_id}">
+                    <option value="${task.id}">
                         ${task.title} — ${task.status} (Due: ${task.due_date || 'N/A'})
                     </option>
                 `).join('')}

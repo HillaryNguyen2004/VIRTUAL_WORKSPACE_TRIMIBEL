@@ -6,10 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 class Task extends Model
 {
     protected $table = 'tasks';
-    protected $primaryKey = 'task_id';
+    protected $primaryKey = 'id';
     public $timestamps = false; 
     protected $fillable = [
-        'title', 'description', 'assigned_user_id', 'status', 'due_date', 'active','project_id'
+        'title', 'description', 'assigned_user_id', 'status', 'start_date', 'due_date', 'active','project_id'
     ];
     public function assigneeUser()
     {
