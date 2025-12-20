@@ -1,16 +1,7 @@
 @extends('layout_dashboard')
 
 @section('content')
-
-@php
-    if (auth()->user()->hasRole('admin')) {
-        $dashRoute = 'tasks.index';        
-    } else {
-        $dashRoute = 'tasks.staff.index'; 
-    }
-@endphp
-
-<x-action-layout :route="$dashRoute" title="Create Task">
+<x-action-layout :route="route('tasks.staff.index')" title="Create Task">
 
 @if(session('success'))
     <div class="bg-green-100 text-green-700 p-3 rounded-lg mb-4">

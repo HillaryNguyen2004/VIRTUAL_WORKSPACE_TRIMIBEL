@@ -56,7 +56,7 @@
             class="flex flex-col w-full gap-8 bg-[#FDFDFF] shadow-[0_4px_40px_0_rgba(32,27,53,0.1)] rounded-[20px] py-5 px-6 animate-fade-in-up [animation-delay:300ms]">
             <!-- Heading -->
             <div class="flex items-center justify-between w-full">
-                <p class="text-[20px] font-medium">{{ __('staff_dashboard.upcoming_tasks') }}</p>
+                <p class="text-[20px] font-medium">{{ __('staff_dashboard.my_projects') ?? 'My Projects' }}</p>
                 <a href="{{ route('tasks.staff.index') }}">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
                         <path
@@ -76,27 +76,37 @@
 
             <div class="w-full">
                 <div class="grid grid-cols-2 md:grid-cols-3 items-center text-gray-300">
-                    <p>{{ __('staff_dashboard.tasks_label') }}</p>
-                    <p class="text-center hidden md:block">{{ __('staff_dashboard.due_date') }}</p>
-                    <p class="text-right">{{ __('staff_dashboard.tasks_status_label') }}</p>
+                    <p>{{ __('staff_dashboard.project_name') ?? 'Project Name' }}</p>
+                    <p class="text-center hidden md:block">{{ __('staff_dashboard.progress') ?? 'Progress' }}</p>
+                    <p class="text-right">{{ __('staff_dashboard.tasks_count') ?? 'Tasks' }}</p>
                 </div>
                 <div class="h-px w-full bg-[#D9D9D9] mt-3"></div>
 
-                @forelse ($tasks->take(3) as $task)
+                @forelse ($projects->take(3) as $project)
                     <div class="grid grid-cols-2 md:grid-cols-3 items-center pt-3">
-                        <p class="truncate pr-4">{{ $task->title }}</p>
-
-                        <p class="text-center hidden md:block">
-                            {{ $task->due_date }}
+                        <!-- Project name -->
+                        <p class="truncate pr-4 font-medium text-[#5D3FD3]">
+                            {{ $project->title }}
                         </p>
 
-                        <span class="justify-self-end {{ $statusMap[$task->status] }}">
-                            {{ __('user_dashboard.status_' . $task->status) }}
+                        <!-- Project progress bar -->
+                        <div class="hidden md:flex items-center gap-2">
+                            <div class="w-20 bg-gray-200 rounded-full h-2">
+                                <div class="bg-[#5D3FD3] h-2 rounded-full" style="width: {{ $project->progress }}%"></div>
+                            </div>
+                            <span class="text-sm">{{ $project->progress }}%</span>
+                        </div>
+
+                        <!-- Project task count -->
+                        <span class="justify-self-end px-3 py-1 rounded-full text-sm bg-[#EEF2FF] text-[#5D3FD3]">
+                            {{ $project->tasks->count() }} {{ __('staff_dashboard.tasks_label') }}
                         </span>
                     </div>
                 @empty
-                    <p>{{ __('staff_dashboard.no_upcoming_tasks') ?? 'No data available' }}</p>
+                    <p>{{ __('staff_dashboard.no_upcoming_projects') ?? 'No projects assigned' }}</p>
                 @endforelse
+
+
             </div>
         </div>
         <!-- Third section -->

@@ -1,141 +1,237 @@
 <?php
+
 namespace App\Services;
+
 use App\Models\Task;
 use App\Repositories\TaskRepositoryInterface;
 use Illuminate\Http\Request;
-use App\Repositories\TaskRepository;
+use Illuminate\Support\Facades\DB;
+
 class TaskService
 {
-    protected $taskRepo;
+    protected TaskRepositoryInterface $taskRepo;
 
     public function __construct(TaskRepositoryInterface $taskRepo)
     {
         $this->taskRepo = $taskRepo;
     }
 
+    /**
+     * ==============================
+     * GET ALL TASKS (ADMIN)
+     * ==============================
+     */
     public function getAllTasks()
     {
         return $this->taskRepo->all();
     }
 
-    public function createTask(array $data)
+    /**
+     * ==============================
+     * CREATE TASK
+     * ==============================
+     * Handles:
+     * - project_id
+     * - task creation
+     * - attach assignees
+     */
+    public function createTask(array $data): Task
     {
-        return $this->taskRepo->create($data);
+        return DB::transaction(function () use ($data) {
+
+            // 1. Create task
+            $task = $this->taskRepo->create([
+                'title'       => $data['title'],
+                'description' => $data['description'] ?? null,
+                'project_id'  => $data['project_id'],
+                'due_date'    => $data['due_date'],
+                'status'      => 'pending',
+                'active'      => $data['active'] ?? 0,
+            ]);
+
+            // 2. Attach users (pivot table)
+            if (!empty($data['assignees'])) {
+                $task->assignedUsers()->sync($data['assignees']);
+            }
+
+            return $task;
+        });
     }
 
-    public function getTaskById($id)
+    /**
+     * ==============================
+     * GET TASK BY ID
+     * ==============================
+     */
+    public function getTaskById($id): Task
     {
         return $this->taskRepo->find($id);
     }
 
-    public function updateTask($id, array $data)
+    /**
+     * ==============================
+     * UPDATE TASK
+     * ==============================
+     * Handles:
+     * - project change
+     * - assignee sync
+     * - task fields update
+     */
+    public function updateTask($id, array $data): Task
     {
-        $task = $this->taskRepo->find($id);
-        return $this->taskRepo->update($task, $data);
+        return DB::transaction(function () use ($id, $data) {
+
+            $task = $this->taskRepo->find($id);
+
+            // 1. Update task fields
+            $this->taskRepo->update($task, [
+                'title'       => $data['title'],
+                'description' => $data['description'] ?? null,
+                'project_id'  => $data['project_id'],
+                'due_date'    => $data['due_date'],
+                'active'      => $data['active'] ?? 0,
+            ]);
+
+            // 2. Sync assignees
+            if (isset($data['assignees'])) {
+                $task->assignedUsers()->sync($data['assignees']);
+            }
+
+            if ($task->project) {
+                $task->project->recalculateCompletion();
+            }
+            return $task->refresh();
+        });
     }
 
-    public function deleteTask($id)
+    /**
+     * ==============================
+     * DELETE TASK
+     * ==============================
+     */
+    public function deleteTask($id): bool
     {
         $task = $this->taskRepo->find($id);
+
+        // Detach users first (safe)
+        $task->assignedUsers()->detach();
+
         return $this->taskRepo->delete($task);
     }
 
-    // public function getTasksForStaff(Request $request, $userId)
-    // {
-    //     $query = $this->taskRepo->getTasksForUser($userId);
-
-    //     if ($request->filled('search')) {
-    //         $query->where('title', 'like', '%' . $request->search . '%');
-    //     }
-
-    //     if ($request->filled('status')) {
-    //         $query->where('status', $request->status);
-    //     }
-
-    //     // return $query->get()->load('assignedUsers');
-    //     return $query->with('assignedUsers')->get();
-    // }
-
-    public function getTasksForStaff(Request $request, $userId)
+    /**
+     * ==============================
+     * STAFF TASK LIST
+     * ==============================
+     */
+    public function getTasksForStaff(Request $request, int $userId)
     {
         $query = $this->taskRepo->getTasksForUser($userId);
 
+        // Search
         if ($request->filled('search')) {
-            $query = $query->where('title', 'like', '%' . $request->search . '%');
+            $query->where('title', 'like', '%' . $request->search . '%');
         }
 
+        // Status filter
         if ($request->filled('status')) {
-            $query = $query->where('status', $request->status);
+            $query->where('status', $request->status);
         }
 
-        if ($search = $request->search) {
-        $query->where('title', 'like', '%' . $search . '%');
+        // Sorting
+        switch ($request->sort) {
+            case 'name_asc':
+                $query->orderBy('title', 'asc');
+                break;
+            case 'name_desc':
+                $query->orderBy('title', 'desc');
+                break;
+            case 'due_asc':
+                $query->orderBy('due_date', 'asc');
+                break;
+            case 'due_desc':
+            default:
+                $query->orderBy('due_date', 'desc');
+                break;
+        }
+
+        return $query
+            ->with(['assignedUsers', 'project'])
+            ->paginate(3)
+            ->appends($request->query());
     }
 
-        // Apply sort
-        if ($sort = $request->sort) {
-            switch ($sort) {
-                case 'name_asc':
-                    $query->orderByRaw("SUBSTRING_INDEX(title, ' ', 1) ASC");
-                    break;
-                case 'name_desc':
-                    $query->orderByRaw("SUBSTRING_INDEX(title, ' ', 1) DESC");
-                    break;
-                case 'due_asc':
-                    $query->orderBy('due_date', 'asc');
-                    break;
-                case 'due_desc':
-                    $query->orderBy('due_date', 'desc');
-                    break;
-            }
-        } else {
-            $query->orderBy('due_date', 'desc');
-        }
-
-        return $query->paginate(3)->appends($request->query());
-}
-
-        // return $query->with('assignedUsers')->get();
-    
-
-    public function getUpcomingTasks($userId)
+    /**
+     * ==============================
+     * UPCOMING TASKS
+     * ==============================
+     */
+    public function getUpcomingTasks(int $userId)
     {
         return $this->taskRepo->getUpcomingTasks($userId);
     }
 
-public function getAllTasksQuery()
-{
-    return \App\Models\Task::with('assigneeUser');
-}
+    /**
+     * ==============================
+     * ADMIN FILTERED TASKS
+     * ==============================
+     */
+    public function getFilteredTasks(Request $request)
+    {
+        $query = Task::with(['assignedUsers', 'project']);
 
-public function getFilteredTasks(Request $request)
-{
-    $query = Task::with('assigneeUser');
+        if ($request->filled('search')) {
+            $query->where('title', 'like', '%' . $request->search . '%');
+        }
 
-    if ($request->filled('search')) {
-        $query->where('title', 'like', '%' . $request->search . '%');
+        if ($request->filled('due_date')) {
+            $query->whereDate('due_date', $request->due_date);
+        }
+
+        if ($request->filled('assigned_user_id')) {
+            $query->whereHas('assignedUsers', function ($q) use ($request) {
+                $q->where('users.id', $request->assigned_user_id);
+            });
+        }
+
+        return $query->orderBy('due_date', 'desc')->paginate(3);
     }
 
-    if ($request->filled('due_date')) {
-        $query->whereDate('due_date', $request->due_date);
+    /**
+     * ==============================
+     * UPDATE STATUS (AJAX)
+     * ==============================
+     */
+    // public function updateStatus(int $taskId, string $status, ?int $percentage = null): ?Task
+    // {
+    //     $task = $this->taskRepo->updateStatus($taskId, $status, $percentage);
+
+    //     if ($task && $task->project) {
+    //         $task->project->recalculateCompletion();
+    //     }
+
+    //     return $task;
+    // }
+
+    public function updateStatus(int $taskId, string $status, ?int $percentage = null): ?Task
+    {
+        // 1. Update task FIRST
+        $this->taskRepo->updateStatus($taskId, $status, $percentage);
+
+        // 2. Reload task with fresh data
+        $task = Task::with('project')->find($taskId);
+
+        if (!$task) {
+            return null;
+        }
+
+        // 3. Recalculate project progress
+        if ($task->project) {
+            $task->project->recalculateCompletion();
+        }
+
+        return $task;
     }
 
-    if ($request->filled('assigned_user_id')) {
-        $query->where('assigned_user_id', $request->assigned_user_id);
-    }
-
-    if ($request->filled('sort_by')) {
-        $query->orderBy($request->sort_by);
-    }
-
-    return $query->paginate(3); // or ->paginate(10);
-}
-
-
-public function updateStatus(int $taskId, string $status, ?int $percentage = null)
-{
-    return $this->taskRepo->updateStatus($taskId, $status, $percentage);
-}
-
-
+    
 }

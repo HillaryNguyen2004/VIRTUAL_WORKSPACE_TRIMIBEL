@@ -100,6 +100,22 @@
                     <li>{{ __('admin_dashboard.assign_to_campaign') }}</li>
                 </ul>
             </x-admin.manage-action>
+            <x-admin.manage-action
+                :title="__('admin_dashboard.project_management')"
+                :subtitle="__('admin_dashboard.project_management_description')"
+                :btnLabel="__('admin_dashboard.view_projects')"
+                :hrefAll="route('projects.index')"
+                :hrefAction="route('projects.create')"
+                animationDelay="[animation-delay:375ms]"
+                bgBtn="bg-emerald-600"
+                bgHoverBtn="opacity-95"
+            >
+                <ul class="text-sm list-disc pl-4">
+                    <li>{{ __('admin_dashboard.project_assign_staff') }}</li>
+                    <li>{{ __('admin_dashboard.project_track_progress') }}</li>
+                    <li>{{ __('admin_dashboard.project_manage_status') }}</li>
+                </ul>
+            </x-admin.manage-action>
             <div
                 class="flex flex-col gap-3 w-full h-full bg-[#FDFDFF] shadow-[0_4px_40px_0_rgba(32,27,53,0.1)] rounded-[20px] py-5 px-6 animate-fade-in-up [animation-delay:450ms]">
                 <div class="flex items-center justify-between w-full gap-2">

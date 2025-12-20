@@ -9,11 +9,15 @@ class Task extends Model
     protected $primaryKey = 'task_id';
     public $timestamps = false; 
     protected $fillable = [
-        'title', 'description', 'assigned_user_id', 'status', 'due_date', 'active'
+        'title', 'description', 'assigned_user_id', 'status', 'due_date', 'active','project_id'
     ];
     public function assigneeUser()
     {
         return $this->belongsTo(\App\Models\User::class, 'assigned_user_id');
+    }
+     public function project()
+    {
+        return $this->belongsTo(Project::class);
     }
 
 
