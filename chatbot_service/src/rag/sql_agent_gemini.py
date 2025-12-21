@@ -142,8 +142,13 @@ def answer_from_db(
         About check-ins:
         - Users who check in after start time of company hour will decide as late.
         
+        About projects:
+        - Project is like a parent of tasks.
+        - Ony admin role can create project and then admin or staff role will create tasks from that project.
+        
         About tasks:
         - Give some advises to solve the task from the questions (if you can).
+        - Task with the same project_id will be in the same project
     """
 
     # Inject user hint + language into the question passed to the chain
