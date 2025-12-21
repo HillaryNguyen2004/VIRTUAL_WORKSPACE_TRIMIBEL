@@ -38,5 +38,6 @@ return [
     'delete'=> 'Xoá',
     'filter'=> 'Lọc',
     'reset' => 'Làm mới',
+    'tasks' => 'công việc',
 ];
 ?>

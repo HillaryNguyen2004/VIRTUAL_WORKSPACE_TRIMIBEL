@@ -38,5 +38,6 @@ return [
     'delete'=> 'Delete',
     'filter'=> 'Filter',
     'reset' => 'Reset',
+    'tasks' => 'tasks',
 ];
 ?>

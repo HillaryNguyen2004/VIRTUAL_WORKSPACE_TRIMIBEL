@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Task;
+use App\Models\Project;
 use App\Repositories\TaskRepositoryInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,16 +15,6 @@ class TaskService
     public function __construct(TaskRepositoryInterface $taskRepo)
     {
         $this->taskRepo = $taskRepo;
-    }
-
-    /**
-     * ==============================
-     * GET ALL TASKS (ADMIN)
-     * ==============================
-     */
-    public function getAllTasks()
-    {
-        return $this->taskRepo->all();
     }
 
     /**
@@ -123,94 +114,6 @@ class TaskService
 
     /**
      * ==============================
-     * STAFF TASK LIST
-     * ==============================
-     */
-    public function getTasksForStaff(Request $request, int $userId)
-    {
-        $query = $this->taskRepo->getTasksForUser($userId);
-
-        // Search
-        if ($request->filled('search')) {
-            $query->where('title', 'like', '%' . $request->search . '%');
-        }
-
-        // Status filter
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        // Sorting
-        switch ($request->sort) {
-            case 'name_asc':
-                $query->orderBy('title', 'asc');
-                break;
-            case 'name_desc':
-                $query->orderBy('title', 'desc');
-                break;
-            case 'start_asc':
-                $query->orderBy('start_date', 'asc');
-                break;
-            case 'start_desc':
-                $query->orderBy('start_date', 'desc');
-                break;
-            case 'due_asc':
-                $query->orderBy('due_date', 'asc');
-                break;
-            case 'due_desc':
-            default:
-                $query->orderBy('due_date', 'desc');
-                break;
-        }
-
-        return $query
-            ->with(['assignedUsers', 'project'])
-            ->paginate(3)
-            ->appends($request->query());
-    }
-
-    /**
-     * ==============================
-     * UPCOMING TASKS
-     * ==============================
-     */
-    public function getUpcomingTasks(int $userId)
-    {
-        return $this->taskRepo->getUpcomingTasks($userId);
-    }
-
-    /**
-     * ==============================
-     * ADMIN FILTERED TASKS
-     * ==============================
-     */
-    public function getFilteredTasks(Request $request)
-    {
-        $query = Task::with(['assignedUsers', 'project']);
-
-        if ($request->filled('search')) {
-            $query->where('title', 'like', '%' . $request->search . '%');
-        }
-
-        if ($request->filled('start_date')) {
-            $query->whereDate('start_date', $request->start_date);
-        }
-
-        if ($request->filled('due_date')) {
-            $query->whereDate('due_date', $request->due_date);
-        }
-
-        if ($request->filled('assigned_user_id')) {
-            $query->whereHas('assignedUsers', function ($q) use ($request) {
-                $q->where('users.id', $request->assigned_user_id);
-            });
-        }
-
-        return $query->orderBy('due_date', 'desc')->paginate(3);
-    }
-
-    /**
-     * ==============================
      * UPDATE STATUS (AJAX)
      * ==============================
      */
@@ -245,5 +148,72 @@ class TaskService
         return $task;
     }
 
+    public function getFilteredProjectsWithTasks(Request $request, $user)
+    {
+        $sortDir = strtolower($request->get('sort_dir', ''));
+        $sortDir = in_array($sortDir, ['asc', 'desc'], true) ? $sortDir : null;
 
+        $projectsQuery = Project::query()
+            ->with([
+                'staff',
+                'tasks' => function ($taskQuery) use ($request, $sortDir) {
+
+                    // Search by task title
+                    if ($request->filled('search')) {
+                        $taskQuery->where('title', 'like', '%' . $request->search . '%');
+                    }
+
+                    // Filter by task start_date (>=)
+                    if ($request->filled('start_date')) {
+                        $taskQuery->whereDate('start_date', '>=', $request->start_date);
+                    }
+
+                    // Filter by task due_date (<=)
+                    if ($request->filled('due_date')) {
+                        $taskQuery->whereDate('due_date', '<=', $request->due_date);
+                    }
+
+                    // Sort by task name (title)
+                    if ($sortDir) {
+                        $taskQuery->orderBy('title', $sortDir);
+                    } else {
+                        $taskQuery->orderByDesc('id'); // default
+                    }
+
+                    $taskQuery->with('assignedUsers');
+                }
+            ])
+            ->orderByDesc('id'); // projects ordering (no created_at)
+
+        // Role restriction
+        if (!$user->hasRole('admin')) {
+            $projectsQuery->where('staff_id', $user->id);
+        }
+
+        if ($request->filled('project_id')) {
+            $projectsQuery->where('id', $request->project_id);
+        }
+
+        // If any task filter is set, only keep projects that have matching tasks
+        $hasTaskFilters = $request->filled('search') || $request->filled('start_date') || $request->filled('due_date');
+
+        if ($hasTaskFilters) {
+            $projectsQuery->whereHas('tasks', function ($taskQuery) use ($request) {
+                if ($request->filled('search')) {
+                    $taskQuery->where('title', 'like', '%' . $request->search . '%');
+                }
+                if ($request->filled('start_date')) {
+                    $taskQuery->whereDate('start_date', '>=', $request->start_date);
+                }
+                if ($request->filled('due_date')) {
+                    $taskQuery->whereDate('due_date', '<=', $request->due_date);
+                }
+            });
+        }
+
+        // Paginate projects (optional but recommended)
+        $perPage = max(1, (int) $request->get('per_page', 10));
+
+        return $projectsQuery->paginate($perPage)->appends($request->query());
+    }
 }

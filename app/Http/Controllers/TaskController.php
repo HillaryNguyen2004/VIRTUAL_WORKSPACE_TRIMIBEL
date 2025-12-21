@@ -31,7 +31,7 @@ class TaskController extends Controller
         if ($user->hasRole('admin')) {
             // Admin → can assign to ANYONE
             $assignees = User::all();
-            $projects  = Project::all();
+            $projects = Project::all();
         } else {
             // Staff → ONLY their team members
             $assignees = User::where('team_leader_id', $user->id)->get();
@@ -81,10 +81,10 @@ class TaskController extends Controller
 
         if ($user->hasRole('admin')) {
             $assignees = User::all();
-            $projects  = Project::all();
+            $projects = Project::all();
         } else {
             $assignees = User::where('team_leader_id', $user->id)->get();
-            $projects  = Project::where('staff_id', $user->id)->get();
+            $projects = Project::where('staff_id', $user->id)->get();
         }
 
         return view('tasks.edit', compact('task', 'assignees', 'projects'));
@@ -150,31 +150,16 @@ class TaskController extends Controller
     {
         $user = auth()->user();
 
-        // ======================
-        // ADMIN → ALL projects + all tasks
-        // ======================
-        if ($user->hasRole('admin')) {
-            $projects = Project::with([
-                    'staff',                // project owner
-                    'tasks.assignedUsers'   // child tasks
-                ])
-                ->latest()
-                ->get();
+        $projects = $this->taskService->getFilteredProjectsWithTasks($request, $user);
 
-            return view('tasks.index', compact('projects'));
-        }
+        $projectOptions = Project::query()
+            ->when(!$user->hasRole('admin'), fn($q) => $q->where('staff_id', $user->id))
+            ->orderBy('title')
+            ->get(['id', 'title']);
 
-        // ======================
-        // STAFF → OWN projects only
-        // ======================
-        $projects = Project::with([
-                'tasks.assignedUsers'
-            ])
-            ->where('staff_id', $user->id)
-            ->latest()
-            ->get();
-
-        return view('tasks.staff.index', compact('projects'));
+        return $user->hasRole('admin')
+            ? view('tasks.index', compact('projects', 'projectOptions'))
+            : view('tasks.staff.index', compact('projects', 'projectOptions'));
     }
 
 
@@ -230,13 +215,13 @@ class TaskController extends Controller
     {
         try {
             $request->validate([
-                'status'     => 'required|in:pending,in_progress,completed',
+                'status' => 'required|in:pending,in_progress,completed',
                 'percentage' => 'nullable|integer|min:0|max:100',
             ]);
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'errors'  => $e->errors(),
+                'errors' => $e->errors(),
             ], 422);
         }
 
@@ -255,7 +240,7 @@ class TaskController extends Controller
 
         return response()->json([
             'success' => true,
-            'task'    => $task
+            'task' => $task
         ]);
     }
 
@@ -274,9 +259,4 @@ class TaskController extends Controller
 
         return response()->json($tasks);
     }
-
-    public function staffTasks(Request $request) { 
-        $projects = Project::with([ 'tasks.assignedUsers' ]) ->where('staff_id', auth()->id()) ->get(); 
-        
-        return view('tasks.staff.index', compact('projects')); }
 }
