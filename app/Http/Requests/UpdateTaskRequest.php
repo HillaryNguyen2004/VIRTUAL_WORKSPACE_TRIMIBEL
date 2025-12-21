@@ -24,6 +24,7 @@ class UpdateTaskRequest extends FormRequest
         $rules = [
             'title' => 'required|string|max:255',
             'project_id' => 'required|exists:projects,id',
+            'start_date' => 'required|date',
             'due_date' => 'required|date',
             'description' => 'nullable|string',
             'status' => 'required|in:pending,in_progress,completed',

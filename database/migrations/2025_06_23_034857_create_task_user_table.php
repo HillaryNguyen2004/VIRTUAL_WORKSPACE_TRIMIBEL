@@ -14,7 +14,7 @@ class CreateTaskUserTable extends Migration
 
             $table->primary(['task_id', 'user_id']); // Composite primary key
 
-            $table->foreign('task_id')->references('task_id')->on('tasks')->onDelete('cascade');
+            $table->foreign('task_id')->references('id')->on('tasks')->onDelete('cascade');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }

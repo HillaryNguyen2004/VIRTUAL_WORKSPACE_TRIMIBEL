@@ -9,7 +9,7 @@ class CreateTasksTable extends Migration
     public function up()
     {
         Schema::create('tasks', function (Blueprint $table) {
-            $table->bigIncrements('task_id'); // Custom primary key
+            $table->bigIncrements('id'); // Custom primary key
             $table->string('title');
             $table->text('description')->nullable();
             $table->unsignedBigInteger('assigned_user_id')->nullable();

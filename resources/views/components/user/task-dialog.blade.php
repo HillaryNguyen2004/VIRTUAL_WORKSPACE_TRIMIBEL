@@ -93,8 +93,8 @@
                                 $percent = $task->percentage ?? 0;
                             @endphp
 
-                            <tr data-task-id="{{ $task->task_id }}" 
-                                data-sort-id="{{ $task->task_id }}"
+                            <tr data-task-id="{{ $task->id }}" 
+                                data-sort-id="{{ $task->id }}"
                                 data-sort-title="{{ strtolower($task->title) }}"
                                 data-sort-status="{{ $task->status }}"
                                 aria-expanded="false" 
@@ -102,7 +102,7 @@
                                 
                                 <td class="px-6 py-5">
                                     <div class="flex items-center justify-start min-w-0">
-                                        <span class="font-mono font-bold text-xs text-muted-400 bg-muted-100 px-2 py-1 rounded-md">#{{ $task->task_id }}</span>
+                                        <span class="font-mono font-bold text-xs text-muted-400 bg-muted-100 px-2 py-1 rounded-md">#{{ $task->id }}</span>
                                     </div>
                                 </td>
 
@@ -114,15 +114,15 @@
 
                                 <td class="px-6 py-5 relative">
                                     <button class="status-btn flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all {{ $cls }}"
-                                        data-task-id="{{ $task->task_id }}" aria-haspopup="menu"
-                                        aria-expanded="false" aria-controls="status-menu-{{ $task->task_id }}">
+                                        data-task-id="{{ $task->id }}" aria-haspopup="menu"
+                                        aria-expanded="false" aria-controls="status-menu-{{ $task->id }}">
                                         <span class="uppercase tracking-wide">{{ __('user_dashboard.status_' . $task->status) }}</span>
                                         <span class="hidden {{ !($task->status == "in_progress") ? "md:hidden" : "md:inline" }} bg-white/50 px-1.5 rounded-md ml-1">
                                             {{ $percent ?? 0 }}%
                                         </span>
                                     </button>
 
-                                    <div id="status-menu-{{ $task->task_id }}"
+                                    <div id="status-menu-{{ $task->id }}"
                                         class="status-menu hidden absolute left-0 mt-2 w-64 bg-white border border-muted-200 shadow-xl rounded-2xl p-3 z-[100] ring-1 ring-black/5 animate-fade-in-up">
                                         <button type="button"
                                             class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold uppercase text-muted-600 bg-muted-100 hover:bg-muted-200 transition-colors mb-3"
@@ -160,7 +160,7 @@
 
                                 <td class="px-6 py-5 text-right">
                                     <button type="button" class="text-muted-400 hover:text-primary hover:bg-primary/10 p-2 rounded-full transition-colors js-show-desc"
-                                        aria-controls="desc-{{ $task->task_id }}" aria-expanded="false"
+                                        aria-controls="desc-{{ $task->id }}" aria-expanded="false"
                                         title="{{ __('user_dashboard.view_details') }}">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
@@ -169,11 +169,11 @@
                                 </td>
                             </tr>
 
-                            <tr id="desc-{{ $task->task_id }}" class="desc-row hidden transition-all" role="region">
+                            <tr id="desc-{{ $task->id }}" class="desc-row hidden transition-all" role="region">
                                 <td colspan="4" class="bg-muted-50 p-0">
                                     <div class="px-8 py-6 border-l-4 border-primary">
                                         <div class="text-xs font-bold text-muted-500 uppercase tracking-wide mb-2">
-                                            Task #{{ $task->task_id }} - {{ $task->title }}
+                                            Task #{{ $task->id }} - {{ $task->title }}
                                         </div>
                                         <p class="text-base text-main leading-relaxed">
                                             {{ $task->description ?? __('user_dashboard.no_description') }}
