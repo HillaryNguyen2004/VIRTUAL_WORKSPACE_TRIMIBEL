@@ -41,7 +41,7 @@ def is_chitchat(user_q: str) -> bool:
     if len(words) <= 4 and text in short_ack:
         return True
 
-    # 2. Classic small-talk / social phrases
+    # Classic small-talk / social phrases
     small_talk_phrases = [
         "what's up",
         "whats up",
@@ -63,7 +63,7 @@ def is_chitchat(user_q: str) -> bool:
     if any(phrase in text for phrase in small_talk_phrases):
         return True
 
-    # 3. Meta questions about the bot itself
+    # Meta questions about the bot itself
     patterns: List[str] = [
         r"\bwhat('?s| is) your name\b",
         r"\bwho are you\b",
@@ -95,112 +95,112 @@ def is_chitchat(user_q: str) -> bool:
 
     return False
 
-def is_db_question(user_q: str) -> bool:
-    text = user_q.lower()
+# def is_db_question(user_q: str) -> bool:
+#     text = user_q.lower()
 
-    asks_how_to = any(
-        phrase in text
-        for phrase in [
-            "how to",
-            "how do i",
-            "where can i",
-            "how can i",
-        ]
-    )
-    if asks_how_to:
-        return False
+#     asks_how_to = any(
+#         phrase in text
+#         for phrase in [
+#             "how to",
+#             "how do i",
+#             "where can i",
+#             "how can i",
+#         ]
+#     )
+#     if asks_how_to:
+#         return False
 
-    # Domain flags
-    about_attendance = any(
-        k in text
-        for k in [
-            "check in",
-            "check-in",
-            "check out",
-            "checkout",
-            "attendance",
-        ]
-    )
-    about_tasks = any(
-        k in text
-        for k in [
-            "task",
-            "tasks",
-            "assigned task",
-            "assigned tasks",
-        ]
-    )
-    about_requests = any(
-        k in text
-        for k in [
-            "day off",
-            "day-off",
-            "leave request",
-            "leave requests",
-            "time off",
-        ]
-    )
-    about_users = any(
-        k in text
-        for k in [
-            "user list",
-            "list of users",
-            "all users",
-        ]
-    )
-    # NEW: team / leader domain
-    about_team = any(
-        k in text
-        for k in [
-            "team leader",
-            "team lead",
-            "leader of my team",
-            "my team members",
-            "team members",
-            "my team",
-        ]
-    )
+#     # Domain flags
+#     about_attendance = any(
+#         k in text
+#         for k in [
+#             "check in",
+#             "check-in",
+#             "check out",
+#             "checkout",
+#             "attendance",
+#         ]
+#     )
+#     about_tasks = any(
+#         k in text
+#         for k in [
+#             "task",
+#             "tasks",
+#             "assigned task",
+#             "assigned tasks",
+#         ]
+#     )
+#     about_requests = any(
+#         k in text
+#         for k in [
+#             "day off",
+#             "day-off",
+#             "leave request",
+#             "leave requests",
+#             "time off",
+#         ]
+#     )
+#     about_users = any(
+#         k in text
+#         for k in [
+#             "user list",
+#             "list of users",
+#             "all users",
+#         ]
+#     )
+#     # NEW: team / leader domain
+#     about_team = any(
+#         k in text
+#         for k in [
+#             "team leader",
+#             "team lead",
+#             "leader of my team",
+#             "my team members",
+#             "team members",
+#             "my team",
+#         ]
+#     )
 
-    mentions_me = any(
-        k in text
-        for k in [
-            " my ",
-            " for me",
-            " assigned to me",
-            " my task",
-            " my tasks",
-            " my request",
-            " my requests",
-        ]
-    ) or text.startswith("my ")
+#     mentions_me = any(
+#         k in text
+#         for k in [
+#             " my ",
+#             " for me",
+#             " assigned to me",
+#             " my task",
+#             " my tasks",
+#             " my request",
+#             " my requests",
+#         ]
+#     ) or text.startswith("my ")
 
-    asks_stats = any(
-        k in text
-        for k in [
-            "how many",
-            "count",
-            "total",
-            "list all",
-            "show me all",
-            "show all",
-        ]
-    )
+#     asks_stats = any(
+#         k in text
+#         for k in [
+#             "how many",
+#             "count",
+#             "total",
+#             "list all",
+#             "show me all",
+#             "show all",
+#         ]
+#     )
 
-    domain = about_attendance or about_tasks or about_requests or about_users or about_team
+#     domain = about_attendance or about_tasks or about_requests or about_users or about_team
 
-    if domain and (mentions_me or asks_stats or about_team):
-        return True
+#     if domain and (mentions_me or asks_stats or about_team):
+#         return True
 
-    return False
+#     return False
 
 
-def _score(p: Dict[str, Any]) -> float:
-    meta = p.get("metadata") or {}
-    raw = p.get("score", meta.get("score", 0.0))
-    try:
-        return float(raw)
-    except (TypeError, ValueError):
-        return 0.0
+# def _score(p: Dict[str, Any]) -> float:
+#     meta = p.get("metadata") or {}
+#     raw = p.get("score", meta.get("score", 0.0))
+#     try:
+#         return float(raw)
+#     except (TypeError, ValueError):
+#         return 0.0
 
 
 def answer(
@@ -234,10 +234,8 @@ def answer(
         text = generate_answer(prompt, temperature=0.6)
         return text, []
     
-    # Retrieval is weak: if this is clearly a live-data question -> DB agent
-    # if is_db_question(user_q):
+    # DB agent here
     text = answer_from_db(user_q, target_lang=target_lang, user_id=user_id,)
-    # For DB answers we currently don't attach RAG citations
     return text, []
 
     # Retrieve candidate passages from the knowledge base (RAG)

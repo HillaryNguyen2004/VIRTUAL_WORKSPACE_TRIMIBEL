@@ -34,13 +34,41 @@ class ProjectService
 
     public function getAllProjects(Request $request)
     {
-        return \App\Models\Project::with('staff')
-            ->orderBy('created_at', 'desc')
-            ->paginate(3);
+        $query = Project::with('staff');
+
+        // SEARCH (by project title)
+        if ($request->filled('search')) {
+            $query->where('title', 'like', '%' . $request->search . '%');
+        }
+
+        // FILTER: start_date (>=)
+        if ($request->filled('start_date')) {
+            $query->whereDate('start_date', '>=', $request->start_date);
+        }
+
+        // FILTER: due_date (<=)
+        if ($request->filled('due_date')) {
+            $query->whereDate('due_date', '<=', $request->due_date);
+        }
+
+        // SORT: title A->Z / Z->A
+        $dir = strtolower((string) $request->get('sort_dir', ''));
+        if (in_array($dir, ['asc', 'desc'], true)) {
+            $query->orderBy('title', $dir);
+        } else {
+            // default sort (avoid created_at if your table doesn't have it)
+            $query->orderByDesc('id');
+        }
+
+        $perPage = max(1, (int) $request->get('per_page', 3));
+
+        return $query
+            ->paginate($perPage)
+            ->appends($request->query());
     }
 
 
-    public function updateProject(int $id, array $data): Project
+    public function updateProject(int $id, array $data): bool
     {
         $project = $this->getProject($id);
 
@@ -48,7 +76,7 @@ class ProjectService
             $this->ensureStaff($data['staff_id']);
         }
 
-        return $this->projectRepo->updateProject($project, $data);
+        return $this->projectRepo->update($project, $data);
     }
 
     public function deleteProject(int $id): bool

@@ -16,18 +16,24 @@ class ProjectRepository extends BaseRepository implements ProjectRepositoryInter
     //     return $this->model->find($id);
     // }
 
+    public function find($id): ?Project
+    {
+        /** @var \App\Models\Project|null $task */
+        $task = parent::find($id);
+        return $task;
+    }
+
     public function create(array $data): Project
     {
         return $this->model->create($data);
     }
 
-    public function updateProject(Project $project, array $data): Project
-    {
-        $project->update($data);
-        return $project;
-    }
-
-
+    // public function updateProject(Project $project, array $data): Project
+    // {
+    //     $project->update($data);
+    //     return $project;
+    // }
+    
     // public function update(Project $project, array $data): Project
     // {
     //     $project->update($data);

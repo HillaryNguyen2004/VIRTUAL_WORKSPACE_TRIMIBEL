@@ -63,6 +63,17 @@
                     <option value="in_progress" {{ request('status') == 'in_progress' ? 'selected' : '' }}>{{ __('tasks.in_progress') }}</option>
                     <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>{{ __('tasks.completed') }}</option>
                 </select>
+                
+                {{-- <select name="project_id"
+                    class="bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer hover:border-primary/50">
+                    <option value="">{{ __('tasks.all_projects') ?? 'All Projects' }}</option>
+
+                    @foreach($projectOptions as $p)
+                        <option value="{{ $p->id }}" {{ (string) request('project_id') === (string) $p->id ? 'selected' : '' }}>
+                            {{ $p->title }}
+                        </option>
+                    @endforeach
+                </select> --}}
 
                 <select name="sort" id="sort"
                     class="bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer hover:border-primary/50">
@@ -72,18 +83,35 @@
                     <option value="due_asc" {{ request('sort') == 'due_asc' ? 'selected' : '' }}>{{ __('tasks.due_asc') }}</option>
                     <option value="due_desc" {{ request('sort') == 'due_desc' ? 'selected' : '' }}>{{ __('tasks.due_desc') }}</option>
                 </select>
-
+                
+                {{-- <select name="sort_dir"
+                    class="rounded-xl text-sm md:text-base border border-gray-300 px-4 py-2 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
+                    <option value="">{{ __('template.default_sort') }}</option>
+                    <option value="asc" {{ request('sort_dir') === 'asc' ? 'selected' : '' }}>Name A → Z</option>
+                    <option value="desc" {{ request('sort_dir') === 'desc' ? 'selected' : '' }}>Name Z → A</option>
+                </select>
+                
+                <input type="date" name="start_date" value="{{ request('start_date') }}"
+                    class="rounded-xl text-sm md:text-base border border-gray-300 px-4 py-2 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
+                <input type="date" name="due_date" value="{{ request('due_date') }}"
+                    class="rounded-xl text-sm md:text-base border border-gray-300 px-4 py-2 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition"> --}}
+                
                 <div class="flex gap-2">
+                    {{-- Filter button --}}
                     <button type="submit" title="{{ __('tasks.filter') }}"
                         class="border border-muted-200 px-3 py-2.5 rounded-xl text-muted-500 hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-current">
-                            <path d="M96 128C83.1 128 71.4 135.8 66.4 147.8C61.4 159.8 64.2 173.5 73.4 182.6L256 365.3L256 480C256 488.5 259.4 496.6 265.4 502.6L329.4 566.6C338.6 575.8 352.3 578.5 364.3 573.5C376.3 568.5 384 556.9 384 544L384 365.3L566.6 182.7C575.8 173.5 578.5 159.8 573.5 147.8C568.5 135.8 556.9 128 544 128L96 128z" />
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
+                            <path
+                                d="M96 128C83.1 128 71.4 135.8 66.4 147.8C61.4 159.8 64.2 173.5 73.4 182.6L256 365.3L256 480C256 488.5 259.4 496.6 265.4 502.6L329.4 566.6C338.6 575.8 352.3 578.5 364.3 573.5C376.3 568.5 384 556.9 384 544L384 365.3L566.6 182.7C575.8 173.5 578.5 159.8 573.5 147.8C568.5 135.8 556.9 128 544 128L96 128z" />
                         </svg>
                     </button>
-                    <a href="{{ route('tasks.staff.index') }}" title="{{ __('tasks.reset') }}"
+
+                    {{-- Reset button --}}
+                    <a href="{{ url()->current() }}" title="{{ __('tasks.reset') }}"
                         class="flex items-center justify-center border border-muted-200 px-3 py-2.5 rounded-xl text-muted-500 hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-current">
-                            <path d="M88 256L232 256C241.7 256 250.5 250.2 254.2 241.2C257.9 232.2 255.9 221.9 249 215L202.3 168.3C277.6 109.7 386.6 115 455.8 184.2C530.8 259.2 530.8 380.7 455.8 455.7C380.8 530.7 259.3 530.7 184.3 455.7C174.1 445.5 165.3 434.4 157.9 422.7C148.4 407.8 128.6 403.4 113.7 412.9C98.8 422.4 94.4 442.2 103.9 457.1C113.7 472.7 125.4 487.5 139 501C239 601 401 601 501 501C601 401 601 239 501 139C406.8 44.7 257.3 39.3 156.7 122.8L105 71C98.1 64.2 87.8 62.1 78.8 65.8C69.8 69.5 64 78.3 64 88L64 232C64 245.3 74.7 256 88 256z" />
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
+                            <path
+                                d="M88 256L232 256C241.7 256 250.5 250.2 254.2 241.2C257.9 232.2 255.9 221.9 249 215L202.3 168.3C277.6 109.7 386.6 115 455.8 184.2C530.8 259.2 530.8 380.7 455.8 455.7C380.8 530.7 259.3 530.7 184.3 455.7C174.1 445.5 165.3 434.4 157.9 422.7C148.4 407.8 128.6 403.4 113.7 412.9C98.8 422.4 94.4 442.2 103.9 457.1C113.7 472.7 125.4 487.5 139 501C239 601 401 601 501 501C601 401 601 239 501 139C406.8 44.7 257.3 39.3 156.7 122.8L105 71C98.1 64.2 87.8 62.1 78.8 65.8C69.8 69.5 64 78.3 64 88L64 232C64 245.3 74.7 256 88 256z" />
                         </svg>
                     </a>
                 </div>
@@ -96,7 +124,8 @@
                     <thead class="bg-muted-50 border-b border-muted-200">
                         <tr>
                             {{-- ADDED: Specific widths to all TH elements. Total must = 100% --}}
-                            <th class="w-[35%] py-4 pl-6 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('tasks.task_name') }}</th>
+                            <th class="w-[5%] py-4 pl-6 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('tasks.task_id') }}</th>
+                            <th class="w-[30%] py-4 px-3 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('tasks.task_name') }}</th>
                             <th class="w-[12%] py-4 px-3 text-center text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('tasks.status') }}</th>
                             <th class="w-[12%] py-4 px-3 text-center text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('tasks.active') }}</th>
                             <th class="w-[13%] py-4 text-center text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('tasks.start_date') }}</th>
@@ -111,7 +140,7 @@
 
                             {{-- PROJECT ROW --}}
                             <tr class="bg-muted-50/50 hover:bg-muted-100 transition-colors group">
-                                <td colspan="6" class="py-4 px-6">
+                                <td colspan="7" class="py-4 px-6">
                                     <div class="flex justify-between items-center">
                                         <div class="flex items-center gap-3">
                                             <div class="p-2 rounded-lg bg-primary/5 text-primary group-hover:bg-primary/10 transition-colors">
@@ -121,6 +150,7 @@
                                             </div>
                                             <div>
                                                 <span class="font-bold text-main">{{ $project->title }}</span>
+                                                <span class="text-sm text-gray-400"> - {{ $project->staff->name ?? 'Unassigned' }}</span>
                                                 <span class="ml-2 text-xs bg-white border border-muted-200 text-muted-500 px-2 py-0.5 rounded-full shadow-sm">
                                                     {{ $project->tasks->count() }} {{ __('tasks.tasks') }}
                                                 </span>
@@ -141,7 +171,7 @@
                             {{-- PROJECT TASKS NESTED TABLE --}}
                             <tr id="project{{ $project->id }}" class="hidden">
                                 {{-- REMOVED: Extra padding/borders here that shift the inner table --}}
-                                <td colspan="6" class="p-0 border-t border-muted-200">
+                                <td colspan="7" class="p-0 border-t border-muted-200">
                                     {{-- REMOVED: border-l-4 (This indentation physically prevents alignment) --}}
                                     <div class="bg-white">
                                         {{-- ADDED: table-fixed here as well --}}
@@ -162,8 +192,13 @@
 
                                                     {{-- TASK ROW --}}
                                                     <tr class="hover:bg-canvas transition-colors">
-                                                        {{-- ADDED: Matching Width w-[35%] --}}
-                                                        <td class="w-[35%] py-3 pl-12 text-sm font-medium text-main">
+                                                        {{-- ADDED: Matching Width w-[5%] --}}
+                                                        <td class="w-[5%] py-3 text-center text-sm text-muted-500">
+                                                            {{ $task->id }}
+                                                        </td>
+
+                                                        {{-- ADDED: Matching Width w-[30%] --}}
+                                                        <td class="w-[30%] py-3 px-3 text-sm font-medium text-main">
                                                             {{ $task->title }}
                                                         </td>
 
@@ -230,7 +265,7 @@
                                                     </tr>
                                                     {{-- Task Details Row --}}
                                                     <tr id="taskDetails{{ $task->id }}" class="hidden bg-canvas">
-                                                        <td colspan="6" class="p-6 border-b border-muted-100 shadow-inner">
+                                                        <td colspan="7" class="p-6 border-b border-muted-100 shadow-inner">
                                                             <div class="grid md:grid-cols-2 gap-6">
                                                                 <div>
                                                                     <strong class="text-sm font-bold text-main">{{ __('tasks.description') }}</strong>
@@ -259,7 +294,7 @@
 
                                                     @empty
                                                     <tr>
-                                                        <td colspan="6" class="py-4 text-center text-muted-400 italic text-sm">
+                                                        <td colspan="7" class="py-4 text-center text-muted-400 italic text-sm">
                                                             {{ __('tasks.no_tasks') }}
                                                         </td>
                                                     </tr>
@@ -272,7 +307,7 @@
 
                         @empty
                             <tr>
-                                <td colspan="6" class="py-12 text-center">
+                                <td colspan="7" class="py-12 text-center">
                                     <div class="flex flex-col items-center justify-center gap-3">
                                         <div class="p-3 rounded-full bg-muted-100 text-muted-400">
                                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>

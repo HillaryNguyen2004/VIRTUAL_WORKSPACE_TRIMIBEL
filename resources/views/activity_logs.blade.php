@@ -88,7 +88,7 @@
 
                             {{-- Created at --}}
                             <td class="py-3 px-3">
-                                <div class="max-w-xs truncate" title="{{ \Carbon\Carbon::parse($log->created_at)->format('Y-m-d H:i') }}">{{ \Carbon\Carbon::parse($log->created_at)->format('Y-m-d H:i') }}</div>
+                                <div class="max-w-xs truncate" title="{{ \Carbon\Carbon::parse($log->created_at)->format('H:m d/m/Y') }}">{{ \Carbon\Carbon::parse($log->created_at)->format('H:m d/m/Y') }}</div>
                             </td>
 
                             {{-- Description --}}
