@@ -1,6 +1,7 @@
 @extends('layout_dashboard')
 @section('title', 'video_chat')
 @section('content')
+
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
@@ -18,23 +19,20 @@
     <body class="antialiased">
         
         {{-- Main Container matched to dashboard width --}}
-        <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8 animate-fade-in-up">
+        <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
 
             <div id="waitingArea" class="w-full">
                 
                 {{-- Header Section --}}
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-center w-full mb-6">
-                    <a href="/meeting" class="group flex items-center justify-center w-10 h-10 rounded-xl text-muted-400 hover:text-primary hover:bg-primary/10 transition-colors">
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-                        </svg>
-                    </a>
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center w-full mb-6">
+                    @include('components.back-btn')
                     <div>
                         <h2 class="font-bold text-3xl text-main tracking-tight">{{ __('video_chat.lobby_title') }}</h2>
+                        <p class="mt-1 text-sm text-muted-500">{{ __('video_chat.lobby_subtitle') }}</p>
                     </div>
                 </div>
     
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full animate-fade-in-up">
                     
                     {{-- Video Preview Area --}}
                     <div class="lg:col-span-7 xl:col-span-8">

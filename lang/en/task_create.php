@@ -1,10 +1,15 @@
 <?php
 return [
     'title' => 'Add New Task',
-    'task_name_label' => 'Task Name',
+    'subtitle' => 'Create a new task for your team member.',
+    'task_name_label' => 'Title',
     'task_name_placeholder' => 'e.g., Prepare Report',
-    'assignee_label' => 'Assignee',
-    'select_assignee' => 'Select staff...',
+    'project_label' => 'Project',
+    'select_project' => 'Select a project',
+    'assignee_label' => 'Assign Members',
+    'select_assignee' => 'Select members...',
+    'assignee_tip' => 'Hold Ctrl (Cmd on Mac) to select multiple members',
+    'start_date_label' => 'Start Date',
     'due_date_label' => 'Due Date',
     'description_label' => 'Description',
     'description_placeholder' => 'Enter task description...',
@@ -13,7 +18,7 @@ return [
     'add_tag' => '+ Add Tag',
     'active_label' => 'Task is active and visible',
     'cancel_button' => 'Cancel',
-    'save_button' => 'Save Task',
+    'save_button' => 'Create Task',
     'another_tag_placeholder' => 'Another Tag',
     'back_to_task'=> 'Back to Tasks',
 ];

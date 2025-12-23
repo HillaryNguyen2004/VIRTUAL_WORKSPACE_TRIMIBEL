@@ -2,7 +2,7 @@
 return [
     'title' => 'SB Admin 2',
     'sidebar_brand' => 'SB Admin',
-    'dashboard' => 'Bảng Điều Khiển',
+    'dashboard' => 'Bảng điều khiển',
     'interface_heading' => 'Giao Diện',
     'components' => 'Thành Phần',
     'custom_components' => 'Thành Phần Tùy Chỉnh:',
@@ -58,7 +58,8 @@ return [
     'logout_modal_body' => 'Chọn "Đăng Xuất" dưới đây nếu bạn sẵn sàng kết thúc phiên làm việc hiện tại.',
     'cancel' => 'Hủy',
     'chat_box' => 'Tin nhắn',
-    'video_chat' => 'Họp video',
+    'video_chat' => 'Họp Video',
+    'team_progress' => 'Tiến độ nhóm',
 
     'notifications' => 'Thông báo',
     'no_new_notifications' => 'Không có thông báo mới',

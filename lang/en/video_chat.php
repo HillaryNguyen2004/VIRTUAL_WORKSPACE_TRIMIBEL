@@ -15,6 +15,7 @@ return [
     'new_button' => 'New Meeting',
 
     'lobby_title' => 'Meeting Lobby',
+    'lobby_subtitle' => 'Before joining, please check your settings.',
     'ready_to_join' => 'Ready to join?',
     'name_label' => 'Name',
     'name_placeholder' => 'Enter name',

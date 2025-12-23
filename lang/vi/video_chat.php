@@ -17,6 +17,7 @@ return [
 
     // --- Lobby / Pre-join Screen ---
     'lobby_title' => 'Sảnh chờ',
+    'lobby_subtitle' => 'Trước khi tham gia, hãy kiểm tra cài đặt của bạn.',
     'ready_to_join' => 'Sẵn sàng tham gia?',
     'name_label' => 'Tên hiển thị',
     'name_placeholder' => 'Nhập tên của bạn',

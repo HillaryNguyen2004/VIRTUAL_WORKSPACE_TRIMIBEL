@@ -1,7 +1,10 @@
 <?php
 return [
     'upcoming_tasks' => 'Upcoming Tasks',
-    'search_placeholder' => 'Search by task name',
+    'my_projects' => 'Projects & Tasks',
+    'subtitle' => 'Manage and track your tasks efficiently.',
+    'view_tasks' => 'View Tasks',
+    'search_placeholder' => 'Search by task or project name',
     'status' => 'Status',
     'sort' => 'Sort',
     'apply' => 'Apply',
@@ -9,6 +12,7 @@ return [
     'task_id' => 'ID',
     'task_name' => 'NAME',
     'due_date' => 'DUE DATE',
+    'start_date' => 'START DATE',
     'active' => 'ACTIVE',
     'actions' => 'ACTIONS',
     'description' => 'Description',
@@ -38,5 +42,7 @@ return [
     'delete'=> 'Delete',
     'filter'=> 'Filter',
     'reset' => 'Reset',
+    'tasks' => 'tasks',
+    'task' => 'task',
 ];
 ?>
