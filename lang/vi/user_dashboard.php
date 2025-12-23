@@ -1,7 +1,7 @@
 <?php
 return [
     'title' => 'Bảng Điều Khiển Người Dùng',
-    'heading' => 'Bảng Điều Khiển',
+    'heading' => 'Bảng điều khiển',
     'subheading' => 'Tổng quan về hoạt động và thống kê của bạn',
     'generate_report' => 'Tạo Báo Cáo',
     'request_day_off' => 'Yêu Cầu Nghỉ Phép',

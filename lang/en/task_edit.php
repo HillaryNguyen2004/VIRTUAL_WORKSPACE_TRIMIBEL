@@ -1,9 +1,13 @@
 <?php
 return [
     'title' => 'Edit Task',
+    'subtitle' => 'Update task details and status.',
     'task_name_label' => 'Task Name',
+    'project_label' => 'Project',
     'assignee_label' => 'Assignee',
+    'assignee_tip' => 'Hold Ctrl (Cmd on Mac) to select multiple members',
     'select_assignee' => 'Select staff...',
+    'start_date_label' => 'Start Date',
     'due_date_label' => 'Due Date',
     'description_label' => 'Description',
     'status_label' => 'Status',

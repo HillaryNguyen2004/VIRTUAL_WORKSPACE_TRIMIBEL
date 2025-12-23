@@ -1,11 +1,13 @@
 <?php
 return [
     'title' => 'Pending Day-Off Requests',
+    'subtitle' => 'Manage your pending leave requests',
     'no_request_pending'=> 'No request pending',
-    'date_label'=> 'Date',
-    'type_label'=> 'Type',
     'reason_label'=> 'Reason',
-    'accepted_btn' => 'Accepted',
-    'rejected_btn'=> 'Rejected',
-    'no_permission' => 'You do not have permission to view this page'
+    'accepted_btn' => 'Accept',
+    'rejected_btn'=> 'Reject',
+    'no_permission' => 'You do not have permission to view this page',
+
+    'OFF_HALF' => 'Half Day',
+    'OFF_FULL' => 'Full Day',
 ];

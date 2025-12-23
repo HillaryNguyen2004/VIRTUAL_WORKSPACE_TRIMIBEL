@@ -8,7 +8,7 @@
     @vite(['resources/js/toggle_pwd.js'])
     @vite(['resources/js/toggle_confirm_pwd.js'])
     <!-- Left -->
-    <div class="bg-panel-right-gradient rounded-3xl w-1/2 min-h-[70vh] lg:block hidden"></div>
+    <div class="bg-panel-left-gradient rounded-3xl w-1/2 min-h-[70vh] lg:block hidden"></div>
 
     <!-- Right -->
     <div class="h-full w-full lg:w-1/2">

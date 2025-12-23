@@ -1,13 +1,17 @@
 <?php
 return [
     'upcoming_tasks' => 'Công Việc Sắp Tới',
-    'search_placeholder' => 'Tìm theo tên công việc',
+    'my_projects' => 'Dự án của tôi',
+    'subtitle' => 'Quản lý và theo dõi công việc của bạn.',
+    'view_tasks' => 'Xem công việc',
+    'search_placeholder' => 'Tìm theo tên dự án hoặc công việc',
     'status' => 'Trạng thái',
     'sort' => 'Sắp xếp',
     'apply' => 'Áp dụng',
     'all_tasks' => 'Tất cả công việc được giao cho nhóm của tôi',
     'task_id' => 'ID',
     'task_name' => 'TÊN',
+    'start_date' => 'NGÀY BẮT ĐẦU',
     'due_date' => 'NGÀY KẾT THÚC',
     'active' => 'HOẠT ĐỘNG',
     'actions' => 'HÀNH ĐỘNG',
@@ -20,7 +24,7 @@ return [
     'overdue' => 'Quá hạn',
     'pending' => 'Đang chờ',
     'in_progress' => 'Đang tiến hành',
-    'completed' => 'Đã hoàn thành',
+    'completed' => 'Hoàn thành',
     'access_denied' => 'Truy cập bị từ chối',
     'no_permission' => 'Bạn không có quyền xem trang này.',
     'all_statuses' => 'Tất cả trạng thái',
@@ -39,5 +43,6 @@ return [
     'filter'=> 'Lọc',
     'reset' => 'Làm mới',
     'tasks' => 'công việc',
+    'task' => 'công việc',
 ];
 ?>
