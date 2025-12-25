@@ -52,7 +52,7 @@
                             <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
                         </svg>
                     </div>
-                    <input type="text" placeholder="{{ __('tasks.search_placeholder') }}" value="{{ request('search') }}"
+                    <input name="search" id="search" type="text" placeholder="{{ __('tasks.search_placeholder') }}" value="{{ request('search') }}"
                         class="block w-full pl-10 bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl placeholder-muted-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
                 </div>
                 
@@ -74,17 +74,8 @@
                         </option>
                     @endforeach
                 </select> --}}
-
-                <select name="sort" id="sort"
-                    class="bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer hover:border-primary/50">
-                    <option value="">{{ __('tasks.default_sort') }}</option>
-                    <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>{{ __('tasks.name_asc') }}</option>
-                    <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>{{ __('tasks.name_desc') }}</option>
-                    <option value="due_asc" {{ request('sort') == 'due_asc' ? 'selected' : '' }}>{{ __('tasks.due_asc') }}</option>
-                    <option value="due_desc" {{ request('sort') == 'due_desc' ? 'selected' : '' }}>{{ __('tasks.due_desc') }}</option>
-                </select>
                 
-                {{-- <select name="sort_dir"
+                <select name="sort_dir"
                     class="rounded-xl text-sm md:text-base border border-gray-300 px-4 py-2 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
                     <option value="">{{ __('template.default_sort') }}</option>
                     <option value="asc" {{ request('sort_dir') === 'asc' ? 'selected' : '' }}>Name A → Z</option>
@@ -94,7 +85,7 @@
                 <input type="date" name="start_date" value="{{ request('start_date') }}"
                     class="rounded-xl text-sm md:text-base border border-gray-300 px-4 py-2 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
                 <input type="date" name="due_date" value="{{ request('due_date') }}"
-                    class="rounded-xl text-sm md:text-base border border-gray-300 px-4 py-2 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition"> --}}
+                    class="rounded-xl text-sm md:text-base border border-gray-300 px-4 py-2 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
                 
                 <div class="flex gap-2">
                     {{-- Filter button --}}
