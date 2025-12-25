@@ -59,6 +59,7 @@ return [
     'cancel' => 'Cancel',
     'chat_box' => 'Messages',
     'video_chat' => 'Video Meeting',
+    'team_progress' => 'Team Progress',
 
     'notifications' => 'Notifications',
     'no_new_notifications' => 'No new notifications',
