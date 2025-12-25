@@ -20,13 +20,7 @@
         <div class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center w-full mb-8">
             <div class="flex items-center gap-4">
                 {{-- Reuse the back button logic/component if available, otherwise manual link --}}
-                @if(view()->exists('components.back-btn'))
-                    @include('components.back-btn')
-                @else
-                    <a href="{{ route($dashRoute) }}" class="p-2 rounded-xl bg-white border border-muted-200 text-muted-500 hover:text-primary hover:border-primary/30 transition-all shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-                    </a>
-                @endif
+                @include('components.back-btn')
                 
                 <div>
                     <h2 class="font-bold text-3xl text-main tracking-tight">
