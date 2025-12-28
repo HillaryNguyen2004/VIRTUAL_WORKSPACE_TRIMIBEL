@@ -123,7 +123,11 @@ public function conversations()
                User::where('team_leader_id', $this->id)->exists();
     }
 
-
+    public function tasks()
+    {
+        return $this->belongsToMany(Task::class, 'task_user')
+                    ->withTimestamps();
+    }
   
 
     // Accessors for progress tracking

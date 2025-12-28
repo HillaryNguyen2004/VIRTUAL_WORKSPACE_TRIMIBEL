@@ -33,14 +33,14 @@ class StoreTaskRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title'      => 'required|string|max:255',
-            'project_id' => 'required|exists:projects,id',
-            'assignees'  => 'required|array',
-            'assignees.*'=> 'exists:users,id',
-            'start_date' => 'required|date',
-            'due_date'   => 'required|date|after_or_equal:today',
-            'description'=> 'nullable|string',
-            'active'     => 'nullable|boolean',
+            'tasks' => 'required|array|min:1',
+            'tasks.*.title' => 'required|string|max:255',
+            'tasks.*.project_id' => 'required|exists:projects,id',
+            'tasks.*.assignee' => 'required|exists:users,id',
+            'tasks.*.start_date' => 'required|date',
+            'tasks.*.due_date' => 'required|date|after_or_equal:today',
+            'tasks.*.description' => 'nullable|string',
+            'tasks.*.active' => 'nullable|boolean',
         ];
     }
 

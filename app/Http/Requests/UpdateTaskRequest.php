@@ -31,14 +31,12 @@ class UpdateTaskRequest extends FormRequest
             'active' => 'boolean',
         ];
         
-        // If user is admin, assignees are required
+        // If user is admin, assignee is required
         if ($user->hasRole('admin')) {
-            $rules['assignees'] = 'required|array|min:1';
-            $rules['assignees.*'] = 'exists:users,id';
+            $rules['assignee'] = 'required|exists:users,id';
         } else {
-            // For staff, assignees are optional
-            $rules['assignees'] = 'nullable|array';
-            $rules['assignees.*'] = 'exists:users,id';
+            // For staff, assignee is optional? But probably required
+            $rules['assignee'] = 'required|exists:users,id';
         }
         
         return $rules;

@@ -41,9 +41,9 @@ class TaskService
                 'active' => $data['active'] ?? 0,
             ]);
 
-            // 2. Attach users (pivot table)
-            if (!empty($data['assignees'])) {
-                $task->assignedUsers()->sync($data['assignees']);
+            // 2. Attach assignee (single)
+            if (!empty($data['assignee'])) {
+                $task->assignedUsers()->attach($data['assignee']);
             }
 
             return $task;
@@ -75,19 +75,32 @@ class TaskService
 
             $task = $this->taskRepo->find($id);
 
-            // 1. Update task fields
-            $this->taskRepo->update($task, [
-                'title' => $data['title'],
-                'description' => $data['description'] ?? null,
-                'project_id' => $data['project_id'],
-                'start_date' => $data['start_date'],
-                'due_date' => $data['due_date'],
-                'active' => $data['active'] ?? 0,
-            ]);
+            // 1. Update task fields (only those provided)
+            $updateData = [];
+            if (isset($data['title'])) {
+                $updateData['title'] = $data['title'];
+            }
+            if (isset($data['description'])) {
+                $updateData['description'] = $data['description'];
+            }
+            if (isset($data['project_id'])) {
+                $updateData['project_id'] = $data['project_id'];
+            }
+            if (isset($data['start_date'])) {
+                $updateData['start_date'] = $data['start_date'];
+            }
+            if (isset($data['due_date'])) {
+                $updateData['due_date'] = $data['due_date'];
+            }
+            if (isset($data['active'])) {
+                $updateData['active'] = $data['active'];
+            }
 
-            // 2. Sync assignees
-            if (isset($data['assignees'])) {
-                $task->assignedUsers()->sync($data['assignees']);
+            $this->taskRepo->update($task, $updateData);
+
+            // 2. Sync assignee
+            if (isset($data['assignee'])) {
+                $task->assignedUsers()->sync([$data['assignee']]);
             }
 
             if ($task->project) {
