@@ -40,5 +40,12 @@ class Project extends Model
         ]);
     }
 
+    public function teamMembers()
+    {
+        return User::whereHas('tasks', function($query) {
+            $query->where('project_id', $this->id);
+        })->distinct()->get();
+    }
+
 }
 
