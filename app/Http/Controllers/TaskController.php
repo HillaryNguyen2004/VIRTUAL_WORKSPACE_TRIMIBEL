@@ -50,7 +50,17 @@ class TaskController extends Controller
      */
     public function store(StoreTaskRequest $request)
     {
-        $this->taskService->createTask($request->validated());
+        $validated = $request->validated();
+
+        if (isset($validated['tasks'])) {
+            // Multiple tasks
+            foreach ($validated['tasks'] as $taskData) {
+                $this->taskService->createTask($taskData);
+            }
+        } else {
+            // Single task (backward compatibility)
+            $this->taskService->createTask($validated);
+        }
 
         return redirect()
             ->route('tasks.create')
