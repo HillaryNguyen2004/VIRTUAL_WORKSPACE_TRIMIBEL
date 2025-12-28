@@ -29,8 +29,10 @@ class TaskController extends Controller
         $user = auth()->user();
 
         if ($user->hasRole('admin')) {
-            // Admin → can assign to ANYONE
-            $assignees = User::all();
+            // Admin → can assign to ANYONE except admins
+            $assignees = User::whereDoesntHave('roles', function($query) {
+                $query->where('name', 'admin');
+            })->get();
             $projects = Project::all();
         } else {
             // Staff → ONLY their team members
@@ -90,7 +92,9 @@ class TaskController extends Controller
         $user = auth()->user();
 
         if ($user->hasRole('admin')) {
-            $assignees = User::all();
+            $assignees = User::whereDoesntHave('roles', function($query) {
+                $query->where('name', 'admin');
+            })->get();
             $projects = Project::all();
         } else {
             $assignees = User::where('team_leader_id', $user->id)->get();

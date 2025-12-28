@@ -87,22 +87,25 @@
                         </div>
                     </div>
 
-                    {{-- Assignees --}}
+                    {{-- Assignee --}}
                     <div>
                         <label class="{{ $labelClass }}">{{ __('task_edit.assignee_label') }} <span class="text-danger">*</span></label>
-                        <select name="assignees[]" multiple class="{{ $inputClass }} h-32">
-                            @php
-                                $assignedIds = old('assignees', $task->assignedUsers->pluck('id')->toArray());
-                            @endphp
-                            @foreach($assignees as $user)
-                                <option value="{{ $user->id }}" @selected(in_array($user->id, $assignedIds)) class="py-1">
-                                    {{ $user->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <p class="text-xs text-muted-400 mt-1.5 ml-1">
-                            {{ __('task_edit.assignee_tip') }}
-                        </p>
+                        <div class="relative">
+                            <select name="assignee" class="{{ $inputClass }} appearance-none" required>
+                                <option value="" class="text-muted-400">Select assignee</option>
+                                @php
+                                    $selectedAssignee = old('assignee', $task->assignedUsers->first()->id ?? '');
+                                @endphp
+                                @foreach($assignees as $user)
+                                    <option value="{{ $user->id }}" @selected($selectedAssignee == $user->id)>
+                                        {{ $user->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-500">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
                     </div>
 
                     {{-- Status & Active Row --}}

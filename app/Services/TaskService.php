@@ -41,9 +41,9 @@ class TaskService
                 'active' => $data['active'] ?? 0,
             ]);
 
-            // 2. Attach users (pivot table)
-            if (!empty($data['assignees'])) {
-                $task->assignedUsers()->sync($data['assignees']);
+            // 2. Attach assignee (single)
+            if (!empty($data['assignee'])) {
+                $task->assignedUsers()->attach($data['assignee']);
             }
 
             return $task;
@@ -98,9 +98,9 @@ class TaskService
 
             $this->taskRepo->update($task, $updateData);
 
-            // 2. Sync assignees
-            if (isset($data['assignees'])) {
-                $task->assignedUsers()->sync($data['assignees']);
+            // 2. Sync assignee
+            if (isset($data['assignee'])) {
+                $task->assignedUsers()->sync([$data['assignee']]);
             }
 
             if ($task->project) {

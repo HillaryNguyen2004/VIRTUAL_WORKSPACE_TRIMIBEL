@@ -78,19 +78,24 @@
                                     </div>
                                 </div>
 
-                                {{-- Assignees --}}
+                                {{-- Assignee --}}
                                 <div>
                                     <label class="{{ $labelClass }}">
-                                        {{ __('task_create.assignee_label') }}
+                                        {{ __('task_create.assignee_label') }} <span class="text-danger">*</span>
                                     </label>
-                                    <select name="tasks[0][assignees][]" class="{{ $inputClass }} h-32" multiple required>
-                                        @foreach($assignees as $user)
-                                            <option value="{{ $user->id }}" @selected(collect(old('tasks.0.assignees'))->contains($user->id)) class="py-1">
-                                                {{ $user->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    <p class="text-xs text-muted-400 mt-1.5 ml-1">{{ __('task_create.assignee_tip') }}</p>
+                                    <div class="relative">
+                                        <select name="tasks[0][assignee]" class="{{ $inputClass }} appearance-none" required>
+                                            <option value="" class="text-muted-400">-- {{ __('task_create.select_assignee') }} --</option>
+                                            @foreach($assignees as $user)
+                                                <option value="{{ $user->id }}" @selected(old('tasks.0.assignee') == $user->id)>
+                                                    {{ $user->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-500">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -162,7 +167,9 @@
                     inputs.forEach(input => {
                         if (input.name) {
                             input.name = input.name.replace(/tasks\[0\]/g, `tasks[${newIndex}]`);
-                            input.value = ''; // Clear values
+                            if (input.type !== 'checkbox') {
+                                input.value = ''; // Clear values
+                            }
                         }
                     });
                     
