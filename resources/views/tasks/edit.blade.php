@@ -151,13 +151,13 @@
                         <div>
                             <label class="{{ $labelClass }}">{{ __('task_edit.start_date_label') }} <span class="text-danger">*</span></label>
                             {{-- Note: Fixed bug in original code where value was old('due_date') instead of start_date --}}
-                            <input type="date" name="start_date" value="{{ old('start_date', $task->start_date) }}" class="{{ $inputClass }}" required>
+                            <input type="date" name="start_date" value="{{ old('start_date', $task->start_date ? $task->start_date->format('Y-m-d') : '') }}" class="{{ $inputClass }}" required>
                         </div>
 
                         {{-- Due date --}}
                         <div>
                             <label class="{{ $labelClass }}">{{ __('task_edit.due_date_label') }} <span class="text-danger">*</span></label>
-                            <input type="date" name="due_date" value="{{ old('due_date', $task->due_date) }}" class="{{ $inputClass }}" required>
+                            <input type="date" name="due_date" value="{{ old('due_date', $task->due_date ? $task->due_date->format('Y-m-d') : '') }}" class="{{ $inputClass }}" required>
                         </div>
                     </div>
 
