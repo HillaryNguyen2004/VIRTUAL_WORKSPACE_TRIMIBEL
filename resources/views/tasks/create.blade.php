@@ -1,6 +1,7 @@
 @extends('layout_dashboard')
 @section('title', 'Create Task')
 
+
 @section('content')
     {{-- Main Container matching userdashboard.blade.php --}}
     <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
@@ -24,6 +25,15 @@
                 <div class="flex items-center gap-3 bg-accent/10 border border-accent/20 text-accent p-4 rounded-xl mb-6">
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                     <span class="text-sm font-medium">{{ session('success') }}</span>
+                </div>
+            @endif
+            @if ($errors->any())
+                <div class="mb-6 rounded-xl border border-danger/20 bg-danger/10 p-4 text-danger">
+                    <ul class="list-disc pl-5 space-y-1 text-sm">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
             @endif
 

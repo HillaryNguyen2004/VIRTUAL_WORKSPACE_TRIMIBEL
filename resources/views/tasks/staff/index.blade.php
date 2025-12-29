@@ -214,7 +214,7 @@
                                                         <td class="w-[13%] py-3 px-3 text-center text-sm text-muted-500">
                                                             {{ \Carbon\Carbon::parse($task->due_date)->format('d/m/Y') }}
                                                             @if($overdue)
-                                                                <span class="text-danger ml-1 text-lg leading-none" title="Overdue">•</span>
+                                                                <span class="inline-block bg-danger text-white text-xs px-2 py-1 rounded border border-danger" title="Overdue">Overdue</span>
                                                             @endif
                                                         </td>
 

@@ -109,14 +109,37 @@ class TaskController extends Controller
      * UPDATE TASK
      * ==============================
      */
+    // public function update(UpdateTaskRequest $request, $id)
+    // {
+    //     $this->taskService->updateTask($id, $request->validated());
+
+    //     return auth()->user()->hasRole('admin')
+    //         ? redirect()->route('tasks.index')->with('success', __('messages.task_updated'))
+    //         : redirect()->route('tasks.staff.index')->with('success', __('messages.task_updated'));
+    // }
+    // public function update(UpdateTaskRequest $request, $id)
+    // {
+    //     $this->taskService->updateTask($id, $request->validated());
+
+    //     // Determine correct edit route based on role
+    //     $editRoute = auth()->user()->hasRole('admin')
+    //         ? route('tasks.index', $id)
+    //         : route('tasks.staff.index', $id);
+
+    //     return redirect($editRoute)
+    //         ->with('success', __('messages.task_updated'));
+    // }
+
     public function update(UpdateTaskRequest $request, $id)
     {
         $this->taskService->updateTask($id, $request->validated());
 
-        return auth()->user()->hasRole('admin')
-            ? redirect()->route('tasks.index')->with('success', __('messages.task_updated'))
-            : redirect()->route('tasks.staff.index')->with('success', __('messages.task_updated'));
+        return redirect()
+            ->route('tasks.edit', $id)
+            ->with('success', __('messages.task_updated'));
     }
+
+
 
     /**
      * ==============================

@@ -7,6 +7,9 @@ use App\Models\Project;
 use App\Repositories\TaskRepositoryInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
+
 
 class TaskService
 {
@@ -26,11 +29,57 @@ class TaskService
      * - task creation
      * - attach assignees
      */
+    // public function createTask(array $data): Task
+    // {
+    //     return DB::transaction(function () use ($data) {
+
+    //         // 1. Create task
+    //         $task = $this->taskRepo->create([
+    //             'title' => $data['title'],
+    //             'description' => $data['description'] ?? null,
+    //             'project_id' => $data['project_id'],
+    //             'start_date' => $data['start_date'],
+    //             'due_date' => $data['due_date'],
+    //             'status' => 'pending',
+    //             'active' => $data['active'] ?? 1,
+    //         ]);
+
+    //         // 2. Attach assignee (single)
+    //         if (!empty($data['assignee'])) {
+    //             $task->assignedUsers()->attach($data['assignee']);
+    //         }
+
+    //         return $task;
+    //     });
+    // }
+
     public function createTask(array $data): Task
     {
         return DB::transaction(function () use ($data) {
+            // Validate dates
+            $today = now()->startOfDay();
+            $startDate = \Carbon\Carbon::parse($data['start_date'])->startOfDay();
+            $dueDate = \Carbon\Carbon::parse($data['due_date'])->startOfDay();
 
-            // 1. Create task
+            // 1. Check if start_date is in the past
+            if ($startDate->lt($today)) {
+                // throw new \InvalidArgumentException('Start date cannot be in the past.');
+                throw ValidationException::withMessages([
+                    // 'start_date' => 'Start date cannot be in the past.',
+                    'tasks.0.start_date' => 'Start date cannot be in the past.',
+                ]);
+            }
+
+            // 2. Check if due_date is before start_date
+            if ($dueDate->lt($startDate)) {
+                // throw new \InvalidArgumentException('Due date must be after the start date.');
+                throw ValidationException::withMessages([
+                    // 'due_date' => 'Due date must be after the start date.',
+                    'tasks.0.due_date' => 'Due date must be after the start date.',
+                ]);
+            }
+
+            // 3. Create task
             $task = $this->taskRepo->create([
                 'title' => $data['title'],
                 'description' => $data['description'] ?? null,
@@ -38,10 +87,10 @@ class TaskService
                 'start_date' => $data['start_date'],
                 'due_date' => $data['due_date'],
                 'status' => 'pending',
-                'active' => $data['active'] ?? 0,
+                'active' => $data['active'] ?? 1,
             ]);
 
-            // 2. Attach assignee (single)
+            // 4. Attach assignee (single)
             if (!empty($data['assignee'])) {
                 $task->assignedUsers()->attach($data['assignee']);
             }
@@ -69,14 +118,82 @@ class TaskService
      * - assignee sync
      * - task fields update
      */
+    // public function updateTask($id, array $data): Task
+    // {
+    //     return DB::transaction(function () use ($id, $data) {
+
+    //         $task = $this->taskRepo->find($id);
+
+    //         // 1. Update task fields (only those provided)
+    //         $updateData = [];
+    //         if (isset($data['title'])) {
+    //             $updateData['title'] = $data['title'];
+    //         }
+    //         if (isset($data['description'])) {
+    //             $updateData['description'] = $data['description'];
+    //         }
+    //         if (isset($data['project_id'])) {
+    //             $updateData['project_id'] = $data['project_id'];
+    //         }
+    //         if (isset($data['start_date'])) {
+    //             $updateData['start_date'] = $data['start_date'];
+    //         }
+    //         if (isset($data['due_date'])) {
+    //             $updateData['due_date'] = $data['due_date'];
+    //         }
+    //         if (isset($data['active'])) {
+    //             $updateData['active'] = $data['active'];
+    //         }
+    //         if (isset($data['status'])) {
+    //             $updateData['status'] = $data['status'];
+    //         }
+
+    //         $this->taskRepo->update($task, $updateData);
+
+    //         // 2. Sync assignee
+    //         if (isset($data['assignee'])) {
+    //             $task->assignedUsers()->sync([$data['assignee']]);
+    //         }
+
+    //         if ($task->project) {
+    //             $task->project->recalculateCompletion();
+    //         }
+    //         return $task->refresh();
+    //     });
+    // }
+
     public function updateTask($id, array $data): Task
     {
         return DB::transaction(function () use ($id, $data) {
 
             $task = $this->taskRepo->find($id);
 
-            // 1. Update task fields (only those provided)
+            // ───── Date validation ─────
+            $today = Carbon::today();
+
+            $startDate = isset($data['start_date'])
+                ? Carbon::parse($data['start_date'])
+                : ($task->start_date ? Carbon::parse($task->start_date) : null);
+
+            $dueDate = isset($data['due_date'])
+                ? Carbon::parse($data['due_date'])
+                : ($task->due_date ? Carbon::parse($task->due_date) : null);
+
+            if ($startDate && $startDate->lt($today)) {
+                throw ValidationException::withMessages([
+                    'start_date' => 'Start date cannot be in the past.',
+                ]);
+            }
+
+            if ($startDate && $dueDate && $dueDate->lt($startDate)) {
+                throw ValidationException::withMessages([
+                    'due_date' => 'Due date must be after start date.',
+                ]);
+            }
+
+            // ───── Update only provided fields ─────
             $updateData = [];
+
             if (isset($data['title'])) {
                 $updateData['title'] = $data['title'];
             }
@@ -95,10 +212,13 @@ class TaskService
             if (isset($data['active'])) {
                 $updateData['active'] = $data['active'];
             }
+            if (isset($data['status'])) {
+                $updateData['status'] = $data['status'];
+            }
 
             $this->taskRepo->update($task, $updateData);
 
-            // 2. Sync assignee
+            // ───── Sync assignee ─────
             if (isset($data['assignee'])) {
                 $task->assignedUsers()->sync([$data['assignee']]);
             }
@@ -106,9 +226,14 @@ class TaskService
             if ($task->project) {
                 $task->project->recalculateCompletion();
             }
+
             return $task->refresh();
         });
     }
+
+
+
+
 
     /**
      * ==============================
