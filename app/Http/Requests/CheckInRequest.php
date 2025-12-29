@@ -25,6 +25,7 @@ class CheckInRequest extends FormRequest
     {
         return [
             'username' => 'required|string',
+            'currentUserId' => 'required|string',
         ];
     }
 }

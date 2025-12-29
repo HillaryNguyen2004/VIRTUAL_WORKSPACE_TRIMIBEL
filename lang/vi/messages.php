@@ -32,4 +32,5 @@ return [
     'success_approve' => 'Yêu cầu nghỉ phép đã được chấp thuận.',
     'success_reject' => 'Yêu cầu nghỉ phép đã bị từ chối.',
     'notice_approved' => 'Yêu cầu nghỉ phép của bạn vào ngày :date đã được chấp thuận.',
+    'wrong_username' => 'Đây không phải là username của bạn'
 ];

@@ -66,6 +66,22 @@ $(function () {
         }
     }
 
+    const formatDateTime = (value) => {
+        if (!value) return "";
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return ""; // invalid date
+
+        const pad = (n) => String(n).padStart(2, "0");
+
+        const hh = pad(d.getHours());
+        const mm = pad(d.getMinutes());
+        const dd = pad(d.getDate());
+        const MM = pad(d.getMonth() + 1);
+        const yy = String(d.getFullYear()).slice(-2);
+
+        return `${hh}:${mm} ${dd}/${MM}/${yy}`;
+    };
+
     function renderItem(n) {
         return `
             <button type="button"
@@ -73,7 +89,7 @@ $(function () {
                 data-id="${n.id}">
                 <span class="flex h-2 w-2 items-center justify-center rounded-full bg-indigo-500"></span>
                 <span class="flex-1">
-                <span class="block text-xs text-gray-500">${n.data.date || ""}</span>
+                <span class="block text-xs text-gray-500">${formatDateTime(n.data.date)}</span>
                 <span class="block text-sm font-medium text-gray-900">${n.data.message || ""}</span>
                 </span>
             </button>
