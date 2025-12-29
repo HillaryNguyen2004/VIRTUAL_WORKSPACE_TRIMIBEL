@@ -65,7 +65,8 @@ class TaskService
             if ($startDate->lt($today)) {
                 // throw new \InvalidArgumentException('Start date cannot be in the past.');
                 throw ValidationException::withMessages([
-                    'start_date' => 'Start date cannot be in the past.',
+                    // 'start_date' => 'Start date cannot be in the past.',
+                    'tasks.0.start_date' => 'Start date cannot be in the past.',
                 ]);
             }
 
@@ -73,7 +74,8 @@ class TaskService
             if ($dueDate->lt($startDate)) {
                 // throw new \InvalidArgumentException('Due date must be after the start date.');
                 throw ValidationException::withMessages([
-                    'due_date' => 'Due date must be after the start date.',
+                    // 'due_date' => 'Due date must be after the start date.',
+                    'tasks.0.due_date' => 'Due date must be after the start date.',
                 ]);
             }
 
