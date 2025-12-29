@@ -1,4 +1,5 @@
 import './bootstrap';
+import '@fortawesome/fontawesome-free/css/all.min.css';
 import jquery from 'jquery';
 // import.meta.glob('../utils/**/*.js', { eager: true });
 
