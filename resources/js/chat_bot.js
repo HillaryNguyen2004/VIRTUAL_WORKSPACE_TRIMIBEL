@@ -71,14 +71,21 @@ $(function () {
         scrollMessages();
     };
 
+    const renderMarkdown = (md) => {
+        const rawHtml = marked.parse(md, { breaks: true }); // breaks: keep line breaks
+        return DOMPurify.sanitize(rawHtml); // sanitize to prevent XSS
+    };
+
     const appendBotMessage = (text) => {
         const $avatar = $(
             '<div class="flex items-center justify-center rounded-full p-2 border bg-white"></div>'
         ).append('<img src="/img/bot.png" alt="" class="w-6 h-6">');
 
+        const safeHtml = renderMarkdown(text);
+
         const $bubble = $(
-            '<div class="max-w-[280px] shadow-lg rounded-2xl px-3 py-2 border border-gray-300 bg-gray-50 text-sm whitespace-pre-line"></div>'
-        ).text(text);
+            '<div class="max-w-[280px] shadow-lg rounded-2xl px-3 py-2 border border-gray-300 bg-gray-50 text-sm"></div>'
+        ).html(safeHtml);
 
         const $wrapper = $('<div class="flex items-end gap-2"></div>')
             .append($avatar)
@@ -144,9 +151,7 @@ $(function () {
             lang: chatLang,
             user_id: userId.toString(),
             user_role: userRole,
-        }
-        
-        console.log("payload: ", payload);
+        };
 
         axios
             .post("/api/chat-bot", payload)

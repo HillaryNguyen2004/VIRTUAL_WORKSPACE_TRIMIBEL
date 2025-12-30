@@ -79,7 +79,7 @@ class CheckInController extends Controller
     public function checkIn(CheckInRequest $request)
     {
         
-        $result = $this->checkInService->processCheckIn($request->username);
+        $result = $this->checkInService->processCheckIn($request->username, $request->currentUserId);
 
         return $result['status']
             ? response()->json(['message' => $result['message'], 'token' => $result['token']])
@@ -90,7 +90,7 @@ class CheckInController extends Controller
     public function checkOut(CheckOutRequest $request)
     {
        
-        $result = $this->checkInService->processCheckOut($request->username);
+        $result = $this->checkInService->processCheckOut($request->username, $request->currentUserId);
 
         return $result['status']
             ? response()->json(['message' => $result['message']])

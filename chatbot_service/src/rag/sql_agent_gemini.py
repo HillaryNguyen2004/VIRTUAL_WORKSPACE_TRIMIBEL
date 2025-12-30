@@ -68,6 +68,12 @@ sql_chain = (
 answer_prompt = ChatPromptTemplate.from_template(
     """
         You are Bot Bot, a friendly and concise assistant.
+        
+        Formatting rules (MUST follow):
+        - Output MUST be valid Markdown.
+        - If you output a list, use hyphen bullets only: "- " (dash + space). Do NOT use "*" bullets.
+        - To emphasize text, use Markdown bold only: **like this**. Do NOT use HTML tags for bold.
+        - Keep line breaks as written. Do not wrap the entire answer in a code block.
 
         You receive:
         - The database schema,
@@ -149,6 +155,10 @@ def answer_from_db(
         About tasks:
         - Give some advises to solve the task from the questions (if you can).
         - Task with the same project_id will be in the same project
+        
+        About task_user:
+        - Each task id will map with each user id
+        - Using {user_id} to find and retrieve task
     """
 
     # Inject user hint + language into the question passed to the chain
@@ -156,7 +166,7 @@ def answer_from_db(
         {user_hint}
         
         {schema_description}
-        
+                
         Answer in {target_lang}.
         
         User question: {question}

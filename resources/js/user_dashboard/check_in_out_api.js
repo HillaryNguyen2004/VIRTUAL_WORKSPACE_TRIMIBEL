@@ -9,6 +9,7 @@ function getCSRFToken() {
 
 document.getElementById("checkInBtn")?.addEventListener("click", () => {
     const username = document.getElementById("usernameInput").value.trim();
+    let currentUserId = window.AUTH_USER_ID | "";
 
     if (!username) {
         showToast("Username required!", "error");
@@ -22,7 +23,10 @@ document.getElementById("checkInBtn")?.addEventListener("click", () => {
             Accept: "application/json",
             "X-CSRF-TOKEN": getCSRFToken(), // Add CSRF token
         },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ 
+            username: username, 
+            currentUserId: currentUserId.toString(), 
+        }),
     })
         .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
         .then(({ ok, body }) => {
@@ -42,6 +46,7 @@ document.getElementById("checkInBtn")?.addEventListener("click", () => {
 document.getElementById("checkOutBtn")?.addEventListener("click", () => {
     const username = document.getElementById("usernameInput").value.trim();
     const token = localStorage.getItem("api_token");
+    let currentUserId = window.AUTH_USER_ID | "";
 
     if (!username) {
         showToast("Username required!", "error");
@@ -60,7 +65,10 @@ document.getElementById("checkOutBtn")?.addEventListener("click", () => {
             Accept: "application/json",
             "X-CSRF-TOKEN": getCSRFToken(), // Add CSRF token
         },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ 
+            username: username, 
+            currentUserId: currentUserId.toString(),
+        }),
     })
         .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
         .then(({ ok, body }) => {

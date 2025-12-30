@@ -70,7 +70,7 @@
                                 {{ $req->date->format('M d, Y') }}
                             </span>
                             <span class="block text-lg font-bold text-main mt-1 group-hover:text-primary transition-colors">
-                                {{ $req->user->name }}
+                                {{ $req->user->name }} ({{ $req->user->username }})
                             </span>
                         </div>
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $pillClass }} ring-1 ring-inset">

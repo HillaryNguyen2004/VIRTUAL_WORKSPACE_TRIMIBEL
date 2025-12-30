@@ -20,7 +20,10 @@
                     
                     {{-- Date Input --}}
                     <div class="flex flex-col gap-1.5 w-full">
-                        <label for="date" class="text-sm font-medium text-main">{{ __('request_day_off.select_date_label') }}</label>
+                        <label for="date" class="text-sm font-medium text-main">
+                            {{ __('request_day_off.select_date_label') }}
+                            <span class="text-red-500">*</span>
+                        </label>
                         <input type="date" name="date" id="date"
                             class="text-sm block w-full rounded-xl bg-canvas border border-muted-200 px-4 py-3 text-main cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all @error('date') border-danger text-danger @enderror"
                             min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}" value="{{ old('date') }}">
@@ -28,7 +31,10 @@
 
                     {{-- Leave Type Select --}}
                     <div class="flex flex-col gap-1.5 w-full">
-                        <label for="leave_type" class="text-sm font-medium text-main">{{ __('request_day_off.leave_type_label') }}</label>
+                        <label for="leave_type" class="text-sm font-medium text-main">
+                            {{ __('request_day_off.leave_type_label') }}
+                            <span class="text-red-500">*</span>
+                        </label>
                         <div class="relative">
                             <select name="leave_type" id="leave_type"
                                 class="text-sm block w-full rounded-xl bg-canvas border border-muted-200 px-4 py-3 text-main appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all @error('leave_type') border-danger text-danger @enderror">

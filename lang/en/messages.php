@@ -33,4 +33,5 @@ return [
     'success_approve' => 'Day-off request approved.',
     'success_reject' => 'Day-off request rejected.',
     'notice_approved' => 'Your day-off request for :date was approved.',
+    'wrong_username' => 'It\'s not your username'
 ];
