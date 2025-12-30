@@ -2,6 +2,7 @@
 
 return [
     'title' => 'Mẫu Email',
+    'subtitle' => 'Quản lý các mẫu email của bạn',
     'add_new_template' => 'Thêm Mẫu Mới',
     'no_templates_found' => 'Không tìm thấy mẫu nào.',
     'name' => 'Tên',

@@ -2,6 +2,7 @@
 
 return [
     'title' => 'Quản lý quyền người dùng',
+    'subtitle' => 'Quản lý quyền truy cập theo vai trò',
     'update_button' => 'Cập nhật quyền',
 
     // Permission labels (based on your system's permission names)

@@ -2,9 +2,11 @@
 
 @section('content')
     @vite(['resources/js/toggle_view.js'])
+
     @php
         use Illuminate\Support\Facades\Route;
 
+        // Determine dashboard route based on role
         $dashRoute = 'user.dashboard';
         if (auth()->user()->hasRole('admin') && Route::has('admin.dashboard')) {
             $dashRoute = 'admin.dashboard';
@@ -12,208 +14,300 @@
             $dashRoute = 'staff.dashboard';
         }
     @endphp
-    <x-action-layout :route="$dashRoute" :title="'profile.back_to_dashboard'">
-        {{-- Title --}}
-        <div class="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center w-full">
-            <h2 class="font-medium text-[28px] md:text-[32px]">{{ __('campaigns.title') }}</h2>
+
+    <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
+
+        {{-- HEADER SECTION --}}
+        <div class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center w-full mb-8">
+            <div class="flex items-center gap-4">
+                @include('components.back-btn')
+                
+                <div>
+                    <h2 class="font-bold text-3xl text-main tracking-tight">
+                        {{ __('campaigns.title') }}
+                    </h2>
+                    <p class="text-muted-500 text-sm mt-2">{{ __('campaigns.subtitle') }}</p>
+                </div>
+            </div>
+
             <a href="{{ route('campaigns.create') }}"
-                class="flex items-center justify-center gap-1 w-fit h-fit bg-[#5D3FD3] text-white px-3 py-1 rounded-xl hover:opacity-95">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h4 fill-white">
-                    <path
-                        d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z" />
+                class="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-primary/20">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 fill-current">
+                    <path d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z" />
                 </svg>
-                {{ __('campaigns.create_new_campaign') }}
+                <span class="font-medium">{{ __('campaigns.create_new_campaign') }}</span>
             </a>
         </div>
 
-        {{-- Search bar + Filter --}}
-        <form class="flex flex-wrap gap-2 animate-fade-in-up [animation-delay:150ms]" method="GET">
-            <input type="text" name="search" id="search" placeholder="Search by name" value="{{ request('search') }}"
-                class="rounded-xl text-sm md:text-base border border-gray-300 px-4 py-2 placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
-            <select name="status" id="status"
-                class="rounded-xl text-sm md:text-base border border-gray-300 px-3 py-2 placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition cursor-pointer">
-                <option value="">{{ __('campaigns.all_status') }}</option>
-                <option value="sent" {{ request('status') == 'sent' ? 'selected' : '' }}>{{ __('campaigns.sent') }}</option>
-                <option value="scheduled" {{ request('status') == 'scheduled' ? 'selected' : '' }}>{{ __('campaigns.scheduled') }}</option>
-                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>{{ __('campaigns.pending') }}</option>
-            </select>
-            <select name="sort" id="sort"
-                class="rounded-xl text-sm md:text-base border border-gray-300 px-3 py-2 placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition cursor-pointer">
-                <option value="desc" {{ request('sort') == 'desc' ? 'selected' : '' }}>{{ __('campaigns.newest') }}</option>
-                <option value="asc" {{ request('sort') == 'asc' ? 'selected' : '' }}>{{ __('campaigns.oldest') }}</option>
-            </select>
-            <div class="flex gap-2">
-                <!-- filter -->
-                <button type="submit" title="{{ __('tasks.filter') }}"
-                    class="border px-3 py-2 rounded-xl border-gray-300 hover:border-[#6b4fda] hover:bg-[#F1EFFC] transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
-                        <path
-                            d="M96 128C83.1 128 71.4 135.8 66.4 147.8C61.4 159.8 64.2 173.5 73.4 182.6L256 365.3L256 480C256 488.5 259.4 496.6 265.4 502.6L329.4 566.6C338.6 575.8 352.3 578.5 364.3 573.5C376.3 568.5 384 556.9 384 544L384 365.3L566.6 182.7C575.8 173.5 578.5 159.8 573.5 147.8C568.5 135.8 556.9 128 544 128L96 128z" />
-                    </svg>
-                </button>
-                <!-- reset -->
-                <a href="{{ route('campaigns.index') }}" title="{{ __('tasks.reset') }}"
-                    class="flex items-center justify-center border px-3 py-2 rounded-xl border-gray-300 hover:border-[#6b4fda] hover:bg-[#F1EFFC] transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
-                        <path
-                            d="M88 256L232 256C241.7 256 250.5 250.2 254.2 241.2C257.9 232.2 255.9 221.9 249 215L202.3 168.3C277.6 109.7 386.6 115 455.8 184.2C530.8 259.2 530.8 380.7 455.8 455.7C380.8 530.7 259.3 530.7 184.3 455.7C174.1 445.5 165.3 434.4 157.9 422.7C148.4 407.8 128.6 403.4 113.7 412.9C98.8 422.4 94.4 442.2 103.9 457.1C113.7 472.7 125.4 487.5 139 501C239 601 401 601 501 501C601 401 601 239 501 139C406.8 44.7 257.3 39.3 156.7 122.8L105 71C98.1 64.2 87.8 62.1 78.8 65.8C69.8 69.5 64 78.3 64 88L64 232C64 245.3 74.7 256 88 256z" />
-                    </svg>
-                </a>
-            </div>
-        </form>
+        {{-- CARD CONTAINER --}}
+        <div class="bg-white rounded-2xl border border-muted-200 shadow-lg shadow-main/5 overflow-visible flex flex-col animate-fade-in-up">
 
-        {{-- List --}}
-        <div
-            class="overflow-x-auto rounded-2xl border border-gray-300 shadow-[0_4px_40px_0_rgba(32,27,53,0.1)] animate-fade-in-up [animation-delay:200ms]">
-            <table class="w-full">
-                <thead class="bg-gray-100 text-gray-500 uppercase tracking-wide text-sm">
-                    <tr>
-                        <th class="py-3 pl-4 pr-3 text-left font-medium">{{ __('campaigns.id') }}</th>
-                        <th class="py-3 px-3 text-left font-medium">{{ __('campaigns.name') }}</th>
-                        <th class="py-3 px-3 text-left font-medium">{{ __('campaigns.subject') }}</th>
-                        <th class="py-3 px-3 text-left font-medium">{{ __('campaigns.scheduled_at') }}</th>
-                        <th class="py-3 px-3 text-left font-medium">{{ __('campaigns.status') }}</th>
-                        <th class="py-3 px-3 text-left font-medium">{{ __('campaigns.users') }}</th>
-                        <th class="py-3 pr-4 pl-3 text-left font-medium"></th>
-                    </tr>
-                </thead>
+            {{-- SEARCH & FILTER BAR --}}
+            <form class="p-5 border-b border-muted-200 flex flex-wrap gap-4 bg-white rounded-t-2xl" method="GET">
+                <div class="flex-1 min-w-[200px] relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-muted-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <input name="search" id="search" type="text" placeholder="Search by name" value="{{ request('search') }}"
+                        class="block w-full pl-10 bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl placeholder-muted-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                </div>
 
-                <tbody class="divide-y divide-gray-100 bg-[#FDFDFF] text-sm">
-                    @forelse($campaigns as $campaign)
+                <select name="status" id="status"
+                    class="bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer hover:border-primary/50">
+                    <option value="">{{ __('campaigns.all_status') }}</option>
+                    <option value="sent" {{ request('status') == 'sent' ? 'selected' : '' }}>{{ __('campaigns.sent') }}</option>
+                    <option value="scheduled" {{ request('status') == 'scheduled' ? 'selected' : '' }}>{{ __('campaigns.scheduled') }}</option>
+                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>{{ __('campaigns.pending') }}</option>
+                </select>
+
+                <select name="sort" id="sort"
+                    class="bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer hover:border-primary/50">
+                    <option value="desc" {{ request('sort') == 'desc' ? 'selected' : '' }}>{{ __('campaigns.newest') }}</option>
+                    <option value="asc" {{ request('sort') == 'asc' ? 'selected' : '' }}>{{ __('campaigns.oldest') }}</option>
+                </select>
+
+                <div class="flex gap-2">
+                    <button type="submit" title="{{ __('tasks.filter') }}"
+                        class="border border-muted-200 px-3 py-2.5 rounded-xl text-muted-500 hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
+                            <path d="M96 128C83.1 128 71.4 135.8 66.4 147.8C61.4 159.8 64.2 173.5 73.4 182.6L256 365.3L256 480C256 488.5 259.4 496.6 265.4 502.6L329.4 566.6C338.6 575.8 352.3 578.5 364.3 573.5C376.3 568.5 384 556.9 384 544L384 365.3L566.6 182.7C575.8 173.5 578.5 159.8 573.5 147.8C568.5 135.8 556.9 128 544 128L96 128z" />
+                        </svg>
+                    </button>
+
+                    <a href="{{ route('campaigns.index') }}" title="{{ __('tasks.reset') }}"
+                        class="flex items-center justify-center border border-muted-200 px-3 py-2.5 rounded-xl text-muted-500 hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
+                            <path d="M88 256L232 256C241.7 256 250.5 250.2 254.2 241.2C257.9 232.2 255.9 221.9 249 215L202.3 168.3C277.6 109.7 386.6 115 455.8 184.2C530.8 259.2 530.8 380.7 455.8 455.7C380.8 530.7 259.3 530.7 184.3 455.7C174.1 445.5 165.3 434.4 157.9 422.7C148.4 407.8 128.6 403.4 113.7 412.9C98.8 422.4 94.4 442.2 103.9 457.1C113.7 472.7 125.4 487.5 139 501C239 601 401 601 501 501C601 401 601 239 501 139C406.8 44.7 257.3 39.3 156.7 122.8L105 71C98.1 64.2 87.8 62.1 78.8 65.8C69.8 69.5 64 78.3 64 88L64 232C64 245.3 74.7 256 88 256z" />
+                        </svg>
+                    </a>
+                </div>
+            </form>
+
+            {{-- TABLE SECTION --}}
+            <div class="overflow-x-auto w-full min-h-[400px]">
+                <table class="w-full table-fixed">
+                    <thead class="bg-muted-50 border-b border-muted-200">
                         <tr>
-                            {{-- id --}}
-                            <td class="py-3 pl-4 pr-3">
-                                <div class="max-w-xs truncate" title="{{ $campaign->id }}">{{ $campaign->id }}</div>
-                            </td>
+                            <th class="w-[5%] py-4 pl-6 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('campaigns.id') }}</th>
+                            <th class="w-[20%] py-4 px-3 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('campaigns.name') }}</th>
+                            <th class="w-[25%] py-4 px-3 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('campaigns.subject') }}</th>
+                            <th class="w-[20%] py-4 px-3 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('campaigns.scheduled_at') }}</th>
+                            <th class="w-[12.5%] py-4 px-3 text-center text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('campaigns.status') }}</th>
+                            <th class="w-[12.5%] py-4 px-3 text-center text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('campaigns.users') }}</th>
+                            <th class="w-[5%] py-4 pr-6 text-right text-xs font-semibold text-muted-400 uppercase tracking-wider"></th>
+                        </tr>
+                    </thead>
 
-                            {{-- name --}}
-                            <td class="py-3 px-3">
-                                <div class="max-w-xs truncate" title="{{ $campaign->name }}">{{ $campaign->name }}</div>
-                            </td>
+                    <tbody class="divide-y divide-muted-100">
+                        @forelse($campaigns as $campaign)
+                            @php
+                                $pillClass = '';
+                                $statusLabel = '';
+                                
+                                if($campaign->sent) {
+                                    $pillClass = 'bg-accent/10 text-accent';
+                                    $statusLabel = __('campaigns.sent');
+                                } elseif($campaign->scheduled_at && $campaign->scheduled_at->isFuture()) {
+                                    $pillClass = 'bg-primary/10 text-primary';
+                                    $statusLabel = __('campaigns.scheduled');
+                                } else {
+                                    $pillClass = 'bg-muted-100 text-muted-600';
+                                    $statusLabel = __('campaigns.pending');
+                                }
+                            @endphp
 
-                            {{-- subject --}}
-                            <td class="py-3 px-3">
-                                <div class="max-w-xs truncate" title="{{ $campaign->subject }}">{{ $campaign->subject }}</div>
-                            </td>
+                            <tr class="hover:bg-canvas transition-colors group relative">
+                                {{-- ID --}}
+                                <td class="py-4 pl-6 text-sm text-muted-500">
+                                    <div class="truncate" title="{{ $campaign->id }}">{{ $campaign->id }}</div>
+                                </td>
 
-                            {{-- scheduled --}}
-                            <td class="py-3 px-3">
-                                <div class="max-w-xs truncate">
-                                    {{ $campaign->scheduled_at ? $campaign->scheduled_at->format('Y-m-d H:i') : 'N/A' }}
-                                </div>
-                            </td>
+                                {{-- Name --}}
+                                <td class="py-4 px-3 text-sm font-medium text-main">
+                                    <div class="truncate" title="{{ $campaign->name }}">{{ $campaign->name }}</div>
+                                </td>
 
-                            {{-- Status pill --}}
-                            <td class="py-3 px-3">
-                                @if($campaign->sent)
-                                    <x-status-pill textColor="text-[#5AE194]"
-                                        bgColor="bg-[#D3FDE5]">{{ __('campaigns.sent') }}</x-status-pill>
-                                @elseif($campaign->scheduled_at && $campaign->scheduled_at->isFuture())
-                                    <x-status-pill textColor="text-amber-500"
-                                        bgColor="bg-amber-100">{{ __('campaigns.scheduled') }}</x-status-pill>
-                                @else
-                                    <x-status-pill textColor="text-gray-500"
-                                        bgColor="bg-gray-100">{{ __('campaigns.pending') }}</x-status-pill>
-                                @endif
-                            </td>
+                                {{-- Subject --}}
+                                <td class="py-4 px-3 text-sm text-muted-500">
+                                    <div class="truncate" title="{{ $campaign->subject }}">{{ $campaign->subject }}</div>
+                                </td>
 
-                            {{-- Number user --}}
-                            <td class="py-3 px-3">
-                                <div class="max-w-xs truncate">{{ $campaign->users->count() }}
-                                    {{ Str::plural('User', $campaign->users->count()) }}
-                                </div>
-                            </td>
+                                {{-- Scheduled --}}
+                                <td class="py-4 px-3 text-sm text-muted-500">
+                                    {{ $campaign->scheduled_at ? $campaign->scheduled_at->format('d/m/Y H:i') : 'N/A' }}
+                                </td>
 
-                            {{-- Actions --}}
-                            <td class="py-3 pr-4 pl-3 text-right">
-                                <div class="flex items-center justify-end gap-1 h-fit">
-                                    {{-- View: toggle details row --}}
-                                    <button type="button" class="toggle-row p-1.5 rounded-full hover:bg-gray-100"
-                                        id="view-btn-{{ $campaign->id }}" data-target="taskDetails{{ $campaign->id }}"
-                                        aria-controls="taskDetails{{ $campaign->id }}" aria-expanded="false"
-                                        title="{{ __('tasks.view') }}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
-                                            class="w-5 h-5 fill-[#5D3FD3]">
-                                            <path
-                                                d="M320 96C239.2 96 174.5 132.8 127.4 176.6C80.6 220.1 49.3 272 34.4 307.7C31.1 315.6 31.1 324.4 34.4 332.3C49.3 368 80.6 420 127.4 463.4C174.5 507.1 239.2 544 320 544C400.8 544 465.5 507.2 512.6 463.4C559.4 419.9 590.7 368 605.6 332.3C608.9 324.4 608.9 315.6 605.6 307.7C590.7 272 559.4 220 512.6 176.6C465.5 132.9 400.8 96 320 96zM176 320C176 240.5 240.5 176 320 176C399.5 176 464 240.5 464 320C464 399.5 399.5 464 320 464C240.5 464 176 399.5 176 320zM320 256C320 291.3 291.3 320 256 320C244.5 320 233.7 317 224.3 311.6C223.3 322.5 224.2 333.7 227.2 344.8C240.9 396 293.6 426.4 344.8 412.7C396 399 426.4 346.3 412.7 295.1C400.5 249.4 357.2 220.3 311.6 224.3C316.9 233.6 320 244.4 320 256z" />
-                                        </svg>
-                                    </button>
+                                {{-- Status --}}
+                                <td class="py-4 px-3 text-center">
+                                    <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium {{ $pillClass }}">
+                                        {{ $statusLabel }}
+                                    </div>
+                                </td>
 
-                                    {{-- Edit --}}
-                                    <a href="{{ route('campaigns.edit', $campaign->id) }}"
-                                        class="p-1.5 rounded-full hover:bg-gray-100 transition" title="{{ __('tasks.edit') }}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
-                                            class="w-5 h-5 fill-green-500">
-                                            <path
-                                                d="M535.6 85.7C513.7 63.8 478.3 63.8 456.4 85.7L432 110.1L529.9 208L554.3 183.6C576.2 161.7 576.2 126.3 554.3 104.4L535.6 85.7zM236.4 305.7C230.3 311.8 225.6 319.3 222.9 327.6L193.3 416.4C190.4 425 192.7 434.5 199.1 441C205.5 447.5 215 449.7 223.7 446.8L312.5 417.2C320.7 414.5 328.2 409.8 334.4 403.7L496 241.9L398.1 144L236.4 305.7zM160 128C107 128 64 171 64 224L64 480C64 533 107 576 160 576L416 576C469 576 512 533 512 480L512 384C512 366.3 497.7 352 480 352C462.3 352 448 366.3 448 384L448 480C448 497.7 433.7 512 416 512L160 512C142.3 512 128 497.7 128 480L128 224C128 206.3 142.3 192 160 192L256 192C273.7 192 288 177.7 288 160C288 142.3 273.7 128 256 128L160 128z" />
-                                        </svg>
-                                    </a>
+                                {{-- Users Count --}}
+                                <td class="py-4 px-3 text-center text-sm text-muted-500">
+                                    <span class="bg-white border border-muted-200 px-2 py-0.5 rounded-full text-xs">
+                                        {{ $campaign->users->count() }}
+                                    </span>
+                                </td>
 
-                                    {{-- Delete --}}
-                                    <form action="{{ route('campaigns.destroy', $campaign->id) }}" method="POST"
-                                        onsubmit="return confirm('{{ __('campaigns.confirm_delete') }}');" class="">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="p-1.5 rounded-full hover:bg-gray-100 transition"
-                                            title="{{ __('tasks.delete') }}">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
-                                                class="w-5 h-5 fill-red-600">
-                                                <path
-                                                    d="M232.7 69.9L224 96L128 96C110.3 96 96 110.3 96 128C96 145.7 110.3 160 128 160L512 160C529.7 160 544 145.7 544 128C544 110.3 529.7 96 512 96L416 96L407.3 69.9C402.9 56.8 390.7 48 376.9 48L263.1 48C249.3 48 237.1 56.8 232.7 69.9zM512 208L128 208L149.1 531.1C150.7 556.4 171.7 576 197 576L443 576C468.3 576 489.3 556.4 490.9 531.1L512 208z" />
+                                {{-- ACTIONS DROPDOWN --}}
+                                <td class="py-4 pr-6 text-right relative">
+                                    <div class="relative flex justify-end">
+                                        {{-- Trigger Button --}}
+                                        <button onclick="toggleActionMenu(event, 'menu-{{ $campaign->id }}')" 
+                                            class="p-2 rounded-lg text-muted-400 hover:bg-muted-100 hover:text-main transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="1"></circle>
+                                                <circle cx="19" cy="12" r="1"></circle>
+                                                <circle cx="5" cy="12" r="1"></circle>
                                             </svg>
                                         </button>
-                                    </form>
 
-                                    @if(!$campaign->sent)
-                                        <form action="{{ route('campaigns.sendNow', $campaign->id) }}" method="POST">
-                                            @csrf
-                                            <button class="rounded-lg bg-emerald-100 text-emerald-500 py-1 px-2"
-                                                onclick="return confirm('{{ __('campaigns.confirm_send') }}')">
-                                                {{ __('campaigns.send_now') }}
+                                        {{-- Dropdown Menu --}}
+                                        <div id="menu-{{ $campaign->id }}" 
+                                            class="dropdown-menu hidden absolute right-0 top-full mt-2 w-48 bg-white border border-muted-200 rounded-xl shadow-xl shadow-main/10 z-50 flex flex-col py-1.5 origin-top-right">
+                                            
+                                            {{-- View Details --}}
+                                            <button class="toggle-row w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-muted-600 hover:bg-muted-50 hover:text-main transition-colors"
+                                                data-target="taskDetails{{ $campaign->id }}"
+                                                onclick="closeAllMenus()">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-muted-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                                {{ __('tasks.view') }}
                                             </button>
-                                        </form>
-                                    @endif
 
-                                    @if($campaign->sent)
-                                        <form method="POST" action="{{ route('campaigns.reset', $campaign->id) }}">
-                                            @csrf
-                                            @method('PUT')
-                                            <button type="submit" class="rounded-lg bg-amber-100 text-amber-500 py-1 px-2"
-                                                onclick="return confirm('{{ __('campaigns.confirm_reset') }}')">
-                                                {{ __('campaigns.reset') }}
-                                            </button>
-                                        </form>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
+                                            {{-- Edit --}}
+                                            <a href="{{ route('campaigns.edit', $campaign->id) }}"
+                                                class="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-muted-600 hover:bg-muted-50 hover:text-main transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-muted-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                </svg>
+                                                {{ __('tasks.edit') }}
+                                            </a>
 
-                        {{-- Details row (toggle) --}}
-                        <tr id="taskDetails{{ $campaign->id }}" class="detail-row hidden">
-                            <td colspan="7" class="bg-gray-50 p-4">
-                                <div class="h-fit max-h-[200px] overflow-auto">
-                                    <strong class="text-gray-600">{{ __('campaigns.users') }}:</strong>
-                                    <div class="mt-1 text-gray-400 break-all">
-                                        {{ $campaign->users->pluck('name')->join(', ') }}
+                                            {{-- Actions Divider --}}
+                                            <div class="h-px bg-muted-100 my-1 mx-2"></div>
+
+                                            {{-- Send Now --}}
+                                            @if(!$campaign->sent)
+                                                <form action="{{ route('campaigns.sendNow', $campaign->id) }}" method="POST">
+                                                    @csrf
+                                                    <button class="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-secondary hover:bg-secondary/10 transition-colors"
+                                                        onclick="return confirm('{{ __('campaigns.confirm_send') }}')">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                                        </svg>
+                                                        {{ __('campaigns.send_now') }}
+                                                    </button>
+                                                </form>
+                                            @endif
+
+                                            {{-- Reset --}}
+                                            @if($campaign->sent)
+                                                <form method="POST" action="{{ route('campaigns.reset', $campaign->id) }}">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <button type="submit" class="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-secondary hover:bg-secondary/10 transition-colors"
+                                                        onclick="return confirm('{{ __('campaigns.confirm_reset') }}')">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                        </svg>
+                                                        {{ __('campaigns.reset') }}
+                                                    </button>
+                                                </form>
+                                            @endif
+
+                                            {{-- Delete --}}
+                                            <form action="{{ route('campaigns.destroy', $campaign->id) }}" method="POST"
+                                                onsubmit="return confirm('{{ __('campaigns.confirm_delete') }}')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-danger hover:bg-danger/5 transition-colors">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                    {{ __('tasks.delete') }}
+                                                </button>
+                                            </form>
+                                        </div>
                                     </div>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="py-8 text-center text-gray-400">
-                                {{ __('campaigns.no_campaigns_found') }}
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                                </td>
+                            </tr>
 
-            @if ($campaigns->hasPages())
-                <div class="my-4 flex justify-center w-full">
+                            {{-- Details Row --}}
+                            <tr id="taskDetails{{ $campaign->id }}" class="hidden bg-canvas border-b border-muted-100 shadow-inner">
+                                <td colspan="7" class="p-6">
+                                    <div class="flex flex-col md:flex-row gap-6">
+                                        <div class="flex-1">
+                                            <strong class="text-sm font-bold text-main block mb-2">{{ __('campaigns.users') }} ({{ $campaign->users->count() }})</strong>
+                                            <div class="bg-white border border-muted-200 rounded-xl p-4 max-h-[150px] overflow-y-auto shadow-sm">
+                                                <p class="text-muted-600 text-sm leading-relaxed">
+                                                    {{ $campaign->users->pluck('name')->join(', ') }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="py-12 text-center">
+                                    <div class="flex flex-col items-center justify-center gap-3">
+                                        <div class="p-3 rounded-full bg-muted-100 text-muted-400">
+                                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>
+                                        </div>
+                                        <p class="text-muted-500 font-medium">{{ __('campaigns.no_campaigns_found') }}</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            @if ($campaigns instanceof \Illuminate\Contracts\Pagination\Paginator && $campaigns->hasPages())
+                <div class="mt-6 flex justify-center w-full pb-6">
                     {{ $campaigns->onEachSide(1)->withQueryString()->links('vendor.pagination.tailwind') }}
                 </div>
             @endif
         </div>
-    </x-action-layout>
+    </div>
+
+    {{-- Script to handle dropdown toggling --}}
+    <script>
+        function toggleActionMenu(event, menuId) {
+            event.stopPropagation();
+            const menu = document.getElementById(menuId);
+            const isHidden = menu.classList.contains('hidden');
+
+            // Close all other menus first
+            closeAllMenus();
+
+            // Toggle current menu
+            if (isHidden) {
+                menu.classList.remove('hidden');
+            }
+        }
+
+        function closeAllMenus() {
+            document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                menu.classList.add('hidden');
+            });
+        }
+
+        // Close menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const isClickInsideDropdown = event.target.closest('.dropdown-menu');
+            const isClickInsideButton = event.target.closest('button[onclick^="toggleActionMenu"]');
+            
+            if (!isClickInsideDropdown && !isClickInsideButton) {
+                closeAllMenus();
+            }
+        });
+    </script>
 @endsection

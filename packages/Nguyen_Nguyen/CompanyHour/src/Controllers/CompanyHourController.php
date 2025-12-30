@@ -41,7 +41,7 @@ class CompanyHourController extends Controller
     public function update(StoreCompanyHourRequest $request)
     {
         $this->companyHourService->update($request->validated());
-        return redirect()->route('companyhour.index')->with('success', 'Updated!');
+        return redirect()->back()->with('success', 'Updated!');
     }
 
     public function destroy(CompanyHour $companyhour)

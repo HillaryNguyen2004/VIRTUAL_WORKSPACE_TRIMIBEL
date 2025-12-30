@@ -2,6 +2,7 @@
 
 return [
     'all_activity_logs' => 'All Activity Logs',
+    'activity_logs_subtitle' => 'View all activity logs performed by users',
     'id' => 'ID',
     'user' => 'User',
     'task' => 'Task',

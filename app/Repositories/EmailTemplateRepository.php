@@ -20,12 +20,12 @@ class EmailTemplateRepository
         return $template->delete();
     }
 
-    public function paginate(int $perPage = 3)
+    public function paginate(int $perPage = 10)
     {
         return EmailTemplate::latest()->paginate($perPage);
     }
 
-    public function getFilteredPaginated(array $filters = [], int $perPage = 3)
+    public function getFilteredPaginated(array $filters = [], int $perPage = 10)
     {
         $query = EmailTemplate::query();
 

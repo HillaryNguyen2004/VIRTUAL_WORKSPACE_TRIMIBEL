@@ -60,7 +60,7 @@ class ProjectService
             $query->orderByDesc('id');
         }
 
-        $perPage = max(1, (int) $request->get('per_page', 3));
+        $perPage = max(1, (int) $request->get('per_page', 10));
 
         return $query
             ->paginate($perPage)

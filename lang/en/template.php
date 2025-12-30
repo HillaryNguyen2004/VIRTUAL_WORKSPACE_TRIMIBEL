@@ -2,6 +2,7 @@
 
 return [
     'title' => 'Email Templates',
+    'subtitle' => 'Manage your email templates',
     'add_new_template' => 'Add New Template',
     'no_templates_found' => 'No templates found.',
     'name' => 'Name',

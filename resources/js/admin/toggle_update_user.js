@@ -131,16 +131,21 @@ $(function () {
                 : [];
 
         const $row = $(`
-            <div class="team-member-select flex gap-4 w-full">
-                <select name="team_members[]"
-                    class="w-full rounded-xl border border-gray-300 px-4 py-3 placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
-                    ${buildOptions(available)}
-                </select>
-                <button id="remove-member-field-btn" type="button" class="px-3 rounded-full hover:bg-red-100 transition"
+            <div class="team-member-select flex gap-2 w-full items-center">
+                <div class="relative w-full">
+                    <select name="team_members[]"
+                        class="text-sm block w-full rounded-xl bg-canvas border border-muted-200 px-4 py-3 text-main appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                        ${buildOptions(available)}
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-500">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                </div>
+                <button id="remove-member-field-btn" type="button"
+                    class="p-2.5 rounded-xl text-muted-400 hover:text-danger hover:bg-danger/10 transition-colors flex-shrink-0" 
                     title="{{ __('tasks.delete') }}">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-red-600">
-                        <path
-                            d="M232.7 69.9L224 96L128 96C110.3 96 96 110.3 96 128C96 145.7 110.3 160 128 160L512 160C529.7 160 544 145.7 544 128C544 110.3 529.7 96 512 96L416 96L407.3 69.9C402.9 56.8 390.7 48 376.9 48L263.1 48C249.3 48 237.1 56.8 232.7 69.9zM512 208L128 208L149.1 531.1C150.7 556.4 171.7 576 197 576L443 576C468.3 576 489.3 556.4 490.9 531.1L512 208z" />
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                 </button>
             </div>

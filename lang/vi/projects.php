@@ -2,12 +2,17 @@
 
 return [
     'project_list'   => 'Danh sách dự án',
+    'subtitle' => 'Quản lý các dự án của bạn',
     'create_project' => 'Tạo dự án',
+    'create_subtitle' => 'Nhập thông tin dự án bên dưới',
+    'edit_subtitle' => 'Cập nhật thông tin dự án bên dưới',
 
     'title'   => 'Tiêu đề',
     'staff'   => 'Nhân viên phụ trách',
     'status'  => 'Trạng thái',
     'actions' => 'Thao tác',
+    'start_date' => 'Ngày bắt đầu',
+    'due_date' => 'Ngày kết thúc',
 
     'edit'   => 'Chỉnh sửa',
     'delete' => 'Xóa',

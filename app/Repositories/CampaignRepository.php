@@ -35,7 +35,7 @@ class CampaignRepository
         return $campaign->delete();
     }
 
-        public function getAllPaginated($perPage = 3)
+        public function getAllPaginated($perPage = 10)
     {
         return Campaign::with('users')->latest()->paginate($perPage);
     }
@@ -63,7 +63,7 @@ class CampaignRepository
             $query->orderBy('scheduled_at', 'desc');
         }
 
-        return $query->paginate(3)->appends($filters); // retain query strings in pagination
+        return $query->paginate(10)->appends($filters); // retain query strings in pagination
     }
 
 

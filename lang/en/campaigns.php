@@ -2,6 +2,7 @@
 
 return [
     'title' => 'Campaign List',
+    'subtitle' => 'Manage marketing campaigns and user notifications',
     'create_new_campaign' => 'Create New Campaign',
     'no_campaigns_found' => 'No campaigns found.',
     'id' => 'ID',

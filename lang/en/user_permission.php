@@ -2,6 +2,7 @@
 
 return [
     'title' => 'User Permissions Management',
+    'subtitle' => 'Manage role-based access controls',
     'update_button' => 'Update Permissions',
 
     // Permission labels (based on your system's permission names)
