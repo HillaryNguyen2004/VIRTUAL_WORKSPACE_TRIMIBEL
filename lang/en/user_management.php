@@ -1,6 +1,7 @@
 <?php
 return [
     'title' => 'User Management',
+    'subtitle' => 'Manage user information in the system',
     'search_placeholder' => 'Search by username or email',
     'all_roles' => 'All Roles',
     'admin_role' => 'Admin',

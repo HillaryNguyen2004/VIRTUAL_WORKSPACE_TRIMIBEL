@@ -101,7 +101,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         $user->save();
     }
 
-    public function filterUsers(array $filters, int $perPage = 3)
+    public function filterUsers(array $filters, int $perPage = 10)
     {
         $query = $this->model->with('roles');
 

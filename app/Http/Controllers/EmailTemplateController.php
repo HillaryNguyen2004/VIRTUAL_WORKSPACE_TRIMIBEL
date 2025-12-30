@@ -31,7 +31,7 @@ class EmailTemplateController extends Controller
         'sort_dir' => $request->input('sort_dir'), // asc or desc
         ];
 
-        $templates = $this->templateRepo->getFilteredPaginated($filters, 3);
+        $templates = $this->templateRepo->getFilteredPaginated($filters, 10);
         return view('tasks.email-templates.index', compact('templates', 'filters'));
     }
 

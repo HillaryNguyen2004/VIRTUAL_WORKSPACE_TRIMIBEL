@@ -1,9 +1,10 @@
 <?php
 
 return [
-    'edit_campaign' => 'Chỉnh sửa Chiến dịch',
-    'create_new_campaign' => 'Tạo Chiến dịch Mới',
-    'campaign_name' => 'Tên Chiến dịch',
+    'edit_campaign' => 'Chỉnh sửa chiến dịch',
+    'create_new_campaign' => 'Tạo chiến dịch mới',
+    'subtitle' => 'Tạo chiến dịch email mới',
+    'campaign_name' => 'Tên chiến dịch',
     'enter_campaign_name' => 'Nhập tên chiến dịch',
     'subject' => 'Chủ đề',
     'enter_email_subject' => 'Nhập chủ đề email',
@@ -14,6 +15,7 @@ return [
     'schedule_at' => 'Lịch gửi (tùy chọn)',
     'schedule_at_hint' => 'Để trống để gửi thủ công sau.',
     'update_campaign' => 'Cập nhật Chiến dịch',
+    'cancel' => 'Hủy',
     'save_and_schedule' => 'Lưu & Lên lịch',
     'sync_with_template' => 'Đồng bộ với Mẫu',
     'back_to_campaigns' => 'Quay Lại Chiến Dịch',

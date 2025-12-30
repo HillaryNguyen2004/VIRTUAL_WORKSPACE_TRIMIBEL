@@ -7,8 +7,8 @@ module.exports = {
   theme: {
     extend: {
       backgroundImage: {
-        'panel-right-gradient': 'linear-gradient(160deg, #7FBFFF 10%, #766CD6 100%)',
-        'panel-left-gradient': 'linear-gradient(160deg, #766CD6 -10%, #5FE1E0 120%)',
+        'panel-right-gradient': 'linear-gradient(160deg, #7FBFFF 0%, #766CD6 80%)',
+        'panel-left-gradient': 'linear-gradient(160deg, #766CD6 10%, #5FE1E0 120%)',
         'btn-login': 'linear-gradient(90deg, #766CD6 0%, #5347CC 100%)'
       },
       colors: {
