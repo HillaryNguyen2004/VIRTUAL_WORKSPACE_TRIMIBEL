@@ -2,6 +2,7 @@
 
 return [
     'all_activity_logs' => 'Tất cả nhật ký hoạt động',
+    'activity_logs_subtitle' => 'Xem tất cả nhật ký hoạt động do người dùng thực hiện',
     'id' => 'ID',
     'user' => 'Người dùng',
     'task' => 'Hành động',

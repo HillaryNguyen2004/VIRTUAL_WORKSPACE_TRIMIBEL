@@ -2,6 +2,7 @@
 
 return [
     'title' => 'Danh sách Chiến dịch',
+    'subtitle' => 'Quản lý các chiến dịch tiếp thị và thông báo người dùng',
     'create_new_campaign' => 'Tạo Chiến dịch Mới',
     'no_campaigns_found' => 'Không tìm thấy chiến dịch nào.',
     'id' => 'ID',

@@ -30,7 +30,8 @@
         'resources/js/dashboard_layout/toggle_sidebar.js',
         'resources/js/dashboard_layout/dropdown_notification.js',
         'resources/js/dashboard_layout/scroll_to_top.js',
-        'resources/js/chat_bot.js' 
+        'resources/js/chat_bot.js',
+        'resources/js/admin/edit_company_hours.js'
     ])
 
     @vite(['resources/js/user_dashboard/check_in_out_api.js'])
@@ -97,6 +98,7 @@
                         <span class="hidden sm:inline font-medium">{{ __('app.video_chat') }}</span>
                     </x-nav-link>
                 </li>
+                @if (auth()->user()->hasRole('user'))
                 <li>
                     <x-nav-link href="{{ route('team-progress') }}" :active="request()->routeIs('team-progress')"
                         class="flex items-center gap-4 px-4 py-3 hover:bg-muted-50 rounded-xl cursor-pointer transition-colors group {{ request()->routeIs('team-progress') ? 'text-primary bg-primary/5' : 'text-muted-500' }}">
@@ -106,6 +108,7 @@
                         <span class="hidden sm:inline font-medium">{{ __('app.team_progress') }}</span>
                     </x-nav-link>
                 </li>
+                @endif
             </ul>
         </nav>
         <div class="hidden fixed bg-main/20 h-screen w-screen z-30 pointer-events-auto" id="sidebar-bg-addition"></div>
@@ -335,6 +338,7 @@
     @isset($user)
         @include('users.update', ['users' => $users ?? collect()])
     @endisset
+    @include('edit_company_hours_dialog')
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>

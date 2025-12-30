@@ -2,12 +2,17 @@
 
 return [
     'project_list'   => 'Project List',
+    'subtitle' => 'Manage your projects',
     'create_project' => 'Create Project',
+    'create_subtitle' => 'Enter the project details below',
+    'edit_subtitle' => 'Update the project details below',
 
     'title'   => 'Title',
     'staff'   => 'Assigned Staff',
     'status'  => 'Status',
     'actions' => 'Actions',
+    'start_date' => 'Start Date',
+    'due_date' => 'Due Date',
 
     'edit'   => 'Edit',
     'delete' => 'Delete',
