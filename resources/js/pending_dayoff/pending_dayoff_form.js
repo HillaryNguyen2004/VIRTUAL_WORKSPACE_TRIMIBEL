@@ -7,7 +7,6 @@ $(function() {
     const $rejectedBtn = $("#rejected-btn");
 
     $acceptedForm.on("submit", function (e) {
-        console.log("accepted");
         e.preventDefault();
         $acceptedBtn.prop("disabled", true);
 

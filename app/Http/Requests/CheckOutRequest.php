@@ -25,6 +25,7 @@ class CheckOutRequest extends FormRequest
     {
         return [
             'username' => 'required|string',
+            'currentUserId' => 'required|string',
         ];
     }
 }

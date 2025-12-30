@@ -16,7 +16,13 @@ class CheckInService
         $this->checkInRepository = $checkInRepository;
     }
 
-    public function processCheckOut(string $username): array
+    private function normalizeName(string $s): string {
+        $s = mb_strtolower(trim($s), 'UTF-8');
+        $s = preg_replace('/\s+/', '', $s); // remove all spaces
+        return $s;
+    }
+
+    public function processCheckOut(string $username, string $currentUserId): array
     {
         $user = User::where('username', $username)->first();
 
@@ -24,6 +30,25 @@ class CheckInService
             return [
                 'status' => false,
                 'message' => __('messages.invalid_user'),
+            ];
+        }
+
+        $currentUser = User::find($currentUserId);
+
+        if (!$currentUser) {
+            return [
+                'status' => false,
+                'message' => __('messages.invalid_user'),
+            ];
+        }
+
+        $currentUsername = $currentUser->username;
+
+        // compare 2 username to check is it checkin with its own username or not, if not then throw error
+        if ($this->normalizeName($user) !== $this->normalizeName($currentUsername)) {
+            return [
+                'status' => false,
+                'message' => __('messages.wrong_username'),
             ];
         }
 
@@ -55,7 +80,7 @@ class CheckInService
         ];
     }
 
-    public function processCheckIn(string $username): array
+    public function processCheckIn(string $username, string $currentUserId): array
     {
         $user = User::where('username', $username)->first();
 
@@ -66,10 +91,29 @@ class CheckInService
             ];
         }
 
+        $currentUser = User::find($currentUserId);
+
+        if (!$currentUser) {
+            return [
+                'status' => false,
+                'message' => __('messages.invalid_user'),
+            ];
+        }
+
+        $currentUsername = $currentUser->username;
+
         $token = $user->createToken('check-in-token')->plainTextToken;
 
         $now = Carbon::now('Asia/Ho_Chi_Minh');
         $today = $now->toDateString();
+
+        // compare 2 username to check is it checkin with its own username or not, if not then throw error
+        if ($this->normalizeName($user) !== $this->normalizeName($currentUsername)) {
+            return [
+                'status' => false,
+                'message' => __('messages.wrong_username'),
+            ];
+        }
 
         // Check if already checked in today (by username)
         if ($this->checkInRepository->hasCheckedInToday($user->username, $today)) {
