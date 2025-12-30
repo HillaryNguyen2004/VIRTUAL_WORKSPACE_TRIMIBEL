@@ -285,7 +285,6 @@
 @endpush
 
 @push('scripts')
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <script>
 function toggleModal(modalID) {
@@ -312,6 +311,13 @@ class RealtimeChatApp {
         if (token) axios.defaults.headers.common['X-CSRF-TOKEN'] = token.getAttribute('content');
         axios.defaults.headers.common['Accept'] = 'application/json';
         axios.defaults.withCredentials = true;
+
+        // Ensure Sanctum CSRF cookie is set for authenticated API requests
+        try {
+            await axios.get('/sanctum/csrf-cookie');
+        } catch (err) {
+            console.warn('Failed to fetch CSRF cookie for Sanctum', err);
+        }
 
         await this.loadConversations();
         await this.loadOnlineUsers();
