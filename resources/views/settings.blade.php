@@ -3,9 +3,10 @@
     @vite(['resources/js/settings/upload_image.js'])
     @vite(['resources/js/settings/update_detail.js'])
     <div class="flex flex-col gap-6 w-full h-fit">
-        <a href="{{ route('profile') }}" class="text-[#5D3FD3] text-lg font-medium w-fit">
+        <!-- <a href="{{ route('profile') }}" class="text-[#5D3FD3] text-lg font-medium w-fit">
             &larr; {{ __('settings.back_to_profile') }}
-        </a>
+        </a> -->
+        <x-back-btn route="profile" />
         <div
             class="flex flex-col items-center w-full h-fit bg-[#FDFDFF] rounded-2xl shadow-[0_4px_40px_0_rgba(32,27,53,0.1)] animate-fade-in-up [animation-delay:150ms]">
             <div class="w-full py-3 text-center text-xl bg-[#F1EFFC] text-[#5D3FD3] font-medium rounded-t-2xl relative">
