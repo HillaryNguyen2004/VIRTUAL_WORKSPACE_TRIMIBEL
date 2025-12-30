@@ -336,10 +336,13 @@ class ChatController extends Controller
             // Upload file
             $fileData = $this->chatFileService->uploadFile($request->file('file'), $conversation->id);
 
+            // Ensure content is not null (use provided content or a sensible default)
+            $content = $request->filled('content') ? $request->input('content') : 'File: ' . $fileData['file_name'];
+
             // Create message with file
             $message = $conversation->messages()->create([
                 'user_id' => $user->id,
-                'content' => $request->input('content', 'File: ' . $fileData['file_name']),
+                'content' => $content,
                 'type' => 'file',
                 'file_name' => $fileData['file_name'],
                 'file_path' => $fileData['file_path'],
@@ -397,10 +400,13 @@ class ChatController extends Controller
             // Upload image
             $imageData = $this->chatFileService->uploadImage($request->file('image'), $conversation->id);
 
+            // Ensure content is not null (use provided caption or default)
+            $content = $request->filled('content') ? $request->input('content') : 'Image: ' . $imageData['file_name'];
+
             // Create message with image
             $message = $conversation->messages()->create([
                 'user_id' => $user->id,
-                'content' => $request->input('content', 'Image: ' . $imageData['file_name']),
+                'content' => $content,
                 'type' => 'image',
                 'file_name' => $imageData['file_name'],
                 'file_path' => $imageData['file_path'],
