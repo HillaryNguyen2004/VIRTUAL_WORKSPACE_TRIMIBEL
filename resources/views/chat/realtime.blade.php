@@ -637,16 +637,36 @@ class RealtimeChatApp {
     }
 
     toggleUserSelection(userId, userName) {
-        if (this.selectedUsers.has(userId)) {
-            this.selectedUsers.delete(userId);
-        } else {
-            this.selectedUsers.add(userId);
-        }
+        // 1. Check current chat type
+        const type = document.querySelector('input[name="type"]:checked').value;
         this.selectedUserNames = this.selectedUserNames || new Map();
-        this.selectedUserNames.set(userId, userName);
+
+        if (this.selectedUsers.has(userId)) {
+            // CASE: Deselecting a user (always allowed)
+            this.selectedUsers.delete(userId);
+            this.selectedUserNames.delete(userId);
+        } else {
+            // CASE: Selecting a new user
+            if (type === 'direct') {
+                // If Direct mode, clear ALL previous selections first
+                this.selectedUsers.clear();
+                this.selectedUserNames.clear();
+            }
+            
+            // Add the new user
+            this.selectedUsers.add(userId);
+            this.selectedUserNames.set(userId, userName);
+        }
+
+        // 2. Render the badge list
         this.renderSelectedUsers();
+
+        // 3. Force re-render of search results to update the checkmark icons visually
+        // (We trigger the input event to reuse the existing search/render logic)
         const input = document.getElementById('userSearch');
-        if (input.value.length >= 2) input.dispatchEvent(new Event('input'));
+        if (input.value.length >= 2) {
+            input.dispatchEvent(new Event('input'));
+        }
     }
 
     async createConversation(type, participantIds, name = null) {
