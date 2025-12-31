@@ -328,7 +328,18 @@ class RealtimeChatApp {
         // Modal logic for radio buttons
         document.querySelectorAll('input[name="type"]').forEach(r => {
             r.addEventListener('change', (e) => {
+                // Toggle Group Name Input
                 document.getElementById('groupNameField').classList.toggle('hidden', e.target.value !== 'group');
+                
+                // UX FIX: Clear selected users when switching modes
+                // This prevents confusion (e.g., having 5 users selected then switching to Direct)
+                this.selectedUsers.clear();
+                if(this.selectedUserNames) this.selectedUserNames.clear();
+                this.renderSelectedUsers();
+                
+                // Re-trigger search render to remove checkmarks from the list
+                const input = document.getElementById('userSearch');
+                if (input.value.length >= 2) input.dispatchEvent(new Event('input'));
             });
         });
     }
