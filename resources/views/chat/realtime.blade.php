@@ -323,6 +323,7 @@ class RealtimeChatApp {
         await this.loadOnlineUsers();
         this.setupPolling();
         this.setupEventHandlers();
+        this.setupRealtimeListeners();
         
         // Modal logic for radio buttons
         document.querySelectorAll('input[name="type"]').forEach(r => {
@@ -549,6 +550,8 @@ class RealtimeChatApp {
                 
                 // NEW: Slide the chat pane in on mobile
                 this.openMobileChat();
+                // subscribe to realtime updates for this conversation
+                if (this.subscribeToConversation) this.subscribeToConversation(id);
             }
         } catch (e) { console.error(e); }
     }
@@ -758,6 +761,68 @@ class RealtimeChatApp {
     
     async loadOnlineUsers() { 
         // Implement loading online users here
+    }
+
+    // --- REALTIME (Laravel Echo / Pusher) ---
+    setupRealtimeListeners() {
+        // expose server-side env to client for Pusher/Echo init
+        window.PUSHER = {
+            key: "{{ env('VITE_PUSHER_APP_KEY') }}",
+            host: "{{ env('VITE_PUSHER_HOST') }}",
+            port: "{{ env('VITE_PUSHER_PORT') }}",
+            scheme: "{{ env('VITE_PUSHER_SCHEME') }}",
+            cluster: "{{ env('VITE_PUSHER_APP_CLUSTER') }}"
+        };
+
+        // Use Echo instance provided by bundled JS (resources/js/bootstrap.js)
+        // window.Echo is initialized in the app bundle using import.meta.env VITE_PUSHER_* vars
+        if (!window.Echo) {
+            console.warn('Laravel Echo not initialized in JS bundle. Ensure `resources/js/bootstrap.js` imports Echo and is built.');
+        }
+    }
+
+    subscribeToConversation(conversationId) {
+        if (!window.Echo || !conversationId) return;
+
+        // unsubscribe previous if exists
+        if (this._currentEchoChannel && this._currentEchoChannelName === `conversation.${conversationId}`) return;
+        if (this._currentEchoChannel) {
+            try { this._currentEchoChannel.leave(); } catch(e){}
+            this._currentEchoChannel = null;
+            this._currentEchoChannelName = null;
+        }
+
+        const channelName = `private-conversation.${conversationId}`; // Laravel Echo private channel naming
+        try {
+            this._currentEchoChannel = window.Echo.private(`conversation.${conversationId}`);
+            this._currentEchoChannelName = `conversation.${conversationId}`;
+
+            this._currentEchoChannel.listen('.message.sent', (e) => {
+                // Append incoming message if it's for the current conversation
+                if (!this.currentConversation || this.currentConversation.id !== e.conversation_id) return;
+                const msg = e.message;
+                const list = document.getElementById('messages-list');
+                list.insertAdjacentHTML('beforeend', this.renderMessage(msg));
+                this.scrollToBottom();
+
+                // update conv list
+                const conv = this.conversations.get(e.conversation_id);
+                if (conv) { conv.last_message = msg; conv.updated_at = msg.created_at; this.conversations.set(conv.id, conv); this.renderConversations(); }
+            });
+
+            this._currentEchoChannel.listen('.user.typing', (e) => {
+                // optional: handle typing indicator
+            });
+        } catch (err) {
+            console.warn('Echo subscribe failed', err);
+        }
+    }
+
+    unsubscribeFromConversation(conversationId) {
+        if (!this._currentEchoChannel) return;
+        try { this._currentEchoChannel.leave(); } catch(e){}
+        this._currentEchoChannel = null;
+        this._currentEchoChannelName = null;
     }
 }
 
