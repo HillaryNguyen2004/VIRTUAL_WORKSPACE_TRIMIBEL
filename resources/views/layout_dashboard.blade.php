@@ -340,9 +340,7 @@
     @endisset
     @include('edit_company_hours_dialog')
 
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+    {{-- Bundled libs are loaded via Vite app bundle; removed CDN scripts to avoid Tracking Prevention issues --}}
     <script>
         window.CHAT_LANG = "{{ app()->getLocale() }}";
         window.AUTH_USER_ID = "{{ Auth::id() }}";

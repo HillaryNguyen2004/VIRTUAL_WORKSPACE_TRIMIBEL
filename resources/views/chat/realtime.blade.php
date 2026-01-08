@@ -791,7 +791,41 @@ class RealtimeChatApp {
     }
     
     async loadOnlineUsers() { 
-        // Implement loading online users here
+        try {
+            const res = await axios.get(`${this.apiUrl}/users/online`);
+            if (!res.data || !res.data.success) {
+                console.warn('Failed to load online users', res.data);
+                return;
+            }
+
+            const users = res.data.data.users || [];
+            this.onlineUsers = new Set(users.map(u => u.id));
+
+            const countEl = document.getElementById('online-count');
+            if (countEl) countEl.textContent = users.length;
+
+            const list = document.getElementById('onlineUsersList');
+            if (!list) return;
+
+            if (users.length === 0) {
+                list.innerHTML = `<div class="min-h-[100px] flex items-center justify-center text-muted-400 text-sm">No one online</div>`;
+                return;
+            }
+
+            list.innerHTML = users.map(u => `
+                <div id="online-user-${u.id}" class="p-3 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="h-8 w-8 shrink-0 rounded-full bg-muted-100 flex items-center justify-center font-bold text-sm">${(u.name||'U').charAt(0).toUpperCase()}</div>
+                        <div>
+                            <div class="text-sm font-medium text-main">${u.name}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+        } catch (err) {
+            console.error('Error loading online users:', err);
+        }
     }
 
     // --- REALTIME (Laravel Echo / Pusher) ---
@@ -809,6 +843,44 @@ class RealtimeChatApp {
         // window.Echo is initialized in the app bundle using import.meta.env VITE_PUSHER_* vars
         if (!window.Echo) {
             console.warn('Laravel Echo not initialized in JS bundle. Ensure `resources/js/bootstrap.js` imports Echo and is built.');
+            return;
+        }
+
+        // Listen for global user status changes
+        try {
+            window.Echo.channel('user-status').listen('.user.status.changed', (e) => {
+                const user = e.user || {};
+                const status = e.status;
+                if (!user.id) return;
+
+                // Update local set and UI
+                if (status === 'online') {
+                    this.onlineUsers.add(user.id);
+                    const list = document.getElementById('onlineUsersList');
+                    if (list && !document.getElementById(`online-user-${user.id}`)) {
+                        const html = `
+                            <div id="online-user-${user.id}" class="p-3 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="h-8 w-8 shrink-0 rounded-full bg-muted-100 flex items-center justify-center font-bold text-sm">${(user.name||'U').charAt(0).toUpperCase()}</div>
+                                    <div>
+                                        <div class="text-sm font-medium text-main">${user.name}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        list.insertAdjacentHTML('afterbegin', html);
+                    }
+                } else {
+                    this.onlineUsers.delete(user.id);
+                    const el = document.getElementById(`online-user-${user.id}`);
+                    if (el) el.remove();
+                }
+
+                const countEl = document.getElementById('online-count');
+                if (countEl) countEl.textContent = this.onlineUsers.size;
+            });
+        } catch (err) {
+            console.warn('Failed to subscribe to user-status channel', err);
         }
     }
 
