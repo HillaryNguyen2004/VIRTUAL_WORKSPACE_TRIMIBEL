@@ -1,6 +1,13 @@
 import './bootstrap';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import jquery from 'jquery';
+import axios from 'axios';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
+
+window.axios = axios;
+window.marked = marked;
+window.DOMPurify = DOMPurify;
 // import.meta.glob('../utils/**/*.js', { eager: true });
 
 let meetingJoined = false;
