@@ -16,7 +16,7 @@
         
         {{-- HEADER SECTION --}}
         <div class="flex items-center gap-4 mb-4">
-            @include('components.back-btn')
+            <x-back-btn :route="$dashRoute" />
             <div>
                 <h2 class="font-bold text-3xl text-main tracking-tight">
                     {{ __('user_permission.title') }}

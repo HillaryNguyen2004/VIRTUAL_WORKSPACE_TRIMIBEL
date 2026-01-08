@@ -20,7 +20,7 @@
         <div class="mb-8">
             <div class="md:flex md:items-center md:justify-between mb-6">
                 <div class="flex flex-row min-w-0 items-center gap-4">
-                    @include('components.back-btn')
+                    <x-back-btn :route="$dashRoute" />
                     <div>
                         <h2 class="text-2xl font-bold leading-7 text-main sm:text-3xl sm:truncate tracking-tight">
                             {{ __('staff_pending_day_off.title') }}

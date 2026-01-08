@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreDayOffRequest extends FormRequest
 {
@@ -24,7 +25,12 @@ class StoreDayOffRequest extends FormRequest
     public function rules()
     {
         return [
-            'date' => ['required', 'date', 'after:today'],
+            'date' => [
+                'required',
+                'date',
+                'after:today',
+                Rule::unique('day_off_requests', 'date')->where('user_id', auth()->id())
+            ],
             'leave_type' => ['required', 'in:OFF_FULL,OFF_HALF'],
             'reason' => ['nullable', 'string'],
         ];

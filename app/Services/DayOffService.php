@@ -27,6 +27,23 @@ class DayOffService
 
         $this->repo->create($data);
 
+        // Notify staff users about the new request
+        try {
+            $user = User::find($userId);
+            if ($user) {
+                $staffUsers = \App\Models\User::role('staff')->get();
+                if ($staffUsers->isNotEmpty()) {
+                    \Illuminate\Support\Facades\Notification::send(
+                        $staffUsers,
+                        new \App\Notifications\DayOffRequestCreatedNotification($user->id, $user->name, $data['date'])
+                    );
+                }
+            }
+        } catch (\Exception $e) {
+            // Log and continue — notification failure shouldn't block request creation
+            \Illuminate\Support\Facades\Log::error('DayOff notification error: ' . $e->getMessage());
+        }
+
         return ['success' => true];
     }
 
