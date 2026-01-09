@@ -95,6 +95,11 @@
                             <p class="line-clamp-3 leading-relaxed">
                                 {{ $firstReq->reason ?? 'N/A' }}
                             </p>
+                            @if($firstReq->leave_type === 'OFF_HALF')
+                                <span class="block mt-2 text-xs text-muted-500">
+                                    {{ $firstReq->half_day_period === 'AM' ? 'Morning (09–13)' : 'Afternoon (13–17)' }}
+                                </span>
+                            @endif
                         </div>
                     </div>
 

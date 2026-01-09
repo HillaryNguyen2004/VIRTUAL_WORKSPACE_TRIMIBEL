@@ -74,6 +74,7 @@ class DayOffService
                 'reason' => $data['reason'],
                 'status' => 'PENDING',
                 'request_group_id' => $data['request_group_id'] ?? null,
+                'half_day_period' => $data['leave_type'] === 'OFF_HALF' ? $data['half_day_period'] : null,
             ];
             $createdRequests[] = $this->repo->create($requestData);
         }

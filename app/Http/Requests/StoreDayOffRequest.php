@@ -29,6 +29,7 @@ class StoreDayOffRequest extends FormRequest
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'leave_type' => ['required', 'in:OFF_FULL,OFF_HALF'],
             'reason' => ['nullable', 'string'],
+            'half_day_period' => ['required_if:leave_type,OFF_HALF', 'nullable', 'in:AM,PM'],
         ];
     }
 }
