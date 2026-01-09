@@ -76,6 +76,22 @@
                         </div>
                     </div>
 
+                    {{-- Half Day Period --}}
+                    <div id="half-day-container" class="flex flex-col gap-1.5 w-full hidden">
+                        <label for="half_day_period" class="text-sm font-medium text-main">
+                            {{ __('request_day_off.half_day_period_label') }}
+                        </label>
+                        <select name="half_day_period" id="half_day_period"
+                            class="text-sm block w-full rounded-xl bg-canvas border border-muted-200 px-4 py-3 text-main appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all @error('half_day_period') border-danger text-danger @enderror">
+                            <option value="" disabled selected>{{ __('request_day_off.select_period') }}</option>
+                            <option value="AM">Morning (09:00 - 13:00)</option>
+                            <option value="PM">Afternoon (13:00 - 17:00)</option>
+                        </select>
+                        @error('half_day_period')
+                            <span class="text-red-400 text-xs">{{ $message }}</span>
+                        @enderror
+                    </div>
+
                     {{-- Reason Input --}}
                     <div class="flex flex-col gap-1.5 w-full">
                         <label for="reason" class="text-sm font-medium text-main">{{ __('request_day_off.reason_optional_label') }}</label>

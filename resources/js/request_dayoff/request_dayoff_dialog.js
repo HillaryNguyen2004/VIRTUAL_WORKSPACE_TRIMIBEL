@@ -42,6 +42,22 @@ $(function () {
     const selectedDatesList = $("#selected-dates-list");
     const totalDaysElement = $("#total-days");
 
+    // Half day handling
+    const leaveTypeSelect = $form.find('#leave_type');
+    const halfDayContainer = $('#half-day-container');
+    const halfDaySelect = $('#half_day_period');
+
+    function toggleHalfDay() {
+        const isHalf = leaveTypeSelect.val() === 'OFF_HALF';
+        halfDayContainer.toggleClass('hidden', !isHalf);
+        if (isHalf) {
+            halfDaySelect.attr('required', 'required');
+        } else {
+            halfDaySelect.removeAttr('required');
+            halfDaySelect.val('');
+        }
+    }
+
     // Function to generate dates between start and end date
     function generateDateRange(startDate, endDate) {
         const dates = [];
@@ -118,6 +134,10 @@ $(function () {
     if (startDateInput.val() && endDateInput.val()) {
         updateDateSummary();
     }
+
+    // Initialize half day toggle and bind change
+    leaveTypeSelect.on('change', toggleHalfDay);
+    toggleHalfDay();
 
     // submit (AJAX)
     $form.on("submit", function (e) {
