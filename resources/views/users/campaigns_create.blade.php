@@ -7,7 +7,7 @@
 
         {{-- Header Section --}}
         <div class="flex gap-4 flex-row items-center w-full">
-            @include('components.back-btn')
+            @include('components.back-btn' , ['route' => 'campaigns.index'])
             <div>
                 <h2 class="font-bold text-3xl text-main tracking-tight">
                     {{ isset($campaign) ? __('campaigns_create.edit_campaign') : __('campaigns_create.create_new_campaign') }}

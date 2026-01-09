@@ -50,6 +50,11 @@ return [
     'campaign_management' => 'Campaign Timeline',
     'campaign_management_description' => 'Create and manage email campaigns for your team or customers.',
     'campaign_crud' => 'Create, update, and delete campaigns',
+    'campaign_scheduled' => 'SCHEDULED',
+    'campaign_sent' => 'SENT',
+    'campaign_no_sent' => 'No sent campaigns available.',
+    'campaign_no_scheduled' => 'No scheduled campaigns available.',
+    'campaign_users_reached' => 'Users Reached',
     'assign_users_to_campaign' => 'Assign users to receive specific campaigns',
     'schedule_and_send' => 'Schedule emails to be sent automatically',
 

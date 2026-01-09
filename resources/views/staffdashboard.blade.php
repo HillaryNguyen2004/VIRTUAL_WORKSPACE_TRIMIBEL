@@ -17,7 +17,7 @@
         </div>
 
         {{-- Top Cards Section (Converted from x-staff components to standard cards) --}}
-        <div class="grid grid-cols-1 @2xl:grid-cols-2 @2xl:grid-cols-3 gap-6 w-full animate-fade-in-up">
+        <div class="grid grid-cols-1 @2xl:grid-cols-2 @4xl:grid-cols-3 gap-6 w-full animate-fade-in-up">
             
             {{-- Card 1: Upcoming Tasks --}}
             <div class="bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-primary/30 hover:shadow-primary/10 transition-all duration-300 flex flex-col justify-between h-full group">

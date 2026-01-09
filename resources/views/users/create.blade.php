@@ -7,7 +7,7 @@
 
         {{-- Header Section --}}
         <div class="flex gap-4 flex-row items-center w-full">
-            @include('components.back-btn')
+            @include('components.back-btn', ['route' => 'users.index'])
             <div>
                 <h2 class="font-bold text-3xl text-main tracking-tight">{{ __('create_user.title') }}</h2>
                 <p class="text-muted-500 text-sm mt-1">{{ __('create_user.subtitle') }}</p>

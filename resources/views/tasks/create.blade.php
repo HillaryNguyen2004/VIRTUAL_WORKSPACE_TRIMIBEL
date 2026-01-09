@@ -1,5 +1,13 @@
 @extends('layout_dashboard')
 @section('title', 'Create Task')
+@php
+    // Preserve existing role logic for the back button
+    if (auth()->user()->hasRole('admin')) {
+        $dashRoute = 'tasks.index';        
+    } else {
+        $dashRoute = 'tasks.staff.index'; 
+    }
+@endphp
 
 
 @section('content')
@@ -8,7 +16,7 @@
 
         {{-- Header Section --}}
         <div class="flex gap-4 flex-row items-center w-full">
-            @include('components.back-btn')
+            @include('components.back-btn', ['route' => $dashRoute])
             <div>
                 <h2 class="font-bold text-3xl text-main tracking-tight">{{ __('task_create.title') }}</h2>
                 <p class="text-muted-500 text-sm mt-1">{{ __('task_create.subtitle') }}</p>
@@ -138,7 +146,7 @@
 
                 {{-- Add Task Button --}}
                 <div class="flex justify-center mb-6">
-                    <button type="button" id="add-task" class="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-xl hover:bg-accent-hover transition-colors">
+                    <button type="button" id="add-task" class="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-xl hover:bg-accent-hover shadow-lg shadow-accent/20 transition-all">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                         Add Another Task
                     </button>

@@ -50,6 +50,11 @@ return [
     'campaign_management' => 'Quản lý Chiến dịch',
     'campaign_management_description' => 'Tạo và quản lý các chiến dịch email cho nhóm hoặc khách hàng của bạn.',
     'campaign_crud' => 'Tạo, cập nhật và xóa chiến dịch',
+    'campaign_scheduled' => 'ĐÃ LÊN LỊCH',
+    'campaign_sent' => 'ĐÃ GỬI',
+    'campaign_no_sent' => 'Không có chiến dịch đã gửi.',
+    'campaign_no_scheduled' => 'Không có chiến dịch đã lên lịch.',
+    'campaign_users_reached' => 'Người dùng được nhận',
     'assign_users_to_campaign' => 'Chỉ định người dùng nhận chiến dịch cụ thể',
     'schedule_and_send' => 'Lên lịch gửi email tự động',
 

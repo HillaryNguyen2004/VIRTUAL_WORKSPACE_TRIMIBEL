@@ -2,7 +2,7 @@
 
 return [
     'title' => 'Danh sách Chiến dịch',
-    'subtitle' => 'Quản lý các chiến dịch tiếp thị và thông báo người dùng',
+    'subtitle' => 'Tạo và quản lý các chiến dịch email cho nhóm hoặc khách hàng của bạn',
     'create_new_campaign' => 'Tạo Chiến dịch Mới',
     'no_campaigns_found' => 'Không tìm thấy chiến dịch nào.',
     'id' => 'ID',

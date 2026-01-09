@@ -2,7 +2,7 @@
 
 return [
     'title' => 'Email Templates',
-    'subtitle' => 'Manage your email templates',
+    'subtitle' => 'Design and manage reusable email templates with shortcodes.',
     'add_new_template' => 'Add New Template',
     'no_templates_found' => 'No templates found.',
     'name' => 'Name',

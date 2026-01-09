@@ -76,7 +76,7 @@
                 </select> --}}
                 
                 <select name="sort_dir"
-                    class="rounded-xl text-sm md:text-base border border-gray-300 px-4 py-2 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
+                    class="bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer hover:border-primary/50">
                     <option value="">{{ __('template.default_sort') }}</option>
                     <option value="asc" {{ request('sort_dir') === 'asc' ? 'selected' : '' }}>Name A → Z</option>
                     <option value="desc" {{ request('sort_dir') === 'desc' ? 'selected' : '' }}>Name Z → A</option>
@@ -214,7 +214,7 @@
                                                         <td class="w-[13%] py-3 px-3 text-center text-sm text-muted-500">
                                                             {{ \Carbon\Carbon::parse($task->due_date)->format('d/m/Y') }}
                                                             @if($overdue)
-                                                                <span class="inline-block bg-danger text-white text-xs px-2 py-1 rounded border border-danger" title="Overdue">Overdue</span>
+                                                                <span class="text-red-500 ml-1">⚠</span>
                                                             @endif
                                                         </td>
 

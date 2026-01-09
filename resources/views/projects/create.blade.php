@@ -8,7 +8,7 @@
 
         {{-- Header Section --}}
         <div class="flex gap-4 flex-row items-center w-full">
-            @include('components.back-btn')
+            @include('components.back-btn' , ['route' => 'projects.index'])
             <div>
                 <h2 class="font-bold text-3xl text-main tracking-tight">{{ __('projects.create_project') }}</h2>
                 <p class="text-muted-500 text-sm mt-1">{{ __('projects.create_subtitle') ?? 'Enter project details below' }}</p>
