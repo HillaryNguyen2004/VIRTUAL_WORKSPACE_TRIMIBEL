@@ -54,27 +54,37 @@
             {{-- Decorative blurry blob (Background) --}}
             <div class="absolute top-0 right-0 -mt-20 -mr-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl opacity-50 pointer-events-none -z-10"></div>
 
-            @forelse($requests as $req)
+            @forelse($groupedRequests as $groupId => $group)
+                @php
+                    $firstReq = $group->first();
+                    $isMultiple = $group->count() > 1;
+                    $dates = $group->pluck('date')->sort();
+                    $pillClass = match($firstReq->leave_type) {
+                        'OFF_HALF' => 'bg-accent/10 text-accent ring-accent/20',
+                        'OFF_FULL' => 'bg-secondary/10 text-secondary ring-secondary/20',
+                        default => 'bg-muted-100 text-muted-600 ring-muted-500/10',
+                    };
+                @endphp
                 <div class="bg-white rounded-2xl shadow-sm border border-muted-200 hover:shadow-md hover:border-primary/30 transition-all duration-300 flex flex-col h-full group">
-                    @php   
-                        $pillClass = match($req->leave_type) {
-                            'OFF_HALF' => 'bg-accent/10 text-accent ring-accent/20',
-                            'OFF_FULL' => 'bg-secondary/10 text-secondary ring-secondary/20',
-                            default => 'bg-muted-100 text-muted-600 ring-muted-500/10',
-                        };
-                    @endphp
                     {{-- Card Header: User & Date --}}
                     <div class="px-6 py-5 border-b border-muted-100 flex justify-between items-start">
                         <div>
                             <span class="block text-xs font-bold text-muted-400 uppercase tracking-wider">
-                                {{ $req->date->format('M d, Y') }}
+                                @if($isMultiple)
+                                    {{ $dates->first()->format('M d') }} - {{ $dates->last()->format('M d, Y') }}
+                                @else
+                                    {{ $firstReq->date->format('M d, Y') }}
+                                @endif
                             </span>
                             <span class="block text-lg font-bold text-main mt-1 group-hover:text-primary transition-colors">
-                                {{ $req->user->name }} ({{ $req->user->username }})
+                                {{ $firstReq->user->name }} ({{ $firstReq->user->username }})
                             </span>
                         </div>
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $pillClass }} ring-1 ring-inset">
-                            {{ __('staff_pending_day_off.' . $req->leave_type) }}
+                            {{ __('staff_pending_day_off.' . $firstReq->leave_type) }}
+                            @if($isMultiple)
+                                ({{ $group->count() }} days)
+                            @endif
                         </span>
                     </div>
 
@@ -83,33 +93,68 @@
                         <div class="text-sm text-muted-500">
                             <span class="block font-medium text-main mb-1">{{ __('staff_pending_day_off.reason_label') }}</span> 
                             <p class="line-clamp-3 leading-relaxed">
-                                {{ $req->reason ?? 'N/A' }}
+                                {{ $firstReq->reason ?? 'N/A' }}
                             </p>
                         </div>
                     </div>
 
                     {{-- Card Footer: Actions --}}
-                    <div class="bg-muted-50/50 px-6 py-4 border-t border-muted-100 rounded-b-2xl flex items-center justify-between gap-3">
-                        
-                        {{-- Approve Button --}}
-                        <form action="{{ route('dayoff.approve', $req->id) }}" method="POST" class="flex-1">
-                            @csrf
-                            <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-bold rounded-xl text-white bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all active:scale-95 shadow-sm shadow-primary/25">
-                                <svg class="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                {{ __('staff_pending_day_off.accepted_btn') }}
-                            </button>
-                        </form>
+                    @if(!$isMultiple)
+                        <div class="bg-muted-50/50 px-6 py-4 border-t border-muted-100 rounded-b-2xl flex items-center justify-between gap-3">
+                            
+                            {{-- Approve Button --}}
+                            <form action="{{ route('dayoff.approve', $firstReq->id) }}" method="POST" class="flex-1">
+                                @csrf
+                                <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-bold rounded-xl text-white bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all active:scale-95 shadow-sm shadow-primary/25">
+                                    <svg class="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                    {{ __('staff_pending_day_off.accepted_btn') }}
+                                </button>
+                            </form>
 
-                        {{-- Reject Button --}}
-                        <form action="{{ route('dayoff.reject', $req->id) }}" method="POST" class="flex-1">
-                            @csrf
-                            <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2 border border-muted-200 text-sm font-bold rounded-xl text-muted-600 bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all active:scale-95">
-                                <svg class="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                {{ __('staff_pending_day_off.rejected_btn') }}
-                            </button>
-                        </form>
+                            {{-- Reject Button --}}
+                            <form action="{{ route('dayoff.reject', $firstReq->id) }}" method="POST" class="flex-1">
+                                @csrf
+                                <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2 border border-muted-200 text-sm font-bold rounded-xl text-muted-600 bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all active:scale-95">
+                                    <svg class="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    {{ __('staff_pending_day_off.rejected_btn') }}
+                                </button>
+                            </form>
 
-                    </div>
+                        </div>
+                    @else
+                        {{-- Expandable Dates List --}}
+                        <div class="bg-muted-50/50 border-t border-muted-100 rounded-b-2xl">
+                            <button type="button" class="w-full px-6 py-3 text-left text-sm font-medium text-main hover:bg-muted-100/50 transition-colors flex items-center justify-between" onclick="toggleDates(this)">
+                                <span>{{ __('staff_pending_day_off.view_dates') }} ({{ $group->count() }})</span>
+                                <svg class="h-4 w-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div class="dates-list hidden px-6 pb-4 space-y-3">
+                                @foreach($group as $req)
+                                    <div class="flex items-center justify-between bg-white rounded-lg p-3 border border-muted-100">
+                                        <span class="text-sm font-medium text-main">{{ $req->date->format('M d, Y') }}</span>
+                                        <div class="flex gap-2">
+                                            <form action="{{ route('dayoff.approve', $req->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                <button type="submit" class="inline-flex items-center px-3 py-1 text-xs font-bold rounded-md text-white bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all active:scale-95">
+                                                    <svg class="mr-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                                    {{ __('staff_pending_day_off.accepted_btn') }}
+                                                </button>
+                                            </form>
+                                            <form action="{{ route('dayoff.reject', $req->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                <button type="submit" class="inline-flex items-center px-3 py-1 text-xs font-bold rounded-md text-muted-600 bg-white border border-muted-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all active:scale-95">
+                                                    <svg class="mr-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                    {{ __('staff_pending_day_off.rejected_btn') }}
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
                 </div>
             @empty
                 {{-- Empty State --}}
@@ -137,6 +182,15 @@
             <h3 class="text-lg font-bold text-main">{{ __('Error') }}</h3>
             <p class="text-muted-500 mt-2">{{ __('staff_pending_day_off.no_permission') }}</p>
         </div>
-    @endrole
+@endrole
 </div>
 @endsection
+
+<script>
+function toggleDates(button) {
+    const list = button.nextElementSibling;
+    const icon = button.querySelector('svg');
+    list.classList.toggle('hidden');
+    icon.classList.toggle('rotate-180');
+}
+</script>

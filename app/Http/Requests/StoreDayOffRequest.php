@@ -25,12 +25,8 @@ class StoreDayOffRequest extends FormRequest
     public function rules()
     {
         return [
-            'date' => [
-                'required',
-                'date',
-                'after:today',
-                Rule::unique('day_off_requests', 'date')->where('user_id', auth()->id())
-            ],
+            'start_date' => ['required', 'date', 'after:today'],
+            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'leave_type' => ['required', 'in:OFF_FULL,OFF_HALF'],
             'reason' => ['nullable', 'string'],
         ];

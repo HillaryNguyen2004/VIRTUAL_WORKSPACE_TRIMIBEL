@@ -18,15 +18,39 @@
                 @csrf
                 <div class="p-6 flex flex-col gap-5 w-full">
                     
-                    {{-- Date Input --}}
+                    {{-- General Error --}}
+                    @error('general')
+                        <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <p class="text-sm font-medium text-red-800">{{ $message }}</p>
+                        </div>
+                    @enderror
+                    
+                    {{-- Date Range Selection --}}
                     <div class="flex flex-col gap-1.5 w-full">
-                        <label for="date" class="text-sm font-medium text-main">
-                            {{ __('request_day_off.select_date_label') }}
+                        <label for="start_date" class="text-sm font-medium text-main">
+                            {{ __('request_day_off.start_date_label') }}
                             <span class="text-red-500">*</span>
                         </label>
-                        <input type="date" name="date" id="date"
-                            class="text-sm block w-full rounded-xl bg-canvas border border-muted-200 px-4 py-3 text-main cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all @error('date') border-danger text-danger @enderror"
-                            min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}" value="{{ old('date') }}">
+                        <input type="date" name="start_date" id="start_date"
+                            class="text-sm block w-full rounded-xl bg-canvas border border-muted-200 px-4 py-3 text-main cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                            min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}" value="{{ old('start_date') }}">
+                    </div>
+
+                    <div class="flex flex-col gap-1.5 w-full">
+                        <label for="end_date" class="text-sm font-medium text-main">
+                            {{ __('request_day_off.end_date_label') }}
+                            <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date" name="end_date" id="end_date"
+                            class="text-sm block w-full rounded-xl bg-canvas border border-muted-200 px-4 py-3 text-main cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                            min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}" value="{{ old('end_date') }}">
+                    </div>
+
+                    {{-- Date Summary (Dynamic Display) --}}
+                    <div id="date-summary" class="hidden p-3 bg-blue-50 rounded-lg">
+                        <p class="text-sm font-medium text-blue-800">{{ __('request_day_off.selected_dates') }}:</p>
+                        <div id="selected-dates-list" class="mt-1 text-sm text-blue-600"></div>
+                        <p id="total-days" class="mt-2 text-xs font-medium text-blue-700"></p>
                     </div>
 
                     {{-- Leave Type Select --}}

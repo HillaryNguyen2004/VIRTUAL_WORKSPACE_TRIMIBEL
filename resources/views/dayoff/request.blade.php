@@ -13,34 +13,39 @@
             </div>
             <!-- form -->
             <div class="w-full">
-                <form method="POST" action="{{ route('dayoff.request.store') }}" novalidate>
+                <form method="POST" action="{{ route('dayoff.request.store') }}" novalidate id="dayoff-form">
                     @csrf
                     <div class="p-6 flex flex-col gap-6">
-                        <!-- @foreach (['success' => 'success', 'error' => 'error'] as $key => $type)
-                                        @if (session()->has($key))
-                                            @push('scripts')
-                                                <script>
-                                                    showToast(@json(session($key)), '{{ $type }}', 5000);
-                                                </script>
-                                            @endpush
-                                        @endif
-                                    @endforeach -->
-                        <!-- @if(session('success'))
-                                    @push('scripts')
-                                        <script>
-                                            alert('{{ session('success') }}');
-                                        </script>
-                                    @endpush
-                                @endif -->
+                        <!-- Date Range Selection -->
+                        <div class="flex flex-col gap-2 w-full">
+                            <label for="start_date">{{ __('request_day_off.start_date_label') }}</label>
+                            <input type="date" name="start_date" id="start_date"
+                                class="block w-full rounded-xl border border-gray-300 px-4 py-3 cursor-pointer hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition @error('start_date') is-invalid @enderror"
+                                min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}" 
+                                value="{{ old('start_date') }}"
+                                required>
+                            @error('start_date')
+                                <span id="error-start-date" class="text-red-400 text-xs">{{ $message }}</span>
+                            @enderror
+                        </div>
 
                         <div class="flex flex-col gap-2 w-full">
-                            <label for="date">{{ __('request_day_off.select_date_label') }}</label>
-                            <input type="date" name="date" id="date"
-                                class="block w-full rounded-xl border border-gray-300 px-4 py-3 cursor-pointer hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition @error('date') is-invalid @enderror"
-                                min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}" value="{{ old('date') }}">
-                            @error('date')
-                                <span id="error-date" class="text-red-400 text-xs">{{ $message }}</span>
+                            <label for="end_date">{{ __('request_day_off.end_date_label') }}</label>
+                            <input type="date" name="end_date" id="end_date"
+                                class="block w-full rounded-xl border border-gray-300 px-4 py-3 cursor-pointer hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition @error('end_date') is-invalid @enderror"
+                                min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}" 
+                                value="{{ old('end_date') }}"
+                                required>
+                            @error('end_date')
+                                <span id="error-end-date" class="text-red-400 text-xs">{{ $message }}</span>
                             @enderror
+                        </div>
+
+                        <!-- Date Summary (Dynamic Display) -->
+                        <div id="date-summary" class="hidden p-3 bg-blue-50 rounded-lg">
+                            <p class="text-sm font-medium text-blue-800">{{ __('request_day_off.selected_dates') }}:</p>
+                            <div id="selected-dates-list" class="mt-1 text-sm text-blue-600"></div>
+                            <p id="total-days" class="mt-2 text-xs font-medium text-blue-700"></p>
                         </div>
 
                         <div class="flex flex-col gap-2">
@@ -67,6 +72,9 @@
                                 value="{{ old('reason') }}">
                         </div>
 
+                        <!-- Hidden field for all dates -->
+                        <input type="hidden" name="dates" id="dates-input">
+
                         @if (session('success'))
                             <span class="w-full text-center text-green-600">{{ session('success') }}</span>
                         @endif
@@ -82,65 +90,133 @@
             </div>
         </div>
     </div>
-    <!-- <div class="container py-5">
-                                    <div class="row justify-content-center">
-                                        <div class="col-md-8">
-                                            <div class="card shadow border-primary">
-                                                <div class="card-header bg-primary text-white text-center">
-                                                    <h3 class="mb-0">Request a Day Off</h3>
-                                                </div>
-                                                <div class="card-body">
 
-                                                    @if(session('success'))
-                                                        <div class="alert alert-primary text-center">
-                                                            {{ session('success') }}
-                                                        </div>
-                                                    @endif
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const startDateInput = document.getElementById('start_date');
+            const endDateInput = document.getElementById('end_date');
+            const dateSummary = document.getElementById('date-summary');
+            const selectedDatesList = document.getElementById('selected-dates-list');
+            const totalDaysElement = document.getElementById('total-days');
+            const datesInput = document.getElementById('dates-input');
+            const form = document.getElementById('dayoff-form');
 
-                                                    <form method="POST" action="{{ route('dayoff.request.store') }}">
-                                                        @csrf
+            // Function to generate dates between start and end date
+            function generateDateRange(startDate, endDate) {
+                const dates = [];
+                const currentDate = new Date(startDate);
+                const end = new Date(endDate);
+                
+                while (currentDate <= end) {
+                    // Skip weekends (optional - remove if you want to include weekends)
+                    // const dayOfWeek = currentDate.getDay();
+                    // if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Skip Sunday (0) and Saturday (6)
+                    //     dates.push(new Date(currentDate).toISOString().split('T')[0]);
+                    // }
+                    
+                    dates.push(new Date(currentDate).toISOString().split('T')[0]);
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+                
+                return dates;
+            }
 
-                                                        <div class="mb-3">
-                                                            <label for="date" class="form-label">Select Date</label>
-                                                            <input type="date" name="date" id="date"
-                                                                class="form-control @error('date') is-invalid @enderror"
-                                                                min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}"
-                                                                value="{{ old('date') }}">
-                                                            @error('date')
-                                                                <div class="invalid-feedback">{{ $message }}</div>
-                                                            @enderror
-                                                        </div>
+            // Function to update date summary
+            function updateDateSummary() {
+                const startDate = startDateInput.value;
+                const endDate = endDateInput.value;
+                
+                if (!startDate || !endDate) {
+                    dateSummary.classList.add('hidden');
+                    datesInput.value = '';
+                    return;
+                }
 
-                                                        <div class="mb-3">
-                                                            <label for="leave_type" class="form-label">Leave Type</label>
-                                                            <select name="leave_type" id="leave_type"
-                                                                class="form-select @error('leave_type') is-invalid @enderror">
-                                                                <option value="OFF_FULL" {{ old('leave_type') == 'OFF_FULL' ? 'selected' : '' }}>Full Day</option>
-                                                                <option value="OFF_HALF" {{ old('leave_type') == 'OFF_HALF' ? 'selected' : '' }}>Half Day</option>
-                                                            </select>
-                                                            @error('leave_type')
-                                                                <div class="invalid-feedback">{{ $message }}</div>
-                                                            @enderror
-                                                        </div>
+                const start = new Date(startDate);
+                const end = new Date(endDate);
 
-                                                        <div class="mb-3">
-                                                            <label for="reason" class="form-label">Reason (Optional)</label>
-                                                            <textarea name="reason" id="reason"
-                                                                class="form-control"
-                                                                rows="4"
-                                                                placeholder="E.g. Medical appointment, family emergency, etc.">{{ old('reason') }}</textarea>
-                                                        </div>
+                if (start > end) {
+                    dateSummary.classList.add('hidden');
+                    datesInput.value = '';
+                    endDateInput.setCustomValidity('End date must be after or equal to start date');
+                    return;
+                }
 
-                                                        <div class="text-center pt-2">
-                                                            <button type="submit" class="btn btn-primary px-4 py-2">
-                                                                Submit Request
-                                                            </button>
-                                                        </div>
-                                                    </form>
+                endDateInput.setCustomValidity('');
+                
+                // Generate all dates
+                const allDates = generateDateRange(startDate, endDate);
+                
+                if (allDates.length === 0) {
+                    dateSummary.classList.add('hidden');
+                    datesInput.value = '';
+                    return;
+                }
 
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div> -->
+                // Show summary
+                dateSummary.classList.remove('hidden');
+                
+                // Update selected dates list (show first 3 dates and count)
+                let datesHtml = '';
+                const displayCount = Math.min(3, allDates.length);
+                
+                for (let i = 0; i < displayCount; i++) {
+                    datesHtml += `<div>${allDates[i]}</div>`;
+                }
+                
+                if (allDates.length > displayCount) {
+                    datesHtml += `<div class="text-blue-500">... and ${allDates.length - displayCount} more days</div>`;
+                }
+                
+                selectedDatesList.innerHTML = datesHtml;
+                totalDaysElement.textContent = `Total: ${allDates.length} day(s)`;
+                
+                // Store all dates in hidden input (comma-separated)
+                datesInput.value = allDates.join(',');
+            }
+
+            // Event listeners
+            startDateInput.addEventListener('change', updateDateSummary);
+            endDateInput.addEventListener('change', updateDateSummary);
+
+            // Initialize if there are old values
+            if (startDateInput.value && endDateInput.value) {
+                updateDateSummary();
+            }
+
+            // Form validation
+            form.addEventListener('submit', function(e) {
+                const startDate = startDateInput.value;
+                const endDate = endDateInput.value;
+                
+                if (!startDate || !endDate) {
+                    e.preventDefault();
+                    alert('Please select both start and end dates.');
+                    return;
+                }
+
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                
+                if (start > end) {
+                    e.preventDefault();
+                    alert('End date must be after or equal to start date.');
+                    return;
+                }
+
+                // Calculate difference in days
+                const diffTime = Math.abs(end - start);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                
+                if (diffDays > 30) { // Limit to 30 days max (adjust as needed)
+                    e.preventDefault();
+                    if (!confirm(`You are requesting ${diffDays} days off. Are you sure you want to continue?`)) {
+                        e.preventDefault();
+                    }
+                }
+            });
+        });
+    </script>
+    @endpush
 @endsection

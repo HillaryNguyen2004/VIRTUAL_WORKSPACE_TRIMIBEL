@@ -14,6 +14,7 @@ class DayOffRequest extends Model
         'leave_type',
         'reason',
         'status',
+        'request_group_id',
     ];
     protected $casts = [
     'date' => 'date',
