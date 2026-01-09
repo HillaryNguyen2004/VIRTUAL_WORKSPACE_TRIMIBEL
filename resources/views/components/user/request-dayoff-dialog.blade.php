@@ -18,15 +18,39 @@
                 @csrf
                 <div class="p-6 flex flex-col gap-5 w-full">
                     
-                    {{-- Date Input --}}
+                    {{-- General Error --}}
+                    @error('general')
+                        <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <p class="text-sm font-medium text-red-800">{{ $message }}</p>
+                        </div>
+                    @enderror
+                    
+                    {{-- Date Range Selection --}}
                     <div class="flex flex-col gap-1.5 w-full">
-                        <label for="date" class="text-sm font-medium text-main">
-                            {{ __('request_day_off.select_date_label') }}
+                        <label for="start_date" class="text-sm font-medium text-main">
+                            {{ __('request_day_off.start_date_label') }}
                             <span class="text-red-500">*</span>
                         </label>
-                        <input type="date" name="date" id="date"
-                            class="text-sm block w-full rounded-xl bg-canvas border border-muted-200 px-4 py-3 text-main cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all @error('date') border-danger text-danger @enderror"
-                            min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}" value="{{ old('date') }}">
+                        <input type="date" name="start_date" id="start_date"
+                            class="text-sm block w-full rounded-xl bg-canvas border border-muted-200 px-4 py-3 text-main cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                            min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}" value="{{ old('start_date') }}">
+                    </div>
+
+                    <div class="flex flex-col gap-1.5 w-full">
+                        <label for="end_date" class="text-sm font-medium text-main">
+                            {{ __('request_day_off.end_date_label') }}
+                            <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date" name="end_date" id="end_date"
+                            class="text-sm block w-full rounded-xl bg-canvas border border-muted-200 px-4 py-3 text-main cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                            min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}" value="{{ old('end_date') }}">
+                    </div>
+
+                    {{-- Date Summary (Dynamic Display) --}}
+                    <div id="date-summary" class="hidden p-3 bg-blue-50 rounded-lg">
+                        <p class="text-sm font-medium text-blue-800">{{ __('request_day_off.selected_dates') }}:</p>
+                        <div id="selected-dates-list" class="mt-1 text-sm text-blue-600"></div>
+                        <p id="total-days" class="mt-2 text-xs font-medium text-blue-700"></p>
                     </div>
 
                     {{-- Leave Type Select --}}
@@ -50,6 +74,22 @@
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                             </div>
                         </div>
+                    </div>
+
+                    {{-- Half Day Period --}}
+                    <div id="half-day-container" class="flex flex-col gap-1.5 w-full hidden">
+                        <label for="half_day_period" class="text-sm font-medium text-main">
+                            {{ __('request_day_off.half_day_period_label') }}
+                        </label>
+                        <select name="half_day_period" id="half_day_period"
+                            class="text-sm block w-full rounded-xl bg-canvas border border-muted-200 px-4 py-3 text-main appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all @error('half_day_period') border-danger text-danger @enderror">
+                            <option value="" disabled selected>{{ __('request_day_off.select_period') }}</option>
+                            <option value="AM">Morning (09:00 - 13:00)</option>
+                            <option value="PM">Afternoon (13:00 - 17:00)</option>
+                        </select>
+                        @error('half_day_period')
+                            <span class="text-red-400 text-xs">{{ $message }}</span>
+                        @enderror
                     </div>
 
                     {{-- Reason Input --}}

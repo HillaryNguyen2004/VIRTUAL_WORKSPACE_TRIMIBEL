@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreDayOffRequest extends FormRequest
 {
@@ -24,9 +25,11 @@ class StoreDayOffRequest extends FormRequest
     public function rules()
     {
         return [
-            'date' => ['required', 'date', 'after:today'],
+            'start_date' => ['required', 'date', 'after:today'],
+            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'leave_type' => ['required', 'in:OFF_FULL,OFF_HALF'],
             'reason' => ['nullable', 'string'],
+            'half_day_period' => ['required_if:leave_type,OFF_HALF', 'nullable', 'in:AM,PM'],
         ];
     }
 }

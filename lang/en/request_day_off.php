@@ -2,6 +2,10 @@
 return [
     'form_title' => 'Request Day Off',
     'select_date_label' => 'Select Date',
+    'start_date_label' => 'Start Date',
+    'end_date_label' => 'End Date',
+    'half_day_period_label' => 'Period',
+    'select_period' => 'Period',
     'leave_type_label' => 'Leave Type',
     'reason_optional_label' => 'Reason (Optional)',
     'submit_request' => 'Submit',

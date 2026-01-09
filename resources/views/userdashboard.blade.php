@@ -3,9 +3,6 @@
 
 @section('content')
     @role('user')
-    {{-- Main Container --}}
-    {{-- We assume the body background is handled by 'layout_dashboard', but if not, 
-         you can add 'bg-canvas' to this wrapper to see your lavender background --}}
     <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
         
         <div class="flex flex-col gap-4 @2xl:flex-row @2xl:justify-between @2xl:items-center w-full">
@@ -211,12 +208,21 @@
                                     ];
                                     
                                     $currentStatus = $statusConfig[$task->status] ?? $statusConfig['pending'];
+                                    // Check if task is inactive
+                                    $isInactive = !$task->active; // Assuming 'active' is a boolean field
                                 @endphp
                                 <li class="grid grid-cols-12 gap-4 py-4 items-center hover:bg-canvas transition-colors px-2 rounded-lg -mx-2">
                                     <div class="col-span-8 flex items-center gap-3">
                                         {{-- Small indicator dot --}}
                                         <div class="w-2 h-2 rounded-full {{ str_replace('bg-', 'bg-', $currentStatus['text']) }} opacity-50"></div>
-                                        <p class="text-sm font-medium text-main truncate" title="{{ $task->title }}">{{ $task->title }}</p>
+                                        <div class="flex items-center gap-2">
+                                            <p class="text-sm font-medium text-main truncate" title="{{ $task->title }}">{{ $task->title }}</p>
+                                            @if($isInactive)
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-danger/10 text-danger ring-1 ring-inset ring-danger/20 whitespace-nowrap">
+                                                    Inactive
+                                                </span>
+                                            @endif
+                                        </div>
                                     </div>
                                     <div class="col-span-4 flex justify-end">
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $currentStatus['bg'] }} {{ $currentStatus['text'] }} ring-1 ring-inset {{ $currentStatus['ring'] }}">

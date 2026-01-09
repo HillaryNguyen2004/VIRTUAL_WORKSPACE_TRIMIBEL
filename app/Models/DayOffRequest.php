@@ -14,6 +14,8 @@ class DayOffRequest extends Model
         'leave_type',
         'reason',
         'status',
+        'request_group_id',
+        'half_day_period',
     ];
     protected $casts = [
     'date' => 'date',

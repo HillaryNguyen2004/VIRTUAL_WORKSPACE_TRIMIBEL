@@ -134,14 +134,24 @@
                         {{-- Active Checkbox --}}
                         <div class="flex items-center h-full pt-6">
                             <label class="inline-flex items-center cursor-pointer group">
-                                <input type="checkbox" name="active" value="1" id="active" 
+                                {{-- IMPORTANT: hidden input --}}
+                                <input type="hidden" name="active" value="0">
+
+                                <input
+                                    type="checkbox"
+                                    name="active"
+                                    value="1"
+                                    id="active"
                                     class="rounded border-muted-300 text-primary shadow-sm focus:border-primary focus:ring focus:ring-primary/20 focus:ring-opacity-50 w-5 h-5 transition-all"
-                                    {{ old('active', $task->active) ? 'checked' : '' }}>
+                                    {{ old('active', $task->active) ? 'checked' : '' }}
+                                >
+
                                 <span class="ml-3 font-semibold text-main group-hover:text-primary transition-colors">
                                     {{ __('task_edit.active_label') }}
                                 </span>
                             </label>
                         </div>
+
                     </div>
                 </div>
 
