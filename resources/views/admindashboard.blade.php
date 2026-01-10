@@ -262,7 +262,7 @@
                 
                 <div class="flex flex-col gap-6">
                     <div>
-                        <h4 class="text-xs font-bold text-muted-400 uppercase tracking-wider mb-4">Up Next</h4>
+                        <h4 class="text-xs font-bold text-muted-400 uppercase tracking-wider mb-4">{{ __('admin_dashboard.campaign_scheduled') }}</h4>
                         <ul class="space-y-4">
                             @forelse($upcomingCampaigns ?? [] as $camp)
                                 <li class="pl-4 border-l-2 border-primary/30 relative">
@@ -272,13 +272,13 @@
                                     <span class="inline-block mt-2 px-2 py-0.5 bg-primary/10 text-primary text-[10px] rounded-full font-bold">Scheduled</span>
                                 </li>
                             @empty
-                                <li class="text-xs text-muted-400">No upcoming campaigns.</li>
+                                <li class="text-xs text-muted-400">{{ __('admin_dashboard.campaign_no_scheduled') }}</li>
                             @endforelse
                         </ul>
                     </div>
                     <hr class="border-muted-200">
                     <div>
-                        <h4 class="text-xs font-bold text-muted-400 uppercase tracking-wider mb-4">Performance</h4>
+                        <h4 class="text-xs font-bold text-muted-400 uppercase tracking-wider mb-4">{{ __('admin_dashboard.campaign_sent') }}</h4>
                         <ul class="space-y-4">
                             @forelse($sentCampaigns ?? [] as $camp)
                                 <li class="flex justify-between items-center group">
@@ -288,11 +288,11 @@
                                     </div>
                                     <div class="text-right">
                                         <p class="text-lg font-bold text-main">{{ number_format($camp->sent_count) }}</p>
-                                        <p class="text-[10px] text-muted-400">Users Reached</p>
+                                        <p class="text-[10px] text-muted-400">{{ __('admin_dashboard.campaign_users_reached') }}</p>
                                     </div>
                                 </li>
                             @empty
-                                <li class="text-xs text-muted-400">No campaign performance data.</li>
+                                <li class="text-xs text-muted-400">{{ __('admin_dashboard.campaign_no_sent') }}</li>
                             @endforelse
                         </ul>
                     </div>

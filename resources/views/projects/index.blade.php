@@ -24,7 +24,7 @@
         {{-- HEADER SECTION --}}
         <div class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center w-full mb-8">
             <div class="flex items-center gap-4">
-                <x-back-btn :route="$dashRoute" />
+                @include('components.back-btn' , ['route' => $dashRoute])
                 <div>
                     <h2 class="font-bold text-3xl text-main tracking-tight">
                         {{ __('projects.project_list') }}

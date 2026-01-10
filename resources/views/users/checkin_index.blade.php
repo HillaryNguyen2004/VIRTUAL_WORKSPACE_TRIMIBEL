@@ -20,13 +20,13 @@
         {{-- HEADER SECTION --}}
         <div class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center w-full">
             <div class="flex items-center gap-4">
-                <x-back-btn :route="$dashRoute" />
+                @include('components.back-btn' , ['route' => $dashRoute])
                 
                 <div>
                     <h2 class="font-bold text-3xl text-main tracking-tight">
                         {{ __('checkin_logs.title') }}
                     </h2>
-                    <p class="text-muted-500 text-sm mt-2">Monitor employee attendance and working hours</p>
+                    <p class="text-muted-500 text-sm mt-2">{{ __('checkin_logs.subtitle') }}</p>
                 </div>
             </div>
 
@@ -49,22 +49,25 @@
         </div>
 
         {{-- INFO ALERT --}}
-        <div id="info-alert" class="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-4 rounded-2xl bg-blue-50 border border-blue-100 text-blue-900 animate-fade-in-up [animation-delay:100ms]">
+        <div id="info-alert" class="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-4 rounded-2xl bg-primary/5 text-primary animate-fade-in-up [animation-delay:100ms]">
             <div class="flex gap-3">
-                <div class="p-2 bg-blue-100 text-blue-600 rounded-lg shrink-0">
+                <div class="p-2 bg-primary/10 text-primary rounded-lg shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-current" viewBox="0 0 512 512">
                         <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM216 336h24V272H216c-13.3 0-24-10.7-24-24s10.7-24 24-24h48c13.3 0 24 10.7 24 24v88h8c13.3 0 24 10.7 24 24s-10.7 24-24 24H216c-13.3 0-24-10.7-24-24s10.7-24 24-24zm40-208a32 32 0 1 1 0 64 32 32 0 1 1 0-64z"/>
                     </svg>
                 </div>
                 <div>
-                    <h4 class="font-bold text-sm uppercase tracking-wide opacity-80 mb-1">Check-in Policy</h4>
-                    <p class="text-sm leading-relaxed">
+                    <h4 class="font-bold text-sm uppercase tracking-wide opacity-80 mb-1">{{ __('checkin_logs.checkin_policy') }}</h4>
+                    <!-- <p class="text-sm leading-relaxed">
                         Employees are considered <span class="font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded text-xs">LATE</span> if they check in >5 mins after start time.
                         <span class="font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded text-xs">ON TIME</span> includes a 5-minute grace period.
+                    </p> -->
+                    <p class="text-sm leading-relaxed">
+                        {{ __('checkin_logs.checkin_policy_details_1') }} <span class="font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded text-xs">{{ __('checkin_logs.late') }}</span> {{ __('checkin_logs.checkin_policy_details_2') }}
                     </p>
                 </div>
             </div>
-            <button id="close-info" type="button" class="absolute top-2 right-2 md:relative md:top-auto md:right-auto p-1.5 rounded-lg hover:bg-blue-100 text-blue-400 hover:text-blue-600 transition">
+            <button id="close-info" type="button" class="absolute top-2 right-2 md:relative md:top-auto md:right-auto p-1.5 rounded-lg hover:bg-primary/10 text-primary hover:text-primary/80 transition">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -258,12 +261,12 @@
                                             
                                             @if($isLate)
                                                 <span class="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger ring-1 ring-inset ring-danger/10">
-                                                    LATE
+                                                    {{ __('checkin_logs.late') }}
                                                 </span>
                                             @else
-                                                <span class="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success ring-1 ring-inset ring-success/10">
+                                                <!-- <span class="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success ring-1 ring-inset ring-success/10">
                                                     ON TIME
-                                                </span>
+                                                </span> -->
                                             @endif
                                         @else
                                             <span class="text-muted-400">-</span>

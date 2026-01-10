@@ -1,6 +1,10 @@
 <?php
 return [
-        'title' => 'All Check-In Logs',
+        'title' => 'Attendance Logs',
+        'subtitle' => 'View and manage employee check-in logs',
+        'checkin_policy' => 'Check-in Policy',
+        'checkin_policy_details_1' => 'Employees are considered',
+        'checkin_policy_details_2' => 'if they check in >5 mins after start time. On time includes a 5-minute grace period.',
         'search_placeholder_username' => 'Search by username',
         'filter_label_from' => 'From:',
         'filter_label_to' => 'To:',
@@ -16,6 +20,8 @@ return [
         'table_header_check_out_time' => 'Check Out Time',
         'table_header_working_hours' => 'Working Hours',
         'table_no_records' => 'No check-in records found.',
+        'late' => 'LATE',
+        'on_time' => 'ON TIME',
         'badge_checked_in' => 'Checked In',
         'badge_not_checked_in' => 'Not Checked In',
         'export_button' => 'Export to Excel',

@@ -6,5 +6,4 @@ return [
     'joined_label' => 'Joined',
     'edit_profile_button' => 'Edit Profile',
     'change_password_button' => 'Change Password',
-    'back_to_dashboard' => 'Back to Dashboard',
 ];

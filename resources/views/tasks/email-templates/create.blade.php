@@ -7,7 +7,7 @@
 
         {{-- Header Section --}}
         <div class="flex gap-4 flex-row items-center w-full">
-            @include('components.back-btn')
+            @include('components.back-btn' , ['route' => 'email-templates.index'])
             <div>
                 <h2 class="font-bold text-3xl text-main tracking-tight">
                     {{ isset($emailTemplate) ? __('template_create.edit_template') : __('template_create.create_template') }}
