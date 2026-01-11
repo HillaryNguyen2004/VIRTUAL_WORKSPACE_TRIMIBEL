@@ -391,6 +391,64 @@
             }
         }
     </script>
+    @auth
+    <script>
+    // Store user ID and session ID globally
+    window.AUTH_USER_ID = "{{ Auth::id() }}";
+    window.SESSION_ID = "{{ session()->getId() }}";
+    window.CSRF_TOKEN = "{{ csrf_token() }}";
+
+    // Track tab/window close
+    window.addEventListener('beforeunload', function(event) {
+        // Only send beacon if user is authenticated
+        if (window.AUTH_USER_ID && window.SESSION_ID) {
+            const data = {
+                user_id: window.AUTH_USER_ID,
+                session_id: window.SESSION_ID,
+                _token: window.CSRF_TOKEN
+            };
+            
+            // Use sendBeacon for reliable delivery during page unload
+            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+            navigator.sendBeacon('{{ route("activity.tab-close") }}', blob);
+        }
+    });
+
+    // Track visibility changes (optional - for more granular tracking)
+    document.addEventListener('visibilitychange', function() {
+        if (window.AUTH_USER_ID) {
+            fetch('{{ route("activity.visibility") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': window.CSRF_TOKEN,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    visibility: document.visibilityState
+                }),
+                keepalive: true // Ensures request completes
+            }).catch(err => console.log('Visibility tracking error:', err));
+        }
+    });
+
+    // Heartbeat function (you already have this)
+    setInterval(() => {
+        if (window.AUTH_USER_ID) {
+            fetch('{{ route("activity.heartbeat") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': window.CSRF_TOKEN,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    url: window.location.pathname,
+                    visibility: document.visibilityState
+                })
+            }).catch(err => console.log('Heartbeat error:', err));
+        }
+    }, 30000); // every 30 seconds
+    </script>
+    @endauth
 
 </body>
 

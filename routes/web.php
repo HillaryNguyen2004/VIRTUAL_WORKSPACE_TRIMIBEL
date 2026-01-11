@@ -18,6 +18,7 @@ use App\Services\UserRoleRedirectService;
 use App\Http\Controllers\DayOffController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\TeamProgressController;
+use App\Http\Controllers\ActivityController;
 
 // Route::group(['middleware' => ['web', 'core']], function () {
 //     include_once 'admin/user.php';
@@ -35,6 +36,11 @@ Route::post('/login', [AuthController::class, 'loginPost'])->name('login.post');
 Route::get('/register', [AuthController::class, 'register'])->name('register');
 Route::post('/register', [AuthController::class, 'registerPost'])->name('register.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Activity heartbeat
+Route::post('/activity/heartbeat', [App\Http\Controllers\ActivityController::class, 'heartbeat'])->middleware('auth')->name('activity.heartbeat');
+Route::post('/activity/tab-close', [App\Http\Controllers\ActivityController::class, 'tabClose'])->middleware('auth')->name('activity.tab-close');
+Route::post('/activity/visibility', [App\Http\Controllers\ActivityController::class, 'visibility'])->middleware('auth')->name('activity.visibility');
 
 // Email Verification
 Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->middleware('auth')->name('verification.notice');
@@ -233,3 +239,26 @@ Route::get('/meeting/{meetingId}/room', [MeetingController::class, 'showMeetingR
 // routes/web.php
 Route::get('/team-progress', [TeamProgressController::class, 'index'])->name('team-progress');
 Route::get('/user-tasks/{userId}', [App\Http\Controllers\TaskController::class, 'getUserTasks'])->name('user.tasks');
+
+
+// New routes for tracking tab close and visibility change
+// Route::post('/activity/tab-close', [ActivityController::class, 'trackTabClose'])
+//     ->name('activity.tab-close');
+
+// For JavaScript sendBeacon (no auth middleware needed)
+Route::post('/activity/track-tab-close', [ActivityController::class, 'trackTabClose'])
+    ->name('activity.track-tab-close');
+
+// For regular AJAX calls (with auth)
+Route::post('/activity/tab-close', [ActivityController::class, 'tabClose'])
+    ->middleware('auth')
+    ->name('activity.tab-close');
+
+// For visibility changes
+Route::post('/activity/visibility', [ActivityController::class, 'visibility'])
+    ->middleware('auth')
+    ->name('activity.visibility');
+
+// Route::post('/activity/visibility', [ActivityController::class, 'trackVisibility'])
+//     ->middleware('auth')
+//     ->name('activity.visibility');

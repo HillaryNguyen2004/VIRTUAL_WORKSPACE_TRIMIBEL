@@ -36,5 +36,6 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('campaigns:send-scheduled')->everyMinute()->withoutOverlapping();;
         $schedule->command('emails:birthday')->dailyAt('08:00')->withoutOverlapping();;
+        $schedule->command('end:inactive:sessions')->everyMinute()->withoutOverlapping();
     }
 }
