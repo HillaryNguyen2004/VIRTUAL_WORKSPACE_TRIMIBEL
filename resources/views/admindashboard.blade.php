@@ -5,16 +5,68 @@
     @role('admin')
     
     @php
-        // View Logic: Calculate timeline percentages
-        $startHour = $companyStartHour ?? 9; 
-        $endHour = $companyEndHour ?? 17; 
+        // --- 1. RECEIVE DATA & HELPERS ---
         
-        $now = \Carbon\Carbon::now();
-        $currentHour = $now->hour + ($now->minute / 60);
+        // Helper: Convert decimal hour (12.5) to string ("12:30")
+        $floatToString = function($decimal) {
+            if ($decimal === null) return '--:--';
+            $hours = floor($decimal);
+            $minutes = ($decimal - $hours) * 60;
+            return sprintf('%02d:%02d', $hours, $minutes);
+        };
+
+        // Grab variables from Controller (Controller now sends floats like 8.5)
+        // IMPORTANT: Defaults should match Controller defaults if null is passed unexpectedly
+        $startVal = $companyStartHour ?? 8;
+        $endVal   = $companyEndHour   ?? 17;
         
-        $workStartPct = ($startHour / 24) * 100;
-        $workWidthPct = (($endHour - $startHour) / 24) * 100;
+        // Check mode based on NULL values passed from Controller
+        // If lunch is NULL in DB, Controller sends NULL. If Midday is NULL, Controller sends NULL.
+        $lunchStartVal = $companyLunchStartHour; // Can be null
+        $lunchEndVal   = $companyLunchEndHour;   // Can be null
+        $midDayVal     = $companyMidDayHour;     // Can be null
+
+        // --- 2. DETERMINE MODE & VALUES ---
+        
+        // Logic: If Lunch variables exist (are not null), use Lunch Mode.
+        // If Lunch is null but Midday exists, use Midday Mode.
+        // If BOTH are null (shouldn't happen with correct DB defaults, but safe fallback), default to Lunch.
+        
+        $hasLunch = !is_null($lunchStartVal); // Strict null check
+        
+        // Initialize Display Strings and Math Values
+        $startStr = $floatToString($startVal);
+        $endStr   = $floatToString($endVal);
+        
+        // Math Percentages (Always based on 24hr clock)
+        $workStartPct = ($startVal / 24) * 100;
+        $workWidthPct = (($endVal - $startVal) / 24) * 100;
+        
+        $currentHour = \Carbon\Carbon::now()->floatDiffInHours(\Carbon\Carbon::today());
         $currentMarkerPct = ($currentHour / 24) * 100;
+
+        $lunchStartPct = 0;
+        $lunchWidthPct = 0;
+        $midDayPct = 0;
+        
+        $lunchRangeStr = "";
+        $midDayStr = "";
+
+        if ($hasLunch) {
+            // --- LUNCH MODE ---
+            $lunchStartPct = ($lunchStartVal / 24) * 100;
+            $lunchDuration = $lunchEndVal - $lunchStartVal;
+            $lunchWidthPct = ($lunchDuration / 24) * 100;
+            
+            $lunchRangeStr = $floatToString($lunchStartVal) . " - " . $floatToString($lunchEndVal);
+        } else {
+            // --- MIDDAY MODE ---
+            // If midDayVal is null here (rare fallback), default to 12 for safety
+            $safeMidDay = $midDayVal ?? 12; 
+            
+            $midDayPct = ($safeMidDay / 24) * 100;
+            $midDayStr = $floatToString($safeMidDay);
+        }
     @endphp
 
     {{-- Main Container (Matches User Dashboard) --}}
@@ -130,26 +182,80 @@
                     </div>
                 </div>
 
-                <div class="flex-1 flex flex-col justify-center">
-                    <div class="relative w-full h-8 bg-muted-100 rounded-full overflow-hidden shadow-inner">
-                        <div class="absolute top-0 bottom-0 bg-accent/20 border-x border-accent/50" style="left: {{ $workStartPct }}%; width: {{ $workWidthPct }}%;">
-                                <span class="absolute top-1/2 left-2 -translate-y-1/2 text-[10px] font-bold text-accent">{{ __('admin_dashboard.work') }}</span>
+                <div class="flex-1 flex flex-col justify-between">
+                    <div class="my-auto">
+                        {{-- TIMELINE BAR --}}
+                        <div class="relative w-full h-8 bg-muted-100 rounded-full overflow-hidden shadow-inner">                   
+                            {{-- 1. Main Work Shift --}}
+                            <div class="absolute top-0 bottom-0 bg-accent/20 border-x border-accent/50" 
+                                style="left: {{ $workStartPct }}%; width: {{ $workWidthPct }}%;"></div>
+
+                            {{-- 2. Conditional: Lunch vs Midday --}}
+                            @if($hasLunch)
+                                {{-- Lunch Block (Solid Range) --}}
+                                <div class="absolute top-0 bottom-0 bg-secondary/40 border-x border-secondary/60" 
+                                    style="left: {{ $lunchStartPct }}%; width: {{ $lunchWidthPct }}%;"></div>
+                            @else
+                                {{-- Midday Marker (Dashed Line) --}}
+                                <div class="absolute top-0 bottom-0 border-l-2 border-dashed border-secondary z-10" 
+                                    style="left: {{ $midDayPct }}%;"></div>
+                            @endif
+
+                            {{-- 3. Current Time Marker --}}
+                            <div class="absolute top-0 bottom-0 w-0.5 bg-danger z-20 shadow-[0_0_8px_rgba(239,68,68,0.8)]" 
+                                style="left: {{ $currentMarkerPct }}%;"></div>
                         </div>
-                        <div class="absolute top-0 bottom-0 w-0.5 bg-danger z-10 shadow-[0_0_8px_rgba(239,68,68,0.8)]" style="left: {{ $currentMarkerPct }}%;"></div>
+
+                        {{-- TIMELINE LABELS --}}
+                        <div class="relative w-full h-6 mt-2 text-xs text-muted-400 font-medium">
+                            <span class="absolute left-0">00:00</span>
+                            
+                            {{-- Start Time Label --}}
+                            <span class="absolute -translate-x-1/2 text-main font-bold" style="left: {{ $workStartPct }}%;">
+                                {{ $startStr }}
+                            </span>
+
+                            {{-- End Time Label --}}
+                            <span class="absolute -translate-x-1/2 text-main font-bold" style="left: {{ $workStartPct + $workWidthPct }}%;">
+                                {{ $endStr }}
+                            </span>
+
+                            <span class="absolute right-0">23:59</span>
+                        </div>
                     </div>
 
-                    <div class="relative w-full h-6 mt-2 text-xs text-muted-400 font-medium">
-                        <span class="absolute left-0">00:00</span>
-                        
-                        <span class="absolute -translate-x-1/2 text-main font-bold" style="left: {{ $workStartPct }}%;">
-                            {{ $startHour }}:00
-                        </span>
+                    {{-- LEGEND (BOTTOM ROW) --}}
+                    <div class="flex items-center gap-6 mt-4 pt-4 border-t border-muted-100">
+                        {{-- Work Legend --}}
+                        <div class="flex items-center gap-2 w-full">
+                            <div class="w-2.5 h-2.5 rounded-full bg-accent/50 border border-accent"></div>
+                            <div class="flex flex-col gap-0.5">
+                                <span class="text-[10px] uppercase text-muted-400 font-bold tracking-wider">{{ __('admin_dashboard.work') }}</span>
+                                <span class="text-xs text-main font-medium leading-none">{{ $startStr }} - {{ $endStr }}</span>
+                            </div>
+                        </div>
 
-                        <span class="absolute -translate-x-1/2 text-main font-bold" style="left: {{ $workStartPct + $workWidthPct }}%;">
-                            {{ $endHour }}:00
-                        </span>
-
-                        <span class="absolute right-0">23:59</span>
+                        {{-- Conditional Legend: Lunch or Midday --}}
+                        @if($hasLunch)
+                            <div class="flex items-center gap-2 w-full">
+                                <div class="w-2.5 h-2.5 rounded-full bg-secondary/60 border border-secondary"></div>
+                                <div class="flex flex-col gap-0.5">
+                                    <span class="text-[10px] uppercase text-muted-400 font-bold tracking-wider">{{ __('admin_dashboard.lunch') }}</span>
+                                    <span class="text-xs text-main font-medium leading-none">{{ $lunchRangeStr }}</span>
+                                </div>
+                            </div>
+                        @else
+                            <div class="flex items-center gap-2 w-full">
+                                {{-- Purple Marker for Midday --}}
+                                <div class="w-2.5 h-0.5 bg-secondary border-none"></div> {{-- Flat line icon --}}
+                                <div class="flex flex-col gap-0.5">
+                                    <span class="text-[10px] uppercase text-muted-400 font-bold tracking-wider">{{ __('admin_dashboard.midday') }}</span>
+                                    <span class="text-xs text-main font-medium leading-none">
+                                        {{ $midDayStr }}
+                                    </span>
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>

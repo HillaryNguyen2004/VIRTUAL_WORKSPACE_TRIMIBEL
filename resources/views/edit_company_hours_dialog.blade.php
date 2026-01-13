@@ -1,52 +1,128 @@
-<div id="edit-company-hours-dialog" 
-     class="hidden fixed inset-0 z-[60] items-center justify-center bg-gray-900/50 transition-opacity"
-     role="dialog" aria-modal="true">
-
-    <div class="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all m-4">
+{{-- Company Hours Dialog --}}
+<div id="edit-company-hours-dialog" class="hidden items-center justify-center fixed h-screen w-screen bg-black/50 z-[60]">
+    <div
+        class="flex flex-col w-[320px] sm:w-[380px] md:w-[450px] bg-white rounded-2xl shadow-xl animate-fade-in-up [animation-delay:150ms] overflow-hidden">
         
-        <div class="flex items-center justify-between mb-5">
-            <h3 class="text-lg font-bold text-gray-900">
+        {{-- Header --}}
+        <div class="w-full px-6 py-4 flex items-center justify-between border-b border-muted-200 bg-white">
+            <h3 class="text-lg font-bold text-main">
                 {{ __('company_hour.update_title') }}
             </h3>
-            <button type="button" class="close-company-hours text-gray-400 hover:text-gray-500 transition-colors">
-                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            <button type="button" class="close-company-hours p-2 rounded-full text-muted-400 hover:text-primary hover:bg-muted-50 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
 
-        {{-- Note: We use the ID 'edit-company-hours-form' for the JS selector --}}
-        <form id="edit-company-hours-form" action="{{ route('companyhour.update') }}" method="POST">
-            @csrf
-            
-            <div class="space-y-4">
-                <div>
-                    <label for="start_at" class="block text-sm font-medium text-gray-700 mb-1">
-                        {{ __('company_hour.start_time') }}
-                    </label>
-                    <input type="time" name="start_at" id="start_at"
-                        value="{{ isset($startHour) ? sprintf('%02d:00', $startHour) : '09:00' }}"
-                        class="w-full rounded-xl border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm bg-gray-50 text-gray-900">
-                </div>
+        <div class="w-full">
+            <form id="edit-company-hours-form" action="{{ route('companyhour.update') }}" method="POST">
+                @csrf
+                
+                <div class="p-6 flex flex-col gap-5 w-full">
+                    
+                    {{-- Start Time --}}
+                    <div class="flex flex-col gap-1.5 w-full">
+                        <label for="start_at" class="text-sm font-medium text-main">
+                            {{ __('company_hour.start_time') }}
+                        </label>
+                        <input type="time" name="start_at" id="start_at"
+                            value="{{ isset($startHour) ? sprintf('%02d:00', $startHour) : '09:00' }}"
+                            class="text-sm block w-full rounded-xl bg-canvas border border-muted-200 px-4 py-3 text-main cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                    </div>
 
-                <div>
-                    <label for="end_at" class="block text-sm font-medium text-gray-700 mb-1">
-                        {{ __('company_hour.end_time') }}
-                    </label>
-                    <input type="time" name="end_at" id="end_at"
-                        value="{{ isset($endHour) ? sprintf('%02d:00', $endHour) : '17:00' }}"
-                        class="w-full rounded-xl border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm bg-gray-50 text-gray-900">
-                </div>
-            </div>
+                    {{-- End Time --}}
+                    <div class="flex flex-col gap-1.5 w-full">
+                        <label for="end_at" class="text-sm font-medium text-main">
+                            {{ __('company_hour.end_time') }}
+                        </label>
+                        <input type="time" name="end_at" id="end_at"
+                            value="{{ isset($endHour) ? sprintf('%02d:00', $endHour) : '17:00' }}"
+                            class="text-sm block w-full rounded-xl bg-canvas border border-muted-200 px-4 py-3 text-main cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                    </div>
 
-            <div class="mt-8 flex justify-end gap-3">
-                <button type="button" class="close-company-hours px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
-                    Cancel
-                </button>
-                <button id="submit-company-hours-btn" type="submit" class="px-4 py-2 text-sm font-medium text-white bg-[#5D3FD3] border border-transparent rounded-xl hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary shadow-lg shadow-primary/20">
-                    {{ __('company_hour.update_title') }}
-                </button>
-            </div>
-        </form>
+                    {{-- Lunch Break Toggle --}}
+                    <div class="flex items-center gap-3 py-1">
+                        <input type="checkbox" id="has_lunch_break" name="has_lunch_break" 
+                               class="w-5 h-5 rounded border-muted-300 text-primary focus:ring-primary cursor-pointer">
+                        <label for="has_lunch_break" class="text-sm font-medium text-main select-none cursor-pointer">
+                            {{ __('company_hour.lunch_break_checkbox') }}
+                        </label>
+                    </div>
+
+                    {{-- Divider --}}
+                    <div class="border-t border-muted-200 "></div>
+
+                    {{-- Option A: Lunch Fields (Hidden by default via JS) --}}
+                    <div id="lunch_fields" class="hidden flex flex-col gap-5 border-muted-100">
+                        <div class="flex flex-col gap-1.5 w-full">
+                            <label for="lunch_start" class="text-sm font-medium text-main">
+                                {{ __('company_hour.lunch_start') }}
+                            </label>
+                            <input type="time" name="lunch_start" id="lunch_start"
+                                value="{{ isset($lunchStartHour) ? sprintf('%02d:00', $lunchStartHour) : '12:00' }}"
+                                class="text-sm block w-full rounded-xl bg-canvas border border-muted-200 px-4 py-3 text-main cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                        </div>
+                        <div class="flex flex-col gap-1.5 w-full">
+                            <label for="lunch_end" class="text-sm font-medium text-main">
+                                {{ __('company_hour.lunch_end') }}
+                            </label>
+                            <input type="time" name="lunch_end" id="lunch_end"
+                                value="{{ isset($lunchEndHour) ? sprintf('%02d:00', $lunchEndHour) : '13:00' }}"
+                                class="text-sm block w-full rounded-xl bg-canvas border border-muted-200 px-4 py-3 text-main cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                        </div>
+                    </div>
+
+                    {{-- Option B: Mid-day Field (Visible by default) --}}
+                    <div id="mid_day_field" class="flex flex-col gap-1.5 w-full">
+                        <label for="mid_day" class="text-sm font-medium text-main">
+                            {{ __('company_hour.midday') }}
+                        </label>
+                        <input type="time" name="mid_day" id="mid_day"
+                            value="{{ isset($midDayHour) ? sprintf('%02d:00', $midDayHour) : '12:00' }}"
+                            class="text-sm block w-full rounded-xl bg-canvas border border-muted-200 px-4 py-3 text-main cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                        <p class="text-xs text-muted-500">{{ __('company_hour.midday_help') }}</p>
+                    </div>
+
+                    {{-- Actions --}}
+                    <div class="mt-2 flex flex-col-reverse sm:flex-row sm:justify-end gap-3 w-full">
+                        <button type="button" class="close-company-hours w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-medium text-muted-600 hover:bg-muted-100 transition-colors">
+                            {{ __('app.cancel') }}
+                        </button>
+                        <button id="submit-company-hours-btn" type="submit"
+                            class="w-full sm:w-auto px-6 py-2.5 bg-primary hover:bg-primary-hover text-white text-sm font-bold rounded-xl shadow-lg shadow-primary/25 transition-all active:scale-95">
+                            {{ __('company_hour.save') }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkbox = document.getElementById('has_lunch_break');
+        const lunchFields = document.getElementById('lunch_fields');
+        const midDayField = document.getElementById('mid_day_field');
+
+        function toggleFields() {
+            if (checkbox.checked) {
+                // Show Lunch, Hide Mid-day
+                lunchFields.classList.remove('hidden');
+                midDayField.classList.add('hidden');
+            } else {
+                // Hide Lunch, Show Mid-day
+                lunchFields.classList.add('hidden');
+                midDayField.classList.remove('hidden');
+            }
+        }
+
+        if(checkbox && lunchFields && midDayField) {
+            // Run on change
+            checkbox.addEventListener('change', toggleFields);
+            // Run on load to ensure correct state
+            toggleFields();
+        }
+    });
+</script>

@@ -85,5 +85,7 @@ return [
     'project_progress' => 'Project Progress',
     'recent_activities' => 'Recent Activities',
     'work' => 'WORK',
+    'lunch' => 'LUNCH',
+    'midday' => 'MID-DAY'
 ];
 ?>

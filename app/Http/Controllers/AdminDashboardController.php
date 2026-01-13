@@ -51,9 +51,30 @@ class AdminDashboardController extends Controller
 
         // --- 4. COMPANY HOURS ---
         $companyHour = CompanyHour::first();
-        // Fallback to 9 and 17 if no record found
-        $companyStartHour = $companyHour && $companyHour->start_at ? Carbon::parse($companyHour->start_at)->hour : 9;
-        $companyEndHour = $companyHour && $companyHour->end_at ? Carbon::parse($companyHour->end_at)->hour : 17;
+
+        // Helper: Convert "12:30:00" to 12.5 (Float) for accurate CSS percentages
+        // We use a closure to keep the code clean
+        $toDecimal = function($timeStr) {
+            if (!$timeStr) return null;
+            $c = \Carbon\Carbon::parse($timeStr);
+            return $c->hour + ($c->minute / 60);
+        };
+
+        if ($companyHour) {
+            // CASE A: Record exists - Trust the DB values (even if they are NULL)
+            $companyStartHour      = $toDecimal($companyHour->start_at);
+            $companyEndHour        = $toDecimal($companyHour->end_at);
+            $companyMidDayHour     = $toDecimal($companyHour->mid_day);     // Can be null
+            $companyLunchStartHour = $toDecimal($companyHour->lunch_start); // Can be null
+            $companyLunchEndHour   = $toDecimal($companyHour->lunch_end);   // Can be null
+        } else {
+            // CASE B: No Record (Fresh Install) - Force Standard Defaults
+            $companyStartHour      = 8;
+            $companyEndHour        = 17;
+            $companyMidDayHour     = null;
+            $companyLunchStartHour = 12;
+            $companyLunchEndHour   = 13;
+        }
 
         // --- 5. PROJECTS HEALTH ---
         // Your Project model uses 'title' and has 'tasks' relation
@@ -108,6 +129,9 @@ class AdminDashboardController extends Controller
             'roleCounts',
             'companyStartHour',
             'companyEndHour',
+            'companyLunchStartHour',
+            'companyLunchEndHour',
+            'companyMidDayHour',
             'projectsHealth',
             'upcomingCampaigns',
             'sentCampaigns',

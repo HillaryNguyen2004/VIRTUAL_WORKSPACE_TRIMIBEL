@@ -10,27 +10,50 @@ class StoreCompanyHourRequest extends FormRequest
     public function rules() {
         return [
             'start_at' => 'required|date_format:H:i:s',
-            'end_at' => 'required|date_format:H:i:s|after:start_at'
+            'end_at'   => 'required|date_format:H:i:s|after:start_at',
+            
+            // Lunch fields: Required ONLY if checkbox is checked
+            'lunch_start' => 'nullable|required_with:has_lunch_break|date_format:H:i:s|after:start_at|before:end_at',
+            'lunch_end'   => 'nullable|required_with:has_lunch_break|date_format:H:i:s|after:lunch_start|before:end_at',
+            
+            // Mid-day: Required ONLY if checkbox is UNCHECKED
+            'mid_day'  => 'nullable|required_without:has_lunch_break|date_format:H:i:s|after:start_at|before:end_at'
         ];
     }
 
     protected function prepareForValidation()
-{
-    $start = $this->input('start_at');
-    $end = $this->input('end_at');
+    {
+        // 1. Helper to format time strings (add :00 if needed)
+        $formatTime = function ($time) {
+            return ($time && strlen($time) === 5) ? $time . ':00' : $time;
+        };
 
-    if ($start && strlen($start) === 5) {
-        $start .= ':00';
+        // 2. Capture inputs (and handle the naming mismatch fix)
+        // We look for 'mid_day' first, fallback to 'mid_day'
+        $midDayInput = $this->input('mid_day');
+        
+        $data = [
+            'start_at' => $formatTime($this->input('start_at')),
+            'end_at'   => $formatTime($this->input('end_at')),
+        ];
+
+        // 3. Logic: "Lunch Break" vs "Mid-day"
+        if ($this->has('has_lunch_break')) {
+            // Case A: User checked "Lunch break?" (YES)
+            // We validate lunch fields, but force mid_day to be NULL
+            $data['lunch_start'] = $formatTime($this->input('lunch_start'));
+            $data['lunch_end']   = $formatTime($this->input('lunch_end'));
+            $data['mid_day']  = null; 
+        } else {
+            // Case B: User unchecked "Lunch break?" (NO)
+            // We validate mid-day, but force lunch fields to be NULL
+            $data['lunch_start'] = null;
+            $data['lunch_end']   = null;
+            $data['mid_day']  = $formatTime($midDayInput); // Use the captured input
+        }
+
+        // 4. Merge sanitized data back into request for validation
+        // This ensures the validator sees 'mid_day' even if the form sent 'mid_day'
+        $this->merge($data);
     }
-
-    if ($end && strlen($end) === 5) {
-        $end .= ':00';
-    }
-
-    $this->merge([
-        'start_at' => $start,
-        'end_at'   => $end,
-    ]);
-}
-
 }

@@ -86,5 +86,7 @@ return [
     'project_progress' => 'Tiến độ Dự án',
     'recent_activities' => 'Hoạt động gần đây',
     'work' => 'LÀM VIỆC',
+    'lunch' => 'NGHỈ TRƯA',
+    'midday' => 'GIỮA NGÀY'
 ];
 ?>
