@@ -36,33 +36,32 @@
             <form class="p-5 border-b border-muted-200 flex flex-wrap gap-4 bg-white" method="GET">
                 
                 {{-- Search Input --}}
-                <div class="flex-1 min-w-[200px] relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="h-5 w-5 text-muted-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <input name="search" id="search" type="text" placeholder="{{ __('admin_log.search_placeholder') }}" value="{{ request('search') }}"
-                        class="block w-full pl-10 bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl placeholder-muted-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
-                </div>
+                <x-form.search-input
+                    name="search"
+                    id="search"
+                    placeholder="admin_log.search_placeholder"
+                    :value="request('search')"
+                />
 
                 {{-- Action Dropdown --}}
-                <select name="action" id="action"
-                    class="bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer hover:border-primary/50">
-                    <option value="">{{ __('admin_log.all_actions') }}</option>
-                    @foreach ($distinctActions as $action)
-                        <option value="{{ $action }}" {{ request('action') == $action ? 'selected' : '' }}>
-                            {{ ucfirst($action) }}
-                        </option>
-                    @endforeach
-                </select>
+                <x-form.select
+                    name="action"
+                    id="action"
+                    placeholder="admin_log.all_actions"
+                    :value="request('action')"
+                    :options="$distinctActions->mapWithKeys(fn($a) => [$a => ucfirst($a)])->toArray()"
+                />
 
                 {{-- Sort Dropdown --}}
-                <select name="sort_dir" id="sort_dir"
-                    class="bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer hover:border-primary/50">
-                    <option value="desc" {{ request('sort_dir') == 'desc' ? 'selected' : '' }}>{{ __('admin_log.descending') }}</option>
-                    <option value="asc" {{ request('sort_dir') == 'asc' ? 'selected' : '' }}>{{ __('admin_log.ascending') }}</option>
-                </select>
+                <x-form.select
+                    name="sort_dir"
+                    id="sort_dir"
+                    :value="request('sort_dir', 'desc')"
+                    :options="[
+                        'desc' => __('admin_log.descending'),
+                        'asc'  => __('admin_log.ascending'),
+                    ]"
+                />
 
                 <div class="flex gap-2">
                     {{-- Filter button --}}

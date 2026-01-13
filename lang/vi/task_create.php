@@ -7,7 +7,7 @@ return [
     'project_label' => 'Dự án',
     'select_project' => 'Chọn dự án',
     'assignee_label' => 'Người được giao',
-    'select_assignee' => 'Chọn thành viên...',
+    'select_assignee' => 'Chọn thành viên',
     'assignee_tip' => 'Giữ phím Ctrl (Cmd trên Mac) để chọn nhiều thành viên',
     'start_date_label' => 'Ngày bắt đầu',
     'due_date_label' => 'Ngày hết hạn',

@@ -52,31 +52,31 @@
                     {{-- Title & Subject Grid --}}
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {{-- Title --}}
-                        <div>
-                            <label class="{{ $labelClass }}">
-                                {{ __('template_create.title') }} <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" name="name" class="{{ $inputClass }}" 
-                                value="{{ old('name', $emailTemplate->name ?? '') }}"
-                                placeholder="{{ __('template_create.title_placeholder') }}" required>
-                        </div>
+                        <x-form.input
+                            label="template_create.title"
+                            name="name"
+                            :value="$emailTemplate->name ?? ''"
+                            placeholder="template_create.title_placeholder"
+                            :isRequired="true"
+                        />
 
                         {{-- Subject --}}
-                        <div>
-                            <label class="{{ $labelClass }}">
-                                {{ __('template_create.subject') }} <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" name="subject" class="{{ $inputClass }}"
-                                value="{{ old('subject', $emailTemplate->subject ?? '') }}"
-                                placeholder="{{ __('template_create.subject_placeholder') }}">
-                        </div>
+                        <x-form.input
+                            label="template_create.subject"
+                            name="subject"
+                            :value="$emailTemplate->subject ?? ''"
+                            placeholder="template_create.subject_placeholder"
+                            :isRequired="true"
+                        />
                     </div>
 
                     {{-- Description --}}
-                    <div>
-                        <label class="{{ $labelClass }}">{{ __('template_create.description') }}</label>
-                        <textarea name="description" class="{{ $inputClass }} min-h-[80px] resize-none" placeholder="{{ __('template_create.description_placeholder') }}">{{ old('description', $emailTemplate->description ?? '') }}</textarea>
-                    </div>
+                    <x-form.textarea
+                        label="template_create.description"
+                        name="description"
+                        :value="$emailTemplate->description ?? ''"
+                        placeholder="template_create.description_placeholder"
+                    />
 
                     {{-- WYSIWYG Editor --}}
                     <div>

@@ -8,11 +8,11 @@
 # pdfminer.six==20240706
 # lingua-language-detector==2.0.2
 
-# langchain>=0.2.0
-# langchain-community>=0.2.0
-# langchain-google-genai>=0.1.0
-# sqlalchemy>=2.0.0
-# mysql-connector-python>=9.0.0
+langchain>=0.2.0
+langchain-community>=0.2.0
+langchain-google-genai>=0.1.0
+sqlalchemy>=2.0.0
+mysql-connector-python>=9.0.0
 
-openai==2.9.0
-langchain-openai==1.1.1
+langchain-ollama>=0.2.0
+ollama>=0.4.0

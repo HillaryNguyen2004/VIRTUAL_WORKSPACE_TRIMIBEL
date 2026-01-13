@@ -45,7 +45,7 @@ class CheckInService
         $currentUsername = $currentUser->username;
 
         // compare 2 username to check is it checkin with its own username or not, if not then throw error
-        if ($this->normalizeName($user) !== $this->normalizeName($currentUsername)) {
+        if ($this->normalizeName($user->username) !== $this->normalizeName($currentUsername)) {
             return [
                 'status' => false,
                 'message' => __('messages.wrong_username'),
@@ -108,7 +108,7 @@ class CheckInService
         $today = $now->toDateString();
 
         // compare 2 username to check is it checkin with its own username or not, if not then throw error
-        if ($this->normalizeName($user) !== $this->normalizeName($currentUsername)) {
+        if ($this->normalizeName($user->username) !== $this->normalizeName($currentUsername)) {
             return [
                 'status' => false,
                 'message' => __('messages.wrong_username'),

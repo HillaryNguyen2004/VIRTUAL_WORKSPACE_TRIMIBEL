@@ -104,40 +104,76 @@ Route::get('/test-task-notification', function () {
 
 
 
-Route::middleware(['role:admin|staff'])->group(function () {
+// Route::middleware(['role:admin|staff'])->group(function () {
 
-    // CREATE TASK
-    Route::get('/management/tasks/create', [TaskController::class, 'create'])
-        ->middleware('permission:task.create')
-        ->name('tasks.create');
+//     // CREATE TASK
+//     Route::get('/management/tasks/create', [TaskController::class, 'create'])
+//         ->middleware('permission:task.create')
+//         ->name('tasks.create');
 
-    Route::post('/management/tasks', [TaskController::class, 'store'])
-        ->middleware('permission:task.create')
-        ->name('tasks.store');
+//     Route::post('/management/tasks', [TaskController::class, 'store'])
+//         ->middleware('permission:task.create')
+//         ->name('tasks.store');
 
-    // LIST + SHOW
-    Route::get('/management/tasks', [TaskController::class, 'index'])
-        ->name('tasks.index');
+//     // LIST + SHOW
+//     Route::get('/management/tasks', [TaskController::class, 'index'])
+//         ->name('tasks.index');
 
-    Route::get('/management/tasks/{task}', [TaskController::class, 'show'])
-        ->name('tasks.show');
+//     Route::get('/management/tasks/{task}', [TaskController::class, 'show'])
+//         ->name('tasks.show');
 
-    // EDIT TASK
-    Route::get('/management/tasks/{task}/edit', [TaskController::class, 'edit'])
-        ->middleware('permission:task.edit')
-        ->name('tasks.edit');
+//     Route::get('/admin/back-to-project-tasks', function () {
+//         return redirect()->route('projects.index', ['tab' => 'tasks']);
+//     })->name('admin.back.projects.tasks');
 
-    Route::put('/management/tasks/{task}', [TaskController::class, 'update'])
-        ->middleware('permission:task.edit')
-        ->name('tasks.update');
+//     // EDIT TASK
+//     Route::get('/management/tasks/{task}/edit', [TaskController::class, 'edit'])
+//         ->middleware('permission:task.edit')
+//         ->name('tasks.edit');
 
-    // DELETE TASK
-    Route::delete('/management/tasks/{task}', [TaskController::class, 'destroy'])
-        ->middleware('permission:task.delete')
-        ->name('tasks.destroy');
-});
+//     Route::put('/management/tasks/{task}', [TaskController::class, 'update'])
+//         ->middleware('permission:task.edit')
+//         ->name('tasks.update');
 
+//     // DELETE TASK
+//     Route::delete('/management/tasks/{task}', [TaskController::class, 'destroy'])
+//         ->middleware('permission:task.delete')
+//         ->name('tasks.destroy');
+// });
 
+// CREATE TASK
+Route::get('/management/tasks/create', [TaskController::class, 'create'])
+    ->middleware('permission:task.create')
+    ->name('tasks.create');
+
+Route::post('/management/tasks', [TaskController::class, 'store'])
+    ->middleware('permission:task.create')
+    ->name('tasks.store');
+
+// LIST + SHOW
+Route::get('/management/tasks', [TaskController::class, 'index'])
+    ->name('tasks.index');
+
+Route::get('/management/tasks/{task}', [TaskController::class, 'show'])
+    ->name('tasks.show');
+
+Route::get('/admin/back-to-project-tasks', function () {
+    return redirect()->route('projects.index', ['tab' => 'tasks']);
+})->name('admin.back.projects.tasks');
+
+// EDIT TASK
+Route::get('/management/tasks/{task}/edit', [TaskController::class, 'edit'])
+    ->middleware('permission:task.edit')
+    ->name('tasks.edit');
+
+Route::put('/management/tasks/{task}', [TaskController::class, 'update'])
+    ->middleware('permission:task.edit')
+    ->name('tasks.update');
+
+// DELETE TASK
+Route::delete('/management/tasks/{task}', [TaskController::class, 'destroy'])
+    ->middleware('permission:task.delete')
+    ->name('tasks.destroy');
 
 // Redirect after login
 Route::get('/home', function () {
@@ -173,12 +209,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/chat', function () {
         return view('chat.realtime');
     })->name('chat.index');
-    
+
     // Debug route for testing
     Route::get('/chat/debug', function () {
         return view('chat.debug');
     })->name('chat.debug');
-    
+
     // Test route for user search
     Route::get('/chat/test-users', function () {
         $users = \App\Models\User::where('id', '!=', auth()->id())
@@ -187,7 +223,7 @@ Route::middleware(['auth'])->group(function () {
             ->get();
         return response()->json(['users' => $users]);
     })->name('chat.test.users');
-    
+
     // Old chat routes (keep for backward compatibility)
     Route::get('/chat/old', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.old.index');
     Route::get('/chat/conversation/{conversation}', [App\Http\Controllers\ChatController::class, 'show'])->name('chat.conversation');
@@ -224,11 +260,11 @@ Route::post("/validateMeeting", [MeetingController::class, 'validateMeeting'])->
 
 // Route 1: The Lobby Page
 Route::get('/meeting/{meetingId}', [MeetingController::class, 'showLobby'])
-     ->name('meeting.lobby');
+    ->name('meeting.lobby');
 
 // Route 2: The Meeting Room Page
 Route::get('/meeting/{meetingId}/room', [MeetingController::class, 'showMeetingRoom'])
-     ->name('meeting.room');
+    ->name('meeting.room');
 
 // routes/web.php
 Route::get('/team-progress', [TeamProgressController::class, 'index'])->name('team-progress');

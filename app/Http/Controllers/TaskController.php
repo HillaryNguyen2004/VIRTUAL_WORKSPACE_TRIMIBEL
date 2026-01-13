@@ -29,20 +29,51 @@ class TaskController extends Controller
         $user = auth()->user();
 
         if ($user->hasRole('admin')) {
-            // Admin → can assign to ANYONE except admins
-            $assignees = User::whereDoesntHave('roles', function($query) {
-                $query->where('name', 'admin');
-            })->get();
-            $projects = Project::all();
-        } else {
-            // Staff → ONLY their team members
-            $assignees = User::where('team_leader_id', $user->id)->get();
 
-            // Staff → ONLY their projects
-            $projects = Project::where('staff_id', $user->id)->get();
+            $assignees = User::whereDoesntHave('roles', fn($q) => $q->where('name', 'admin'))
+                ->get(['id', 'name', 'team_leader_id']);
+
+            $projects = Project::get(['id', 'title', 'staff_id']);
+
+        } elseif ($user->hasRole('staff')) {
+
+            $assignees = User::where('team_leader_id', $user->id)
+                ->get(['id', 'name', 'team_leader_id']);
+
+            $projects = Project::where('staff_id', $user->id)
+                ->get(['id', 'title', 'staff_id']);
+
+        } else {
+            // role: user
+            $leaderId = $user->team_leader_id; // staffId of this user
+
+            $projects = Project::query()
+                ->when($leaderId, fn($q) => $q->where('staff_id', $leaderId))
+                ->get(['id', 'title', 'staff_id']);
+
+            // Assignee is only this user
+            $assignees = User::whereKey($user->id)
+                ->get(['id', 'name', 'team_leader_id']);
         }
 
-        return view('tasks.create', compact('assignees', 'projects'));
+        // for selects
+        $projectOptions = $projects->mapWithKeys(fn($p) => [$p->id => $p->title])->toArray();
+
+        // maps for JS
+        $projectLeaderMap = $projects->pluck('staff_id', 'id'); // [projectId => staffId]
+
+        $assigneesByLeader = $assignees
+            ->groupBy('team_leader_id')
+            ->map(fn($group) => $group->map(fn($u) => ['id' => $u->id, 'name' => $u->name])->values())
+            ->toArray();
+
+        return view('tasks.create', compact(
+            'assignees',
+            'projects',
+            'projectOptions',
+            'projectLeaderMap',
+            'assigneesByLeader'
+        ));
     }
 
     /**
@@ -55,13 +86,11 @@ class TaskController extends Controller
         $validated = $request->validated();
 
         if (isset($validated['tasks'])) {
-            // Multiple tasks
-            foreach ($validated['tasks'] as $taskData) {
-                $this->taskService->createTask($taskData);
+            foreach ($validated['tasks'] as $i => $taskData) {
+                $this->taskService->createTask($taskData, $i); // pass index
             }
         } else {
-            // Single task (backward compatibility)
-            $this->taskService->createTask($validated);
+            $this->taskService->createTask($validated, null);
         }
 
         return redirect()
@@ -92,16 +121,51 @@ class TaskController extends Controller
         $user = auth()->user();
 
         if ($user->hasRole('admin')) {
-            $assignees = User::whereDoesntHave('roles', function($query) {
-                $query->where('name', 'admin');
-            })->get();
-            $projects = Project::all();
+
+            $assignees = User::whereDoesntHave('roles', fn($q) => $q->where('name', 'admin'))
+                ->get(['id', 'name', 'team_leader_id']);
+
+            $projects = Project::get(['id', 'title', 'staff_id']);
+
+        } elseif ($user->hasRole('staff')) {
+
+            $assignees = User::where('team_leader_id', $user->id)
+                ->get(['id', 'name', 'team_leader_id']);
+
+            $projects = Project::where('staff_id', $user->id)
+                ->get(['id', 'title', 'staff_id']);
+
         } else {
-            $assignees = User::where('team_leader_id', $user->id)->get();
-            $projects = Project::where('staff_id', $user->id)->get();
+            // role: user
+            $leaderId = $user->team_leader_id; // staffId of this user
+
+            // If user has no leader, return empty options (or handle as you prefer)
+            $projects = Project::query()
+                ->when($leaderId, fn($q) => $q->where('staff_id', $leaderId))
+                ->get(['id', 'title', 'staff_id']);
+
+            // Assignee is only this user
+            $assignees = User::whereKey($user->id)
+                ->get(['id', 'name', 'team_leader_id']);
         }
 
-        return view('tasks.edit', compact('task', 'assignees', 'projects'));
+        $projectOptions = $projects->mapWithKeys(fn($p) => [$p->id => $p->title])->toArray();
+
+        $projectLeaderMap = $projects->pluck('staff_id', 'id'); // [projectId => staffId]
+
+        $assigneesByLeader = $assignees
+            ->groupBy('team_leader_id')
+            ->map(fn($group) => $group->map(fn($u) => ['id' => $u->id, 'name' => $u->name])->values())
+            ->toArray();
+
+        return view('tasks.edit', compact(
+            'task',
+            'projects',
+            'assignees',
+            'projectOptions',
+            'projectLeaderMap',
+            'assigneesByLeader'
+        ));
     }
 
     /**
@@ -138,8 +202,6 @@ class TaskController extends Controller
             ->route('tasks.edit', $id)
             ->with('success', __('messages.task_updated'));
     }
-
-
 
     /**
      * ==============================
@@ -190,13 +252,14 @@ class TaskController extends Controller
         $projects = $this->taskService->getFilteredProjectsWithTasks($request, $user);
 
         $projectOptions = Project::query()
-            ->when(!$user->hasRole('admin'), fn($q) => $q->where('staff_id', $user->id))
+            ->when(fn($q) => $q->where('staff_id', $user->id))
             ->orderBy('title')
             ->get(['id', 'title']);
 
-        return $user->hasRole('admin')
-            ? view('tasks.index', compact('projects', 'projectOptions'))
-            : view('tasks.staff.index', compact('projects', 'projectOptions'));
+        // return $user->hasRole('admin')
+        //     ? view('tasks.index', compact('projects', 'projectOptions'))
+        //     : view('tasks.staff.index', compact('projects', 'projectOptions'));
+        return view('tasks.index', compact('projects', 'projectOptions'));
     }
 
 

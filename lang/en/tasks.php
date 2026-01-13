@@ -4,7 +4,7 @@ return [
     'my_projects' => 'Projects & Tasks',
     'subtitle' => 'Manage and track your tasks efficiently.',
     'view_tasks' => 'View Tasks',
-    'search_placeholder' => 'Search by task or project name',
+    'search_placeholder' => 'Search by task name',
     'status' => 'Status',
     'sort' => 'Sort',
     'apply' => 'Apply',
@@ -44,5 +44,11 @@ return [
     'reset' => 'Reset',
     'tasks' => 'tasks',
     'task' => 'task',
+    'filter_label_from' => 'From',
+    'filter_label_to' => 'To',
+    'task_list'   => 'Task List',
+    'task_subtitle' => 'Manage your tasks',
+    'tab' => 'Tasks',
+    'create_task' => 'Create Task',
 ];
 ?>

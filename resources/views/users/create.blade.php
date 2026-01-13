@@ -62,35 +62,34 @@
                     <form action="{{ route('admin.users.store') }}" method="POST" class="flex flex-col gap-5 h-full">
                         @csrf
                         {{-- Name --}}
-                        <div>
-                            <label class="{{ $labelClass }}">{{ __('create_user.name_label') }} <span class="text-danger">*</span></label>
-                            <input type="text" name="name" class="{{ $inputClass }}" 
-                                placeholder="{{ __('create_user.name_label') }}"
-                                value="{{ old('name') }}" required>
-                        </div>
+                        <x-form.input
+                            label="create_user.name_label"
+                            name="name"
+                            placeholder="create_user.name_label"
+                            :isRequired="true"
+                        />
 
                         {{-- Email --}}
-                        <div>
-                            <label class="{{ $labelClass }}">{{ __('create_user.email_label') }} <span class="text-danger">*</span></label>
-                            <input type="email" name="email" class="{{ $inputClass }}" 
-                                placeholder="{{ __('create_user.email_label') }}"
-                                value="{{ old('email') }}" required>
-                        </div>
+                        <x-form.input
+                            type="email"
+                            label="create_user.email_label"
+                            name="email"
+                            placeholder="create_user.email_label"
+                            :isRequired="true"
+                        />
 
                         {{-- Role --}}
-                        <div>
-                            <label class="{{ $labelClass }}">{{ __('create_user.role_label') }} <span class="text-danger">*</span></label>
-                            <div class="relative">
-                                <select name="roles" class="{{ $inputClass }} appearance-none" required>
-                                    <option value="" disabled selected>{{ __('create_user.select_role') }}</option>
-                                    <option value="user" @selected(old('roles') == 'user')>{{ __('create_user.user_role') }}</option>
-                                    <option value="staff" @selected(old('roles') == 'staff')>{{ __('create_user.staff_role') }}</option>
-                                </select>
-                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-500">
-                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                </div>
-                            </div>
-                        </div>
+                        <x-form.select
+                            label="create_user.role_label"
+                            name="roles"
+                            placeholder="create_user.select_role"
+                            :isRequired="true"
+                            :options="[
+                                'user'  => __('create_user.user_role'),
+                                'staff' => __('create_user.staff_role'),
+                            ]"
+                        />
+
 
                         <div class="mt-auto pt-4">
                             <button type="submit" class="{{ $btnPrimary }} w-full">

@@ -9,7 +9,8 @@
         
         {{-- Header --}}
         <div class="flex items-center gap-3">
-            @include('components.back-btn')
+            @include('components.back-btn', ['route' => 'profile'])
+
             <h1 class="text-2xl font-bold text-main">{{ __('settings.update_profile_title') }}</h1>
         </div>
 
@@ -78,34 +79,22 @@
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {{-- First Name --}}
-                            <div class="flex flex-col gap-2">
-                                <label for="first_name" class="text-sm font-semibold text-muted-500">{{ __('settings.firstname_label') }}</label>
-                                <input name="first_name" id="first_name"
-                                    value="{{ old('first_name', auth()->user()->first_name) }}"
-                                    class="w-full rounded-xl border border-muted-200 bg-muted-50/50 px-4 py-3 text-main placeholder-muted-400 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all duration-300"
-                                    placeholder="{{ __('settings.firstname_label') }}">
-                                
-                                @if ($errors->has('first_name'))
-                                    @foreach ($errors->get('first_name') as $error)
-                                        <span id="error-first-name" class="text-danger text-xs font-medium">{{ $error }}</span>
-                                    @endforeach
-                                @endif
-                            </div>
+                            <x-form.input
+                                label="settings.firstname_label"
+                                name="first_name"
+                                id="first_name"
+                                :value="auth()->user()->first_name"
+                                placeholder="settings.firstname_label"
+                            />
 
                             {{-- Last Name --}}
-                            <div class="flex flex-col gap-2">
-                                <label for="last_name" class="text-sm font-semibold text-muted-500">{{ __('settings.lastname_label') }}</label>
-                                <input name="last_name" id="last_name" 
-                                    value="{{ old('last_name', auth()->user()->last_name) }}"
-                                    class="w-full rounded-xl border border-muted-200 bg-muted-50/50 px-4 py-3 text-main placeholder-muted-400 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all duration-300"
-                                    placeholder="{{ __('settings.lastname_label') }}">
-                                
-                                @if ($errors->has('last_name'))
-                                    @foreach ($errors->get('last_name') as $error)
-                                        <span id="error-last-name" class="text-danger text-xs font-medium">{{ $error }}</span>
-                                    @endforeach
-                                @endif
-                            </div>
+                            <x-form.input
+                                label="settings.lastname_label"
+                                name="last_name"
+                                id="last_name"
+                                :value="auth()->user()->last_name"
+                                placeholder="settings.lastname_label"
+                            />
                         </div>
 
                         {{-- Success Message --}}

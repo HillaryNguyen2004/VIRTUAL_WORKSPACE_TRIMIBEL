@@ -7,7 +7,7 @@ return [
     'project_label' => 'Project',
     'select_project' => 'Select a project',
     'assignee_label' => 'Assign Members',
-    'select_assignee' => 'Select members...',
+    'select_assignee' => 'Select members',
     'assignee_tip' => 'Hold Ctrl (Cmd on Mac) to select multiple members',
     'start_date_label' => 'Start Date',
     'due_date_label' => 'Due Date',

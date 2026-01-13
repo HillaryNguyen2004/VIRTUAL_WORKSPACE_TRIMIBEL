@@ -5,13 +5,9 @@ import re
 from .retrieval import retrieve
 from .prompting import build_rag_prompt, build_general_prompt
 from .gemini_generator import generate_answer 
-# from .openai_generator import generate_answer
-# from .openrouter_generator import generate_answer
 from .lang import detect_lang
-# from .sql_agent_gemini import answer_from_db
-# from .sql_agent_openai import answer_from_db 
-# from .sql_agent_openrouter import answer_from_db
 from .sql_agent_gemini import answer_from_db
+# from .sql_agent_ollama import answer_from_db
 
 MIN_DOCS_FOR_CONFIDENT_RAG = 2
 MIN_TOP_SCORE = 0.35

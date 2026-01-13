@@ -44,29 +44,37 @@
 
             {{-- SEARCH & FILTER BAR --}}
             <form class="p-5 border-b border-muted-200 flex flex-wrap gap-4 bg-white rounded-t-2xl" method="GET">
-                <div class="flex-1 min-w-[200px] relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="h-5 w-5 text-muted-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <input name="search" id="search" type="text" placeholder="Search by name" value="{{ request('search') }}"
-                        class="block w-full pl-10 bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl placeholder-muted-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
-                </div>
+                {{-- Search --}}
+                <x-form.search-input
+                    name="search"
+                    id="search"
+                    placeholder="Search by name"
+                    :value="request('search')"
+                />
 
-                <select name="status" id="status"
-                    class="bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer hover:border-primary/50">
-                    <option value="">{{ __('campaigns.all_status') }}</option>
-                    <option value="sent" {{ request('status') == 'sent' ? 'selected' : '' }}>{{ __('campaigns.sent') }}</option>
-                    <option value="scheduled" {{ request('status') == 'scheduled' ? 'selected' : '' }}>{{ __('campaigns.scheduled') }}</option>
-                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>{{ __('campaigns.pending') }}</option>
-                </select>
+                {{-- Status --}}
+                <x-form.select
+                    name="status"
+                    id="status"
+                    placeholder="campaigns.all_status"
+                    :value="request('status')"
+                    :options="[
+                        'sent'      => __('campaigns.sent'),
+                        'scheduled' => __('campaigns.scheduled'),
+                        'pending'   => __('campaigns.pending'),
+                    ]"
+                />
 
-                <select name="sort" id="sort"
-                    class="bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer hover:border-primary/50">
-                    <option value="desc" {{ request('sort') == 'desc' ? 'selected' : '' }}>{{ __('campaigns.newest') }}</option>
-                    <option value="asc" {{ request('sort') == 'asc' ? 'selected' : '' }}>{{ __('campaigns.oldest') }}</option>
-                </select>
+                {{-- Sort --}}
+                <x-form.select
+                    name="sort"
+                    id="sort"
+                    :value="request('sort', 'desc')"
+                    :options="[
+                        'desc' => __('campaigns.newest'),
+                        'asc'  => __('campaigns.oldest'),
+                    ]"
+                />
 
                 <div class="flex gap-2">
                     <button type="submit" title="{{ __('tasks.filter') }}"
@@ -86,7 +94,7 @@
             </form>
 
             {{-- TABLE SECTION --}}
-            <div class="overflow-x-auto w-full min-h-[400px]">
+            <div class="overflow-x-auto w-full h-[400px]">
                 <table class="w-full table-fixed">
                     <thead class="bg-muted-50 border-b border-muted-200">
                         <tr>
@@ -270,7 +278,7 @@
                 </table>
             </div>
 
-            @if ($campaigns instanceof \Illuminate\Contracts\Pagination\Paginator && $campaigns->hasPages())
+            @if ($campaigns instanceof \Illuminate\Pagination\LengthAwarePaginator && $campaigns->hasPages())
                 <div class="mt-6 flex justify-center w-full pb-6">
                     {{ $campaigns->onEachSide(1)->withQueryString()->links('vendor.pagination.tailwind') }}
                 </div>

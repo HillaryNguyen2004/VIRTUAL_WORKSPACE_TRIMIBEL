@@ -199,7 +199,7 @@
     </div>
 
     <!-- Content Row -->
-    <div class="row">
+    {{-- <div class="row">
         <!-- Content Column -->
         <div class="col-lg-6 mb-4">
             <!-- Project Card Example -->
@@ -245,7 +245,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> --}}
 </div>
 @else
 <div class="container py-5">

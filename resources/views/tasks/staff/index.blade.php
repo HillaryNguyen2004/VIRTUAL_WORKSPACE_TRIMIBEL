@@ -46,47 +46,64 @@
 
             {{-- SEARCH & FILTER BAR (Now inside the card) --}}
             <form class="p-5 border-b border-muted-200 flex flex-wrap gap-4 bg-white" method="GET">
-                <div class="flex-1 min-w-[200px] relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="h-5 w-5 text-muted-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <input name="search" id="search" type="text" placeholder="{{ __('tasks.search_placeholder') }}" value="{{ request('search') }}"
-                        class="block w-full pl-10 bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl placeholder-muted-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
-                </div>
-                
-                <select name="status" id="status"
-                    class="bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer hover:border-primary/50">
-                    <option value="">{{ __('tasks.all_statuses') }}</option>
-                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>{{ __('tasks.pending') }}</option>
-                    <option value="in_progress" {{ request('status') == 'in_progress' ? 'selected' : '' }}>{{ __('tasks.in_progress') }}</option>
-                    <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>{{ __('tasks.completed') }}</option>
-                </select>
-                
-                {{-- <select name="project_id"
-                    class="bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer hover:border-primary/50">
-                    <option value="">{{ __('tasks.all_projects') ?? 'All Projects' }}</option>
+                {{-- Search --}}
+                <x-form.search-input
+                    name="search"
+                    id="search"
+                    placeholder="tasks.search_placeholder"
+                    :value="request('search')"
+                />
 
-                    @foreach($projectOptions as $p)
-                        <option value="{{ $p->id }}" {{ (string) request('project_id') === (string) $p->id ? 'selected' : '' }}>
-                            {{ $p->title }}
-                        </option>
-                    @endforeach
-                </select> --}}
-                
-                <select name="sort_dir"
-                    class="bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer hover:border-primary/50">
-                    <option value="">{{ __('template.default_sort') }}</option>
-                    <option value="asc" {{ request('sort_dir') === 'asc' ? 'selected' : '' }}>Name A → Z</option>
-                    <option value="desc" {{ request('sort_dir') === 'desc' ? 'selected' : '' }}>Name Z → A</option>
-                </select>
-                
-                <input type="date" name="start_date" value="{{ request('start_date') }}"
-                    class="rounded-xl text-sm md:text-base border border-gray-300 px-4 py-2 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
-                <input type="date" name="due_date" value="{{ request('due_date') }}"
-                    class="rounded-xl text-sm md:text-base border border-gray-300 px-4 py-2 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
-                
+                {{-- Status --}}
+                <x-form.select
+                    name="status"
+                    id="status"
+                    placeholder="tasks.all_statuses"
+                    :value="request('status')"
+                    :options="[
+                        'pending'     => __('tasks.pending'),
+                        'in_progress' => __('tasks.in_progress'),
+                        'completed'   => __('tasks.completed'),
+                    ]"
+                />
+
+                {{-- Sort --}}
+                <x-form.select
+                    name="sort_dir"
+                    :value="request('sort_dir')"
+                    placeholder="template.default_sort"
+                    :options="[
+                        'asc'  => 'Name A → Z',
+                        'desc' => 'Name Z → A',
+                    ]"
+                />
+
+                {{-- Date From --}}
+                <div class="relative group">
+                    <span class="absolute -top-2 left-3 bg-white px-1 text-xs font-medium text-muted-400 group-focus-within:text-primary transition-colors">
+                        {{ __('tasks.filter_label_from') }}
+                    </span>
+
+                    <x-form.input
+                        type="date"
+                        name="start_date"
+                        :value="request('start_date')"
+                    />
+                </div>
+
+                {{-- Date To --}}
+                <div class="relative group">
+                    <span class="absolute -top-2 left-3 bg-white px-1 text-xs font-medium text-muted-400 group-focus-within:text-primary transition-colors">
+                        {{ __('tasks.filter_label_to') }}
+                    </span>
+
+                    <x-form.input
+                        type="date"
+                        name="due_date"
+                        :value="request('due_date')"
+                    />
+                </div>
+
                 <div class="flex gap-2">
                     {{-- Filter button --}}
                     <button type="submit" title="{{ __('tasks.filter') }}"
@@ -109,7 +126,7 @@
             </form>
 
             {{-- TABLE SECTION --}}
-            <div class="overflow-x-auto w-full">
+            <div class="overflow-x-auto w-full h-[391px] overflow-y-scroll">
                 {{-- ADDED: table-fixed to enforce strict widths --}}
                 <table class="w-full table-fixed">
                     <thead class="bg-muted-50 border-b border-muted-200">
@@ -148,7 +165,7 @@
                                             </div>
                                         </div>
 
-                                        <button class="toggle-row text-sm font-medium text-primary hover:text-primary-hover focus:outline-none flex items-center gap-1 transition-colors"
+                                        <button class="toggle-project text-sm font-medium text-primary hover:text-primary-hover focus:outline-none flex items-center gap-1 transition-colors"
                                             data-target="project{{ $project->id }}">
                                             {{ __('tasks.view_tasks') }}
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -160,7 +177,7 @@
                             </tr>
 
                             {{-- PROJECT TASKS NESTED TABLE --}}
-                            <tr id="project{{ $project->id }}" class="hidden">
+                            <tr id="project{{ $project->id }}" class="project-row hidden">
                                 {{-- REMOVED: Extra padding/borders here that shift the inner table --}}
                                 <td colspan="7" class="p-0 border-t border-muted-200">
                                     {{-- REMOVED: border-l-4 (This indentation physically prevents alignment) --}}
@@ -222,7 +239,7 @@
                                                         <td class="w-[15%] py-3 pr-6 text-right">
                                                             <div class="flex justify-end gap-1">
                                                                 {{-- VIEW DETAILS --}}
-                                                                <button class="toggle-row p-1.5 rounded-lg text-muted-400 hover:bg-primary/5 hover:text-primary transition-colors"
+                                                                <button class="toggle-task p-1.5 rounded-lg text-muted-400 hover:bg-primary/5 hover:text-primary transition-colors"
                                                                     data-target="taskDetails{{ $task->id }}">
                                                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 fill-current">
                                                                         <path d="M320 96C239.2 96 174.5 132.8 127.4 176.6C80.6 220.1 49.3 272 34.4 307.7C31.1 315.6 31.1 324.4 34.4 332.3C49.3 368 80.6 420 127.4 463.4C174.5 507.1 239.2 544 320 544C400.8 544 465.5 507.2 512.6 463.4C559.4 419.9 590.7 368 605.6 332.3C608.9 324.4 608.9 315.6 605.6 307.7C590.7 272 559.4 220 512.6 176.6C465.5 132.9 400.8 96 320 96zM176 320C176 240.5 240.5 176 320 176C399.5 176 464 240.5 464 320C464 399.5 399.5 464 320 464C240.5 464 176 399.5 176 320z" />
@@ -255,7 +272,7 @@
                                                         </td>
                                                     </tr>
                                                     {{-- Task Details Row --}}
-                                                    <tr id="taskDetails{{ $task->id }}" class="hidden bg-canvas">
+                                                    <tr id="taskDetails{{ $task->id }}" class="detail-row hidden bg-canvas">
                                                         <td colspan="7" class="p-6 border-b border-muted-100 shadow-inner">
                                                             <div class="grid md:grid-cols-2 gap-6">
                                                                 <div>
@@ -315,8 +332,8 @@
         </div>
 
         {{-- PAGINATION --}}
-        @if ($projects instanceof \Illuminate\Contracts\Pagination\Paginator && $projects->hasPages())
-            <div class="mt-6 flex justify-center w-full">
+        @if ($projects instanceof \Illuminate\Pagination\LengthAwarePaginator && $projects->hasPages())
+            <div class="my-6 flex justify-center w-full">
                 {{ $projects->onEachSide(1)->withQueryString()->links('vendor.pagination.tailwind') }}
             </div>
         @endif

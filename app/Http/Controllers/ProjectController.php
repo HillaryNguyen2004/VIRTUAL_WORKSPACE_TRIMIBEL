@@ -48,7 +48,7 @@ class ProjectController extends Controller
         $this->projectService->createProject($validated);
 
         return redirect()
-            ->route('projects.index')
+            ->route('projects.create')
             ->with('success', __('messages.project_created'));
     }
 
@@ -80,7 +80,7 @@ class ProjectController extends Controller
         $this->projectService->updateProject($id, $validated);
 
         return redirect()
-            ->route('projects.index')
+            ->route('projects.edit', $id)
             ->with('success', __('messages.project_updated'));
     }
 

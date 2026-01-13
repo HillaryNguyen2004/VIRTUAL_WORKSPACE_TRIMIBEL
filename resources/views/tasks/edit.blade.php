@@ -2,13 +2,31 @@
 @section('title', __('task_edit.task_name_label'))
 
 @section('content')
+@vite(['resources/js/task_assignee_filter.js'])
 @php
     // Preserve existing role logic for the back button
     if (auth()->user()->hasRole('admin')) {
-        $dashRoute = 'tasks.index';        
+        $dashRoute = 'admin.back.projects.tasks';        
     } else {
-        $dashRoute = 'tasks.staff.index'; 
+        $dashRoute = 'tasks.index'; 
     }
+
+    $projectOptions = $projects
+        ->mapWithKeys(fn($p) => [$p->id => ($p->name ?? $p->title)])
+        ->toArray();
+
+    $assigneeOptions = $assignees
+        ->mapWithKeys(fn($u) => [$u->id => $u->name])
+        ->toArray();
+
+    $selectedAssignee = old('assignee', $task->assignedUsers->first()->id ?? '');
+
+    $percentageOptions = collect(range(0, 100, 10))
+        ->mapWithKeys(fn ($v) => [$v => $v . '%'])
+        ->toArray();
+
+    $startDateValue = $task->start_date ? $task->start_date->format('Y-m-d') : '';
+    $dueDateValue   = $task->due_date ? $task->due_date->format('Y-m-d') : '';
 @endphp
 
 {{-- Main Container --}}
@@ -58,143 +76,163 @@
                 $inputClass = "block w-full bg-canvas border border-muted-200 text-main py-3 px-4 rounded-xl placeholder-muted-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all";
             @endphp
 
-            <div class="grid grid-cols-1 @4xl:grid-cols-2 gap-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                 
-                {{-- Left Column --}}
-                <div class="flex flex-col gap-5">
-                    
-                    {{-- Title --}}
-                    <div>
-                        <label class="{{ $labelClass }}">{{ __('task_edit.task_name_label') }} <span class="text-danger">*</span></label>
-                        <input type="text" name="title" value="{{ old('title', $task->title) }}" class="{{ $inputClass }}" required>
-                    </div>
+                {{-- Title --}}
+                <x-form.input
+                    label="task_edit.task_name_label"
+                    name="title"
+                    class="col-span-2 md:col-span-4"
+                    :value="$task->title"
+                    :isRequired="true"
+                />
 
-                    {{-- Project --}}
-                    <div>
-                        <label class="{{ $labelClass }}">{{ __('task_edit.project_label') }} <span class="text-danger">*</span></label>
-                        <div class="relative">
-                            <select name="project_id" class="{{ $inputClass }} appearance-none" required>
-                                <option value="" class="text-muted-400">Select project</option>
-                                @foreach($projects as $project)
-                                    <option value="{{ $project->id }}" @selected(old('project_id', $task->project_id) == $project->id)>
-                                        {{ $project->name ?? $project->title }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-500">
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                            </div>
-                        </div>
-                    </div>
+                {{-- Project --}}
+                <x-form.select
+                    label="task_edit.project_label"
+                    name="project_id"
+                    placeholder="Select project"
+                    class="col-span-2"
+                    :isRequired="true"
+                    :value="$task->project_id"
+                    :options="$projectOptions"
+                />
 
-                    {{-- Assignee --}}
-                    <div>
-                        <label class="{{ $labelClass }}">{{ __('task_edit.assignee_label') }} <span class="text-danger">*</span></label>
-                        <div class="relative">
-                            <select name="assignee" class="{{ $inputClass }} appearance-none" required>
-                                <option value="" class="text-muted-400">Select assignee</option>
-                                @php
-                                    $selectedAssignee = old('assignee', $task->assignedUsers->first()->id ?? '');
-                                @endphp
-                                @foreach($assignees as $user)
-                                    <option value="{{ $user->id }}" @selected($selectedAssignee == $user->id)>
-                                        {{ $user->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-500">
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                            </div>
-                        </div>
-                    </div>
+                {{-- Assignee --}}
+                <x-form.select
+                    label="task_edit.assignee_label"
+                    name="assignee"
+                    placeholder="task_create.select_assignee"
+                    class="col-span-2"
+                    :isRequired="true"
+                    :value="optional($task->assignedUsers->first())->id"
+                    :options="[]"
+                />
 
-                    {{-- Status & Active Row --}}
-                    <div class="grid grid-cols-2 gap-4">
-                        {{-- Status --}}
-                        <div>
-                            <label class="{{ $labelClass }}">{{ __('task_edit.status_label') }}</label>
-                            <div class="relative">
-                                <select name="status" class="{{ $inputClass }} appearance-none">
-                                    <option value="pending" @selected($task->status === 'pending')>
-                                        {{ __('task_edit.status_pending') }}
-                                    </option>
-                                    <option value="in_progress" @selected($task->status === 'in_progress')>
-                                        {{ __('task_edit.status_in_progress') }}
-                                    </option>
-                                    <option value="completed" @selected($task->status === 'completed')>
-                                        {{ __('task_edit.status_completed') }}
-                                    </option>
-                                </select>
-                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-500">
-                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                </div>
-                            </div>
-                        </div>
+                {{-- Start Date --}}
+                <x-form.input
+                    type="date"
+                    label="task_edit.start_date_label"
+                    name="start_date"
+                    :isRequired="true"
+                    :value="$startDateValue"
+                />
 
-                        {{-- Active Checkbox --}}
-                        <div class="flex items-center h-full pt-6">
-                            <label class="inline-flex items-center cursor-pointer group">
-                                {{-- IMPORTANT: hidden input --}}
-                                <input type="hidden" name="active" value="0">
+                {{-- Due Date --}}
+                <x-form.input
+                    type="date"
+                    label="task_edit.due_date_label"
+                    name="due_date"
+                    :isRequired="true"
+                    :value="$dueDateValue"
+                />
 
-                                <input
-                                    type="checkbox"
-                                    name="active"
-                                    value="1"
-                                    id="active"
-                                    class="rounded border-muted-300 text-primary shadow-sm focus:border-primary focus:ring focus:ring-primary/20 focus:ring-opacity-50 w-5 h-5 transition-all"
-                                    {{ old('active', $task->active) ? 'checked' : '' }}
-                                >
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3 col-span-2">
+                    {{-- Status --}}
+                    <x-form.select
+                        label="task_edit.status_label"
+                        name="status"
+                        class="col-span-2 md:col-span-1"
+                        :value="old('status', $task->status)"
+                        :options="[
+                            'pending' => __('task_edit.status_pending'),
+                            'in_progress' => __('task_edit.status_in_progress'),
+                            'completed' => __('task_edit.status_completed'),
+                        ]"
+                    />
 
-                                <span class="ml-3 font-semibold text-main group-hover:text-primary transition-colors">
-                                    {{ __('task_edit.active_label') }}
-                                </span>
-                            </label>
-                        </div>
+                    {{-- Percentage --}}
+                    <x-form.select
+                        label="task_edit.percentage_label"
+                        name="percentage"
+                        :value="old('percentage', $task->percentage)"
+                        :options="$percentageOptions"
+                    />
 
+                    {{-- Active Checkbox --}}
+                    <div class="flex items-center h-full pt-6">
+                        <label class="inline-flex items-center cursor-pointer group">
+                            {{-- IMPORTANT: hidden input --}}
+                            <input type="hidden" name="active" value="0">
+                            <input
+                                type="checkbox"
+                                name="active"
+                                value="1"
+                                id="active"
+                                class="rounded border-muted-300 text-primary shadow-sm focus:border-primary focus:ring focus:ring-primary/20 focus:ring-opacity-50 w-5 h-5 transition-all"
+                                {{ old('active', $task->active) ? 'checked' : '' }}
+                            >
+
+                            <span class="ml-3 font-semibold text-main group-hover:text-primary transition-colors">
+                                {{ __('task_edit.active_label') }}
+                            </span>
+                        </label>
                     </div>
                 </div>
 
-                {{-- Right Column --}}
-                <div class="flex flex-col gap-5">
-                    
-                    {{-- Dates Row --}}
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        {{-- Start date --}}
-                        <div>
-                            <label class="{{ $labelClass }}">{{ __('task_edit.start_date_label') }} <span class="text-danger">*</span></label>
-                            {{-- Note: Fixed bug in original code where value was old('due_date') instead of start_date --}}
-                            <input type="date" name="start_date" value="{{ old('start_date', $task->start_date ? $task->start_date->format('Y-m-d') : '') }}" class="{{ $inputClass }}" required>
-                        </div>
-
-                        {{-- Due date --}}
-                        <div>
-                            <label class="{{ $labelClass }}">{{ __('task_edit.due_date_label') }} <span class="text-danger">*</span></label>
-                            <input type="date" name="due_date" value="{{ old('due_date', $task->due_date ? $task->due_date->format('Y-m-d') : '') }}" class="{{ $inputClass }}" required>
-                        </div>
-                    </div>
-
-                    {{-- Description --}}
-                    <div class="flex-1 flex flex-col">
-                        <label class="{{ $labelClass }}">{{ __('task_edit.description_label') }}</label>
-                        <textarea name="description" class="{{ $inputClass }} flex-1 min-h-[150px] resize-none">{{ old('description', $task->description) }}</textarea>
-                    </div>
+                {{-- Description --}}
+                <div class="col-span-2 md:col-span-4">
+                    <label class="{{ $labelClass }}">{{ __('task_edit.description_label') }}</label>
+                    <textarea name="description" class="rich-text {{ $inputClass }} !h-[100px] resize-none" placeholder="{{ __('task_create.description_placeholder') }}" required>{{ old('description', $task->description) }}</textarea>
                 </div>
             </div>
 
             {{-- Footer / Actions --}}
             <div class="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-muted-200">
-                <a href="#" onclick="history.back(); return false;" class="px-6 py-3 rounded-xl text-muted-500 font-medium hover:bg-muted-100 transition-colors">
+                <!-- <a href="#" onclick="history.back(); return false;" class="px-6 py-3 rounded-xl text-muted-500 font-medium hover:bg-muted-100 transition-colors">
                     {{ __('task_edit.cancel_button') }}
-                </a>
-                
+                </a> -->
                 <button type="submit" class="group flex items-center justify-center gap-2 rounded-xl bg-primary px-8 py-3 text-white font-medium shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover focus:ring-4 focus:ring-primary/30 active:scale-95">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                    <!-- <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg> -->
                     {{ __('task_edit.save_button') }}
                 </button>
             </div>
-
         </form>
+        {{-- TinyMCE Script --}}
+        <script src="https://cdn.tiny.cloud/1/nd84nj3gfbucyyfu3fobr8s8lgax9x00y378wncd82h3wwmr/tinymce/6/tinymce.min.js"
+            referrerpolicy="origin"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                if (window.tinymce) {
+                    tinymce.init({
+                        selector: 'textarea.rich-text',
+                        height: 400,
+                        menubar: false, // Cleaner look
+                        statusbar: false, // Cleaner look
+                        plugins: [
+                            'advlist autolink lists link image charmap preview anchor',
+                            'searchreplace visualblocks code fullscreen',
+                            'insertdatetime media table paste code help wordcount'
+                        ],
+                        toolbar: 'undo redo | formatselect | ' +
+                            'bold italic underline forecolor | ' +
+                            'alignleft aligncenter alignright | ' +
+                            'bullist numlist | removeformat | ' +
+                            'code',
+                        skin: 'oxide', // Use standard skin
+                        content_style: 'body { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size:14px; color: #334155; }', // Matches Tailwind text-slate-700
+                        setup: function (editor) {
+                            editor.on('change', function () {
+                                editor.save();
+                            });
+                        }
+                    });
+
+                    // Ensure content is synced on submit
+                    document.getElementById('emailTemplateForm').addEventListener('submit', function (e) {
+                        tinymce.triggerSave();
+                    });
+                }
+            });
+        </script>
+        <script>
+            window.projectLeaderMap  = @json($projectLeaderMap);
+            window.assigneesByLeader = @json($assigneesByLeader);
+
+            // Current edit values for preselecting
+            window.currentEditProjectId = @json($task->project_id);
+            window.currentEditAssigneeId = @json(optional($task->assignedUsers->first())->id);
+        </script>
     </div>
 </div>
 @endsection

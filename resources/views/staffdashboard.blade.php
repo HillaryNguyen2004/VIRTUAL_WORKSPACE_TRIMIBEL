@@ -33,7 +33,7 @@
                     </div>
                     <p class="text-muted-500 text-sm mb-6">{{ __('staff_dashboard.upcoming_tasks_description') }}</p>
                 </div>
-                <a href="{{ route('tasks.staff.index') }}" class="flex justify-center items-center gap-2 w-full bg-primary hover:bg-primary-hover text-white rounded-xl py-2.5 font-medium transition-colors shadow-lg shadow-primary/20">
+                <a href="{{ route('tasks.index') }}" class="flex justify-center items-center gap-2 w-full bg-primary hover:bg-primary-hover text-white rounded-xl py-2.5 font-medium transition-colors shadow-lg shadow-primary/20">
                     {{ __('staff_dashboard.upcoming_tasks_btn') }}
                 </a>
             </div>

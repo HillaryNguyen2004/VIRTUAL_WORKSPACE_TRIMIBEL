@@ -163,7 +163,7 @@ class AdminDashboardController extends Controller
 
         // 4. Manual Pagination
         $page = $request->input('page', 1);
-        $perPage = 20;
+        $perPage = 10;
         $sliced = $combined->slice(($page - 1) * $perPage, $perPage)->values();
 
         $allLogs = new LengthAwarePaginator(

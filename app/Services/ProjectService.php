@@ -34,39 +34,83 @@ class ProjectService
 
     public function getAllProjects(Request $request)
     {
-        $query = Project::with('staff');
+        $activeTab = $request->get('tab', 'projects');
 
-        // SEARCH (by project title)
+        $perPage = max(1, (int) $request->get('per_page', 5));
+
+        $query = Project::query()->with('staffUser');
+
+        // sort by project title
+        $applyProjectSort = function ($q) use ($request) {
+            $dir = strtolower((string) $request->get('sort_dir', ''));
+            if (in_array($dir, ['asc', 'desc'], true)) {
+                $q->orderBy('title', $dir);
+            } else {
+                $q->orderByDesc('due_date');
+            }
+        };
+
+        if ($activeTab === 'tasks') {
+            // Filters apply to TASKS
+            $taskFilters = function ($q) use ($request) {
+                if ($request->filled('search')) {
+                    $q->where('title', 'like', '%' . $request->search . '%');
+                }
+
+                if ($request->filled('status')) {
+                    $q->where('status', $request->status);
+                }
+
+                if ($request->filled('start_date')) {
+                    $q->whereDate('start_date', '>=', $request->start_date);
+                }
+
+                if ($request->filled('due_date')) {
+                    $q->whereDate('due_date', '<=', $request->due_date);
+                }
+
+                $q->orderByDesc('due_date');
+            };
+
+            // Only include projects that have tasks matching filters
+            if (
+                $request->filled('search') ||
+                $request->filled('status') ||
+                $request->filled('start_date') ||
+                $request->filled('due_date')
+            ) {
+                $query->whereHas('tasks', $taskFilters);
+            }
+
+            // Eager-load only matching tasks (and any relations you render)
+            $query->with([
+                'tasks' => function ($q) use ($taskFilters) {
+                    $taskFilters($q);
+                    $q->with('assignedUsers');
+                }
+            ]);
+
+            // Sorting applies to PROJECTS (even on tasks tab)
+            $applyProjectSort($query);
+
+            return $query->paginate($perPage)->appends($request->query());
+        }
+
+        // filter projects
         if ($request->filled('search')) {
             $query->where('title', 'like', '%' . $request->search . '%');
         }
-
-        // FILTER: start_date (>=)
         if ($request->filled('start_date')) {
             $query->whereDate('start_date', '>=', $request->start_date);
         }
-
-        // FILTER: due_date (<=)
         if ($request->filled('due_date')) {
             $query->whereDate('due_date', '<=', $request->due_date);
         }
 
-        // SORT: title A->Z / Z->A
-        $dir = strtolower((string) $request->get('sort_dir', ''));
-        if (in_array($dir, ['asc', 'desc'], true)) {
-            $query->orderBy('title', $dir);
-        } else {
-            // default sort (avoid created_at if your table doesn't have it)
-            $query->orderByDesc('id');
-        }
+        $applyProjectSort($query);
 
-        $perPage = max(1, (int) $request->get('per_page', 10));
-
-        return $query
-            ->paginate($perPage)
-            ->appends($request->query());
+        return $query->paginate($perPage)->appends($request->query());
     }
-
 
     public function updateProject(int $id, array $data): bool
     {

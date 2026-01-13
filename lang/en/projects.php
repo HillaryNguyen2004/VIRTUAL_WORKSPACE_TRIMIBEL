@@ -13,6 +13,7 @@ return [
     'actions' => 'Actions',
     'start_date' => 'Start Date',
     'due_date' => 'Due Date',
+    'search_placeholder' => 'Search by project name',
 
     'edit'   => 'Edit',
     'delete' => 'Delete',
@@ -20,13 +21,11 @@ return [
     'confirm_delete' => 'Are you sure you want to delete this project?',
     'no_projects'    => 'No projects found.',
     'edit_project'   => 'Edit Project',
-    'create_project' => 'Create Project',
 
-    'title'       => 'Project Title',
     'description' => 'Description',
+    'description_placeholder' => 'Enter project description...',
 
     'assign_staff' => 'Assign Staff',
-    'status'       => 'Status',
 
     'active'   => 'Active',
     'inactive' => 'Inactive',
@@ -44,4 +43,6 @@ return [
     'project_created' => 'Project created successfully.',
     'project_updated' => 'Project updated successfully.',
     'project_deleted' => 'Project deleted successfully.',
+
+    'tab' => 'Projects',
 ];
