@@ -54,7 +54,7 @@
                     <div class="border-t border-muted-200 "></div>
 
                     {{-- Option A: Lunch Fields (Hidden by default via JS) --}}
-                    <div id="lunch_fields" class="hidden flex flex-col gap-5 border-muted-100">
+                    <div id="lunch_fields" class="hidden flex-col gap-5 border-muted-100">
                         <div class="flex flex-col gap-1.5 w-full">
                             <label for="lunch_start" class="text-sm font-medium text-main">
                                 {{ __('company_hour.lunch_start') }}
