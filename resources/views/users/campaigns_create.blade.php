@@ -52,29 +52,29 @@
                 {{-- Reusable Classes --}}
                 @php
                     $labelClass = "block text-sm font-semibold text-main mb-2";
-                    $inputClass = "block w-full bg-canvas border border-muted-200 text-main py-3 px-4 rounded-xl placeholder-muted-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all";
+                    $inputClass = "block w-full bg-canvas border border-muted-200 text-main py-3 px-4 rounded-xl placeholder-muted-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all";
                 @endphp
 
                 <div class="grid grid-cols-1 gap-6">
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {{-- Campaign Name --}}
-                        <div>
-                            <label class="{{ $labelClass }}">
-                                {{ __('campaigns_create.campaign_name') }} <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" name="name" class="{{ $inputClass }}" 
-                                value="{{ old('name', $campaign->name ?? '') }}"
-                                placeholder="{{ __('campaigns_create.enter_campaign_name') }}" required>
-                        </div>
+                    <x-form.input
+                        label="campaigns_create.campaign_name"
+                        name="name"
+                        :value="$campaign->name ?? ''"
+                        placeholder="campaigns_create.enter_campaign_name"
+                        :isRequired="true"
+                    />
 
-                        {{-- Subject --}}
-                        <div>
-                            <label class="{{ $labelClass }}">{{ __('campaigns_create.subject') }}</label>
-                            <input type="text" name="subject" class="{{ $inputClass }}"
-                                value="{{ old('subject', $campaign->subject ?? '') }}"
-                                placeholder="{{ __('campaigns_create.enter_email_subject') }}">
-                        </div>
+                    {{-- Subject --}}
+                    <x-form.input
+                        label="campaigns_create.subject"
+                        name="subject"
+                        :value="$campaign->subject ?? ''"
+                        placeholder="campaigns_create.enter_email_subject"
+                    />
+
                     </div>
 
                     {{-- Send To All Toggle --}}
@@ -107,29 +107,25 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {{-- Email Template --}}
-                        <div>
-                            <label class="{{ $labelClass }}">{{ __('campaigns_create.email_template') }}</label>
-                            <div class="relative">
-                                <select name="email_template_id" class="{{ $inputClass }} appearance-none">
-                                    @foreach($templates as $template)
-                                        <option value="{{ $template->id }}" {{ old('email_template_id', $campaign->email_template_id ?? '') == $template->id ? 'selected' : '' }}>
-                                            {{ $template->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-500">
-                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                </div>
-                            </div>
-                        </div>
+                        <x-form.select
+                            label="campaigns_create.email_template"
+                            name="email_template_id"
+                            :value="$campaign->email_template_id ?? ''"
+                            :options="$templates->pluck('name','id')"
+                        />
 
                         {{-- Schedule At --}}
                         <div>
-                            <label class="{{ $labelClass }}">{{ __('campaigns_create.schedule_at') }}</label>
-                            <input type="datetime-local" name="scheduled_at" class="{{ $inputClass }}"
-                                value="{{ old('scheduled_at', isset($campaign->scheduled_at) ? \Carbon\Carbon::parse($campaign->scheduled_at)->format('Y-m-d\TH:i') : '') }}">
+                            <x-form.input
+                                type="datetime-local"
+                                label="campaigns_create.schedule_at"
+                                name="scheduled_at"
+                                :value="isset($campaign->scheduled_at) ? \Carbon\Carbon::parse($campaign->scheduled_at)->format('Y-m-d\TH:i') : ''"
+                            />
+
                             <p class="text-xs text-muted-500 mt-1">{{ __('campaigns_create.schedule_at_hint') }}</p>
                         </div>
+
                     </div>
                 </div>
 

@@ -49,7 +49,20 @@ class UserController extends Controller
                     ->all();
             }
         }
-        return view('users.index', compact('users','allUsers','availableUsers'));
+
+        $teamMembersByStaff = [];
+
+        foreach ($allUsers as $staff) {
+            if ($staff->hasRole('staff')) {
+                $teamMembersByStaff[$staff->id] = $allUsers
+                    ->filter(fn($u) => $u->hasRole('user') && (int)$u->team_leader_id === (int)$staff->id)
+                    ->values()
+                    ->map(fn($u) => ['id' => $u->id, 'name' => $u->name])
+                    ->all();
+            }
+        }
+
+        return view('users.index', compact('users','allUsers','availableUsers', 'teamMembersByStaff'));
     }
 
     public function update(UpdateUserRequest $request, User $user)

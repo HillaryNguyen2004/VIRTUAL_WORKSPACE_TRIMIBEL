@@ -46,12 +46,12 @@ class CheckInController extends Controller
         $query = $exportService->getFilteredCheckIns($request);
 
         // Get per_page from request, default to 5
-        $perPage = $request->get('per_page', 5);
+        $perPage = $request->get('per_page', 10);
         
         // Validate per_page value
-        $allowedPerPage = [5, 10, 15, 25, 50];
+        $allowedPerPage = [10, 25, 50];
         if (!in_array($perPage, $allowedPerPage)) {
-            $perPage = 5;
+            $perPage = 10;
         }
 
         // Eager load user and their dayOffRequests

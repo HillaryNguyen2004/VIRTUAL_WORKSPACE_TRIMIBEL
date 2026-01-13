@@ -3,14 +3,23 @@
 @php
     // Preserve existing role logic for the back button
     if (auth()->user()->hasRole('admin')) {
-        $dashRoute = 'tasks.index';        
+        $dashRoute = 'admin.back.projects.tasks';        
     } else {
-        $dashRoute = 'tasks.staff.index'; 
+        $dashRoute = 'tasks.index'; 
     }
+
+    $projectOptions = $projects
+        ->mapWithKeys(fn($p) => [$p->id => ($p->title ?? $p->name)])
+        ->toArray();
+
+    $assigneeOptions = $assignees
+        ->mapWithKeys(fn($u) => [$u->id => $u->name])
+        ->toArray();
 @endphp
 
 
 @section('content')
+    @vite(['resources/js/task_assignee_filter.js'])
     {{-- Main Container matching userdashboard.blade.php --}}
     <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
 
@@ -51,7 +60,7 @@
                 {{-- Reusable Classes --}}
                 @php
                     $labelClass = "block text-sm font-semibold text-main mb-2";
-                    $inputClass = "block w-full bg-canvas border border-muted-200 text-main py-3 px-4 rounded-xl placeholder-muted-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all";
+                    $inputClass = "block w-full bg-canvas border border-muted-200 text-main h-[50px] px-4 rounded-xl placeholder-muted-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all";
                 @endphp
 
                 <div id="tasks-container">
@@ -64,81 +73,66 @@
                             </button>
                         </div>
 
-                        <div class="grid grid-cols-1 @4xl:grid-cols-2 gap-6">
-                            
-                            {{-- Left Column --}}
-                            <div class="flex flex-col gap-5">
-                                {{-- Task title --}}
-                                <div>
-                                    <label class="{{ $labelClass }}">{{ __('task_create.task_name_label') }}</label>
-                                    <input type="text" name="tasks[0][title]" class="{{ $inputClass }}" 
-                                        placeholder="{{ __('task_create.task_name_placeholder') }}"
-                                        value="{{ old('tasks.0.title') }}" required>
-                                </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            {{-- Task title --}}
+                            <x-form.input
+                                label="task_create.task_name_label"
+                                name="tasks[0][title]"
+                                oldKey="tasks.0.title"
+                                placeholder="task_create.task_name_placeholder"
+                                class="col-span-2"
+                                :isRequired="true"
+                            />
 
-                                {{-- Project --}}
-                                <div>
-                                    <label class="{{ $labelClass }}">
-                                        {{ __('task_create.project_label') }} <span class="text-danger">*</span>
-                                    </label>
-                                    <div class="relative">
-                                        <select name="tasks[0][project_id]" class="{{ $inputClass }} appearance-none" required>
-                                            <option value="" class="text-muted-400">-- {{ __('task_create.select_project') }} --</option>
-                                            @foreach($projects as $project)
-                                                <option value="{{ $project->id }}" @selected(old('tasks.0.project_id') == $project->id)>
-                                                    {{ $project->title ?? $project->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-500">
-                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                        </div>
-                                    </div>
-                                </div>
+                            {{-- Project --}}
+                            <x-form.select
+                                label="task_create.project_label"
+                                name="tasks[0][project_id]"
+                                oldKey="tasks.0.project_id"
+                                placeholder="task_create.select_project"
+                                class="col-span-2 md:col-span-1"
+                                :isRequired="true"
+                                :value="null"
+                                :options="$projectOptions"
+                            />
 
-                                {{-- Assignee --}}
-                                <div>
-                                    <label class="{{ $labelClass }}">
-                                        {{ __('task_create.assignee_label') }} <span class="text-danger">*</span>
-                                    </label>
-                                    <div class="relative">
-                                        <select name="tasks[0][assignee]" class="{{ $inputClass }} appearance-none" required>
-                                            <option value="" class="text-muted-400">-- {{ __('task_create.select_assignee') }} --</option>
-                                            @foreach($assignees as $user)
-                                                <option value="{{ $user->id }}" @selected(old('tasks.0.assignee') == $user->id)>
-                                                    {{ $user->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-500">
-                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            {{-- Assignee --}}
+                            <x-form.select
+                                label="task_create.assignee_label"
+                                name="tasks[0][assignee]"
+                                oldKey="tasks.0.assignee"
+                                placeholder="task_create.select_assignee"
+                                class="col-span-2 md:col-span-1"
+                                :isRequired="true"
+                                :value="null"
+                                :options="[]"
+                            />
 
-                            {{-- Right Column --}}
-                            <div class="flex flex-col gap-5">
-                                {{-- Description --}}
-                                <div class="h-full">
-                                    <label class="{{ $labelClass }}">{{ __('task_create.description_label') }}</label>
-                                    <textarea name="tasks[0][description]" class="{{ $inputClass }} h-full min-h-[150px] resize-none" 
-                                        placeholder="{{ __('task_create.description_placeholder') }}">{{ old('tasks.0.description') }}</textarea>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
                             {{-- Start date --}}
-                            <div>
-                                <label class="{{ $labelClass }}">{{ __('task_create.start_date_label') }}</label>
-                                <input type="date" name="tasks[0][start_date]" class="{{ $inputClass }}" value="{{ old('tasks.0.start_date') }}" required>
-                            </div>
+                            <x-form.input
+                                type="date"
+                                label="task_create.start_date_label"
+                                name="tasks[0][start_date]"
+                                oldKey="tasks.0.start_date"
+                                :isRequired="true"
+                                :value="null"
+                            />
 
                             {{-- Due date --}}
-                            <div>
-                                <label class="{{ $labelClass }}">{{ __('task_create.due_date_label') }}</label>
-                                <input type="date" name="tasks[0][due_date]" class="{{ $inputClass }}" value="{{ old('tasks.0.due_date') }}" required>
+                            <x-form.input
+                                type="date"
+                                label="task_create.due_date_label"
+                                name="tasks[0][due_date]"
+                                oldKey="tasks.0.due_date"
+                                :isRequired="true"
+                                :value="null"
+                            />
+
+                            {{-- Description --}}
+                            <div class="col-span-2">
+                                <label class="{{ $labelClass }}">{{ __('task_create.description_label') }}</label>
+                                <textarea name="description" class="rich-text {{ $inputClass }} resize-none" placeholder="{{ __('task_create.description_placeholder') }}" required>{{ old('description') }}</textarea>
                             </div>
                         </div>
                     </div>
@@ -154,9 +148,9 @@
 
                 {{-- Footer / Submit --}}
                 <div class="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-muted-200">
-                    <a href="#" onclick="history.back(); return false;" class="px-6 py-3 rounded-xl text-muted-500 font-medium hover:bg-muted-100 transition-colors">
+                    <!-- <a href="#" onclick="history.back(); return false;" class="px-6 py-3 rounded-xl text-muted-500 font-medium hover:bg-muted-100 transition-colors">
                         {{ __('task_create.cancel_button') }}
-                    </a>
+                    </a> -->
                     <button type="submit" class="group flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-white font-medium shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover focus:ring-4 focus:ring-primary/30 active:scale-95">
                         <!-- <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> -->
                         {{ __('task_create.save_button') }}
@@ -221,6 +215,47 @@
                         });
                     });
                 }
+            </script>
+            {{-- TinyMCE Script --}}
+            <script src="https://cdn.tiny.cloud/1/nd84nj3gfbucyyfu3fobr8s8lgax9x00y378wncd82h3wwmr/tinymce/6/tinymce.min.js"
+                referrerpolicy="origin"></script>
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    if (window.tinymce) {
+                        tinymce.init({
+                            selector: 'textarea.rich-text',
+                            height: 400,
+                            menubar: false, // Cleaner look
+                            statusbar: false, // Cleaner look
+                            plugins: [
+                                'advlist autolink lists link image charmap preview anchor',
+                                'searchreplace visualblocks code fullscreen',
+                                'insertdatetime media table paste code help wordcount'
+                            ],
+                            toolbar: 'undo redo | formatselect | ' +
+                                'bold italic underline forecolor | ' +
+                                'alignleft aligncenter alignright | ' +
+                                'bullist numlist | removeformat | ' +
+                                'code',
+                            skin: 'oxide', // Use standard skin
+                            content_style: 'body { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size:14px; color: #334155; }', // Matches Tailwind text-slate-700
+                            setup: function (editor) {
+                                editor.on('change', function () {
+                                    editor.save();
+                                });
+                            }
+                        });
+
+                        // Ensure content is synced on submit
+                        document.getElementById('emailTemplateForm').addEventListener('submit', function (e) {
+                            tinymce.triggerSave();
+                        });
+                    }
+                });
+            </script>
+            <script>
+                window.projectLeaderMap  = @json($projectLeaderMap);
+                window.assigneesByLeader = @json($assigneesByLeader);
             </script>
         </div>
     </div>

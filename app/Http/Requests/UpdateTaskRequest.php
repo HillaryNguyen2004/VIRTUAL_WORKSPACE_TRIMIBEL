@@ -28,6 +28,7 @@ class UpdateTaskRequest extends FormRequest
             'due_date' => 'required|date',
             'description' => 'nullable|string',
             'status' => 'required|in:pending,in_progress,completed',
+            'percentage' => 'required|integer|min:0|max:100',
             'active' => 'boolean',
         ];
         

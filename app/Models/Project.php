@@ -7,19 +7,19 @@ use Illuminate\Database\Eloquent\Model;
 
 class Project extends Model
 {
-    protected $fillable = ['title', 'description', 'staff_id', 'status', 'progress', 'owner_id', 'start_date', 'due_date'];
+    protected $fillable = ['title', 'description', 'staff_id', 'status', 'progress', 'start_date', 'due_date'];
 
     public function tasks()
     {
         return $this->hasMany(Task::class);
     }
 
-    public function owner()
-    {
-        return $this->belongsTo(User::class, 'owner_id');
-    }
+    // public function owner()
+    // {
+    //     return $this->belongsTo(User::class, 'owner_id');
+    // }
 
-    public function staff()
+    public function staffUser()
     {
         return $this->belongsTo(User::class, 'staff_id');
     }

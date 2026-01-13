@@ -6,227 +6,339 @@
     @php
         use Illuminate\Support\Facades\Route;
 
-        $dashRoute = auth()->user()->hasRole('admin') && Route::has('admin.dashboard')
-            ? 'admin.dashboard'
-            : 'user.dashboard';
+        // Determine dashboard route based on role
+        $dashRoute = 'user.dashboard';
+        if (auth()->user()->hasRole('admin') && Route::has('admin.dashboard')) {
+            $dashRoute = 'admin.dashboard';
+        } elseif (auth()->user()->hasRole('staff') && Route::has('staff.dashboard')) {
+            $dashRoute = 'staff.dashboard';
+        }
     @endphp
 
-    <x-action-layout :route="$dashRoute" :title="'profile.back_to_dashboard'">
-
-        {{-- Header --}}
-        <div class="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center w-full">
-            <h2 class="font-medium text-[28px] md:text-[32px]">
-                {{ __('tasks.all_tasks') }}
-            </h2>
+    <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
+                
+        {{-- HEADER SECTION --}}
+        <div class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center w-full mb-8">
+            <div class="flex items-center gap-4">
+                <x-back-btn :route="$dashRoute" />
+                <div>
+                    <h2 class="font-bold text-3xl text-main tracking-tight">
+                        {{ __('tasks.my_projects') }}
+                    </h2>
+                    <p class="text-muted-500 text-sm mt-2">{{ __('tasks.subtitle') }}</p>
+                </div>
+            </div>
 
             @can('task.create')
                 <a href="{{ route('tasks.create') }}"
-                    class="flex items-center gap-1 bg-[#5D3FD3] text-white px-3 py-1 rounded-xl hover:opacity-95">
-                    ➕ {{ __('staff_dashboard.new_task') }}
+                    class="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-primary/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 fill-current">
+                        <path d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z" />
+                    </svg>
+                    <span class="font-medium">{{ __('staff_dashboard.new_task') }}</span>
                 </a>
             @endcan
         </div>
 
-        {{-- Search & Filter Bar --}}
-        <form class="mt-4 flex flex-wrap gap-2 animate-fade-in-up [animation-delay:150ms]" method="GET"
-            action="{{ url()->current() }}">
+        {{-- COMBINED CARD CONTAINER (Filters + Table) --}}
+        <div class="bg-white rounded-2xl border border-muted-200 shadow-lg shadow-main/5 overflow-hidden flex flex-col animate-fade-in-up">
 
-            {{-- Search by Task Name --}}
-            <input type="text" name="search" id="search" placeholder="{{ __('tasks.search_placeholder') }}"
-                value="{{ request('search') }}"
-                class="rounded-xl text-sm md:text-base border border-gray-300 px-4 py-2 placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
+            {{-- SEARCH & FILTER BAR (Now inside the card) --}}
+            <form class="p-5 border-b border-muted-200 flex flex-wrap gap-4 bg-white" method="GET">
+                {{-- Search --}}
+                <x-form.search-input
+                    name="search"
+                    id="search"
+                    placeholder="tasks.search_placeholder"
+                    :value="request('search')"
+                />
 
-            <select name="project_id"
-                class="rounded-xl text-sm md:text-base border border-gray-300 px-4 py-2 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
-                <option value="">{{ __('tasks.all_projects') ?? 'All Projects' }}</option>
+                {{-- Status --}}
+                <x-form.select
+                    name="status"
+                    id="status"
+                    placeholder="tasks.all_statuses"
+                    :value="request('status')"
+                    :options="[
+                        'pending'     => __('tasks.pending'),
+                        'in_progress' => __('tasks.in_progress'),
+                        'completed'   => __('tasks.completed'),
+                    ]"
+                />
 
-                @foreach($projectOptions as $p)
-                    <option value="{{ $p->id }}" {{ (string) request('project_id') === (string) $p->id ? 'selected' : '' }}>
-                        {{ $p->title }}
-                    </option>
-                @endforeach
-            </select>
+                {{-- Sort --}}
+                <x-form.select
+                    name="sort_dir"
+                    :value="request('sort_dir')"
+                    placeholder="template.default_sort"
+                    :options="[
+                        'asc'  => 'Name A → Z',
+                        'desc' => 'Name Z → A',
+                    ]"
+                />
 
-            {{-- Sort: name asc/desc --}}
-            <select name="sort_dir"
-                class="rounded-xl text-sm md:text-base border border-gray-300 px-4 py-2 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
-                <option value="">{{ __('template.default_sort') }}</option>
-                <option value="asc" {{ request('sort_dir') === 'asc' ? 'selected' : '' }}>Name A → Z</option>
-                <option value="desc" {{ request('sort_dir') === 'desc' ? 'selected' : '' }}>Name Z → A</option>
-            </select>
+                {{-- Date From --}}
+                <div class="relative group">
+                    <span class="absolute -top-2 left-3 bg-white px-1 text-xs font-medium text-muted-400 group-focus-within:text-primary transition-colors">
+                        {{ __('tasks.filter_label_from') }}
+                    </span>
 
-            {{-- Task Start Date (from) --}}
-            <input type="date" name="start_date" value="{{ request('start_date') }}"
-                class="rounded-xl text-sm md:text-base border border-gray-300 px-4 py-2 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
+                    <x-form.input
+                        type="date"
+                        name="start_date"
+                        :value="request('start_date')"
+                    />
+                </div>
 
-            {{-- Task Due Date (to) --}}
-            <input type="date" name="due_date" value="{{ request('due_date') }}"
-                class="rounded-xl text-sm md:text-base border border-gray-300 px-4 py-2 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition">
+                {{-- Date To --}}
+                <div class="relative group">
+                    <span class="absolute -top-2 left-3 bg-white px-1 text-xs font-medium text-muted-400 group-focus-within:text-primary transition-colors">
+                        {{ __('tasks.filter_label_to') }}
+                    </span>
 
-            <div class="flex gap-2">
-                {{-- Filter button --}}
-                <button type="submit" title="{{ __('tasks.filter') }}"
-                    class="border px-3 py-2 rounded-xl border-gray-300 hover:border-[#6b4fda] hover:bg-[#F1EFFC] transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
-                        <path
-                            d="M96 128C83.1 128 71.4 135.8 66.4 147.8C61.4 159.8 64.2 173.5 73.4 182.6L256 365.3L256 480C256 488.5 259.4 496.6 265.4 502.6L329.4 566.6C338.6 575.8 352.3 578.5 364.3 573.5C376.3 568.5 384 556.9 384 544L384 365.3L566.6 182.7C575.8 173.5 578.5 159.8 573.5 147.8C568.5 135.8 556.9 128 544 128L96 128z" />
-                    </svg>
-                </button>
+                    <x-form.input
+                        type="date"
+                        name="due_date"
+                        :value="request('due_date')"
+                    />
+                </div>
 
-                {{-- Reset button --}}
-                <a href="{{ url()->current() }}" title="{{ __('tasks.reset') }}"
-                    class="flex items-center justify-center border px-3 py-2 rounded-xl border-gray-300 hover:border-[#6b4fda] hover:bg-[#F1EFFC] transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
-                        <path
-                            d="M88 256L232 256C241.7 256 250.5 250.2 254.2 241.2C257.9 232.2 255.9 221.9 249 215L202.3 168.3C277.6 109.7 386.6 115 455.8 184.2C530.8 259.2 530.8 380.7 455.8 455.7C380.8 530.7 259.3 530.7 184.3 455.7C174.1 445.5 165.3 434.4 157.9 422.7C148.4 407.8 128.6 403.4 113.7 412.9C98.8 422.4 94.4 442.2 103.9 457.1C113.7 472.7 125.4 487.5 139 501C239 601 401 601 501 501C601 401 601 239 501 139C406.8 44.7 257.3 39.3 156.7 122.8L105 71C98.1 64.2 87.8 62.1 78.8 65.8C69.8 69.5 64 78.3 64 88L64 232C64 245.3 74.7 256 88 256z" />
-                    </svg>
-                </a>
-            </div>
-        </form>
+                <div class="flex gap-2">
+                    {{-- Filter button --}}
+                    <button type="submit" title="{{ __('tasks.filter') }}"
+                        class="border border-muted-200 px-3 py-2.5 rounded-xl text-muted-500 hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
+                            <path
+                                d="M96 128C83.1 128 71.4 135.8 66.4 147.8C61.4 159.8 64.2 173.5 73.4 182.6L256 365.3L256 480C256 488.5 259.4 496.6 265.4 502.6L329.4 566.6C338.6 575.8 352.3 578.5 364.3 573.5C376.3 568.5 384 556.9 384 544L384 365.3L566.6 182.7C575.8 173.5 578.5 159.8 573.5 147.8C568.5 135.8 556.9 128 544 128L96 128z" />
+                        </svg>
+                    </button>
 
-        {{-- TABLE --}}
-        <div class="overflow-x-auto rounded-2xl border border-gray-300 shadow mt-6">
-            <table class="w-full">
-                <thead class="bg-gray-100 text-gray-500 uppercase text-sm">
-                    <tr>
-                        <th class="py-3 pl-4 text-left">ID</th>
-                        <th class="py-3 text-center">Project</th>
-                        <th class="py-3 text-center">{{ __('tasks.task_name') }}</th>
-                        <th class="py-3 text-center">{{ __('tasks.status') }}</th>
-                        <th class="py-3 text-center">{{ __('tasks.active') }}</th>
-                        <th class="py-3 text-center">{{ __('tasks.start_date') }}</th>
-                        <th class="py-3 text-center">{{ __('tasks.due_date') }}</th>
-                        <th class="py-3 pr-4 text-right"></th>
-                    </tr>
-                </thead>
+                    {{-- Reset button --}}
+                    <a href="{{ url()->current() }}" title="{{ __('tasks.reset') }}"
+                        class="flex items-center justify-center border border-muted-200 px-3 py-2.5 rounded-xl text-muted-500 hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
+                            <path
+                                d="M88 256L232 256C241.7 256 250.5 250.2 254.2 241.2C257.9 232.2 255.9 221.9 249 215L202.3 168.3C277.6 109.7 386.6 115 455.8 184.2C530.8 259.2 530.8 380.7 455.8 455.7C380.8 530.7 259.3 530.7 184.3 455.7C174.1 445.5 165.3 434.4 157.9 422.7C148.4 407.8 128.6 403.4 113.7 412.9C98.8 422.4 94.4 442.2 103.9 457.1C113.7 472.7 125.4 487.5 139 501C239 601 401 601 501 501C601 401 601 239 501 139C406.8 44.7 257.3 39.3 156.7 122.8L105 71C98.1 64.2 87.8 62.1 78.8 65.8C69.8 69.5 64 78.3 64 88L64 232C64 245.3 74.7 256 88 256z" />
+                        </svg>
+                    </a>
+                </div>
+            </form>
 
-                <tbody class="bg-white divide-y">
-
-                    @forelse($projects as $project)
-
-                        {{-- PROJECT HEADER --}}
-                        <tr class="bg-gray-50">
-                            <td colspan="7" class="px-4 py-3 font-semibold text-gray-700">
-                                📁 {{ $project->title }}
-                                <span class="text-sm text-gray-400">
-                                    — {{ $project->staff->name ?? 'Unassigned' }}
-                                    <span class="ml-1">
-                                        ({{ $project->tasks->count() }} {{ __('tasks.tasks') }})
-                                    </span>
-                                </span>
-                            </td>
+            {{-- TABLE SECTION --}}
+            <div class="w-full h-[391px] overflow-y-auto overflow-x-auto">
+                {{-- ADDED: table-fixed to enforce strict widths --}}
+                <table class="min-w-[900px] w-full table-fixed">
+                    <thead class="bg-muted-50 border-b border-muted-200">
+                        <tr>
+                            {{-- ADDED: Specific widths to all TH elements. Total must = 100% --}}
+                            <!-- <th class="w-[5%] py-4 pl-6 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('tasks.task_id') }}</th> -->
+                            <th class="w-[35%] py-4 pl-6 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider whitespace-nowrap">{{ __('tasks.task_name') }}</th>
+                            <th class="w-[14%] py-4 px-3 text-center text-xs font-semibold text-muted-400 uppercase tracking-wider whitespace-nowrap">{{ __('tasks.status') }}</th>
+                            <th class="w-[10%] py-4 px-3 text-center text-xs font-semibold text-muted-400 uppercase tracking-wider whitespace-nowrap">{{ __('tasks.active') }}</th>
+                            <th class="w-[13%] py-4 text-center text-xs font-semibold text-muted-400 uppercase tracking-wider whitespace-nowrap">{{ __('tasks.start_date') }}</th>
+                            <th class="w-[13%] py-4 text-center text-xs font-semibold text-muted-400 uppercase tracking-wider whitespace-nowrap">{{ __('tasks.due_date') }}</th>
+                            <th class="w-[15%] py-4 pr-6 text-right text-xs font-semibold text-muted-400 uppercase tracking-wider whitespace-nowrap"></th>
                         </tr>
+                    </thead>
 
-                        @forelse($project->tasks as $task)
-                            @php
-                                $overdue = \Carbon\Carbon::parse($task->due_date)->isPast()
-                                    && $task->status !== 'completed';
-                            @endphp
+                    <tbody class="divide-y divide-muted-100">
 
-                            <tr>
-                                <td class="py-3 pl-4">{{ $task->id }}</td>
-                                <td class="py-3 text-center">{{ $project->title }}</td>
-                                <td class="py-3 text-center">{{ $task->title }}</td>
+                        @forelse($projects as $project)
 
-                                <td class="flex justify-center py-3">
-                                    @if($task->status === 'pending')
-                                        <x-status-pill bgColor="bg-gray-100" textColor="text-gray-500">
-                                            {{ __('tasks.pending') }}
-                                        </x-status-pill>
-                                    @elseif($task->status === 'completed')
-                                        <x-status-pill bgColor="bg-green-100" textColor="text-green-600">
-                                            {{ __('tasks.completed') }}
-                                        </x-status-pill>
-                                    @else
-                                        <x-status-pill bgColor="bg-yellow-100" textColor="text-yellow-700">
-                                            {{ __('tasks.in_progress') }} ({{ $task->percentage ?? 0 }}%)
-                                        </x-status-pill>
-                                    @endif
-                                </td>
+                            {{-- PROJECT ROW --}}
+                            <tr class="bg-muted-50/50 hover:bg-muted-100 transition-colors group">
+                                <td colspan="6" class="py-4 px-6">
+                                    <div class="flex justify-between items-center">
+                                        <div class="flex items-center gap-3">
+                                            <div class="p-2 rounded-lg bg-primary/5 text-primary group-hover:bg-primary/10 transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <span class="font-bold text-main">{{ $project->title }}</span>
+                                                <span class="text-sm text-gray-400"> - {{ $project->staffUser->name ?? 'Unassigned' }}</span>
+                                                <span class="ml-2 text-xs bg-white border border-muted-200 text-muted-500 px-2 py-0.5 rounded-full shadow-sm">
+                                                    {{ $project->tasks->count() }} {{ __('tasks.tasks') }}
+                                                </span>
+                                            </div>
+                                        </div>
 
-                                <td class="py-3 text-center">
-                                    <input type="checkbox" disabled {{ $task->active ? 'checked' : '' }}>
-                                </td>
-                                <td class="py-3 text-center">
-                                    {{ \Carbon\Carbon::parse($task->start_date)->format('d/m/Y') }}
-                                </td>
-
-                                <td class="py-3 text-center">
-                                    {{ \Carbon\Carbon::parse($task->due_date)->format('d/m/Y') }}
-                                    @if($overdue)
-                                        <span class="text-red-500 ml-1">⚠</span>
-                                    @endif
-                                </td>
-
-                                {{-- ACTIONS --}}
-                                <td class="py-3 pr-4 text-right">
-                                    <div class="flex justify-end gap-2">
-
-                                        {{-- VIEW --}}
-                                        <button type="button" class="toggle-row" data-target="taskDetails{{ $task->id }}">
-                                            👁
+                                        <button class="toggle-project text-sm font-medium text-primary hover:text-primary-hover focus:outline-none flex items-center gap-1 transition-colors"
+                                            data-target="project{{ $project->id }}">
+                                            {{ __('tasks.view_tasks') }}
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                            </svg>
                                         </button>
-
-                                        {{-- EDIT --}}
-                                        @can('task.edit')
-                                            <a href="{{ route('tasks.edit', $task->id) }}">✏️</a>
-                                        @endcan
-
-                                        {{-- DELETE --}}
-                                        @can('task.delete')
-                                            <form method="POST" action="{{ route('tasks.destroy', $task->id) }}"
-                                                onsubmit="return confirm('{{ __('tasks.confirm_delete') }}')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button>🗑</button>
-                                            </form>
-                                        @endcan
                                     </div>
                                 </td>
                             </tr>
 
-                            {{-- DETAILS --}}
-                            <tr id="taskDetails{{ $task->id }}" class="hidden bg-gray-50">
-                                <td colspan="7" class="p-4">
+                            {{-- PROJECT TASKS NESTED TABLE --}}
+                            <tr id="project{{ $project->id }}" class="project-row hidden">
+                                {{-- REMOVED: Extra padding/borders here that shift the inner table --}}
+                                <td colspan="6" class="p-0 border-t border-muted-200">
+                                    {{-- REMOVED: border-l-4 (This indentation physically prevents alignment) --}}
+                                    <div class="bg-white">
+                                        {{-- ADDED: table-fixed here as well --}}
+                                        <table class="w-full table-fixed">
+                                            <tbody class="divide-y divide-muted-100">
+                                                @forelse($project->tasks as $task)
+                                                    @php
+                                                        $overdue = \Illuminate\Support\Carbon::parse($task->due_date)->isPast()
+                                                            && $task->status !== 'completed';
+                                                        
+                                                        $pillClass = match($task->status) {
+                                                            'pending' => 'bg-muted-100 text-muted-600 ring-muted-500/10',
+                                                            'completed' => 'bg-accent/10 text-accent ring-accent/20',
+                                                            'in_progress' => 'bg-secondary/10 text-secondary ring-secondary/20',
+                                                            default => 'bg-primary/10 text-primary ring-primary/20',
+                                                        };
+                                                    @endphp
 
-                                    <p class="text-gray-600">
-                                        <strong>{{ __('tasks.description') }}:</strong>
-                                        {{ $task->description ?? __('tasks.no_description') }}
-                                    </p>
+                                                    {{-- TASK ROW --}}
+                                                    <tr class="hover:bg-canvas transition-colors">
+                                                        {{-- ADDED: Matching Width w-[5%] --}}
+                                                        <!-- <td class="w-[5%] py-3 text-center text-sm text-muted-500">
+                                                            {{ $task->id }}
+                                                        </td> -->
 
-                                    <hr class="my-3">
+                                                        {{-- ADDED: Matching Width w-[35%] --}}
+                                                        <td class="w-[35%] py-3 pl-6 text-sm font-medium text-main">
+                                                            {{ $task->title }}
+                                                        </td>
 
-                                    <strong>{{ __('tasks.assigned_users') }}:</strong>
-                                    <ul class="mt-2">
-                                        @forelse($task->assignedUsers as $u)
-                                            <li>{{ $u->name }} ({{ $u->email }})</li>
-                                        @empty
-                                            <li class="text-gray-400">{{ __('tasks.no_users') }}</li>
-                                        @endforelse
-                                    </ul>
+                                                        {{-- ADDED: Matching Width w-[12%] --}}
+                                                        <td class="w-[14%] py-3 px-3">
+                                                            <div class="flex items-center justify-center">
+                                                                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset {{ $pillClass }}">
+                                                                    {{ __('tasks.' . $task->status) }}
+                                                                </div>
+                                                            </div>
+                                                        </td>
 
+                                                        {{-- ADDED: Matching Width w-[12%] --}}
+                                                        <td class="w-[10%] py-3 px-3 text-center">
+                                                            <input type="checkbox" class="rounded border-muted-300 text-primary focus:ring-primary" disabled {{ $task->active ? 'checked' : '' }}>
+                                                        </td>
+
+                                                        {{-- ADDED: Matching Width w-[13%] --}}
+                                                        <td class="w-[13%] py-3 px-3 text-center text-sm text-muted-500 whitespace-nowrap">
+                                                            {{ \Carbon\Carbon::parse($task->start_date)->format('d/m/Y') }}
+                                                        </td>
+
+                                                        {{-- ADDED: Matching Width w-[13%] --}}
+                                                        <td class="w-[13%] py-3 px-3 text-center text-sm text-muted-500 whitespace-nowrap">
+                                                            {{ \Carbon\Carbon::parse($task->due_date)->format('d/m/Y') }}
+                                                            @if($overdue)
+                                                                <span class="text-red-500 ml-1">⚠</span>
+                                                            @endif
+                                                        </td>
+
+                                                        {{-- ADDED: Matching Width w-[15%] --}}
+                                                        <td class="w-[15%] py-3 pr-6 text-right">
+                                                            <div class="flex justify-end gap-1">
+                                                                {{-- VIEW DETAILS --}}
+                                                                <button class="toggle-task p-1.5 rounded-lg text-muted-400 hover:bg-primary/5 hover:text-primary transition-colors"
+                                                                    data-target="taskDetails{{ $task->id }}">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
+                                                                        class="w-4 h-4 fill-current">
+                                                                        <path
+                                                                            d="M320 96C239.2 96 174.5 132.8 127.4 176.6C80.6 220.1 49.3 272 34.4 307.7C31.1 315.6 31.1 324.4 34.4 332.3C49.3 368 80.6 420 127.4 463.4C174.5 507.1 239.2 544 320 544C400.8 544 465.5 507.2 512.6 463.4C559.4 419.9 590.7 368 605.6 332.3C608.9 324.4 608.9 315.6 605.6 307.7C590.7 272 559.4 220 512.6 176.6C465.5 132.9 400.8 96 320 96zM176 320C176 240.5 240.5 176 320 176C399.5 176 464 240.5 464 320C464 399.5 399.5 464 320 464C240.5 464 176 399.5 176 320zM320 256C320 291.3 291.3 320 256 320C244.5 320 233.7 317 224.3 311.6C223.3 322.5 224.2 333.7 227.2 344.8C240.9 396 293.6 426.4 344.8 412.7C396 399 426.4 346.3 412.7 295.1C400.5 249.4 357.2 220.3 311.6 224.3C316.9 233.6 320 244.4 320 256z" />
+                                                                    </svg>
+                                                                </button>
+                                                                {{-- EDIT --}}
+                                                                @can('task.edit')
+                                                                <a href="{{ route('tasks.edit', $task->id) }}"
+                                                                    class="p-1.5 rounded-lg text-muted-400 hover:bg-secondary/10 hover:text-secondary transition-colors">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 fill-current">
+                                                                        <path d="M535.6 85.7C513.7 63.8 478.3 63.8 456.4 85.7L432 110.1L529.9 208L554.3 183.6C576.2 161.7 576.2 126.3 554.3 104.4L535.6 85.7zM236.4 305.7C230.3 311.8 225.6 319.3 222.9 327.6L193.3 416.4C190.4 425 192.7 434.5 199.1 441C205.5 447.5 215 449.7 223.7 446.8L312.5 417.2C320.7 414.5 328.2 409.8 334.4 403.7L496 241.9L398.1 144L236.4 305.7z" />
+                                                                    </svg>
+                                                                </a>
+                                                                @endcan
+
+                                                                {{-- DELETE --}}
+                                                                @can('task.delete')
+                                                                <form method="POST" action="{{ route('tasks.destroy', $task->id) }}"
+                                                                    onsubmit="return confirm('{{ __('tasks.confirm_delete') }}')">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                        <button class="p-1.5 rounded-lg text-muted-400 hover:bg-danger/10 hover:text-danger transition-colors">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 fill-current">
+                                                                                <path d="M232.7 69.9L224 96L128 96C110.3 96 96 110.3 96 128C96 145.7 110.3 160 128 160L512 160C529.7 160 544 145.7 544 128C544 110.3 529.7 96 512 96L416 96L407.3 69.9C402.9 56.8 390.7 48 376.9 48L263.1 48C249.3 48 237.1 56.8 232.7 69.9zM512 208L128 208L149.1 531.1C150.7 556.4 171.7 576 197 576L443 576C468.3 576 489.3 556.4 490.9 531.1L512 208z" />
+                                                                            </svg>
+                                                                        </button>
+                                                                </form>
+                                                                @endcan
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    {{-- Task Details Row --}}
+                                                    <tr id="taskDetails{{ $task->id }}" class="detail-row hidden bg-canvas">
+                                                        <td colspan="6" class="py-4 px-6 text-sm shadow-inner">
+                                                            <div class="text-gray-600">
+                                                                <strong>{{ __('tasks.assigned_users') }}:</strong>
+                                                                @forelse($task->assignedUsers as $user)
+                                                                    <div class="flex items-center gap-2 text-sm text-muted-600">
+                                                                        <div class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold ring-1 ring-primary/20">
+                                                                            {{ substr($user->name, 0, 1) }}
+                                                                        </div>
+                                                                        <span>{{ $user->name }} (<a href="mailto:{{ $user->email }}" class="text-muted-500 hover:text-primary transition-colors">{{ $user->email }}</a>)</span>
+                                                                    </div>
+                                                                @empty
+                                                                    <div class="text-muted-400 italic text-sm">{{ __('tasks.no_users') }}</div>
+                                                                @endforelse
+                                                            </div>
+
+                                                            <hr class="my-3">
+
+                                                            <div class="text-gray-600">
+                                                                <strong>{{ __('projects.description') }}:</strong>
+                                                                <div class="max-h-[200px] overflow-y-auto">
+                                                                    {!! $task->description ?? __('projects.no_description') !!}
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+
+                                                    @empty
+                                                    <tr>
+                                                        <td colspan="6" class="py-4 text-center text-muted-400 italic text-sm">
+                                                            {{ __('tasks.no_tasks') }}
+                                                        </td>
+                                                    </tr>
+                                                    @endforelse
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </td>
                             </tr>
 
                         @empty
                             <tr>
-                                <td colspan="9" class="py-4 text-center text-gray-400">
-                                    {{ __('tasks.no_tasks') }}
+                                <td colspan="7" class="py-12 text-center">
+                                    <div class="flex flex-col items-center justify-center gap-3">
+                                        <div class="p-3 rounded-full bg-muted-100 text-muted-400">
+                                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                                        </div>
+                                        <p class="text-muted-500 font-medium">{{ __('projects.no_projects') }}</p>
+                                    </div>
                                 </td>
                             </tr>
                         @endforelse
 
-                    @empty
-                        <tr>
-                            <td colspan="7" class="py-8 text-center text-gray-400">
-                                {{ __('tasks.no_projects') }}
-                            </td>
-                        </tr>
-                    @endforelse
-
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-    </x-action-layout>
+        {{-- PAGINATION --}}
+        @if ($projects instanceof \Illuminate\Pagination\LengthAwarePaginator && $projects->hasPages())
+            <div class="my-6 flex justify-center w-full">
+                {{ $projects->onEachSide(1)->withQueryString()->links('vendor.pagination.tailwind') }}
+            </div>
+        @endif
+
+    </div>
 @endsection

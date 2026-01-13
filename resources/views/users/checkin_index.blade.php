@@ -141,45 +141,59 @@
             {{-- FILTER BAR --}}
             <form class="p-5 border-b border-muted-200 flex flex-wrap gap-4 bg-white" method="GET">
                 {{-- Username Search --}}
-                <div class="flex-1 min-w-[200px] relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="h-5 w-5 text-muted-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <input type="text" name="username" value="{{ request('username') }}" placeholder="{{ __('checkin_logs.search_placeholder_username') }}"
-                        class="block w-full pl-10 bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl placeholder-muted-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
-                </div>
+                <x-form.search-input
+                    name="username"
+                    placeholder="checkin_logs.search_placeholder_username"
+                    :value="request('username')"
+                />
 
                 {{-- Date From --}}
                 <div class="relative group">
-                    <span class="absolute -top-2 left-3 bg-white px-1 text-xs font-medium text-muted-400 group-focus-within:text-primary transition-colors">{{ __('checkin_logs.filter_label_from') }}</span>
-                    <input type="date" name="date_from" value="{{ request('date_from') }}"
-                        class="bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer hover:border-primary/50">
+                    <span class="absolute -top-2 left-3 bg-white px-1 text-xs font-medium text-muted-400 group-focus-within:text-primary transition-colors">
+                        {{ __('checkin_logs.filter_label_from') }}
+                    </span>
+
+                    <x-form.input
+                        type="date"
+                        name="date_from"
+                        :value="request('date_from')"
+                    />
                 </div>
 
                 {{-- Date To --}}
                 <div class="relative group">
-                    <span class="absolute -top-2 left-3 bg-white px-1 text-xs font-medium text-muted-400 group-focus-within:text-primary transition-colors">{{ __('checkin_logs.filter_label_to') }}</span>
-                    <input type="date" name="date_to" value="{{ request('date_to') }}"
-                        class="bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer hover:border-primary/50">
+                    <span class="absolute -top-2 left-3 bg-white px-1 text-xs font-medium text-muted-400 group-focus-within:text-primary transition-colors">
+                        {{ __('checkin_logs.filter_label_to') }}
+                    </span>
+
+                    <x-form.input
+                        type="date"
+                        name="date_to"
+                        :value="request('date_to')"
+                    />
                 </div>
 
                 {{-- Status --}}
-                <select name="status"
-                    class="bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer hover:border-primary/50">
-                    <option value="">{{ __('checkin_logs.filter_option_all_statuses') }}</option>
-                    <option value="late" {{ request('status') == 'late' ? 'selected' : '' }}>{{ __('checkin_logs.filter_option_late') }}</option>
-                    <option value="on_time" {{ request('status') == 'on_time' ? 'selected' : '' }}>{{ __('checkin_logs.filter_option_on_time') }}</option>
-                </select>
+                <x-form.select
+                    name="status"
+                    placeholder="checkin_logs.filter_option_all_statuses"
+                    :value="request('status')"
+                    :options="[
+                        'late' => __('checkin_logs.filter_option_late'),
+                        'on_time' => __('checkin_logs.filter_option_on_time'),
+                    ]"
+                />
 
-                {{-- Per Page (Moved here for consistency) --}}
-                <select name="per_page"
-                    class="bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer hover:border-primary/50">
-                    <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10 Rows</option>
-                    <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25 Rows</option>
-                    <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 Rows</option>
-                </select>
+                {{-- Per Page --}}
+                <x-form.select
+                    name="per_page"
+                    :value="request('per_page', 10)"
+                    :options="[
+                        10 => '10 Rows',
+                        25 => '25 Rows',
+                        50 => '50 Rows',
+                    ]"
+                />
 
                 <div class="flex gap-2">
                     <button type="submit" title="{{ __('tasks.filter') }}"
@@ -199,7 +213,7 @@
             </form>
 
             {{-- TABLE SECTION --}}
-            <div class="overflow-x-auto w-full">
+            <div class="overflow-x-auto w-full h-[629px]">
                 <table class="w-full table-fixed">
                     <thead class="bg-muted-50 border-b border-muted-200">
                         <tr>

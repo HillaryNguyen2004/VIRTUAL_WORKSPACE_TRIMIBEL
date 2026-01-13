@@ -191,7 +191,7 @@
                 </table>
             </div>
 
-            @if ($templates instanceof \Illuminate\Contracts\Pagination\Paginator && $templates->hasPages())
+            @if ($templates instanceof \Illuminate\Pagination\LengthAwarePaginator && $templates->hasPages())
                 <div class="mt-6 flex justify-center w-full pb-6">
                     {{ $templates->onEachSide(1)->withQueryString()->links('vendor.pagination.tailwind') }}
                 </div>

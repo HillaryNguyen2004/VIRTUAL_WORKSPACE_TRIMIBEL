@@ -4,7 +4,7 @@ return [
     'my_projects' => 'Dự án của tôi',
     'subtitle' => 'Quản lý và theo dõi công việc của bạn.',
     'view_tasks' => 'Xem công việc',
-    'search_placeholder' => 'Tìm theo tên dự án hoặc công việc',
+    'search_placeholder' => 'Tìm theo tên công việc',
     'status' => 'Trạng thái',
     'sort' => 'Sắp xếp',
     'apply' => 'Áp dụng',
@@ -44,5 +44,11 @@ return [
     'reset' => 'Làm mới',
     'tasks' => 'công việc',
     'task' => 'công việc',
+    'filter_label_from' => 'Từ',
+    'filter_label_to' => 'Đến',
+    'task_list'   => 'Danh sách công việc',
+    'task_subtitle' => 'Quản lý các công việc của bạn',
+    'tab' => 'Công việc',
+    'create_task' => 'Tạo công việc',
 ];
 ?>

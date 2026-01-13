@@ -60,39 +60,36 @@
             {{-- SEARCH & FILTER BAR --}}
             <form class="p-5 border-b border-muted-200 flex flex-wrap gap-4 bg-white" method="GET">
                 {{-- Search --}}
-                <div class="flex-1 min-w-[200px] relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="h-5 w-5 text-muted-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <input name="search" id="search" type="text" 
-                        placeholder="{{ __('user_management.search_placeholder') }}" 
-                        value="{{ request('search') }}"
-                        class="block w-full pl-10 bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl placeholder-muted-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
-                </div>
+                <x-form.search-input
+                    name="search"
+                    id="search"
+                    placeholder="user_management.search_placeholder"
+                    :value="request('search')"
+                />
 
                 {{-- Role Filter --}}
-                <select name="role" id="role"
-                    class="bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer hover:border-primary/50">
-                    <option value="">{{ __('user_management.all_roles') }}</option>
-                    <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>
-                        {{ __('user_management.admin_role') }}
-                    </option>
-                    <option value="staff" {{ request('role') == 'staff' ? 'selected' : '' }}>
-                        {{ __('user_management.staff_role') }}
-                    </option>
-                    <option value="user" {{ request('role') == 'user' ? 'selected' : '' }}>
-                        {{ __('user_management.user_role') }}
-                    </option>
-                </select>
+                <x-form.select
+                    name="role"
+                    id="role"
+                    placeholder="user_management.all_roles"
+                    :value="request('role')"
+                    :options="[
+                        'admin' => __('user_management.admin_role'),
+                        'staff' => __('user_management.staff_role'),
+                        'user'  => __('user_management.user_role'),
+                    ]"
+                />
 
                 {{-- Sort Filter --}}
-                <select name="sort" id="sort"
-                    class="bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer hover:border-primary/50">
-                    <option value="asc" {{ request('sort') == 'asc' ? 'selected' : '' }}>{{ __('user_management.sort_asc') }}</option>
-                    <option value="desc" {{ request('sort') == 'desc' ? 'selected' : '' }}>{{ __('user_management.sort_desc') }}</option>
-                </select>
+                <x-form.select
+                    name="sort"
+                    id="sort"
+                    :value="request('sort', 'asc')"
+                    :options="[
+                        'asc'  => __('user_management.sort_asc'),
+                        'desc' => __('user_management.sort_desc'),
+                    ]"
+                />
 
                 <div class="flex gap-2">
                     {{-- Filter Button --}}
