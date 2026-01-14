@@ -56,6 +56,9 @@ Route::get('/user/dashboard', [DashboardController::class, 'user'])->name('user.
 
 Route::get('/dayoff/request', [DayOffController::class, 'create'])->name('dayoff.request');
 Route::post('/dayoff/request', [DayOffController::class, 'store'])->name('dayoff.request.store');
+Route::post('/dayoff/halfday-preview', [DayOffController::class, 'halfDayPreview'])
+    ->name('dayoff.halfday.preview');
+
 
 
 // Route::post('/notifications/{id}/read', function ($id) {
