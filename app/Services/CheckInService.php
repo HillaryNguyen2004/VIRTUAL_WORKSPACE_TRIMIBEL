@@ -138,8 +138,22 @@ class CheckInService
                 'Asia/Ho_Chi_Minh'
             )->setDate($now->year, $now->month, $now->day);
 
-            if ($dayOff && $dayOff->leave_type === 'OFF_HALF') {
-                $configuredStart->setTime(12, 0, 0);
+            // If half day off in the morning, set start time to afternoon start time
+            if ($dayOff && $dayOff->leave_type === 'OFF_HALF' && $dayOff->half_day_period === 'AM') {
+                // If mid_day is set, use it as the start time, otherwise use lunch_end
+                if ($workingHour->mid_day) {
+                    $configuredStart = Carbon::createFromFormat(
+                        'H:i:s',
+                        $workingHour->mid_day,
+                        'Asia/Ho_Chi_Minh'
+                    )->setDate($now->year, $now->month, $now->day);
+                } else {
+                    $configuredStart = Carbon::createFromFormat(
+                        'H:i:s',
+                        $workingHour->lunch_end,
+                        'Asia/Ho_Chi_Minh'
+                    )->setDate($now->year, $now->month, $now->day);
+                }
             }
 
             $isLate = $now->greaterThan($configuredStart);
