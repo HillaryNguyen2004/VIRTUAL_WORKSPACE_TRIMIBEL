@@ -212,12 +212,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/chat', function () {
         return view('chat.realtime');
     })->name('chat.index');
-
-    // Debug route for testing
-    Route::get('/chat/debug', function () {
-        return view('chat.debug');
-    })->name('chat.debug');
-
+    
+    
     // Test route for user search
     Route::get('/chat/test-users', function () {
         $users = \App\Models\User::where('id', '!=', auth()->id())
@@ -228,10 +224,10 @@ Route::middleware(['auth'])->group(function () {
     })->name('chat.test.users');
 
     // Old chat routes (keep for backward compatibility)
-    Route::get('/chat/old', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.old.index');
-    Route::get('/chat/conversation/{conversation}', [App\Http\Controllers\ChatController::class, 'show'])->name('chat.conversation');
-    Route::post('/chat/message', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.message.store');
-    Route::post('/chat/create', [App\Http\Controllers\ChatController::class, 'createConversation'])->name('chat.create');
+    //Route::get('/chat/old', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.old.index');
+    //Route::get('/chat/conversation/{conversation}', [App\Http\Controllers\ChatController::class, 'show'])->name('chat.conversation');
+    //Route::post('/chat/message', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.message.store');
+    //Route::post('/chat/create', [App\Http\Controllers\ChatController::class, 'createConversation'])->name('chat.create');
 });
 
 

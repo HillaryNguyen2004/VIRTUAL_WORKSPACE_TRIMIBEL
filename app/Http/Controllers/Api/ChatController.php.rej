@@ -1,0 +1,16 @@
+diff a/app/Http/Controllers/Api/ChatController.php b/app/Http/Controllers/Api/ChatController.php	(rejected hunks)
+@@ -336,10 +336,13 @@
+             // Upload file
+             $fileData = $this->chatFileService->uploadFile($request->file('file'), $conversation->id);
+ 
++            // Ensure content is not null (use provided content or a sensible default)
++            $content = $request->filled('content') ? $request->input('content') : 'File: ' . $fileData['file_name'];
++
+             // Create message with file
+             $message = $conversation->messages()->create([
+                 'user_id' => $user->id,
+-                'content' => $request->input('content', 'File: ' . $fileData['file_name']),
++                'content' => $content,
+                 'type' => 'file',
+                 'file_name' => $fileData['file_name'],
+                 'file_path' => $fileData['file_path'],

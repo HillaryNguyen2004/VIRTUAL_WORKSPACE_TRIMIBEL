@@ -1,3 +1,6 @@
+<!-- BACKUP of resources/views/chat/index.blade.php -->
+
+```php
 <!-- @extends('layouts.app')
 
 @section('content')
@@ -861,3 +864,5 @@ function escapeHtml(unsafe) {
          .replace(/'/g, "&#039;");
 }
 </script>
+
+```

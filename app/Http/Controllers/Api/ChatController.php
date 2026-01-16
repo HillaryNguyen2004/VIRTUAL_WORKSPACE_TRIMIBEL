@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Events\MessageSent;
 use App\Events\UserTyping;
 use App\Events\UserStatusChanged;
+use App\Notifications\MentionedNotification;
 use App\Services\ChatFileService;
 use Carbon\Carbon;
 
@@ -174,6 +175,49 @@ class ChatController extends Controller
     }
 
     /**
+     * Add participants to an existing conversation
+     */
+    public function addParticipants(Request $request, Conversation $conversation)
+    {
+        $request->validate([
+            'participant_ids' => 'required|array|min:1',
+            'participant_ids.*' => 'exists:users,id'
+        ]);
+
+        try {
+            $user = Auth::user();
+
+            // Only participants can add members (or creator) — basic permission
+            if (!$conversation->participants->contains($user->id)) {
+                return response()->json(['success' => false, 'message' => 'Access denied'], 403);
+            }
+
+            $newIds = array_values(array_diff($request->participant_ids, $conversation->participants->pluck('id')->toArray()));
+            if (empty($newIds)) {
+                return response()->json(['success' => true, 'data' => ['added' => []]]);
+            }
+
+            foreach ($newIds as $pid) {
+                $conversation->participants()->attach($pid, ['joined_at' => now()]);
+            }
+
+            // reload participants
+            $conversation->load('participants');
+
+            // broadcast ConversationCreated event to newly added participants
+            foreach ($newIds as $pid) {
+                try { broadcast(new \App\Events\ConversationCreated($conversation, $pid)); } catch (\Exception $e) {}
+            }
+
+            return response()->json(['success' => true, 'data' => ['added' => $newIds, 'conversation' => $conversation]]);
+
+        } catch (\Exception $e) {
+            Log::error('Error adding participants: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to add participants'], 500);
+        }
+    }
+
+    /**
      * Get a specific conversation with messages
      */
     public function getConversation(Request $request, Conversation $conversation)
@@ -298,6 +342,40 @@ class ChatController extends Controller
 
             // Broadcast the message
             broadcast(new MessageSent($message, $conversation))->toOthers();
+
+            // Handle @mentions or @all in group chats: notify matching participants
+            try {
+                $content = $message->content ?? '';
+                if (preg_match_all('/@([A-Za-z0-9_\.\-]+)/', $content, $matches)) {
+                    $tokens = array_unique($matches[1]);
+                    foreach ($tokens as $token) {
+                        if (strtolower($token) === 'all') {
+                            $targets = $conversation->participants()->where('id', '!=', $user->id)->get();
+                        } else {
+                            if (is_numeric($token)) {
+                                $targets = \App\Models\User::where('id', $token)->get();
+                            } else {
+                                $targets = $conversation->participants()->where('name', 'like', '%' . $token . '%')->get();
+                            }
+                        }
+
+                        foreach ($targets as $target) {
+                            if (!$target || $target->id == $user->id) continue;
+                            try {
+                                $target->notify(new MentionedNotification($message, $conversation->id, $user));
+                                $notif = $target->notifications()->latest()->first();
+                                if ($notif) {
+                                    broadcast(new \App\Events\NotificationSent($notif, $target->id));
+                                }
+                            } catch (\Exception $e) {
+                                Log::error('Error sending mention notification: ' . $e->getMessage());
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Error processing mentions: ' . $e->getMessage());
+            }
 
             return response()->json([
                 'success' => true,
