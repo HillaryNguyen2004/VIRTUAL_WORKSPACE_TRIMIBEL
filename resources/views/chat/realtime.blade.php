@@ -12,7 +12,8 @@
         </div>
 
         <div class="flex flex-col @xs:flex-row px-6 pt-2 justify-between items-center gap-2">
-            <button onclick="toggleModal('onlineUsersModal')" 
+            <div class="flex gap-2 w-full">
+                <button onclick="toggleModal('onlineUsersModal')" 
                 class="group flex items-center justify-center gap-2 rounded-xl bg-white border border-muted-200 w-full px-auto py-1.5 text-muted-500 font-medium shadow-sm hover:border-accent  transition-all active:scale-95">
                 <span class="relative flex h-2.5 w-2.5">
                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
@@ -21,13 +22,16 @@
                 <span>{{ __('real_time_chat.online') }} (<span id="online-count">0</span>)</span>
             </button>
 
-            <button onclick="toggleModal('newConversationModal')"
-                class="group flex items-center justify-center gap-2 rounded-xl bg-accent w-full px-auto py-1.5 text-white font-medium shadow-lg shadow-accent/20 transition-all hover:bg-accent-hover focus:ring-4 focus:ring-accent/30 active:scale-95">
+                
+
+                <button onclick="toggleModal('newConversationModal')"
+                    class="group flex items-center justify-center gap-2 rounded-xl bg-accent w-full px-auto py-1.5 text-white font-medium shadow-lg shadow-accent/20 transition-all hover:bg-accent-hover focus:ring-4 focus:ring-accent/30 active:scale-95">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
                 {{ __('real_time_chat.new_chat') }}
             </button>
+            </div>
         </div>
         
         {{-- Search Area --}}
@@ -39,14 +43,41 @@
             </div>
         </div>
 
-        {{-- List --}}
-        <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1" id="conversations-list">
-                {{-- Loading State --}}
-                <div class="flex flex-col items-center justify-center h-40 text-muted-400">
-                <svg class="animate-spin h-6 w-6 mb-2 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+        {{-- List: Messages (DMs) + Channels (Discord-like) --}}
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
+            {{-- Messages Section (top) --}}
+            <div id="dm-section" class="space-y-2">
+                <div class="flex items-center justify-between px-2">
+                    <div class="font-medium text-sm">Messages</div>
+                    <button class="text-xs text-muted-400 hover:text-primary" onclick="document.getElementById('dm-list').classList.toggle('hidden')">Hide</button>
+                </div>
+                <div id="dm-list" class="space-y-1">
+                    <div class="flex flex-col items-center justify-center h-24 text-muted-400">
+                        <svg class="animate-spin h-6 w-6 mb-2 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Channels Section (bottom) --}}
+            <div id="channels-section" class="mt-2 space-y-2">
+                <div class="flex items-center justify-between px-2">
+                    <div class="font-medium text-sm">Channels</div>
+                    <div class="flex items-center gap-2">
+                        <button class="text-xs px-2 py-1 rounded border text-muted-500" onclick="chatApp.loadChannels()">Refresh</button>
+                        <button class="text-xs px-2 py-1 rounded bg-primary text-white" onclick="toggleModal('newChannelModal')">New</button>
+                    </div>
+                </div>
+                <div id="channels-list" class="space-y-1">
+                    <div class="flex flex-col items-center justify-center h-24 text-muted-400">
+                        <svg class="animate-spin h-6 w-6 mb-2 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -132,6 +163,7 @@
                         placeholder="Type a message..." 
                         class="w-full bg-transparent border-0 py-2 px-3 text-main placeholder-muted-400 outline-none focus:outline-none resize-none max-h-32 leading-relaxed"
                     ></textarea>
+                    <div id="mention-dropdown" class="hidden absolute bg-white border border-muted-200 rounded-md shadow-lg z-50 mt-1 max-h-56 overflow-auto" style="min-width:220px;"></div>
                 </div>
 
                 <button type="submit" id="send-btn" class="mb-0.5 p-3.5 bg-primary hover:bg-primary-hover text-white rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed">
@@ -274,6 +306,88 @@
 
 @endsection
 
+<!-- New Channel Modal (rendered inline so it's always present) -->
+<div id="newChannelModal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="toggleModal('newChannelModal')"></div>
+    <div class="fixed inset-0 z-10 overflow-y-auto flex items-center justify-center p-4">
+        <div class="bg-white w-[95%] md:w-[600px] rounded-2xl shadow-2xl p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold">Create Channel</h3>
+                <button onclick="toggleModal('newChannelModal')" class="p-2 rounded-full">&times;</button>
+            </div>
+            <form id="newChannelForm" class="space-y-3">
+                <div>
+                    <label class="text-sm font-medium">Name</label>
+                    <input id="channelName" class="w-full border px-3 py-2 rounded-lg" required />
+                </div>
+                <div>
+                    <label class="text-sm font-medium">Description</label>
+                    <textarea id="channelDescription" class="w-full border px-3 py-2 rounded-lg"></textarea>
+                </div>
+                @if(auth()->user() && auth()->user()->hasRole('admin'))
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="adminOnly" /> <label for="adminOnly">Admin-only (only admins can post)</label>
+                </div>
+                @endif
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="channelPrivate" /> <label for="channelPrivate">Private</label>
+                </div>
+                <div class="text-right">
+                    <button type="button" onclick="toggleModal('newChannelModal')" class="px-4 py-2 mr-2">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Channel Details Modal (rendered inline) -->
+<div id="channelDetailsModal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="toggleModal('channelDetailsModal')"></div>
+    <div class="fixed inset-0 z-10 overflow-y-auto flex items-center justify-center p-4">
+        <div class="bg-white w-[95%] md:w-[800px] rounded-2xl shadow-2xl p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 id="channelDetailsTitle" class="text-lg font-bold">Channel</h3>
+                <button onclick="toggleModal('channelDetailsModal')" class="p-2 rounded-full">&times;</button>
+            </div>
+            <div id="channelDetailsContent">
+                <p id="channelDetailsDescription" class="text-sm text-muted mb-4"></p>
+                <h4 class="font-medium">Members</h4>
+                <div id="channelMembersList" class="mt-2 space-y-2"></div>
+                <div id="channelRulesSection">
+                    <h4 class="font-medium mt-4">Rules</h4>
+                    <div id="channelRulesList" class="mt-2 space-y-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Members Modal -->
+<div id="addMembersModal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="toggleModal('addMembersModal')"></div>
+    <div class="fixed inset-0 z-10 overflow-y-auto flex items-center justify-center p-4">
+        <div class="bg-white w-[95%] md:w-[640px] rounded-2xl shadow-2xl p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold">Add Members</h3>
+                <button onclick="toggleModal('addMembersModal')" class="p-2 rounded-full">&times;</button>
+            </div>
+
+            <div class="mb-3">
+                <input id="addMembersSearch" class="w-full border px-3 py-2 rounded-lg" placeholder="Search users to add..." oninput="(function(e){ clearTimeout(window._addMembersSearchTimer); window._addMembersSearchTimer=setTimeout(()=>chatApp.handleAddMembersSearch(e.target.value),250); })(event)">
+            </div>
+
+            <div id="addMembersResults" class="max-h-64 overflow-auto mb-3 border rounded"></div>
+            <div id="addMembersSelected" class="mb-3"></div>
+
+            <div class="text-right">
+                <button type="button" onclick="toggleModal('addMembersModal')" class="px-4 py-2 mr-2">Cancel</button>
+                <button type="button" onclick="chatApp.submitAddMembers()" class="px-4 py-2 bg-primary text-white rounded-lg">Add selected</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('styles')
 <style>
     /* Dashboard-style Scrollbar */
@@ -289,10 +403,15 @@
 <script>
 function toggleModal(modalID) {
     const modal = document.getElementById(modalID);
+    if (!modal) {
+        console.warn('toggleModal: element not found', modalID);
+        return;
+    }
     modal.classList.toggle('hidden');
 }
 
 window.currentUserId = {{ auth()->id() }};
+window.currentUserIsAdmin = {{ auth()->user()->hasRole('admin') ? 'true' : 'false' }};
 
 class RealtimeChatApp {
     constructor() {
@@ -301,6 +420,7 @@ class RealtimeChatApp {
         this.conversations = new Map();
         this.onlineUsers = new Set();
         this.selectedUsers = new Set();
+        this.showingChannels = false;
         this.currentUserId = window.currentUserId;
         this.init();
     }
@@ -320,6 +440,7 @@ class RealtimeChatApp {
         }
 
         await this.loadConversations();
+        await this.loadChannels();
         await this.loadOnlineUsers();
         this.setupPolling();
         this.setupEventHandlers();
@@ -347,14 +468,14 @@ class RealtimeChatApp {
     // --- RENDER METHODS (Updated with Dashboard Tokens) ---
 
     renderConversations() {
-        const container = document.getElementById('conversations-list');
+        const container = document.getElementById('dm-list');
         if (!container) return;
-        
+
         const conversations = Array.from(this.conversations.values())
             .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
 
         if (conversations.length === 0) {
-            container.innerHTML = `<div class="p-4 text-center text-muted-400 text-sm">No conversations found.</div>`;
+            container.innerHTML = `<div class="p-2 text-center text-muted-400 text-sm">No conversations found.</div>`;
             return;
         }
 
@@ -404,7 +525,10 @@ class RealtimeChatApp {
         if (!this.currentConversation) return;
 
         let displayName = this.currentConversation.display_name || this.currentConversation.name;
-        if (!displayName && this.currentConversation.type === 'direct') {
+        if (this.currentConversation.type === 'channel') {
+            // channel header
+            displayName = displayName || 'Channel';
+        } else if (!displayName && this.currentConversation.type === 'direct') {
             const other = this.currentConversation.participants?.find(p => p.id !== this.currentUserId);
             displayName = other ? other.name : 'Unknown User';
         } else if (!displayName) {
@@ -430,10 +554,123 @@ class RealtimeChatApp {
             <div class="flex gap-2">
                 <button class="p-2 text-muted-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"><i class="fas fa-phone-alt"></i></button>
                 <button class="p-2 text-muted-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"><i class="fas fa-video"></i></button>
-                <button class="p-2 text-muted-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"><i class="fas fa-info-circle"></i></button>
+                <button class="p-2 text-muted-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors" onclick="chatApp.showConversationInfo()"><i class="fas fa-info-circle"></i></button>
+                ${this.currentConversation && this.currentConversation.type === 'group' ? `<button id="add-members-btn" type="button" class="px-3 py-1 rounded bg-primary text-white text-sm" title="Add members" aria-label="Add members" onclick="chatApp.openAddMembersModal()">Add members</button>` : ''}
             </div>
         `;
         document.getElementById('chat-header').innerHTML = headerHtml;
+    }
+
+    // Open a channel in the main chat pane (show announcements/rules as messages)
+    async openChannel(channelId) {
+        try {
+            const res = await axios.get(`${this.apiUrl}/channels/${channelId}`);
+            const ch = res.data.data || res.data;
+
+            // If channel has a backing conversation, open it via the conversation flow
+            if (ch.conversation_id) {
+                // switchToConversation will populate messages and header
+                await this.switchToConversation(ch.conversation_id);
+
+                // Mark this as a channel-backed conversation so posting uses the channel id when needed
+                this.currentConversation.type = 'channel';
+                this.currentConversation.channelId = channelId;
+                this.currentConversation.allow_messages = ch.allow_messages !== false;
+                this.currentConversation.is_member = !!ch.is_member;
+                this.currentConversation.created_by = ch.created_by;
+
+                // Show announcements/rules above the messages list
+                const list = document.getElementById('messages-list');
+                const rulesHtml = [];
+                if (Array.isArray(ch.rules) && ch.rules.length) {
+                    ch.rules.forEach(r => {
+                        rulesHtml.push(`
+                            <div class="p-3 rounded-lg border bg-muted-50">
+                                <div class="text-sm font-bold">${this.escapeHtml(r.title)}</div>
+                                <div class="text-xs text-muted-500 mt-1">${this.escapeHtml(r.content||'')}</div>
+                            </div>
+                        `);
+                    });
+                }
+                if (rulesHtml.length) list.insertAdjacentHTML('afterbegin', rulesHtml.join('\n'));
+            } else {
+                // No conversation yet: render announcements as before and show an empty messages area
+                this.currentConversation = {
+                    id: `channel-${channelId}`,
+                    channelId: channelId,
+                    conversation_id: null,
+                    type: 'channel',
+                    name: ch.name,
+                    display_name: ch.name,
+                    allow_messages: ch.allow_messages !== false,
+                    is_member: !!ch.is_member,
+                    created_by: ch.created_by,
+                };
+
+                // leaving channels view and restore conversations list
+                this.showingChannels = false;
+                this.loadConversations();
+
+                // Render header and messages container
+                this.renderConversationHeader();
+                const list = document.getElementById('messages-list');
+                list.innerHTML = '';
+
+                // Show announcements/rules as messages
+                if (Array.isArray(ch.rules) && ch.rules.length) {
+                    ch.rules.forEach(r => {
+                        const html = `
+                            <div class="p-3 rounded-lg border bg-muted-50">
+                                <div class="text-sm font-bold">${this.escapeHtml(r.title)}</div>
+                                <div class="text-xs text-muted-500 mt-1">${this.escapeHtml(r.content||'')}</div>
+                            </div>
+                        `;
+                        list.insertAdjacentHTML('beforeend', html);
+                    });
+                } else {
+                    list.innerHTML = `<div class="p-4 text-muted-400">No announcements yet for this channel.</div>`;
+                }
+            }
+
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('messages-container').style.display = 'block';
+
+            // Show or hide input based on allow_messages and membership; creators may always post
+            const inputContainer = document.getElementById('message-input-container');
+            const isCreator = this.currentConversation.created_by && (this.currentConversation.created_by == window.currentUserId);
+            const isAdmin = (window.currentUserIsAdmin === true || window.currentUserIsAdmin === 'true');
+            if (!this.currentConversation.allow_messages) {
+                // admin-only channel: only admins may post
+                inputContainer.style.display = isAdmin ? 'block' : 'none';
+            } else if (this.currentConversation.is_member || !ch.is_private || isCreator) {
+                inputContainer.style.display = 'block';
+            } else {
+                // private channel and not a member
+                inputContainer.style.display = 'none';
+            }
+
+            // Admin: show post announcement form below messages when viewing a channel
+            const adminContainerId = 'channelAdminPost';
+            let adminContainer = document.getElementById(adminContainerId);
+            if (adminContainer) adminContainer.remove();
+            if (isAdmin) {
+                adminContainer = document.createElement('div');
+                adminContainer.id = adminContainerId;
+                adminContainer.className = 'p-4 border-t';
+                adminContainer.innerHTML = `
+                    <div class="space-y-2">
+                        <input id="adminRuleTitle" placeholder="Announcement title" class="w-full border px-3 py-2 rounded-lg" />
+                        <textarea id="adminRuleContent" placeholder="Announcement content" class="w-full border px-3 py-2 rounded-lg"></textarea>
+                        <div class="text-right"><button class="px-3 py-1 bg-primary text-white rounded-lg" onclick="chatApp.addRuleToChannel(${channelId})">Post Announcement</button></div>
+                    </div>
+                `;
+                const messagesContainer = document.getElementById('messages-container');
+                messagesContainer.parentNode.insertBefore(adminContainer, inputContainer);
+            }
+
+            // Slide chat pane in (mobile)
+            this.openMobileChat();
+        } catch (err) { console.error('Failed to open channel', err); alert('Unable to open channel'); }
     }
 
     renderMessage(message) {
@@ -616,10 +853,59 @@ class RealtimeChatApp {
             <div class="flex gap-2">
                 <button class="p-2 text-muted-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"><i class="fas fa-phone-alt"></i></button>
                 <button class="p-2 text-muted-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"><i class="fas fa-video"></i></button>
-                <button class="p-2 text-muted-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"><i class="fas fa-info-circle"></i></button>
+                <button class="p-2 text-muted-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors" onclick="chatApp.showConversationInfo()"><i class="fas fa-info-circle"></i></button>
+                ${this.currentConversation && this.currentConversation.type === 'group' ? `<button id="add-members-btn" type="button" class="px-3 py-1 rounded bg-primary text-white text-sm" title="Add members" aria-label="Add members" onclick="chatApp.openAddMembersModal()">Add members</button>` : ''}
             </div>
         `;
         document.getElementById('chat-header').innerHTML = headerHtml;
+    }
+
+    async showConversationInfo() {
+        if (!this.currentConversation) return;
+
+        // Channels use the existing channel details flow
+        if (this.currentConversation.type === 'channel' && this.currentConversation.channelId) {
+            await this.showChannelDetails(this.currentConversation.channelId);
+            return;
+        }
+
+        // For group/direct conversations, show members list
+        let conversation = this.currentConversation;
+        if (!Array.isArray(conversation.participants) || conversation.participants.length === 0) {
+            try {
+                const res = await axios.get(`${this.apiUrl}/conversations/${conversation.id}`);
+                if (res.data && res.data.success) {
+                    conversation = res.data.data.conversation || conversation;
+                }
+            } catch (e) { console.error('Failed to load conversation info', e); }
+        }
+
+        const title = conversation.display_name || conversation.name || (conversation.type === 'direct' ? 'Direct Message' : 'Group Chat');
+        document.getElementById('channelDetailsTitle').textContent = title;
+        document.getElementById('channelDetailsDescription').textContent = conversation.type === 'direct' ? 'Direct message' : 'Group members';
+
+        const rulesSection = document.getElementById('channelRulesSection');
+        if (rulesSection) rulesSection.classList.add('hidden');
+
+        const addRuleContainer = document.getElementById('channelAddRuleContainer');
+        if (addRuleContainer) addRuleContainer.remove();
+
+        const membersDiv = document.getElementById('channelMembersList');
+        membersDiv.innerHTML = '';
+
+        const participants = Array.isArray(conversation.participants) ? conversation.participants : [];
+        if (participants.length) {
+            participants.forEach(m => {
+                const el = document.createElement('div');
+                el.className = 'flex items-center gap-3';
+                el.innerHTML = `<div class="h-8 w-8 rounded-full bg-muted-100 flex items-center justify-center font-bold text-xs">${(m.name||'').charAt(0).toUpperCase()}</div><div><div class="text-sm font-medium">${this.escapeHtml(m.name || m.email || 'User')}</div><div class="text-xs text-muted-400">${this.escapeHtml(m.email||'')}</div></div>`;
+                membersDiv.appendChild(el);
+            });
+        } else {
+            membersDiv.innerHTML = '<div class="text-muted">No members yet</div>';
+        }
+
+        toggleModal('channelDetailsModal');
     }
 
     async sendMessage(id, content, type='text') {
@@ -642,9 +928,94 @@ class RealtimeChatApp {
 
     async searchUsers(query) {
         try {
+            // If we're inside a conversation and participants are available, search locally
+            if (this.currentConversation && Array.isArray(this.currentConversation.participants) && this.currentConversation.participants.length > 0) {
+                const q = query.toLowerCase();
+                const matches = this.currentConversation.participants.filter(p => {
+                    const name = (p.name || '').toLowerCase();
+                    const email = (p.email || '').toLowerCase();
+                    return name.includes(q) || email.includes(q) || String(p.id) === query;
+                }).slice(0, 10).map(p => ({ id: p.id, name: p.name, email: p.email }));
+                return matches;
+            }
+
             const res = await axios.get(`${this.apiUrl}/users/search?query=${encodeURIComponent(query)}`);
             return res.data.success ? res.data.data.users : [];
         } catch { return []; }
+    }
+
+    // Search all users via API (ignore currentConversation participants)
+    async searchAllUsers(query) {
+        try {
+            const res = await axios.get(`${this.apiUrl}/users/search?query=${encodeURIComponent(query)}`);
+            return res.data.success ? res.data.data.users : [];
+        } catch (e) { console.error('searchAllUsers failed', e); return []; }
+    }
+
+    openAddMembersModal() {
+        if (!this.currentConversation) return alert('No conversation selected');
+        // reset modal state
+        document.getElementById('addMembersSearch').value = '';
+        document.getElementById('addMembersResults').innerHTML = '';
+        this._addMembersSelected = new Map();
+        document.getElementById('addMembersSelected').innerHTML = '';
+        toggleModal('addMembersModal');
+    }
+
+    async handleAddMembersSearch(q) {
+        if (!q || q.trim().length < 1) { document.getElementById('addMembersResults').innerHTML = ''; return; }
+        const users = await this.searchAllUsers(q.trim());
+        // filter out users already in conversation and current user
+        const existing = this.currentConversation.participants ? this.currentConversation.participants.map(p => p.id) : [];
+        const filtered = users.filter(u => u.id !== this.currentUserId && !existing.includes(u.id)).slice(0, 20);
+        this.renderAddMembersResults(filtered);
+    }
+
+    renderAddMembersResults(users) {
+        const container = document.getElementById('addMembersResults');
+        if (!container) return;
+        if (!users || users.length === 0) { container.innerHTML = '<div class="p-2 text-muted-400 text-sm">No users found</div>'; return; }
+        container.innerHTML = users.map(u => `
+            <div class="p-2 flex items-center justify-between border-b hover:bg-muted-50 cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div class="h-8 w-8 rounded-full bg-muted-100 flex items-center justify-center font-bold text-sm">${(u.name||'U').charAt(0).toUpperCase()}</div>
+                    <div>
+                        <div class="text-sm font-medium">${this.escapeHtml(u.name || u.email)}</div>
+                        <div class="text-xs text-muted-400">${this.escapeHtml(u.email || '')}</div>
+                    </div>
+                </div>
+                <div>
+                    <button class="px-3 py-1 rounded text-sm bg-primary text-white" onclick="chatApp.toggleAddMemberSelection(${u.id}, '${u.name.replace(/'/g, "\'")}')">Add</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    toggleAddMemberSelection(userId, userName) {
+        this._addMembersSelected = this._addMembersSelected || new Map();
+        if (this._addMembersSelected.has(userId)) {
+            this._addMembersSelected.delete(userId);
+        } else {
+            this._addMembersSelected.set(userId, userName);
+        }
+        const sel = document.getElementById('addMembersSelected');
+        sel.innerHTML = Array.from(this._addMembersSelected.entries()).map(([id, name]) => `<span class="inline-flex items-center gap-2 bg-muted-100 px-2 py-1 rounded mr-1">${this.escapeHtml(name)} <button onclick="chatApp.toggleAddMemberSelection(${id}, '${name.replace(/'/g, "\'")}')" class="text-xs text-danger ml-2">x</button></span>`).join('');
+    }
+
+    async submitAddMembers() {
+        if (!this.currentConversation) return alert('No conversation selected');
+        const ids = this._addMembersSelected ? Array.from(this._addMembersSelected.keys()) : [];
+        if (!ids || ids.length === 0) return alert('No users selected');
+        try {
+            const res = await axios.post(`${this.apiUrl}/conversations/${this.currentConversation.id}/participants`, { participant_ids: ids });
+            if (res.data && res.data.success) {
+                // refresh conversation participants
+                this.currentConversation = res.data.data.conversation;
+                // inform user
+                toggleModal('addMembersModal');
+                if (typeof showToast === 'function') showToast('Members added', 'success');
+            }
+        } catch (e) { console.error('submitAddMembers failed', e); alert('Failed to add members'); }
     }
 
     toggleUserSelection(userId, userName) {
@@ -706,6 +1077,42 @@ class RealtimeChatApp {
             const val = input.value.trim();
             if (window.selectedFile) return this.sendFileMessage(); 
             if(!val || !this.currentConversation) return;
+
+            // CHANNEL: allow send if viewing a channel and user is allowed
+            if (this.currentConversation && this.currentConversation.type === 'channel') {
+                // client-side permission checks: admin-only channels allow admins, otherwise require membership/creator
+                const isAdmin = (window.currentUserIsAdmin === true || window.currentUserIsAdmin === 'true');
+                if (!this.currentConversation.allow_messages && !isAdmin) { alert('This channel is admin-only.'); return; }
+                const isCreator = this.currentConversation.created_by && (this.currentConversation.created_by == window.currentUserId);
+                if (!this.currentConversation.is_member && !isCreator && !isAdmin) { alert('You are not allowed to post to this channel.'); return; }
+
+                try {
+                    // If channel has a backing conversation, post via conversations endpoint (reuses realtime flow)
+                    const convId = this.currentConversation.conversation_id || null;
+                    let res;
+                    if (convId) {
+                        res = await axios.post(`${this.apiUrl}/conversations/${convId}/messages`, { content: val });
+                    } else {
+                        // fallback to channel-specific endpoint
+                        res = await axios.post(`${this.apiUrl}/channels/${this.currentConversation.channelId}/messages`, { content: val });
+                    }
+
+                    if (res && res.data && res.data.success) {
+                        const msg = res.data.data.message;
+                        const list = document.getElementById('messages-list');
+                        list.insertAdjacentHTML('beforeend', this.renderMessage(msg));
+                        this.scrollToBottom();
+                        input.value = '';
+                    }
+                } catch (err) { 
+                    console.error(err);
+                    const serverMsg = err && err.response && err.response.data && (err.response.data.message || err.response.data.error) ? (err.response.data.message || err.response.data.error) : 'Failed to send message to channel';
+                    if (typeof showToast === 'function') showToast(serverMsg, 'error'); else alert(serverMsg);
+                }
+
+                return;
+            }
+
             if(await this.sendMessage(this.currentConversation.id, val)) input.value = '';
         });
         
@@ -715,8 +1122,44 @@ class RealtimeChatApp {
             this.style.height = (this.scrollHeight) + 'px';
         });
 
+        const app = this;
         ta.addEventListener('keydown', (e) => {
-            // If Enter is pressed WITHOUT Shift
+            const dd = document.getElementById('mention-dropdown');
+            const ddOpen = dd && !dd.classList.contains('hidden');
+
+            if (ddOpen) {
+                // Navigate mention dropdown
+                const items = Array.from(dd.querySelectorAll('[data-mention-index]'));
+                const active = dd.querySelector('[data-active="true"]');
+                let idx = active ? Number(active.getAttribute('data-mention-index')) : -1;
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    idx = Math.min(items.length - 1, idx + 1);
+                    app.updateMentionHighlight(idx);
+                    return;
+                }
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    idx = Math.max(0, idx - 1);
+                    app.updateMentionHighlight(idx);
+                    return;
+                }
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (idx >= 0 && items[idx]) {
+                        items[idx].click();
+                    }
+                    return;
+                }
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    app.hideMentionDropdown();
+                    return;
+                }
+            }
+
+            // If Enter is pressed WITHOUT Shift (and dropdown not open)
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault(); // Prevent creating a new line
                 
@@ -727,6 +1170,108 @@ class RealtimeChatApp {
                 // Reset height after sending
                 ta.style.height = 'auto'; 
             }
+        });
+
+        // Mention helpers on app
+        app.hideMentionDropdown = function() {
+            const dd = document.getElementById('mention-dropdown');
+            if (dd) dd.classList.add('hidden');
+            this._mentionItems = [];
+            this._mentionActive = -1;
+        };
+
+        app.updateMentionHighlight = function(index) {
+            const dd = document.getElementById('mention-dropdown');
+            if (!dd) return;
+            const items = Array.from(dd.querySelectorAll('[data-mention-index]'));
+            items.forEach(it => it.removeAttribute('data-active'));
+            if (items[index]) items[index].setAttribute('data-active', 'true');
+            this._mentionActive = index;
+            // ensure visibility
+            if (items[index]) items[index].scrollIntoView({ block: 'nearest' });
+        };
+
+        app.selectMention = function(user) {
+            const ta = document.getElementById('message-input');
+            const caret = ta.selectionStart;
+            const before = ta.value.slice(0, caret);
+            const after = ta.value.slice(caret);
+            const lastAt = before.lastIndexOf('@');
+            if (lastAt === -1) return;
+            const insert = (user.id === 'all') ? '@all ' : (`@${user.name} `);
+            const newVal = before.slice(0, lastAt) + insert + after;
+            ta.value = newVal;
+            // place caret after inserted mention
+            const newPos = (before.slice(0, lastAt) + insert).length;
+            ta.setSelectionRange(newPos, newPos);
+            ta.focus();
+            this.hideMentionDropdown();
+        };
+
+        app.renderMentionDropdown = function(users, rectAnchor) {
+            const dd = document.getElementById('mention-dropdown');
+            if (!dd) return;
+            if (!users || users.length === 0) {
+                dd.innerHTML = '';
+                dd.classList.add('hidden');
+                return;
+            }
+
+            dd.innerHTML = users.map((u, i) => {
+                const display = u.id === 'all' ? 'All' : (u.name || u.email || ('User ' + u.id));
+                return `<div data-mention-index="${i}" data-user-id="${u.id}" class="px-3 py-2 hover:bg-muted-100 cursor-pointer">${this.escapeHtml(display)}</div>`;
+            }).join('');
+
+            // Attach click handlers
+            Array.from(dd.children).forEach((el, i) => {
+                el.addEventListener('click', (ev) => {
+                    const uid = el.getAttribute('data-user-id');
+                    const u = users[Number(i)];
+                    app.selectMention(u);
+                });
+            });
+
+            dd.classList.remove('hidden');
+            this._mentionItems = users;
+            this._mentionActive = -1;
+            // position dropdown under textarea
+            const taRect = document.getElementById('message-input').getBoundingClientRect();
+            const parentRect = document.getElementById('message-input-container').getBoundingClientRect();
+            dd.style.position = 'absolute';
+            dd.style.left = (taRect.left - parentRect.left) + 'px';
+            dd.style.top = (taRect.bottom - parentRect.top + 6) + 'px';
+        };
+
+        app.handleMentionInput = async function(e) {
+            const ta = document.getElementById('message-input');
+            const caret = ta.selectionStart;
+            const before = ta.value.slice(0, caret);
+            const lastAt = before.lastIndexOf('@');
+            if (lastAt === -1) { this.hideMentionDropdown(); return; }
+            // ensure @ is start or preceded by whitespace
+            if (lastAt > 0 && !/\s/.test(before.charAt(lastAt - 1))) { this.hideMentionDropdown(); return; }
+
+            const token = before.slice(lastAt + 1);
+            // stop if token contains whitespace or '@' or too long
+            if (token.length === 0) { this.hideMentionDropdown(); return; }
+            if (/\s/.test(token) || token.indexOf('@') !== -1) { this.hideMentionDropdown(); return; }
+
+            const q = token;
+            // quick include @all option if it matches and current conversation is a group
+            const users = await this.searchUsers(q);
+            const suggestions = [];
+            if (this.currentConversation && this.currentConversation.type !== 'direct' && 'all'.startsWith(q.toLowerCase())) {
+                suggestions.push({ id: 'all', name: 'all' });
+            }
+            users.forEach(u => suggestions.push(u));
+
+            this.renderMentionDropdown(suggestions);
+        };
+
+        // Hook mention input separate from resize logic
+        ta.addEventListener('input', (e) => {
+            // call existing resize logic already present; now handle mentions
+            app.handleMentionInput(e);
         });
 
         let searchTimeout;
@@ -759,10 +1304,40 @@ class RealtimeChatApp {
                 document.getElementById('userSearchResults').innerHTML = '';
             }
         });
+        // New Channel Form submit (if modal exists)
+        const newChannelForm = document.getElementById('newChannelForm');
+        if (newChannelForm) {
+            newChannelForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = document.getElementById('channelName').value.trim();
+                const description = document.getElementById('channelDescription').value.trim();
+                const is_private = document.getElementById('channelPrivate').checked ? 1 : 0;
+                // announcementOnly checkbox is rendered only for admins
+                const adminOnlyEl = document.getElementById('adminOnly');
+                const adminOnly = adminOnlyEl ? adminOnlyEl.checked : false;
+                // if adminOnly checked, only admins may post (allow_messages = false)
+                const allow_messages = adminOnly ? false : true;
+                if (!name) return alert('Channel name is required');
+                try {
+                    await this.createChannel({ name, description, is_private, allow_messages });
+                    toggleModal('newChannelModal');
+                    // reload channels
+                    this.loadChannels();
+                } catch (err) { console.error(err); alert('Failed to create channel'); }
+            });
+        }
+
+        // Channels toggle button
+        const channelsToggleBtn = document.getElementById('channelsToggleBtn');
+        if (channelsToggleBtn) channelsToggleBtn.addEventListener('click', (e) => { this.showChannels(); });
     }
     
     setupPolling() {
-        setInterval(() => { this.loadConversations(); this.loadOnlineUsers(); }, 6000);
+        setInterval(() => { 
+            // Avoid overwriting the channels view while the user is browsing channels
+            if (!this.showingChannels) this.loadConversations();
+            this.loadOnlineUsers(); 
+        }, 6000);
     }
     
     async sendFileMessage() {
@@ -827,6 +1402,151 @@ class RealtimeChatApp {
             console.error('Error loading online users:', err);
         }
     }
+
+    // --- CHANNELS METHODS ---
+    async loadChannels() {
+        try {
+            const res = await axios.get(`${this.apiUrl}/channels`);
+            const data = res.data;
+            const channels = Array.isArray(data) ? data : (data.data || []);
+            this.renderChannels(channels);
+        } catch (e) { console.error('Failed to load channels', e); const el = document.getElementById('channels-list'); if (el) el.innerHTML = '<div class="p-2 text-center text-muted-400 text-sm">Failed to load channels.</div>'; }
+    }
+
+    renderChannels(channels) {
+        const container = document.getElementById('channels-list');
+        if (!container) return;
+        if (!channels || channels.length === 0) {
+            container.innerHTML = `<div class="p-2 text-center text-muted-400 text-sm">No channels yet.</div>`;
+            return;
+        }
+
+        container.innerHTML = channels.map(ch => {
+            const isMember = !!ch.is_member;
+            const membersCount = ch.members_count || 0;
+            const isAdminOnly = ch.allow_messages === false;
+            const outerClass = isAdminOnly ? 'group flex items-center gap-3 p-2 rounded-lg bg-primary/5 border-l-4 border-primary/10 transition-colors cursor-default' : 'group flex items-center gap-3 p-2 rounded-lg hover:bg-muted-100 transition-colors cursor-default';
+            const badge = isAdminOnly ? `<span class="inline-flex items-center text-[10px] bg-primary text-white px-2 py-0.5 rounded-full ml-2 font-semibold">ADMIN</span>` : '';
+
+            return `
+                <div class="${outerClass}">
+                    <div class="h-8 w-8 shrink-0 rounded-full ${isAdminOnly ? 'bg-primary text-white' : 'bg-muted-100 text-muted-600'} flex items-center justify-center font-bold text-sm">#</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-baseline">
+                            <h4 class="text-sm font-semibold text-main truncate">${this.escapeHtml(ch.name)} ${badge}</h4>
+                            <span class="text-[10px] text-muted-400 font-medium ml-2 whitespace-nowrap">${membersCount}</span>
+                        </div>
+                        <p class="text-xs text-muted-400 truncate mt-0.5">${this.escapeHtml(ch.description || '')}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        ${isAdminOnly ? '' : `<button class="px-2 py-1 rounded text-xs ${isMember ? 'border border-danger text-danger bg-white' : 'bg-primary text-white'}" onclick="chatApp.toggleChannelMembership(${ch.id}, ${isMember})">${isMember ? 'Leave' : 'Join'}</button>`}
+                        <button class="px-2 py-1 rounded text-xs border" onclick="chatApp.openChannel(${ch.id})">Open</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async createChannel(payload) {
+        try {
+            const res = await axios.post(`${this.apiUrl}/channels`, payload);
+            return res.data;
+        } catch (e) { console.error('Failed to create channel', e); throw e; }
+    }
+
+    async joinChannel(id) {
+        try { const res = await axios.post(`${this.apiUrl}/channels/${id}/join`); return res.data; } catch (e) { console.error(e); throw e; }
+    }
+
+    async leaveChannel(id) {
+        try { const res = await axios.post(`${this.apiUrl}/channels/${id}/leave`); return res.data; } catch (e) { console.error(e); throw e; }
+    }
+
+    async showChannelDetails(id) {
+        try {
+            const res = await axios.get(`${this.apiUrl}/channels/${id}`);
+            const ch = Array.isArray(res.data) ? res.data[0] : (res.data.data || res.data);
+            const rulesSection = document.getElementById('channelRulesSection');
+            if (rulesSection) rulesSection.classList.remove('hidden');
+            document.getElementById('channelDetailsTitle').textContent = ch.name || 'Channel';
+            document.getElementById('channelDetailsDescription').textContent = ch.description || '';
+
+            const membersDiv = document.getElementById('channelMembersList');
+            membersDiv.innerHTML = '';
+            if (Array.isArray(ch.members) && ch.members.length) {
+                ch.members.forEach(m => {
+                    const el = document.createElement('div');
+                    el.className = 'flex items-center gap-3';
+                    el.innerHTML = `<div class="h-8 w-8 rounded-full bg-muted-100 flex items-center justify-center font-bold text-xs">${(m.name||'').charAt(0).toUpperCase()}</div><div><div class="text-sm font-medium">${this.escapeHtml(m.name)}</div><div class="text-xs text-muted-400">${this.escapeHtml(m.email||'')}</div></div>`;
+                    membersDiv.appendChild(el);
+                });
+            } else membersDiv.innerHTML = '<div class="text-muted">No members yet</div>';
+
+            const rulesDiv = document.getElementById('channelRulesList');
+            rulesDiv.innerHTML = '';
+            if (Array.isArray(ch.rules) && ch.rules.length) {
+                ch.rules.forEach(r => {
+                    const el = document.createElement('div');
+                    el.className = 'mb-2';
+                    el.innerHTML = `<div class="font-medium">${this.escapeHtml(r.title)}</div><div class="text-xs text-muted-400">${this.escapeHtml(r.content||'')}</div>`;
+                    rulesDiv.appendChild(el);
+                });
+            } else rulesDiv.innerHTML = '<div class="text-muted">No rules defined</div>';
+
+            // If current user is admin, show add-rule form
+            const isAdmin = (window.currentUserIsAdmin === true || window.currentUserIsAdmin === 'true');
+            const addRuleContainerId = 'channelAddRuleContainer';
+            let addRuleContainer = document.getElementById(addRuleContainerId);
+            if (!addRuleContainer) {
+                addRuleContainer = document.createElement('div');
+                addRuleContainer.id = addRuleContainerId;
+                addRuleContainer.className = 'mt-4';
+                document.getElementById('channelDetailsContent').appendChild(addRuleContainer);
+            }
+            addRuleContainer.innerHTML = '';
+            if (isAdmin) {
+                addRuleContainer.innerHTML = `
+                    <h4 class="font-medium mt-4">Add Announcement / Rule</h4>
+                    <div class="mt-2">
+                        <input id="newRuleTitle" class="w-full border px-3 py-2 rounded-lg mb-2" placeholder="Title" />
+                        <textarea id="newRuleContent" class="w-full border px-3 py-2 rounded-lg mb-2" placeholder="Content"></textarea>
+                        <div class="text-right"><button class="px-3 py-1 bg-primary text-white rounded-lg" onclick="chatApp.addRuleToChannel(${ch.id})">Post</button></div>
+                    </div>
+                `;
+            }
+
+            toggleModal('channelDetailsModal');
+        } catch (e) { console.error('Failed to load channel', e); }
+    }
+
+    async addRuleToChannel(channelId) {
+        const title = document.getElementById('newRuleTitle')?.value?.trim();
+        const content = document.getElementById('newRuleContent')?.value?.trim();
+        if (!title) return alert('Title is required');
+        try {
+            const res = await axios.post(`${this.apiUrl}/channels/${channelId}/rules`, { title, content });
+            alert('Announcement posted');
+            // refresh view in chat pane
+            this.openChannel(channelId);
+        } catch (err) {
+            console.error(err);
+            alert('Failed to post announcement (admin only)');
+        }
+    }
+
+    async toggleChannelMembership(id, isMember) {
+        try {
+            if (isMember) await this.leaveChannel(id);
+            else await this.joinChannel(id);
+            await this.loadChannels();
+        } catch (e) { alert('Failed to update membership'); }
+    }
+
+    showChannels() { this.showingChannels = true; this.loadChannels(); }
+
+    hideChannels() { this.showingChannels = false; this.loadConversations(); }
+
+    escapeHtml(str) { if(!str) return ''; return String(str).replace(/&/g, '&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
 
     // --- REALTIME (Laravel Echo / Pusher) ---
     setupRealtimeListeners() {
@@ -954,7 +1674,6 @@ function handleFileSelectRealtime(input, type) {
     }
 }
 function clearFileSelection() {
-    window.selectedFile = null;
     document.getElementById('file-preview').classList.add('hidden');
     document.getElementById('image-input').value = '';
     document.getElementById('file-input').value = '';
@@ -962,7 +1681,10 @@ function clearFileSelection() {
 
 let chatApp;
 document.addEventListener('DOMContentLoaded', () => {
-    if(document.getElementById('conversations-list')) chatApp = new RealtimeChatApp();
+    // Initialize when the new DM/Channels containers exist
+    if (document.getElementById('dm-list') || document.getElementById('channels-list')) {
+        chatApp = new RealtimeChatApp();
+    }
 });
 </script>
 @endpush

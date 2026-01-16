@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\CheckInController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\ChatbotController;
+use App\Http\Controllers\Api\ChannelController;
 
 /*
 |--------------------------------------------------------------------------
@@ -49,11 +50,22 @@ Route::middleware(['auth:sanctum'])->prefix('chat')->group(function () {
     Route::post('/conversations/{conversation}/read', [ChatController::class, 'markAsRead']);
     Route::post('/conversations/{conversation}/typing', [ChatController::class, 'setTyping']);
     Route::get('/users/search', [ChatController::class, 'searchUsers']);
+    Route::post('/conversations/{conversation}/participants', [ChatController::class, 'addParticipants']);
     Route::get('/users/online', [ChatController::class, 'getOnlineUsers']);
     
     // Video meeting integration
     Route::post('/conversations/{conversation}/video-call', [ChatController::class, 'createVideoCall']);
     Route::post('/conversations/{conversation}/join-video', [ChatController::class, 'joinVideoCall']);
+
+    // Channels (similar to Discord channels)
+    Route::get('/channels', [ChannelController::class, 'index']);
+    Route::post('/channels', [ChannelController::class, 'store']);
+    Route::get('/channels/{channel}', [ChannelController::class, 'show']);
+    Route::post('/channels/{channel}/join', [ChannelController::class, 'join']);
+    Route::post('/channels/{channel}/leave', [ChannelController::class, 'leave']);
+    Route::get('/channels/{channel}/rules', [ChannelController::class, 'rules']);
+    Route::post('/channels/{channel}/rules', [ChannelController::class, 'addRule']);
+    Route::post('/channels/{channel}/messages', [ChannelController::class, 'postMessage']);
 });
 
 // Chat bot
