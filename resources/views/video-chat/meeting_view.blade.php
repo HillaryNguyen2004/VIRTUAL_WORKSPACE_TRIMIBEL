@@ -3,6 +3,8 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
     <head>
 
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+
         <script src="https://cdn.metered.ca/sdk/video/1.4.5/sdk.min.js"></script>
 
         <script>

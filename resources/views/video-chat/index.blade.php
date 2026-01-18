@@ -132,7 +132,7 @@
 
             {{-- Card Footer --}}
             <div class="bg-muted-50/50 px-6 py-4 border-t border-muted-100 rounded-b-2xl">
-                <a href="#" class="text-sm font-semibold text-primary hover:text-primary-hover flex items-center justify-center gap-2 transition-colors">
+                <a href="{{ route('meetings.details', $meeting->id) }}" class="text-sm font-semibold text-primary hover:text-primary-hover flex items-center justify-center gap-2 transition-colors">
                     {{ __('video_chat.view_details') }}
                 </a>
             </div>
