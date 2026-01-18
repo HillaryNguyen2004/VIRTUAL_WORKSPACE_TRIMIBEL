@@ -245,6 +245,18 @@ Route::get('/meeting', [MeetingController::class, 'index'])->name('meeting');
 
 Route::get('/meetings/history', [MeetingController::class, 'history'])->name('meetings.history');
 
+Route::get('/meetings/{meetingHistoryId}/details', [MeetingController::class, 'details'])
+    ->middleware(['auth'])
+    ->name('meetings.details');
+
+Route::post('/meetings/history/attendance', [MeetingController::class, 'recordAttendance'])
+    ->middleware(['auth'])
+    ->name('meetings.history.attendance');
+
+Route::post('/meetings/history/leave', [MeetingController::class, 'recordLeave'])
+    ->middleware(['auth'])
+    ->name('meetings.history.leave');
+
 Route::post("/createMeeting", [MeetingController::class, 'createMeeting'])->name("createMeeting");
 Route::post("/validateMeeting", [MeetingController::class, 'validateMeeting'])->name("validateMeeting");
 

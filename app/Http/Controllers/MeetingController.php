@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MeetingAttendee;
+use App\Models\MeetingHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -11,6 +13,47 @@ use Illuminate\Support\Facades\Log;
 
 class MeetingController extends Controller
 {
+
+    private function ensureMeetingHistory(string $meetingId): ?MeetingHistory
+    {
+        $userId = auth()->id();
+
+        if (!$userId) {
+            return null;
+        }
+
+        return MeetingHistory::firstOrCreate(
+            [
+                'user_id' => $userId,
+                'meeting_id' => $meetingId,
+            ],
+            [
+                'start_time' => now(),
+            ]
+        );
+    }
+
+    private function getMeetingHistoryForUser()
+    {
+        $userId = auth()->id();
+
+        if (!$userId) {
+            return collect();
+        }
+
+        $meetingHistory = MeetingHistory::with('attendees')
+            ->where('user_id', $userId)
+            ->orderByDesc('start_time')
+            ->get();
+
+        $meetingHistory->each(function ($meeting) {
+            $meeting->start_time = $meeting->start_time ?? $meeting->created_at;
+            $meeting->attendees = $meeting->attendees ?? collect();
+            $meeting->attendees_count = $meeting->attendees->count();
+        });
+
+        return $meetingHistory;
+    }
 
     public function createMeeting(Request $request) {
         
@@ -24,6 +67,8 @@ class MeetingController extends Controller
         ]);
 
         $roomName = $response->json("roomName");
+
+        $this->ensureMeetingHistory($roomName);
         
         return redirect("/meeting/{$roomName}"); // We will update this soon.
     }
@@ -41,6 +86,7 @@ class MeetingController extends Controller
 
 
         if ($response->status() === 200)  {
+            $this->ensureMeetingHistory($roomName);
             return redirect("/meeting/{$roomName}"); // We will update this soon
         } else {
             return redirect("/?error=Invalid Meeting ID");
@@ -60,6 +106,41 @@ class MeetingController extends Controller
      */
     public function showMeetingRoom(Request $request, $meetingId)
     {
+        if (auth()->check()) {
+            $history = $this->ensureMeetingHistory($meetingId);
+            if ($history) {
+                $user = auth()->user();
+                $name = $user->name ?? $user->email ?? 'User';
+
+                $attendee = MeetingAttendee::where('meeting_id', $meetingId)
+                    ->where('user_id', $user->id)
+                    ->first();
+
+                if (!$attendee) {
+                    $attendee = MeetingAttendee::create([
+                        'meeting_id' => $meetingId,
+                        'user_id' => $user->id,
+                        'name' => $name,
+                        'avatar_url' => $user->avatar_url ?? null,
+                        'joined_at' => now(),
+                    ]);
+                }
+
+                $shouldSave = false;
+                if ($attendee->name !== $name) {
+                    $attendee->name = $name;
+                    $shouldSave = true;
+                }
+                if (!empty($user->avatar_url) && $attendee->avatar_url !== $user->avatar_url) {
+                    $attendee->avatar_url = $user->avatar_url;
+                    $shouldSave = true;
+                }
+                if ($shouldSave) {
+                    $attendee->save();
+                }
+            }
+        }
+
         // This page might use a different layout, or no layout at all
         return view('video-chat.meeting_view', [
             'MEETING_ID' => $meetingId,
@@ -69,87 +150,107 @@ class MeetingController extends Controller
 
     public function index()
     {
-        // detailed dummy data to match your specific Blade view
-        $meetingHistory = collect([
-            (object) [
-                'id' => 1,
-                'start_time' => now()->subHours(2), // Matches $meeting->start_time
-                'notes' => 'Discussed Q4 marketing strategy and budget allocation.', // Matches $meeting->notes
-                'attendees_count' => 5, // Matches $meeting->attendees_count
-                'attendees' => collect([ // Matches $meeting->attendees
-                    (object) ['name' => 'Alice Johnson', 'avatar_url' => null],
-                    (object) ['name' => 'Bob Smith', 'avatar_url' => null],
-                    (object) ['name' => 'Charlie Davis', 'avatar_url' => null],
-                    (object) ['name' => 'Dana Lee', 'avatar_url' => null],
-                    (object) ['name' => 'Evan Wright', 'avatar_url' => null],
-                ]),
-            ],
-            (object) [
-                'id' => 2,
-                'start_time' => now()->subDays(1)->subHours(4),
-                'notes' => null, // Test empty notes
-                'attendees_count' => 2,
-                'attendees' => collect([
-                    (object) ['name' => 'You', 'avatar_url' => null],
-                    (object) ['name' => 'Sarah Connor', 'avatar_url' => null],
-                ]),
-            ],
-            (object) [
-                'id' => 3,
-                'start_time' => now()->subDays(3),
-                'notes' => 'Client requested changes to the homepage layout.',
-                'attendees_count' => 8,
-                'attendees' => collect([
-                    (object) ['name' => 'Mike Ross', 'avatar_url' => null],
-                    (object) ['name' => 'Rachel Zane', 'avatar_url' => null],
-                    (object) ['name' => 'Harvey Specter', 'avatar_url' => null],
-                    (object) ['name' => 'Louis Litt', 'avatar_url' => null],
-                ]),
-            ],
-            (object) [
-                'id' => 4,
-                'start_time' => now()->subWeek(),
-                'notes' => 'Weekly team sync.',
-                'attendees_count' => 12,
-                'attendees' => collect([
-                    (object) ['name' => 'Team Lead', 'avatar_url' => null],
-                    (object) ['name' => 'Developer', 'avatar_url' => null],
-                    (object) ['name' => 'Designer', 'avatar_url' => null],
-                ]),
-            ],
-        ]);
+        $meetingHistory = $this->getMeetingHistoryForUser();
 
         return view('video-chat.index', compact('meetingHistory'));
     }
 
     public function history()
     {
-        dd('I am here!');
-        // Create dummy data using a Collection to mimic a Database result
-        $meetingHistory = collect([
-            (object) [
-                'id' => 1,
-                'topic' => 'Project Kickoff',
-                'host' => 'Dr. Smith',
-                'start_time' => now()->subDays(1)->format('M d, Y H:i'), // "Nov 25, 2025 08:30"
-                'status' => 'Completed',
-            ],
-            (object) [
-                'id' => 2,
-                'topic' => 'Weekly Team Sync',
-                'host' => 'You',
-                'start_time' => now()->subDays(3)->format('M d, Y H:i'),
-                'status' => 'Cancelled',
-            ],
-            (object) [
-                'id' => 3,
-                'topic' => 'Client Review',
-                'host' => 'Jane Doe',
-                'start_time' => now()->subHours(5)->format('M d, Y H:i'),
-                'status' => 'Completed',
-            ],
-        ]);
+        $meetingHistory = $this->getMeetingHistoryForUser();
 
         return view('meetings.history', compact('meetingHistory'));
+    }
+
+    public function details($meetingHistoryId)
+    {
+        $userId = auth()->id();
+
+        $meeting = MeetingHistory::with('attendees')
+            ->where('id', $meetingHistoryId)
+            ->where('user_id', $userId)
+            ->firstOrFail();
+
+        $meeting->start_time = $meeting->start_time ?? $meeting->created_at;
+        $meeting->attendees = $meeting->attendees ?? collect();
+        $meeting->attendees_count = $meeting->attendees->count();
+
+        return view('meetings.details', compact('meeting'));
+    }
+
+    public function recordAttendance(Request $request)
+    {
+        $data = $request->validate([
+            'meeting_id' => 'required|string',
+        ]);
+
+        $history = $this->ensureMeetingHistory($data['meeting_id']);
+        if (!$history) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $user = auth()->user();
+        $name = $user->name ?? $user->email ?? 'User';
+
+        $attendee = MeetingAttendee::where('meeting_id', $data['meeting_id'])
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$attendee) {
+            $attendee = MeetingAttendee::where('meeting_id', $data['meeting_id'])
+                ->whereNull('user_id')
+                ->where('name', $name)
+                ->first();
+        }
+
+        if (!$attendee) {
+            $attendee = MeetingAttendee::create([
+                'meeting_id' => $data['meeting_id'],
+                'user_id' => $user->id,
+                'name' => $name,
+                'avatar_url' => $user->avatar_url ?? null,
+                'joined_at' => now(),
+            ]);
+        }
+
+        $shouldSave = false;
+        if ($attendee->user_id !== $user->id) {
+            $attendee->user_id = $user->id;
+            $shouldSave = true;
+        }
+        if ($attendee->name !== $name) {
+            $attendee->name = $name;
+            $shouldSave = true;
+        }
+
+        if (!empty($user->avatar_url) && $attendee->avatar_url !== $user->avatar_url) {
+            $attendee->avatar_url = $user->avatar_url;
+            $shouldSave = true;
+        }
+
+        if ($shouldSave) {
+            $attendee->save();
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    public function recordLeave(Request $request)
+    {
+        $data = $request->validate([
+            'meeting_id' => 'required|string',
+        ]);
+
+        $history = $this->ensureMeetingHistory($data['meeting_id']);
+        if (!$history) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        if (!$history->end_time) {
+            $history->end_time = now();
+            $history->save();
+        }
+
+        return response()->json(['success' => true]);
     }
 }
