@@ -91,8 +91,8 @@ class MeetingController extends Controller
 
     public function createMeeting(Request $request) {
         
-        $METERED_DOMAIN = env('METERED_DOMAIN');
-        $METERED_SECRET_KEY = env('METERED_SECRET_KEY');
+        $METERED_DOMAIN = config('services.metered.domain');
+        $METERED_SECRET_KEY = config('services.metered.secret_key');
     
 
         // Contain the logic to create a new meeting
@@ -108,8 +108,8 @@ class MeetingController extends Controller
     }
 
     public function validateMeeting(Request $request) {
-        $METERED_DOMAIN = env('METERED_DOMAIN');
-        $METERED_SECRET_KEY = env('METERED_SECRET_KEY');
+        $METERED_DOMAIN = config('services.metered.domain');
+        $METERED_SECRET_KEY = config('services.metered.secret_key');
 
         $meetingId = $request->input('meetingId');
 
