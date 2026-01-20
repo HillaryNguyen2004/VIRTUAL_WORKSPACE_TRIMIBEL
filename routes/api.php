@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\CheckInController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\ChatbotController;
 use App\Http\Controllers\Api\ChannelController;
+use App\Http\Controllers\MeetingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,6 +22,8 @@ use App\Http\Controllers\Api\ChannelController;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+Route::get('/meetings/{roomName}/details', [MeetingController::class, 'meteredRoomDetails']);
 
 // Public check-in (creates token)
 Route::post('/check-in', [CheckInController::class, 'checkIn']);
