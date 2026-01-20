@@ -135,6 +135,32 @@
                         You
                     </div>
                 </div>
+
+                <div class="bg-gray-800 rounded-2xl p-5 border border-gray-700 shadow-lg relative overflow-hidden">
+                    <div class="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-purple-500/10 rounded-full blur-xl opacity-50"></div>
+                    <div class="relative z-10">
+                        <label class="block text-xs text-gray-400 font-bold uppercase tracking-wider mb-3">
+                            Participants ({{ $meetingAttendees->count() }})
+                        </label>
+                        <div class="space-y-3">
+                            @forelse($meetingAttendees as $attendee)
+                                <div class="flex items-center gap-3 bg-gray-900/60 border border-gray-700 rounded-xl px-3 py-2">
+                                    <img class="h-8 w-8 rounded-full ring-2 ring-gray-800 object-cover" 
+                                         src="{{ $attendee->avatar_url ?? 'https://ui-avatars.com/api/?name='.urlencode($attendee->name) }}" 
+                                         alt="{{ $attendee->name }}">
+                                    <div class="min-w-0">
+                                        <div class="text-sm font-semibold text-gray-100 truncate">{{ $attendee->name }}</div>
+                                        @if($attendee->joined_at)
+                                            <div class="text-xs text-gray-500">Joined {{ $attendee->joined_at->format('h:i A') }}</div>
+                                        @endif
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="text-sm text-gray-500">No participants yet.</div>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
                 
             </div>
         </div>

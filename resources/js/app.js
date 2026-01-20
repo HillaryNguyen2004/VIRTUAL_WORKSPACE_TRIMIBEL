@@ -19,29 +19,9 @@ let localVideoStream = null;
 let activeSpeakerId = null;
 let meetingInfo = {};
 
-function getCsrfToken() {
-  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-}
-
-async function recordMeetingAttendance() {
-  if (!window.MEETING_ID) return;
-  const csrfToken = getCsrfToken();
-  if (csrfToken) {
-    axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
-  }
-
-  try {
-    await axios.post('/meetings/history/attendance', {
-      meeting_id: window.MEETING_ID,
-    });
-  } catch (error) {
-    console.warn('Failed to record meeting attendance', error);
-  }
-}
-
 async function recordMeetingLeave() {
   if (!window.MEETING_ID) return;
-  const csrfToken = getCsrfToken();
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
   if (csrfToken) {
     axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
   }
@@ -117,8 +97,6 @@ async function joinMeetingFromUrl(username) {
       
       jquery("#toggleCamera").addClass("bg-gray-500");
       jquery("#toggleMicrophone").addClass("bg-gray-500");
-
-        await recordMeetingAttendance();
 
   } catch (ex) {
       console.log("Error auto-joining meeting", ex);
