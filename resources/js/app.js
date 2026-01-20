@@ -19,6 +19,85 @@ let localVideoStream = null;
 let activeSpeakerId = null;
 let meetingInfo = {};
 
+function initMeetingChat() {
+  const chatContainer = document.getElementById('meetingChatMessages');
+  const chatInput = document.getElementById('meetingChatInput');
+  const chatSend = document.getElementById('meetingChatSend');
+  const chatStatus = document.getElementById('meetingChatStatus');
+
+  if (!chatContainer || !chatInput || !chatSend) return;
+
+  const appendMessage = (sender, message, isLocal = false) => {
+    if (!message) return;
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const wrapper = document.createElement('div');
+    wrapper.className = isLocal ? 'flex flex-col items-end' : 'flex flex-col items-start';
+    wrapper.innerHTML = `
+      <div class="max-w-[85%] rounded-2xl px-3 py-2 text-sm ${isLocal ? 'bg-emerald-600 text-white' : 'bg-gray-900 text-gray-100'}">
+        <div class="text-[11px] font-semibold ${isLocal ? 'text-emerald-100' : 'text-gray-400'}">${sender}</div>
+        <div class="mt-0.5 break-words">${DOMPurify.sanitize(message)}</div>
+      </div>
+      <div class="text-[10px] text-gray-500 mt-1">${time}</div>
+    `;
+    chatContainer.appendChild(wrapper);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  };
+
+  const sendMessage = async () => {
+    const text = chatInput.value.trim();
+    if (!text) return;
+
+    const senderName = meeting?.participantInfo?.name || document.getElementById('localUsername')?.textContent?.trim() || 'You';
+
+    chatInput.value = '';
+    appendMessage(senderName, text, true);
+
+    try {
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+      if (csrfToken) {
+        axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
+      }
+      await axios.post(`/meeting/${window.MEETING_ID}/chat`, { message: text });
+    } catch (error) {
+      console.warn('Failed to send meeting chat message', error);
+    }
+  };
+
+  chatSend.addEventListener('click', sendMessage);
+  chatInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      sendMessage();
+    }
+  });
+
+  if (window.Echo && window.MEETING_ID) {
+    try {
+      window.Echo.private(`meeting.${window.MEETING_ID}`)
+        .listen('.meeting.chat', (payload) => {
+          const sender = payload?.name || 'Participant';
+          const message = payload?.message || '';
+          appendMessage(sender, message, false);
+        });
+
+      if (chatStatus) {
+        chatStatus.textContent = 'Live';
+        chatStatus.classList.remove('text-gray-500');
+        chatStatus.classList.add('text-emerald-400');
+      }
+    } catch (error) {
+      console.warn('Failed to subscribe to meeting chat', error);
+      if (chatStatus) {
+        chatStatus.textContent = 'Offline';
+        chatStatus.classList.remove('text-emerald-400');
+        chatStatus.classList.add('text-gray-500');
+      }
+    }
+  } else if (chatStatus) {
+    chatStatus.textContent = 'Offline';
+  }
+}
+
 async function recordMeetingLeave() {
   if (!window.MEETING_ID) return;
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -97,6 +176,8 @@ async function joinMeetingFromUrl(username) {
       
       jquery("#toggleCamera").addClass("bg-gray-500");
       jquery("#toggleMicrophone").addClass("bg-gray-500");
+
+        initMeetingChat();
 
   } catch (ex) {
       console.log("Error auto-joining meeting", ex);
@@ -228,6 +309,10 @@ jquery("#joinMeetingBtn").on("click", async function () {
   // Open the new window
   window.open(newWindowUrl, '_blank');
 });
+
+if (document.getElementById('meetingView')) {
+  initMeetingChat();
+}
 
 /**
  * Handling Meeting Events

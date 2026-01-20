@@ -161,6 +161,27 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="bg-gray-800 rounded-2xl p-5 border border-gray-700 shadow-lg relative overflow-hidden">
+                    <div class="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-emerald-500/10 rounded-full blur-xl opacity-50"></div>
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="block text-xs text-gray-400 font-bold uppercase tracking-wider">
+                                Chat (ephemeral)
+                            </label>
+                            <span id="meetingChatStatus" class="text-[10px] text-gray-500">Active</span>
+                        </div>
+
+                        <div id="meetingChatMessages" class="h-56 overflow-y-auto space-y-3 pr-1">
+                            <div class="text-xs text-gray-500">Chat messages will disappear after the meeting ends.</div>
+                        </div>
+
+                        <div class="mt-4 flex items-center gap-2">
+                            <input id="meetingChatInput" type="text" placeholder="Type a message..." class="flex-1 bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40" />
+                            <button id="meetingChatSend" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">Send</button>
+                        </div>
+                    </div>
+                </div>
                 
             </div>
         </div>
