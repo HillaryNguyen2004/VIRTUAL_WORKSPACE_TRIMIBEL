@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\MeetingAttendee;
 use App\Models\MeetingHistory;
+use App\Events\MeetingChatMessage;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -341,5 +342,32 @@ class MeetingController extends Controller
         }
 
         return response()->json(['success' => true]);
+    }
+
+    public function sendChatMessage(Request $request, $meetingId)
+    {
+        $data = $request->validate([
+            'message' => 'required|string|max:2000',
+        ]);
+
+        $history = $this->ensureMeetingHistory($meetingId);
+        if (!$history) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $user = auth()->user();
+
+        $payload = [
+            'meeting_id' => $meetingId,
+            'message' => $data['message'],
+            'name' => $user->name ?? $user->email ?? 'User',
+            'user_id' => $user->id,
+            'avatar_url' => $user->avatar_url ?? null,
+            'sent_at' => now()->toISOString(),
+        ];
+
+        broadcast(new MeetingChatMessage($meetingId, $payload))->toOthers();
+
+        return response()->json(['success' => true, 'data' => $payload]);
     }
 }

@@ -249,10 +249,6 @@ Route::get('/meetings/{meetingHistoryId}/details', [MeetingController::class, 'd
     ->middleware(['auth'])
     ->name('meetings.details');
 
-Route::post('/meetings/history/attendance', [MeetingController::class, 'recordAttendance'])
-    ->middleware(['auth'])
-    ->name('meetings.history.attendance');
-
 Route::post('/meetings/history/leave', [MeetingController::class, 'recordLeave'])
     ->middleware(['auth'])
     ->name('meetings.history.leave');
@@ -276,6 +272,10 @@ Route::get('/meeting/{meetingId}', [MeetingController::class, 'showLobby'])
 // Route 2: The Meeting Room Page
 Route::get('/meeting/{meetingId}/room', [MeetingController::class, 'showMeetingRoom'])
     ->name('meeting.room');
+
+Route::post('/meeting/{meetingId}/chat', [MeetingController::class, 'sendChatMessage'])
+    ->middleware(['auth'])
+    ->name('meeting.chat.send');
 
 // routes/web.php
 Route::get('/team-progress', [TeamProgressController::class, 'index'])->name('team-progress');

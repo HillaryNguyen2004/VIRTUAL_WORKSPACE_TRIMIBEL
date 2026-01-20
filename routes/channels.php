@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Broadcast;
+use App\Models\MeetingHistory;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,4 +31,10 @@ Broadcast::channel('user.{userId}', function ($user, $userId) {
 // Public channel for user status
 Broadcast::channel('user-status', function ($user) {
     return ['id' => $user->id, 'name' => $user->name];
+});
+
+Broadcast::channel('meeting.{meetingId}', function ($user, $meetingId) {
+    return MeetingHistory::where('user_id', $user->id)
+        ->where('meeting_id', $meetingId)
+        ->exists();
 });
