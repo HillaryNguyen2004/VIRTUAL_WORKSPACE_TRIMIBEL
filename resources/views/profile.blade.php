@@ -2,7 +2,7 @@
 @section('title', __('profile.profile_title'))
 
 @section('content')
-@vite(['resources/js/toggle_view.js'])
+@vite(['resources/js/toggle_view.js', 'resources/js/show-toast.js'])
 
 @php
     use Illuminate\Support\Facades\Route;
@@ -15,6 +15,7 @@
         $dashRoute = 'staff.dashboard';
     }
 @endphp
+
 <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 @3xl:px-8 @4xl:px-16 @5xl:px-24 py-8">
     
     {{-- Back Button & Title --}}
@@ -233,8 +234,45 @@
                         <p class="text-sm font-semibold text-main">{{ Auth::user()->insurance_code ?? '8456120546' }}</p>
                     </div>
                 </div>
-            </div>
 
+                {{-- Face Registration Section --}}
+                <div class="mt-6 pt-6 border-t border-muted-100">
+                    <h4 class="text-md font-bold text-main mb-4">Face Registration for Check-in</h4>
+                    
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            @if(Auth::user()->face_image_path)
+                                <p class="text-sm text-green-600 font-semibold mb-1 flex items-center">
+                                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                    Face registered
+                                </p>
+                                <p class="text-xs text-muted-400">Registered on {{ \Carbon\Carbon::parse(Auth::user()->face_registered_at ?? now())->format('M d, Y H:i') }}</p>
+                            @else
+                                <p class="text-sm text-orange-600 font-semibold mb-1">⚠ Face not registered</p>
+                                <p class="text-xs text-muted-400">Register your face to enable face-based check-in</p>
+                            @endif
+                        </div>
+                        
+                        <a href="{{ route('face.register') }}" 
+                           class="inline-flex items-center px-4 py-2 bg-primary hover:bg-primary-hover text-white font-medium rounded-lg transition-colors">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            {{ Auth::user()->face_image_path ? 'Update Face' : 'Register Face' }}
+                        </a>
+                    </div>
+                    
+                    @if(Auth::user()->face_image_path)
+                        <div class="mt-4 p-3 bg-green-50 border border-green-100 rounded-lg">
+                            <p class="text-sm text-green-700 mb-2">✅ Face registration completed</p>
+                            <p class="text-xs text-green-600">You can now use face recognition for check-in. Visit "Manage Face" to update or retake your face photo.</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
         </div>
     </div>
 </div>

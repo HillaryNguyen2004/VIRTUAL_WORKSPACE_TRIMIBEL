@@ -236,8 +236,14 @@ Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallba
 // Profile and Settings
 Route::get('/profile', [ProfileController::class, 'showProfile'])->name('profile');
 Route::get('/settings', [ProfileController::class, 'showSettings'])->name('settings');
+Route::post('/profile/register-face', [ProfileController::class, 'registerFace'])->name('profile.register.face');
 Route::put('/settings/update-name', [SettingsController::class, 'updateName'])->name('settings.update.name');
 Route::put('/settings/update-avatar', [SettingsController::class, 'updateAvatar'])->name('settings.update.avatar');
+Route::get('/face/register', [ProfileController::class, 'showFaceRegister'])
+    ->name('face.register');
+Route::post('/face/register', [ProfileController::class, 'storeFaceRegister'])
+    ->name('face.register.store');
+
 
 Route::get('lang/{locale}', function ($locale) {
     if (in_array($locale, ['en', 'vi'])) {
