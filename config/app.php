@@ -186,7 +186,6 @@ return [
         /*
          * Package Service Providers...
          */
-        Softon\LaravelFaceDetect\FaceDetectServiceProvider::class,
 
         /*
          * Application Service Providers...
@@ -197,6 +196,7 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         App\Providers\RepositoryServiceProvider::class,
+        Intervention\Image\ImageServiceProvider::class,
 
     ],
 
@@ -216,5 +216,5 @@ return [
     ])->toArray(),
     
     'FileUpload' => App\Facades\FileUpload::class,
-    'FaceDetect' => Softon\LaravelFaceDetect\Facades\FaceDetect::class,
+    'Image' => Intervention\Image\Facades\Image::class,
 ];

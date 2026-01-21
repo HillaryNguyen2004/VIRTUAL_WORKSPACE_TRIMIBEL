@@ -9,6 +9,7 @@
         "ext-gd": "*",
         "ext-zip": "*",
         "guzzlehttp/guzzle": "^7.2",
+        "intervention/image": "2.7",
         "laravel/framework": "^9.19",
         "laravel/sanctum": "^3.0",
         "laravel/socialite": "^5.21",
@@ -18,8 +19,7 @@
         "phpoffice/phpspreadsheet": "^4.4",
         "pusher/pusher-php-server": "^7.2",
         "spatie/laravel-permission": "^6.20",
-        "tymon/jwt-auth": "^2.2",
-        "softon/laravel-face-detect": "dev-master"
+        "tymon/jwt-auth": "^2.2"
     },
     "require-dev": {
         "deployer/deployer": "^7.5",

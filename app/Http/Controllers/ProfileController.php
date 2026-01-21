@@ -60,4 +60,20 @@ class ProfileController extends Controller
             return back()->with('error', $result['message']);
         }
     }
+
+    public function registerFace(Request $request)
+    {
+        $request->validate([
+            'face_image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        $user = auth()->user();
+        $result = $this->checkInService->registerFace($request->file('face_image'), $user->username);
+
+        if ($result['status']) {
+            return back()->with('success', $result['message']);
+        } else {
+            return back()->with('error', $result['message']);
+        }
+    }
 }

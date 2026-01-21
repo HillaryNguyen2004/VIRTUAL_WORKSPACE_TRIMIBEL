@@ -17,7 +17,7 @@ use App\Http\Controllers\DayOffController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\TeamProgressController;
 use App\Http\Controllers\CalendarController;
-
+use App\Http\Controllers\FaceRegisterController;
 // Route::group(['middleware' => ['web', 'core']], function () {
 //     include_once 'admin/user.php';
 // });
@@ -241,9 +241,23 @@ Route::put('/settings/update-name', [SettingsController::class, 'updateName'])->
 Route::put('/settings/update-avatar', [SettingsController::class, 'updateAvatar'])->name('settings.update.avatar');
 Route::get('/face/register', [ProfileController::class, 'showFaceRegister'])
     ->name('face.register');
-Route::post('/face/register', [ProfileController::class, 'storeFaceRegister'])
-    ->name('face.register.store');
+// Route::post('/face/register', [ProfileController::class, 'storeFaceRegister'])
+//     ->name('face.register.store');
+Route::post('/face/register', [FaceRegisterController::class, 'store'])
+    ->name('face.register.store')
+    ->middleware('auth');
 
+Route::post('/profile/register-face', [ProfileController::class, 'registerFace'])
+    ->name('profile.register.face')
+    ->middleware('auth');
+
+// routes/web.php
+Route::get('/profile/check-face-status', function () {
+    $user = auth()->user();
+    return response()->json([
+        'face_registered' => !empty($user->face_image_path)
+    ]);
+})->middleware('auth');
 
 Route::get('lang/{locale}', function ($locale) {
     if (in_array($locale, ['en', 'vi'])) {
