@@ -60,6 +60,7 @@ return [
     'chat_box' => 'Tin nhắn',
     'video_chat' => 'Họp Video',
     'team_progress' => 'Tiến độ nhóm',
+    'calendar' => 'Lịch',
 
     'notifications' => 'Thông báo',
     'no_new_notifications' => 'Không có thông báo mới',
