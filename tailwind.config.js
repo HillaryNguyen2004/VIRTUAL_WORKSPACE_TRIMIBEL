@@ -3,6 +3,7 @@ module.exports = {
   content: [
     './resources/views/**/*.blade.php',
     './resources/**/*.{php,js,ts,vue}',
+    './app/**/*.php',
   ],
   theme: {
     extend: {
@@ -34,7 +35,7 @@ module.exports = {
         
         // CHANGED: Switched from Lavender (#F1EFFC) to a Neutral Cool White (#F9FAFB)
         // This makes the UI feel cleaner and less "tinted"
-        canvas: '#F9FAFB',    
+        canvas: '#F9FAFB',
 
         // --- MUTED / NEUTRALS (Redone) ---
         // I replaced the purple-tinted grays with standard cool-grays (Slate).
@@ -53,9 +54,21 @@ module.exports = {
         },
 
         // --- STATUS COLORS ---
-        success: '#10B981', 
-        danger: '#EF4444',  
-        warning: '#F59E0B', 
+        success: {
+          DEFAULT: '#10B981', // Emerald 500
+          hover: '#059669',   // Emerald 600
+          light: '#34D399',   // Emerald 400 
+        },
+        danger: {
+          DEFAULT: '#EF4444', // Red 500
+          hover: '#DC2626',   // Red 600
+          light: '#F87171',   // Red 400
+        },
+        warning: {
+          DEFAULT: '#F59E0B', // Amber 500
+          hover: '#D97706',   // Amber 600
+          light: '#FBBF24',   // Amber 400
+        },
       },
     },
   },

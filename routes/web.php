@@ -18,6 +18,7 @@ use App\Services\UserRoleRedirectService;
 use App\Http\Controllers\DayOffController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\TeamProgressController;
+use App\Http\Controllers\CalendarController;
 
 // Route::group(['middleware' => ['web', 'core']], function () {
 //     include_once 'admin/user.php';
@@ -280,3 +281,15 @@ Route::post('/meeting/{meetingId}/chat', [MeetingController::class, 'sendChatMes
 // routes/web.php
 Route::get('/team-progress', [TeamProgressController::class, 'index'])->name('team-progress');
 Route::get('/user-tasks/{userId}', [App\Http\Controllers\TaskController::class, 'getUserTasks'])->name('user.tasks');
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar');
+    Route::get('/calendar/events', [CalendarController::class, 'getEvents'])->name('calendar.events');
+    Route::post('/calendar/store', [CalendarController::class, 'store'])->name('calendar.store');
+    Route::patch('/calendar/update', [CalendarController::class, 'updateDate'])->name('calendar.update'); // For Drag & Drop
+    Route::put('/calendar/update-details', [CalendarController::class, 'updateDetails'])->name('calendar.update-details'); // For Edit Modal
+    Route::delete('/calendar/destroy', [CalendarController::class, 'destroy'])->name('calendar.destroy'); // For Delete Button
+
+    Route::get('/calendar/google/connect', [CalendarController::class, 'connectGoogle'])->name('calendar.google.connect');
+    Route::get('/calendar/google/callback', [CalendarController::class, 'googleCallback']);
+});
