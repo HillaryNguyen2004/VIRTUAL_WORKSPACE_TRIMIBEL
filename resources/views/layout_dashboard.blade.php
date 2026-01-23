@@ -33,8 +33,6 @@
         'resources/js/chat_bot.js',
         'resources/js/admin/edit_company_hours.js'
     ])
-
-    @vite(['resources/js/user_dashboard/check_in_out_api.js'])
     
     <style>
         /* Smooth transition for the sidebar width */

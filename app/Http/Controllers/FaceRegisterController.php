@@ -3,12 +3,17 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
+use App\Services\FaceService;
 
 class FaceRegisterController extends Controller
 {
+    protected $faceService;
+
+    public function __construct(FaceService $faceService)
+    {
+        $this->faceService = $faceService;
+    }
+
     public function store(Request $request)
     {
         Log::info('Face registration started', ['user_id' => Auth::id()]);
@@ -43,6 +48,8 @@ class FaceRegisterController extends Controller
             
             // Update user
             $user->face_image_path = 'img/' . $path;
+            $hash = $this->faceService->generateHash($file);
+            $user->face_hash = $hash;
             $user->save();
             
             Log::info('Face registration successful', [

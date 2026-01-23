@@ -259,6 +259,10 @@ Route::get('/profile/check-face-status', function () {
     ]);
 })->middleware('auth');
 
+Route::post('/face/verify', [App\Http\Controllers\Api\CheckInController::class, 'verify'])
+    ->middleware('auth');
+
+
 Route::get('lang/{locale}', function ($locale) {
     if (in_array($locale, ['en', 'vi'])) {
         session(['locale' => $locale]);
@@ -352,3 +356,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/calendar/google/connect', [CalendarController::class, 'connectGoogle'])->name('calendar.google.connect');
     Route::get('/calendar/google/callback', [CalendarController::class, 'googleCallback']);
 });
+
+// Face check-in routes
+
+// Update your existing check-in routes to use the face check-in

@@ -58,4 +58,78 @@ class FaceService
             return false;
         }
     }
+
+    /**
+     * Generate perceptual hash for face comparison
+     */
+    public function generateHash($file): string
+    {
+        try {
+            if ($file instanceof \Illuminate\Http\UploadedFile) {
+                $path = $file->getRealPath();
+            } else {
+                $path = $file;
+            }
+            
+            // Resize image to 8x8 for hash generation
+            $img = imagecreatefromjpeg($path);
+            $resized = imagecreatetruecolor(8, 8);
+            imagecopyresampled($resized, $img, 0, 0, 0, 0, 8, 8, imagesx($img), imagesy($img));
+            imagedestroy($img);
+            
+            // Convert to grayscale and calculate average
+            $pixels = [];
+            $sum = 0;
+            
+            for ($y = 0; $y < 8; $y++) {
+                for ($x = 0; $x < 8; $x++) {
+                    $rgb = imagecolorat($resized, $x, $y);
+                    $r = ($rgb >> 16) & 0xFF;
+                    $g = ($rgb >> 8) & 0xFF;
+                    $b = $rgb & 0xFF;
+                    
+                    // Convert to grayscale using luminance formula
+                    $gray = (int)(0.299 * $r + 0.587 * $g + 0.114 * $b);
+                    $pixels[] = $gray;
+                    $sum += $gray;
+                }
+            }
+            
+            imagedestroy($resized);
+            
+            $avg = $sum / 64;
+            $hash = '';
+            
+            foreach ($pixels as $pixel) {
+                $hash .= ($pixel > $avg) ? '1' : '0';
+            }
+            
+            return $hash;
+            
+        } catch (\Exception $e) {
+            Log::error('Hash generation error: ' . $e->getMessage());
+            return str_repeat('0', 64); // Return empty hash on error
+        }
+    }
+    
+    /**
+     * Compare two hashes and return similarity score (0-1)
+     */
+    public function compareHashes(string $hash1, string $hash2): float
+    {
+        if (strlen($hash1) !== strlen($hash2)) {
+            return 0;
+        }
+        
+        $similar = 0;
+        $length = strlen($hash1);
+        
+        for ($i = 0; $i < $length; $i++) {
+            if ($hash1[$i] === $hash2[$i]) {
+                $similar++;
+            }
+        }
+        
+        return $similar / $length;
+    }
 }

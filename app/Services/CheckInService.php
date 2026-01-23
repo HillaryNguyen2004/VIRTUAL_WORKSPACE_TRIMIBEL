@@ -6,6 +6,7 @@ use Illuminate\Support\Carbon;
 use App\Models\DayOffRequest;
 use App\Models\User;
 use App\Models\CompanyHour;
+use Illuminate\Support\Facades\Log;
 
 class CheckInService
 {
@@ -102,11 +103,6 @@ class CheckInService
 
         $currentUsername = $currentUser->username;
 
-        $token = $user->createToken('check-in-token')->plainTextToken;
-
-        $now = Carbon::now('Asia/Ho_Chi_Minh');
-        $today = $now->toDateString();
-
         // compare 2 username to check is it checkin with its own username or not, if not then throw error
         if ($this->normalizeName($user->username) !== $this->normalizeName($currentUsername)) {
             return [
@@ -114,6 +110,11 @@ class CheckInService
                 'message' => __('messages.wrong_username'),
             ];
         }
+
+        $token = $user->createToken('check-in-token')->plainTextToken;
+
+        $now = Carbon::now('Asia/Ho_Chi_Minh');
+        $today = $now->toDateString();
 
         // Check if already checked in today (by username)
         if ($this->checkInRepository->hasCheckedInToday($user->username, $today)) {
