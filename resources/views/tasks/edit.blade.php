@@ -4,13 +4,6 @@
 @section('content')
 @vite(['resources/js/task_assignee_filter.js'])
 @php
-    // Preserve existing role logic for the back button
-    if (auth()->user()->hasRole('admin')) {
-        $dashRoute = 'admin.back.projects.tasks';        
-    } else {
-        $dashRoute = 'tasks.index'; 
-    }
-
     $projectOptions = $projects
         ->mapWithKeys(fn($p) => [$p->id => ($p->name ?? $p->title)])
         ->toArray();
@@ -25,8 +18,34 @@
         ->mapWithKeys(fn ($v) => [$v => $v . '%'])
         ->toArray();
 
+    $statusOptions = [
+        'pending' => __('task_edit.status_pending'),
+        'in_progress' => __('task_edit.status_in_progress'),
+        'completed' => __('task_edit.status_completed'),
+    ];
+
+    $priorityOptions = [
+        'low' => __('task_edit.low'),
+        'normal' => __('task_edit.normal'),
+        'high' => __('task_edit.high'),
+        'critical' => __('task_edit.critical'),
+    ];
+
     $startDateValue = $task->start_date ? $task->start_date->format('Y-m-d') : '';
     $dueDateValue   = $task->due_date ? $task->due_date->format('Y-m-d') : '';
+
+    // Map phases by project ID
+    $phasesByProject = $projects->mapWithKeys(function($p) {
+        return [$p->id => $p->phases->map(fn($ph) => ['id' => $ph->id, 'title' => $ph->title])->values()];
+    });
+
+    $currentProjectId = old('project_id', $task->project_id);
+    $currentPhasesOptions = [];
+    if ($currentProjectId && isset($phasesByProject[$currentProjectId])) {
+        $currentPhasesOptions = collect($phasesByProject[$currentProjectId])
+            ->pluck('title', 'id')
+            ->toArray();
+    }
 @endphp
 
 {{-- Main Container --}}
@@ -34,7 +53,10 @@
 
     {{-- Header Section --}}
     <div class="flex gap-4 flex-row items-center w-full">
-        @include('components.back-btn', ['route' => $dashRoute])
+        @include('components.back-btn', [
+            'route' => 'back.tasks.details',
+            'params' => ['task' => $task->id],
+        ])
         <div>
             <h2 class="font-bold text-3xl text-main tracking-tight">{{ __('task_edit.title') }}</h2>
             <p class="text-muted-500 text-sm mt-1">{{ __('task_edit.subtitle') }}</p>
@@ -88,6 +110,9 @@
                 />
 
                 {{-- Project --}}
+                @if($task->parent_id)
+                    <input type="hidden" name="project_id" value="{{ $task->project_id }}">
+                @endif
                 <x-form.select
                     label="task_edit.project_label"
                     name="project_id"
@@ -96,6 +121,18 @@
                     :isRequired="true"
                     :value="$task->project_id"
                     :options="$projectOptions"
+                    :disabled="!!$task->parent_id"
+                />
+
+                {{-- Phase --}}
+                <x-form.select
+                    label="task_create.phase_label"
+                    name="phase_id"
+                    placeholder="task_create.select_phase"
+                    class="col-span-2"
+                    :isRequired="true" 
+                    :value="$task->phase_id"
+                    :options="$currentPhasesOptions"
                 />
 
                 {{-- Assignee --}}
@@ -114,6 +151,7 @@
                     type="date"
                     label="task_edit.start_date_label"
                     name="start_date"
+                    class="col-span-2"
                     :isRequired="true"
                     :value="$startDateValue"
                 />
@@ -123,57 +161,99 @@
                     type="date"
                     label="task_edit.due_date_label"
                     name="due_date"
+                    class="col-span-2"
                     :isRequired="true"
                     :value="$dueDateValue"
                 />
 
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-3 col-span-2">
+                <div class="grid grid-cols-2 gap-3 col-span-2">
                     {{-- Status --}}
                     <x-form.select
                         label="task_edit.status_label"
                         name="status"
-                        class="col-span-2 md:col-span-1"
+                        class="{{ $task->subTasks()->count() > 0 ? 'col-span-2' : 'col-span-1' }}"
                         :value="old('status', $task->status)"
-                        :options="[
-                            'pending' => __('task_edit.status_pending'),
-                            'in_progress' => __('task_edit.status_in_progress'),
-                            'completed' => __('task_edit.status_completed'),
-                        ]"
+                        :options="$statusOptions"
+                        :isRequired="true"
                     />
 
                     {{-- Percentage --}}
-                    <x-form.select
-                        label="task_edit.percentage_label"
-                        name="percentage"
-                        :value="old('percentage', $task->percentage)"
-                        :options="$percentageOptions"
-                    />
-
-                    {{-- Active Checkbox --}}
-                    <div class="flex items-center h-full pt-6">
-                        <label class="inline-flex items-center cursor-pointer group">
-                            {{-- IMPORTANT: hidden input --}}
-                            <input type="hidden" name="active" value="0">
-                            <input
-                                type="checkbox"
-                                name="active"
-                                value="1"
-                                id="active"
-                                class="rounded border-muted-300 text-primary shadow-sm focus:border-primary focus:ring focus:ring-primary/20 focus:ring-opacity-50 w-5 h-5 transition-all"
-                                {{ old('active', $task->active) ? 'checked' : '' }}
-                            >
-
-                            <span class="ml-3 font-semibold text-main group-hover:text-primary transition-colors">
-                                {{ __('task_edit.active_label') }}
-                            </span>
-                        </label>
-                    </div>
+                    @if ($task->subTasks()->count() === 0)
+                        <x-form.select
+                            label="task_edit.percentage_label"
+                            name="percentage"
+                            :value="old('percentage', $task->percentage)"
+                            :options="$percentageOptions"
+                        />
+                    @else
+                        <input type="hidden" name="percentage" value="{{ old('percentage', $task->percentage) }}">
+                    @endif
                 </div>
+
+                {{-- Priority --}}
+                <x-form.select
+                    label="task_edit.priority_label"
+                    placeholder="task_create.select_priority"
+                    name="priority"
+                    class="col-span-1"
+                    :value="old('priority', $task->priority)"
+                    :options="$priorityOptions"
+                    :isRequired="true"
+                />
+
+                {{-- Active Checkbox --}}
+                <div class="flex items-center h-full pt-6 col-span-1">
+                    <label class="inline-flex items-center cursor-pointer group">
+                        {{-- IMPORTANT: hidden input --}}
+                        <input type="hidden" name="active" value="0">
+                        <input
+                            type="checkbox"
+                            name="active"
+                            value="1"
+                            id="active"
+                            class="rounded border-muted-300 text-primary shadow-sm focus:border-primary focus:ring focus:ring-primary/20 focus:ring-opacity-50 w-5 h-5 transition-all"
+                            {{ old('active', $task->active) ? 'checked' : '' }}
+                        >
+
+                        <span class="ml-3 font-semibold text-main group-hover:text-primary transition-colors">
+                            {{ __('task_edit.active_label') }}
+                        </span>
+                    </label>
+                </div>
+
+                {{-- Estimated time --}}
+                <x-form.input
+                    type="number"
+                    label="task_edit.estimated_time_label"
+                    name="estimated_time"
+                    placeholder="task_edit.estimated_time_placeholder"
+                    :value="old('estimated_time', $task->estimated_time)"
+                    class="col-span-2"
+                    min="0"
+                    step="1"
+                    oninput="if (this.value !== '' && this.value < 0) this.value = 0"
+                />
+
+                {{-- Score (Admin/Staff only when task is 100% complete) --}}
+                @if((auth()->user()->hasRole('admin') || auth()->user()->hasRole('staff')) && $task->percentage == 100)
+                    <x-form.input
+                        type="number"
+                        label="task_edit.score_label"
+                        name="score"
+                        placeholder="task_edit.score_placeholder"
+                        :value="old('score', $task->score)"
+                        class="col-span-2"
+                        min="0"
+                        max="100"
+                        step="1"
+                        oninput="if (this.value !== '' && this.value < 0) this.value = 0; if (this.value > 100) this.value = 100;"
+                    />
+                @endif
 
                 {{-- Description --}}
                 <div class="col-span-2 md:col-span-4">
                     <label class="{{ $labelClass }}">{{ __('task_edit.description_label') }}</label>
-                    <textarea name="description" class="rich-text {{ $inputClass }} !h-[100px] resize-none" placeholder="{{ __('task_create.description_placeholder') }}" required>{{ old('description', $task->description) }}</textarea>
+                    <textarea name="description" class="rich-text {{ $inputClass }} !h-[100px] resize-none" placeholder="{{ __('task_create.description_placeholder') }}">{{ old('description', $task->description) }}</textarea>
                 </div>
             </div>
 
@@ -232,6 +312,34 @@
             // Current edit values for preselecting
             window.currentEditProjectId = @json($task->project_id);
             window.currentEditAssigneeId = @json(optional($task->assignedUsers->first())->id);
+            window.phasesByProject = @json($phasesByProject);
+
+            document.addEventListener('DOMContentLoaded', function() {
+                const projectSelect = document.querySelector('select[name="project_id"]');
+                const phaseSelect = document.querySelector('select[name="phase_id"]');
+
+                function updatePhaseOptions() {
+                    if (!projectSelect || !phaseSelect) return;
+                    
+                    const projectId = projectSelect.value;
+                    const phases = window.phasesByProject[projectId] || [];
+                    const currentPhaseId = phaseSelect.getAttribute('data-value') || phaseSelect.value;
+                                        
+                    phases.forEach(phase => {
+                        const option = document.createElement('option');
+                        option.value = phase.id;
+                        option.textContent = phase.title;
+                        if (currentPhaseId == phase.id) {
+                            option.selected = true;
+                        }
+                        phaseSelect.appendChild(option);
+                    });
+                }
+
+                if (projectSelect) {
+                    projectSelect.addEventListener('change', updatePhaseOptions);
+                }
+            });
         </script>
     </div>
 </div>

@@ -7,7 +7,6 @@ use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\UserExportController;
 use App\Http\Controllers\Api\CheckInController;
-use App\Http\Controllers\ProjectController;
 
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
@@ -16,7 +15,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // })->name('admin.dashboard');
 
     Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])
-    ->name('admin.dashboard');
+        ->name('admin.dashboard');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::get('/admin/users/create', [UserController::class, 'create'])->name('admin.users.create');
     Route::post('/admin/users/store', [UserController::class, 'store'])->name('admin.users.store');
@@ -36,26 +35,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::put('/campaigns/{campaign}/reset', [CampaignController::class, 'reset'])->name('campaigns.reset');
     Route::get('/check-ins', [CheckInController::class, 'index'])->name('users.checkin_index');
     Route::get('/admin/check-ins/export', [CheckInController::class, 'export'])->name('checkins.export');
-
-    Route::get('/projects', [ProjectController::class, 'index'])
-    ->name('projects.index');
-
-    Route::get('/projects/create', [ProjectController::class, 'create'])
-        ->name('projects.create');
-
-    Route::post('/projects/store', [ProjectController::class, 'store'])
-        ->name('projects.store');
-
-    Route::get('/projects/{id}/edit', [ProjectController::class, 'edit'])
-        ->name('projects.edit');
-
-    Route::put('/projects/{id}', [ProjectController::class, 'update'])
-        ->name('projects.update');
-
-    Route::delete('/projects/{id}', [ProjectController::class, 'destroy'])
-        ->name('projects.destroy');
-
-
 
 
     // Route::get('/tasks/new', [TaskController::class, 'create'])->name('tasks.create');

@@ -22,6 +22,12 @@ return [
     'template_missing' => 'Mẫu email đã được gán không còn tồn tại. Vui lòng cập nhật chiến dịch.',
     'campaign_sent_successfully' => 'Chiến dịch được gửi thành công.',
     'campaign_reset' => 'Trạng thái gửi của chiến dịch đã được đặt lại.',
+
+    // phase message
+    'phase_created' => 'Tạo giai đoạn thành công!',
+    'phase_updated' => 'Cập nhật giai đoạn thành công!',
+    'phase_deleted' => 'Xoá giai đoạn thành công!',
+
     'not_checked_in' => 'Bạn chưa chấm công hôm nay.',
     'already_checked_out' => 'Bạn đã chấm công ra hôm nay rồi.',
     'check_out_success' => 'Chấm công ra thành công.',

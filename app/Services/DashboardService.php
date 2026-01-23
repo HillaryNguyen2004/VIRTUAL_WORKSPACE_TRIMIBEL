@@ -12,14 +12,14 @@ class DashboardService
         $teamLeader = $user->teamLeader;
         $teamMembers = $teamLeader ? $teamLeader->teamMembers : collect();
 
-        $assignedTasks = $user->assignedTasks()->get();
+        $assignedTasks = $user->assignedTasks()->with('readStatuses')->get();
 
         return compact('teamLeader', 'teamMembers', 'assignedTasks');
     }
 
     public function getStaffDashboardData(User $user): array
     {
-        $tasks = $user->assignedTasks()->get();
+        $tasks = $user->assignedTasks()->with('readStatuses')->get();
         $teamLeader = $user->teamLeader;
         $teamMembers = $teamLeader ? $teamLeader->teamMembers : collect();
 

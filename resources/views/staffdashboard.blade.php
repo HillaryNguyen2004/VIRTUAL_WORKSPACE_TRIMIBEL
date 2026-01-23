@@ -33,7 +33,7 @@
                     </div>
                     <p class="text-muted-500 text-sm mb-6">{{ __('staff_dashboard.upcoming_tasks_description') }}</p>
                 </div>
-                <a href="{{ route('tasks.index') }}" class="flex justify-center items-center gap-2 w-full bg-primary hover:bg-primary-hover text-white rounded-xl py-2.5 font-medium transition-colors shadow-lg shadow-primary/20">
+                <a href="{{ route('projects.index') }}" class="flex justify-center items-center gap-2 w-full bg-primary hover:bg-primary-hover text-white rounded-xl py-2.5 font-medium transition-colors shadow-lg shadow-primary/20">
                     {{ __('staff_dashboard.upcoming_tasks_btn') }}
                 </a>
             </div>
@@ -79,7 +79,7 @@
         <div class="bg-white border border-muted-200 shadow-lg shadow-main/5 hover:border-primary/30 hover:shadow-primary/10 transition-all duration-300 rounded-2xl p-6 animate-fade-in-up [animation-delay:150ms]">
             <div class="flex items-center justify-between mb-6">
                 <h4 class="text-lg font-bold text-main">{{ __('staff_dashboard.my_projects') }}</h4>
-                <a href="{{ route('tasks.staff.index') }}" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
+                <a href="{{ route('projects.index') }}" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                     </svg>
@@ -98,7 +98,7 @@
                 {{-- Header Row --}}
                 <div class="grid grid-cols-12 gap-4 pb-3 border-b border-muted-200 text-xs font-semibold text-muted-400 uppercase tracking-wider">
                     <div class="col-span-6">{{ __('staff_dashboard.project_name') }}</div>
-                    <div class="col-span-2 text-center hidden @2xl:block">{{ __('staff_dashboard.progress') }}</div>
+                    <div class="col-span-2 text-center hidden @2xl:block">{{ __('staff_dashboard.percentage') }}</div>
                     <div class="col-span-3 @2xl:col-span-2 text-right">{{ __('staff_dashboard.status') }}</div>
                     <div class="col-span-3 @2xl:col-span-2 text-right">{{ __('staff_dashboard.tasks_count') }}</div>
                 </div>
@@ -111,7 +111,7 @@
                         </div>
                         
                         <div class="col-span-2 text-center hidden @2xl:block">
-                            <span class="text-sm text-muted-500 font-medium">{{ $project->progress }}%</span>
+                            <span class="text-sm text-muted-500 font-medium">{{ $project->percentage }}%</span>
                         </div>
 
                         <div class="col-span-3 @2xl:col-span-2 flex justify-end">

@@ -66,4 +66,9 @@ return [
     'no_new_notifications' => 'Không có thông báo mới',
     'show_all_notifications' => 'Hiện tất cả thông báo',
     'mark_all_as_read' => 'Đánh dấu tất cả đã đọc',
+
+    'btn_create' => 'Tạo',
+    'btn_update' => 'Cập nhật',
+    'btn_delete' => 'Xoá',
+    'btn_cancel' => 'Bỏ qua',
 ];

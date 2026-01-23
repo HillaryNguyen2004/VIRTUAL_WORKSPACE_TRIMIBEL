@@ -35,11 +35,16 @@ class StoreTaskRequest extends FormRequest
         return [
             'tasks' => 'required|array|min:1',
             'tasks.*.title' => 'required|string|max:255',
-            'tasks.*.project_id' => 'required|exists:projects,id',
+            'tasks.*.project_id' => 'nullable|exists:projects,id',
+            'tasks.*.phase_id' => 'nullable|exists:phases,id',
+            'tasks.*.parent_id' => 'nullable|exists:tasks,id',
             'tasks.*.assignee' => 'required|exists:users,id',
-            'tasks.*.start_date' => 'required|date',
-            'tasks.*.due_date' => 'required|date|after_or_equal:today',
+            'tasks.*.priority' => 'required|in:low,normal,high,critical',
+            'tasks.*.start_date' => 'required|date|after_or_equal:today',
+            'tasks.*.due_date' => 'required|date|after_or_equal:tasks.*.start_date',
             'tasks.*.description' => 'nullable|string',
+            'tasks.*.estimated_time' => 'nullable|numeric|min:0',
+            'tasks.*.score' => 'nullable|numeric|min:0|max:5',
             'tasks.*.active' => 'nullable|boolean',
         ];
     }
@@ -58,6 +63,7 @@ class StoreTaskRequest extends FormRequest
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'assigned_user_id' => $data['assignee'],
+            'phase_id' => $data['phase_id'] ?? null,
             'due_date' => $data['due_date'],
             'status' => 'pending',
             'active' => $this->has('active') ? 1 : 0,
@@ -84,7 +90,7 @@ class StoreTaskRequest extends FormRequest
         $teamUserIds = User::where('team_leader_id', $user->id)->pluck('id')->toArray();
 
         return collect($this->assignees)->every(
-            fn ($id) => in_array($id, $teamUserIds)
+            fn($id) => in_array($id, $teamUserIds)
         );
     }
 

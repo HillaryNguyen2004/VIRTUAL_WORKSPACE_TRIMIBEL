@@ -1,20 +1,59 @@
 @extends('layout_dashboard')
 @section('title', 'Create Task')
 @php
+    $projectId = request('project_id');
+    $parentId = request('parent_id');
+
     // Preserve existing role logic for the back button
-    if (auth()->user()->hasRole('admin')) {
-        $dashRoute = 'admin.back.projects.tasks';        
+    if ($parentId) {
+        $dashRoute  = 'tasks.details';
+        $dashParams = ['task' => $parentId];
+    }
+    else if ($projectId){
+        $dashRoute = 'projects.details';
+        $dashParams = ['id' => $projectId];
     } else {
-        $dashRoute = 'tasks.index'; 
+        if (auth()->user()->hasRole('admin')) {
+            $dashRoute = 'admin.back.projects.tasks';        
+        } else {
+            $dashRoute = 'tasks.index'; 
+        }   
     }
 
     $projectOptions = $projects
         ->mapWithKeys(fn($p) => [$p->id => ($p->title ?? $p->name)])
         ->toArray();
 
-    $assigneeOptions = $assignees
-        ->mapWithKeys(fn($u) => [$u->id => $u->name])
-        ->toArray();
+    $priorityOptions = [
+        'low' => __('task_edit.low'),
+        'normal' => __('task_edit.normal'),
+        'high' => __('task_edit.high'),
+        'critical' => __('task_edit.critical'), 
+    ];
+
+    $assigneeOptions = [];
+
+    if (is_scalar($defaultLeaderId) && $defaultLeaderId !== '') {
+        $assigneeOptions = $assignees
+            ->filter(fn($u) => (int)$u->id === (int)$defaultLeaderId || (int)$u->team_leader_id === (int)$defaultLeaderId)
+            ->pluck('name', 'id')
+            ->toArray();
+    }
+
+    // Map phases by project ID
+    $phasesByProject = $projects->mapWithKeys(function($p) {
+        return [$p->id => $p->phases->map(fn($ph) => ['id' => $ph->id, 'title' => $ph->title])->values()];
+    });
+
+    $currentProjectId = $taskData['project_id'] ?? $projectId ?? null;
+    $currentPhasesOptions = [];
+    if ($currentProjectId && isset($phasesByProject[$currentProjectId])) {
+        $currentPhasesOptions = collect($phasesByProject[$currentProjectId])
+            ->pluck('title', 'id')
+            ->toArray();
+    }
+
+    $tasksOld = old('tasks', [[]]);
 @endphp
 
 
@@ -25,7 +64,7 @@
 
         {{-- Header Section --}}
         <div class="flex gap-4 flex-row items-center w-full">
-            @include('components.back-btn', ['route' => $dashRoute])
+            @include('components.back-btn', ['route' => $dashRoute, 'params' => $dashParams ?? []])
             <div>
                 <h2 class="font-bold text-3xl text-main tracking-tight">{{ __('task_create.title') }}</h2>
                 <p class="text-muted-500 text-sm mt-1">{{ __('task_create.subtitle') }}</p>
@@ -64,78 +103,155 @@
                 @endphp
 
                 <div id="tasks-container">
-                    {{-- Task Block Template --}}
-                    <div class="task-block border border-muted-200 rounded-xl p-4 mb-4 relative">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-semibold text-main">Task 1</h3>
-                            <button type="button" class="remove-task text-danger hover:text-danger-hover" style="display: none;">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-                        </div>
+                    @foreach($tasksOld as $index => $taskData)
+                        {{-- Task Block Template --}}
+                        <div class="task-block border border-muted-200 rounded-xl p-4 mb-4 relative">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="font-semibold text-main">Task {{ $index + 1 }}</h3>
+                                <button type="button" class="remove-task text-danger hover:text-danger-hover" style="{{ $loop->first ? 'display: none;' : '' }}">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
 
-                        <div class="grid grid-cols-2 gap-3">
-                            {{-- Task title --}}
-                            <x-form.input
-                                label="task_create.task_name_label"
-                                name="tasks[0][title]"
-                                oldKey="tasks.0.title"
-                                placeholder="task_create.task_name_placeholder"
-                                class="col-span-2"
-                                :isRequired="true"
-                            />
+                            <div class="grid grid-cols-2 gap-3">
+                                {{-- Parent task --}}
+                                @if($parentId)
+                                    <input type="hidden" name="tasks[{{ $index }}][parent_id]" value="{{ $parentId }}">
+                                @endif
 
-                            {{-- Project --}}
-                            <x-form.select
-                                label="task_create.project_label"
-                                name="tasks[0][project_id]"
-                                oldKey="tasks.0.project_id"
-                                placeholder="task_create.select_project"
-                                class="col-span-2 md:col-span-1"
-                                :isRequired="true"
-                                :value="null"
-                                :options="$projectOptions"
-                            />
+                                {{-- Task title --}}
+                                <x-form.input
+                                    label="task_create.task_name_label"
+                                    name="tasks[{{ $index }}][title]"
+                                    oldKey="tasks.{{ $index }}.title"
+                                    placeholder="task_create.task_name_placeholder"
+                                    class="col-span-2"
+                                    :isRequired="true"
+                                    :value="old('tasks.'.$index.'.title')"
+                                />
 
-                            {{-- Assignee --}}
-                            <x-form.select
-                                label="task_create.assignee_label"
-                                name="tasks[0][assignee]"
-                                oldKey="tasks.0.assignee"
-                                placeholder="task_create.select_assignee"
-                                class="col-span-2 md:col-span-1"
-                                :isRequired="true"
-                                :value="null"
-                                :options="[]"
-                            />
+                                {{-- Project --}}
+                                @if (!$parentId)
+                                    @if($projectId)   
+                                        <input type="hidden" name="tasks[{{ $index }}][project_id]" value="{{ $projectId }}">
+                                    @endif
 
+                                    <x-form.select
+                                        label="task_create.project_label"
+                                        name="tasks[{{ $index }}][project_id]"
+                                        oldKey="tasks.{{ $index }}.project_id"
+                                        placeholder="task_create.select_project"
+                                        class="col-span-2 md:col-span-1"
+                                        :isRequired="true"
+                                        :disabled="$projectId !== null"
+                                        :value="old('tasks.'.$index.'.project_id', $projectId)"
+                                        :options="$projectOptions"
+                                    />
 
-                            {{-- Start date --}}
-                            <x-form.input
-                                type="date"
-                                label="task_create.start_date_label"
-                                name="tasks[0][start_date]"
-                                oldKey="tasks.0.start_date"
-                                :isRequired="true"
-                                :value="null"
-                            />
+                                    <x-form.select
+                                        label="task_create.phase_label"
+                                        name="tasks[{{ $index }}][phase_id]"
+                                        oldKey="tasks.{{ $index }}.phase_id"
+                                        placeholder="task_create.select_phase"
+                                        class="col-span-2 md:col-span-1"
+                                        :isRequired="true" 
+                                        :value="old('tasks.'.$index.'.phase_id')"
+                                        :options="$currentPhasesOptions"
+                                    />
 
-                            {{-- Due date --}}
-                            <x-form.input
-                                type="date"
-                                label="task_create.due_date_label"
-                                name="tasks[0][due_date]"
-                                oldKey="tasks.0.due_date"
-                                :isRequired="true"
-                                :value="null"
-                            />
+                                    {{-- Assignee --}}
+                                    <x-form.select
+                                        label="task_create.assignee_label"
+                                        name="tasks[{{ $index }}][assignee]"
+                                        oldKey="tasks.{{ $index }}.assignee"
+                                        placeholder="task_create.select_assignee"
+                                        class="col-span-2 md:col-span-1"
+                                        :isRequired="true"
+                                        :value="old('tasks.'.$index.'.assignee')"
+                                        :options="$assigneeOptions"
+                                    />
+                                @else
+                                    {{-- Hidden Project ID for submission --}}
+                                    <input type="hidden" name="tasks[{{ $index }}][project_id]" value="{{ $parentTask->project_id }}">
 
-                            {{-- Description --}}
-                            <div class="col-span-2">
-                                <label class="{{ $labelClass }}">{{ __('task_create.description_label') }}</label>
-                                <textarea name="description" class="rich-text {{ $inputClass }} resize-none" placeholder="{{ __('task_create.description_placeholder') }}" required>{{ old('description') }}</textarea>
+                                    {{-- Disabled Project Select for display --}}
+                                    <x-form.select
+                                        label="task_create.project_label"
+                                        name="project_display_only_{{ $index }}"
+                                        placeholder="task_create.select_project"
+                                        class="col-span-2 md:col-span-1"
+                                        :isRequired="true"
+                                        :value="$parentTask->project_id"
+                                        :options="[$parentTask->project_id => $parentTask->project->title ?? $parentTask->project->name ?? 'Unknown Project']"
+                                        :disabled="true"
+                                    />
+
+                                    <x-form.select
+                                        label="task_create.assignee_label"
+                                        name="tasks[{{ $index }}][assignee]"
+                                        oldKey="tasks.{{ $index }}.assignee"
+                                        placeholder="task_create.select_assignee"
+                                        class="col-span-2 md:col-span-1"
+                                        :isRequired="true"
+                                        :value="old('tasks.'.$index.'.assignee', $defaultAssigneeId)"
+                                        :options="$assigneeOptions"
+                                    />
+                                @endif
+
+                                {{-- Start date --}}
+                                <x-form.input
+                                    type="date"
+                                    label="task_create.start_date_label"
+                                    name="tasks[{{ $index }}][start_date]"
+                                    oldKey="tasks.{{ $index }}.start_date"
+                                    :isRequired="true"
+                                    :value="old('tasks.'.$index.'.start_date')"
+                                />
+
+                                {{-- Due date --}}
+                                <x-form.input
+                                    type="date"
+                                    label="task_create.due_date_label"
+                                    name="tasks[{{ $index }}][due_date]"
+                                    oldKey="tasks.{{ $index }}.due_date"
+                                    :isRequired="true"
+                                    :value="old('tasks.'.$index.'.due_date')"
+                                />
+
+                                {{-- Priority --}}
+                                <x-form.select
+                                    label="task_create.priority_label"
+                                    name="tasks[{{ $index }}][priority]"
+                                    oldKey="tasks.{{ $index }}.priority"
+                                    placeholder="task_create.select_priority"
+                                    class="col-span-2 md:col-span-1"
+                                    :isRequired="true"
+                                    :value="old('tasks.'.$index.'.priority')"
+                                    :options="$priorityOptions"
+                                />
+
+                                {{-- Estimated time --}}
+                                <x-form.input
+                                    type="number"
+                                    label="task_create.estimated_time_label"
+                                    name="tasks[{{ $index }}][estimated_time]"
+                                    oldKey="tasks.{{ $index }}.estimated_time"
+                                    placeholder="task_create.estimated_time_placeholder"
+                                    :value="old('tasks.'.$index.'.estimated_time', 0)"
+                                    class="col-span-2 md:col-span-1"
+                                    min="0"
+                                    step="1"
+                                    oninput="if (this.value !== '' && this.value < 0) this.value = 0"
+                                />
+
+                                {{-- Description --}}
+                                <div class="col-span-2">
+                                    <label class="{{ $labelClass }}">{{ __('task_create.description_label') }}</label>
+                                    <textarea name="tasks[{{ $index }}][description]" class="rich-text {{ $inputClass }} resize-none" placeholder="{{ __('task_create.description_placeholder') }}">{{ old('tasks.'.$index.'.description') }}</textarea>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    @endforeach
                 </div>
 
                 {{-- Add Task Button --}}
@@ -160,95 +276,166 @@
             </form>
 
             {{-- JavaScript for dynamic tasks --}}
+            <script src="https://cdn.tiny.cloud/1/nd84nj3gfbucyyfu3fobr8s8lgax9x00y378wncd82h3wwmr/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
             <script>
-                let taskIndex = 1;
-
-                document.getElementById('add-task').addEventListener('click', function() {
+                document.addEventListener('DOMContentLoaded', function() {
                     const container = document.getElementById('tasks-container');
-                    const taskBlocks = container.querySelectorAll('.task-block');
-                    const newIndex = taskBlocks.length;
+                    const addTaskBtn = document.getElementById('add-task');
 
-                    // Clone the first task block
-                    const template = taskBlocks[0].cloneNode(true);
-                    
-                    // Update the title
-                    template.querySelector('h3').textContent = `Task ${newIndex + 1}`;
-                    
-                    // Update input names
-                    const inputs = template.querySelectorAll('input, select, textarea');
-                    inputs.forEach(input => {
-                        if (input.name) {
-                            input.name = input.name.replace(/tasks\[0\]/g, `tasks[${newIndex}]`);
-                            if (input.type !== 'checkbox') {
-                                input.value = ''; // Clear values
+                    // Function to initialize TinyMCE on a specific element or all
+                    function initTinyMCE(target) {
+                        if (window.tinymce) {
+                            // If target is provided, init only that. Otherwise init all uninitialized .rich-text
+                            const config = {
+                                target: target, // If null, this property is ignored by some versions, but selector is used
+                                selector: target ? undefined : 'textarea.rich-text', 
+                                height: 400,
+                                menubar: false,
+                                statusbar: false,
+                                plugins: [
+                                    'advlist autolink lists link image charmap preview anchor',
+                                    'searchreplace visualblocks code fullscreen',
+                                    'insertdatetime media table paste code help wordcount'
+                                ],
+                                toolbar: 'undo redo | formatselect | ' +
+                                    'bold italic underline forecolor | ' +
+                                    'alignleft aligncenter alignright | ' +
+                                    'bullist numlist | removeformat | ' +
+                                    'code',
+                                skin: 'oxide',
+                                content_style: 'body { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size:14px; color: #334155; }',
+                                setup: function (editor) {
+                                    editor.on('change', function () {
+                                        editor.save();
+                                    });
+                                }
+                            };
+                            
+                            // If target is passed, we use it specifically
+                            if (target) {
+                                config.target = target;
+                                config.selector = undefined;
+                                tinymce.init(config);
+                            } else {
+                                tinymce.init(config);
                             }
                         }
-                    });
-                    
-                    // Show remove button
-                    template.querySelector('.remove-task').style.display = 'block';
-                    
-                    // Add event listener to remove button
-                    template.querySelector('.remove-task').addEventListener('click', function() {
-                        template.remove();
-                        updateTaskNumbers();
-                    });
-                    
-                    container.appendChild(template);
-                    updateTaskNumbers();
-                });
+                    }
 
-                function updateTaskNumbers() {
-                    const taskBlocks = document.querySelectorAll('.task-block');
-                    taskBlocks.forEach((block, index) => {
-                        block.querySelector('h3').textContent = `Task ${index + 1}`;
+                    // Initial Init
+                    initTinyMCE();
+
+                    addTaskBtn.addEventListener('click', function() {
+                        const taskBlocks = container.querySelectorAll('.task-block');
+                        const newIndex = taskBlocks.length;
+
+                        // Clone the first task block to use as template
+                        // Ideally we clone the structure, but we need to be careful with TinyMCE
+                        const sourceBlock = taskBlocks[0];
+                        const template = sourceBlock.cloneNode(true);
                         
-                        // Update names if needed, but since we're using array indices, it's ok
-                        const inputs = block.querySelectorAll('input, select, textarea');
+                        // Clean up TinyMCE artifacts from the clone
+                        const renderers = template.querySelectorAll('.tox-tinymce');
+                        renderers.forEach(el => el.remove());
+                        
+                        // Reset textareas that were hidden by TinyMCE
+                        const textareas = template.querySelectorAll('textarea');
+                        textareas.forEach(ta => {
+                            ta.style.display = ''; // Visible again
+                            ta.style.visibility = '';
+                            ta.removeAttribute('id'); // Remove old ID if present
+                            ta.value = ''; // Clear content
+                        });
+
+                        // Update the title
+                        template.querySelector('h3').textContent = `Task ${newIndex + 1}`;
+                        
+                        // Update input names and values
+                        const inputs = template.querySelectorAll('input, select, textarea');
                         inputs.forEach(input => {
                             if (input.name) {
-                                const match = input.name.match(/tasks\[(\d+)\]/);
-                                if (match) {
-                                    input.name = input.name.replace(/tasks\[\d+\]/, `tasks[${index}]`);
+                                // Dynamic replace of index: tasks[0] or tasks[x] -> tasks[newIndex]
+                                input.name = input.name.replace(/tasks\[\d+\]/g, `tasks[${newIndex}]`);
+                                
+                                // Clear values ONLY if not hidden and not disabled
+                                if (input.type !== 'checkbox' && input.type !== 'hidden' && !input.disabled) {
+                                    input.value = ''; 
                                 }
                             }
                         });
-                    });
-                }
-            </script>
-            {{-- TinyMCE Script --}}
-            <script src="https://cdn.tiny.cloud/1/nd84nj3gfbucyyfu3fobr8s8lgax9x00y378wncd82h3wwmr/tinymce/6/tinymce.min.js"
-                referrerpolicy="origin"></script>
-            <script>
-                document.addEventListener('DOMContentLoaded', function () {
-                    if (window.tinymce) {
-                        tinymce.init({
-                            selector: 'textarea.rich-text',
-                            height: 400,
-                            menubar: false, // Cleaner look
-                            statusbar: false, // Cleaner look
-                            plugins: [
-                                'advlist autolink lists link image charmap preview anchor',
-                                'searchreplace visualblocks code fullscreen',
-                                'insertdatetime media table paste code help wordcount'
-                            ],
-                            toolbar: 'undo redo | formatselect | ' +
-                                'bold italic underline forecolor | ' +
-                                'alignleft aligncenter alignright | ' +
-                                'bullist numlist | removeformat | ' +
-                                'code',
-                            skin: 'oxide', // Use standard skin
-                            content_style: 'body { font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-size:14px; color: #334155; }', // Matches Tailwind text-slate-700
-                            setup: function (editor) {
-                                editor.on('change', function () {
-                                    editor.save();
-                                });
-                            }
-                        });
+                        
+                        // Show remove button
+                        const removeBtn = template.querySelector('.remove-task');
+                        if (removeBtn) {
+                            removeBtn.style.display = 'block';
+                            removeBtn.addEventListener('click', function() {
+                                // If we remove a task, we should remove the editor instance first to avoid leaks
+                                const ta = template.querySelector('textarea.rich-text');
+                                if (ta && window.tinymce) {
+                                    const editor = tinymce.get(ta);
+                                    if (editor) editor.remove();
+                                }
+                                template.remove();
+                                updateTaskNumbers();
+                            });
+                        }
+                        
+                        container.appendChild(template);
+                        
+                        // Re-init TinyMCE for the new textarea
+                        const newTextarea = template.querySelector('textarea.rich-text');
+                        if (newTextarea) {
+                             // Give it a unique ID to ensure clean init
+                            const uniqueId = 'editor_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+                            newTextarea.id = uniqueId;
+                            initTinyMCE(newTextarea);
+                        }
 
-                        // Ensure content is synced on submit
-                        document.getElementById('emailTemplateForm').addEventListener('submit', function (e) {
-                            tinymce.triggerSave();
+                        updateTaskNumbers();
+                    });
+
+                    function updateTaskNumbers() {
+                        const taskBlocks = document.querySelectorAll('.task-block');
+                        taskBlocks.forEach((block, index) => {
+                            block.querySelector('h3').textContent = `Task ${index + 1}`;
+                            
+                             const removeBtn = block.querySelector('.remove-task');
+                             if (index === 0 && taskBlocks.length === 1) {
+                                 removeBtn.style.display = 'none';
+                             } else {
+                                 removeBtn.style.display = 'block';
+                             }
+
+                            const inputs = block.querySelectorAll('input, select, textarea');
+                            inputs.forEach(input => {
+                                if (input.name) {
+                                    input.name = input.name.replace(/tasks\[\d+\]/g, `tasks[${index}]`);
+                                }
+                            });
+                        });
+                    }
+                    
+                    // Attach remove event to existing remove buttons (from validation loop)
+                    document.querySelectorAll('.remove-task').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const block = btn.closest('.task-block');
+                            // Remove editor instance
+                            const ta = block.querySelector('textarea.rich-text');
+                            if (ta && window.tinymce && ta.id) {
+                                const editor = tinymce.get(ta.id);
+                                if (editor) editor.remove();
+                            }
+                            
+                            block.remove();
+                            updateTaskNumbers();
+                        });
+                    });
+
+                    // Sync content on submit
+                    const form = document.querySelector('form');
+                    if(form) {
+                        form.addEventListener('submit', function() {
+                            if (window.tinymce) tinymce.triggerSave();
                         });
                     }
                 });
@@ -256,6 +443,41 @@
             <script>
                 window.projectLeaderMap  = @json($projectLeaderMap);
                 window.assigneesByLeader = @json($assigneesByLeader);
+                window.__DEFAULT_LEADER_ID__ = @json($defaultLeaderId);
+                window.__DEFAULT_ASSIGNEE_ID__ = @json($defaultAssigneeId);
+                window.__ASSIGNEES_BY_LEADER__ = @json($assigneesByLeader);
+                window.phasesByProject = @json($phasesByProject);
+
+                document.addEventListener('DOMContentLoaded', function() {
+                    function updatePhaseOptions(projectSelect, phaseSelect) {
+                        const projectId = projectSelect.value;
+                        const phases = window.phasesByProject[projectId] || [];
+                        
+                        // Save current value if any
+                        const currentPhaseId = phaseSelect.getAttribute('data-value') || phaseSelect.value;
+                        
+                        phases.forEach(phase => {
+                            const option = document.createElement('option');
+                            option.value = phase.id;
+                            option.textContent = phase.title;
+                            if (currentPhaseId == phase.id) {
+                                option.selected = true;
+                            }
+                            phaseSelect.appendChild(option);
+                        });
+                    }
+
+                    // Event delegation for project selects
+                    document.getElementById('tasks-container').addEventListener('change', function(e) {
+                        if (e.target.matches('select[name*="[project_id]"]')) {
+                            const block = e.target.closest('.task-block');
+                            const phaseSelect = block.querySelector('select[name$="[phase_id]"]');
+                            if (phaseSelect) {
+                                updatePhaseOptions(e.target, phaseSelect);
+                            }
+                        }
+                    });
+                });
             </script>
         </div>
     </div>

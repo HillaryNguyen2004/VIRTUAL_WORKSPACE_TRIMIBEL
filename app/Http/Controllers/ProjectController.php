@@ -23,6 +23,21 @@ class ProjectController extends Controller
     }
 
     /**
+     * Show project details
+     */
+    public function details(int $id)
+    {
+        $project = $this->projectService->getProject($id);
+        // Load relationships needed for the project info itself
+        $project->load(['staffUser', 'phases']);
+
+        // Fetch paginated tasks separately
+        $tasks = $this->projectService->getProjectTasks($id, 5);
+
+        return view('projects.details', compact('project', 'tasks'));
+    }
+
+    /**
      * Show create form
      */
     public function create()

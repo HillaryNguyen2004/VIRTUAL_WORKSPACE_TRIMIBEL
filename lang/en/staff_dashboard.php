@@ -46,7 +46,7 @@ return [
 
     'my_projects' => 'Projects Overview',
     'project_name' => 'PROJECT',
-    'progress' => 'PROGRESS',
+    'percentage' => 'PERCENTAGE',
     'tasks_count' => 'TASK COUNT',
     'status' => 'STATUS',
     'active' => 'Active',

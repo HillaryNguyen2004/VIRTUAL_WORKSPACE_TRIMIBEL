@@ -7,13 +7,14 @@
     'isRequired' => false,
     'id' => null,
     'rows' => 5,
+    'disabled' => false,
 ])
 
 @php
     $key = $oldKey ?? $name;
 
     $labelClass = "block text-sm font-semibold text-main mb-2";
-    $baseClass  = "block w-full bg-canvas border text-main py-3 px-4 rounded-xl placeholder-muted-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all";
+    $baseClass  = "block w-full bg-canvas border text-main py-3 px-4 rounded-xl placeholder-muted-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" . ($disabled ? 'bg-gray-200 cursor-not-allowed' : '');
 
     $hasError = $errors->has($key);
     $textareaClass = $baseClass . ' ' . ($hasError ? 'border-danger focus:ring-danger/20 focus:border-danger' : 'border-muted-200');
@@ -36,6 +37,7 @@
         class="{{ $textareaClass }}"
         placeholder="{{ __($placeholder) }}"
         @if($isRequired) required @endif
+        @if($disabled) disabled @endif
     >{{ old($key, $value) }}</textarea>
 
     @error($key)

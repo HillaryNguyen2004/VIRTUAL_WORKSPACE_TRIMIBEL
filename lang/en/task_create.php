@@ -21,4 +21,14 @@ return [
     'save_button' => 'Create Task',
     'another_tag_placeholder' => 'Another Tag',
     'back_to_task'=> 'Back to Tasks',
+    'select_priority'=> 'Select priority',
+    'priority_label'=> 'Priority',
+    'low' => 'Low',
+    'normal' => 'Normal',
+    'high' => 'High',
+    'critical' => 'Critical',
+    'estimated_time_label' => 'Estimated time (hours)',
+    'estimated_time_placeholder' => 'e.g., 8',
+    'phase_label' => 'Phase',
+    'select_phase' => 'Select phase'
 ];

@@ -348,6 +348,8 @@
     <x-user.task-dialog :assignedTasks="$assignedTasks ?? collect()" />
     {{-- request day off dialog --}}
     <x-user.request-dayoff-dialog />
+    {{-- edit phase dialog --}}
+    <x-phases.edit-dialog />
 
     @isset($user)
         @include('users.update', ['users' => $users ?? collect()])

@@ -66,4 +66,9 @@ return [
     'no_new_notifications' => 'No new notifications',
     'show_all_notifications' => 'Show all notifications',
     'mark_all_as_read' => 'Mark all as read',
+
+    'btn_create' => 'Create',
+    'btn_update' => 'Update',
+    'btn_delete' => 'Delete',
+    'btn_cancel' => 'Cancel',
 ];

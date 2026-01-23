@@ -7,16 +7,21 @@
     'isRequired' => false,
     'type' => 'text',
     'id' => null,
+    'disabled' => false,
 ])
 
 @php
     $key = $oldKey ?? $name;
 
     $labelClass = "block text-sm font-semibold text-main mb-2";
-    $inputBase  = "block w-full bg-canvas border text-main h-[50px] px-4 rounded-xl placeholder-muted-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all";
+    $inputBase  = "block w-full bg-canvas border text-main h-[50px] px-4 rounded-xl placeholder-muted-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" . ($disabled ? 'bg-gray-200 cursor-not-allowed' : '');
 
     $hasError = $errors->has($key);
     $inputClass = $inputBase . ' ' . ($hasError ? 'border-danger focus:ring-danger/20 focus:border-danger' : 'border-muted-200');
+
+    $wrapperClass = $attributes->get('class');
+
+    $inputAttrs = $attributes->except('class');
 @endphp
 
 <div {{ $attributes->merge(['class' => '']) }}>
@@ -37,6 +42,8 @@
         placeholder="{{ __($placeholder) }}"
         value="{{ old($key, $value) }}"
         @if($isRequired) required @endif
+        @if($disabled) disabled @endif
+        {{ $inputAttrs }}
     >
 
     @error($key)
