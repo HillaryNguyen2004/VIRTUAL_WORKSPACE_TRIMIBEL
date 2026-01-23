@@ -19,4 +19,16 @@ return [
     'active_label' => 'Đang hoạt động',
     'cancel_button' => 'Hủy',
     'save_button' => 'Lưu thay đổi',
+    'select_priority' => 'Chọn ưu tiên',
+    'priority_label' => 'Ưu tiên',
+    'low' => 'Thấp',
+    'normal' => 'Bình thường',
+    'high' => 'Cao',
+    'critical' => 'Khẩn cấp',
+    'estimated_time_label' => 'Thời gian dự kiến (giờ)',
+    'estimated_time_placeholder' => 'e.g., 8',
+    'phase_label' => 'Giai đoạn',
+    'select_phase' => 'Chọn giai đoạn',
+    'score_label' => 'Điểm (0-100)',
+    'score_placeholder' => 'Nhập điểm (0-100)'
 ];

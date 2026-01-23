@@ -1,8 +1,8 @@
 <?php
 
+use App\Http\Controllers\ProjectController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -12,8 +12,6 @@ use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TaskController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\TeamController;
 use App\Services\UserRoleRedirectService;
 use App\Http\Controllers\DayOffController;
 use App\Http\Controllers\MeetingController;
@@ -179,6 +177,47 @@ Route::delete('/management/tasks/{task}', [TaskController::class, 'destroy'])
     ->middleware('permission:task.delete')
     ->name('tasks.destroy');
 
+// DETAIL TASK
+Route::get('/management/tasks/{task}/details', [TaskController::class, 'details'])
+    ->name('tasks.details');
+
+Route::post('/management/tasks/{task}/mark-read', [TaskController::class, 'markRead'])
+    ->name('tasks.markRead');
+
+Route::get('/back/tasks/{task}', function (\App\Models\Task $task) {
+    return redirect()->route('tasks.details', $task->id);
+})->name('back.tasks.details');
+
+Route::get('/projects', [ProjectController::class, 'index'])
+    ->name('projects.index');
+
+Route::get('/projects/create', [ProjectController::class, 'create'])
+    ->name('projects.create');
+
+Route::post('/projects/store', [ProjectController::class, 'store'])
+    ->name('projects.store');
+
+Route::get('/projects/{id}/edit', [ProjectController::class, 'edit'])
+    ->name('projects.edit');
+
+Route::put('/projects/{id}', [ProjectController::class, 'update'])
+    ->name('projects.update');
+
+Route::delete('/projects/{id}', [ProjectController::class, 'destroy'])
+    ->name('projects.destroy');
+
+Route::get('/projects/{id}/details', [ProjectController::class, 'details'])
+    ->name('projects.details');
+
+
+Route::put('/phases/{phase}', [App\Http\Controllers\PhaseController::class, 'update'])->name('phases.update');
+Route::post('/projects/{project}/phases', [App\Http\Controllers\PhaseController::class, 'store'])->name('phases.store');
+Route::delete('/phases/{phase}', [App\Http\Controllers\PhaseController::class, 'destroy'])->name('phases.destroy');
+
+Route::get('/back/projects/{project}', function (\App\Models\Project $project) {
+    return redirect()->route('projects.details', ['id' => $project->id]);
+})->name('back.projects.details');
+
 // Redirect after login
 Route::get('/home', function () {
     // This triggers the middleware
@@ -213,8 +252,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/chat', function () {
         return view('chat.realtime');
     })->name('chat.index');
-    
-    
+
+
     // Test route for user search
     Route::get('/chat/test-users', function () {
         $users = \App\Models\User::where('id', '!=', auth()->id())

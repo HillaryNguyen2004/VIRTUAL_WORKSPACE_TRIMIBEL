@@ -19,4 +19,16 @@ return [
     'active_label' => 'Active',
     'cancel_button' => 'Cancel',
     'save_button' => 'Save Changes',
+    'select_priority' => 'Select priority',
+    'priority_label' => 'Priority',
+    'low' => 'Low',
+    'normal' => 'Normal',
+    'high' => 'High',
+    'critical' => 'Critical',
+    'estimated_time_label' => 'Estimated time (hours)',
+    'estimated_time_placeholder' => 'e.g., 8',
+    'phase_label' => 'Phase',
+    'select_phase' => 'Select phase',
+    'score_label' => 'Score (0-100)',
+    'score_placeholder' => 'Enter score (0-100)'
 ];

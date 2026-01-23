@@ -8,7 +8,10 @@
 
         {{-- Header Section --}}
         <div class="flex gap-4 flex-row items-center w-full">
-            @include('components.back-btn' , ['route' => 'projects.index'])
+            @include('components.back-btn', [
+                'route' => 'back.projects.details',
+                'params' => ['project' => $project->id],
+            ])
             <div>
                 <h2 class="font-bold text-3xl text-main tracking-tight">{{ __('projects.edit_project') }}</h2>
                 <p class="text-muted-500 text-sm mt-1">{{ __('projects.edit_subtitle') ?? 'Update project details' }}</p>

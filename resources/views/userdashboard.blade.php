@@ -215,8 +215,11 @@
                                     <div class="col-span-8 flex items-center gap-3">
                                         {{-- Small indicator dot --}}
                                         <div class="w-2 h-2 rounded-full {{ str_replace('bg-', 'bg-', $currentStatus['text']) }} opacity-50"></div>
-                                        <div class="flex items-center gap-2">
-                                            <p class="text-sm font-medium text-main truncate" title="{{ $task->title }}">{{ $task->title }}</p>
+                                        <div class="flex items-center gap-2 overflow-hidden">
+                                            @if($task->isUnread())
+                                                <span class="w-1.5 h-1.5 rounded-full bg-red-500 shadow-sm shadow-red-500/50 flex-shrink-0 animate-pulse" title="New/Updated"></span>
+                                            @endif
+                                            <a href="{{ route('tasks.details', $task->id) }}" class="text-sm font-medium text-main truncate hover:text-primary hover:underline" title="{{ $task->title }}">{{ $task->title }}</a>
                                             @if($isInactive)
                                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-danger/10 text-danger ring-1 ring-inset ring-danger/20 whitespace-nowrap">
                                                     Inactive

@@ -65,11 +65,11 @@ class TaskService
             $startKey = $index !== null ? "tasks.$index.start_date" : "start_date";
             $dueKey = $index !== null ? "tasks.$index.due_date" : "due_date";
 
-            if ($startDate->lt($today)) {
-                throw ValidationException::withMessages([
-                    $startKey => 'Start date cannot be in the past.',
-                ]);
-            }
+            // if ($startDate->lt($today)) {
+            //     throw ValidationException::withMessages([
+            //         $startKey => 'Start date cannot be in the past.',
+            //     ]);
+            // }
 
             if ($dueDate->lt($startDate)) {
                 throw ValidationException::withMessages([
@@ -80,15 +80,55 @@ class TaskService
             $task = $this->taskRepo->create([
                 'title' => $data['title'],
                 'description' => $data['description'] ?? null,
-                'project_id' => $data['project_id'],
+                'project_id' => $data['project_id'] ?? null,
+                'parent_id' => $data['parent_id'] ?? null,
+                'phase_id' => $data['phase_id'] ?? null,
                 'start_date' => $data['start_date'],
                 'due_date' => $data['due_date'],
                 'status' => 'pending',
+                'priority' => $data['priority'] ?? 'normal',
+                'estimated_time' => $data['estimated_time'] ?? 1,
                 'active' => $data['active'] ?? 1,
             ]);
 
             if (!empty($data['assignee'])) {
                 $task->assignedUsers()->attach($data['assignee']);
+            }
+
+            // ---- Recalculate parentTask completion ----
+            if ($task->parent_id) {
+                $parent = $task->parentTask;
+
+                if ($parent) {
+                    // recalc parent percentage from subtasks
+                    $parent->recalculateCompletion();
+
+                    // if subtask started but parent still pending => parent becomes in_progress
+                    if ($task->status !== 'pending' && $parent->status === 'pending') {
+                        $parent->update(['status' => 'in_progress']);
+                    }
+
+                    // if all active subtasks completed => parent completed
+                    $activeCount = $parent->subTasks()->where('active', 1)->count();
+                    $completedCount = $parent->subTasks()
+                        ->where('active', 1)
+                        ->where('status', 'completed')
+                        ->count();
+
+                    if ($activeCount > 0 && $activeCount === $completedCount) {
+                        $parent->update([
+                            'status' => 'completed',
+                            'percentage' => 100,
+                        ]);
+                    }
+                }
+            }
+
+            // ---- Recalculate project completion ----
+            // Recalculate project whether it's a top-level task or a subtask
+            // If it's a subtask, it might have updated its parent, which affects project percentage
+            if ($task->project) {
+                $task->project->recalculateCompletion();
             }
 
             return $task;
@@ -202,13 +242,19 @@ class TaskService
             // ---- Update fields (only provided) ----
             $updateData = [];
 
-            foreach (['title', 'description', 'project_id', 'start_date', 'due_date', 'active', 'status', 'percentage'] as $field) {
+            foreach (['title', 'description', 'project_id', 'parent_id', 'phase_id', 'start_date', 'due_date', 'active', 'status', 'priority', 'percentage', 'estimated_time', 'score'] as $field) {
                 if (array_key_exists($field, $data)) {
                     $updateData[$field] = $data[$field];
                 }
             }
 
-            if (($updateData['status'] ?? null) === 'completed') {
+            // if percentage > 0 and < 100 and status is not in progress then change status to in progress
+            if ($updateData['percentage'] > 0 && $updateData['percentage'] < 100 && $updateData['status'] !== 'in_progress') {
+                $updateData['status'] = 'in_progress';
+            }
+
+            // if status is complated then change percentage to 100
+            else if (($updateData['status'] ?? null) === 'completed') {
                 $updateData['percentage'] = 100;
             }
 
@@ -225,6 +271,38 @@ class TaskService
                     $task->assignedUsers()->sync([(int) $assigneeId]);
                 } else {
                     $task->assignedUsers()->sync([]); // clear assignment
+                }
+            }
+
+            // ---- Recalculate parentTask completion ----
+            if ($task->parent_id) {
+                $parent = $task->parentTask;
+
+                if ($parent) {
+                    // recalc parent percentage from subtasks
+                    $parent->recalculateCompletion();
+
+                    // get effective status after update
+                    $newStatus = $updateData['status'] ?? $task->status;
+
+                    // if subtask started but parent still pending => parent becomes in_progress
+                    if ($newStatus !== 'pending' && $parent->status === 'pending') {
+                        $parent->update(['status' => 'in_progress']);
+                    }
+
+                    // if all active subtasks completed => parent completed
+                    $activeCount = $parent->subTasks()->where('active', 1)->count();
+                    $completedCount = $parent->subTasks()
+                        ->where('active', 1)
+                        ->where('status', 'completed')
+                        ->count();
+
+                    if ($activeCount > 0 && $activeCount === $completedCount) {
+                        $parent->update([
+                            'status' => 'completed',
+                            'percentage' => 100,
+                        ]);
+                    }
                 }
             }
 
@@ -245,11 +323,27 @@ class TaskService
     public function deleteTask($id): bool
     {
         $task = $this->taskRepo->find($id);
+        if (!$task) {
+            return false;
+        }
+
+        $parent = $task->parent_id ? $task->parentTask : null;
+        $project = $task->project;
 
         // Detach users first (safe)
         $task->assignedUsers()->detach();
+        $deleted = $this->taskRepo->delete($task);
 
-        return $this->taskRepo->delete($task);
+        if ($deleted) {
+            if ($parent) {
+                $parent->recalculateCompletion();
+            }
+            if ($project) {
+                $project->recalculateCompletion();
+            }
+        }
+
+        return $deleted;
     }
 
     /**
@@ -280,7 +374,32 @@ class TaskService
             return null;
         }
 
-        // 3. Recalculate project progress
+        if ($task->parent_id) {
+            $parent = $task->parentTask;
+            if ($parent) {
+                $parent->recalculateCompletion();
+
+                // if subtask started but parent still pending => parent becomes in_progress
+                if ($status !== 'pending' && $parent->status === 'pending') {
+                    $parent->update(['status' => 'in_progress']);
+                }
+
+                // if all active subtasks completed => parent completed
+                $activeCount = $parent->subTasks()->where('active', 1)->count();
+                $completedCount = $parent->subTasks()
+                    ->where('active', 1)
+                    ->where('status', 'completed')
+                    ->count();
+
+                if ($activeCount > 0 && $activeCount === $completedCount) {
+                    $parent->update([
+                        'status' => 'completed',
+                        'percentage' => 100,
+                    ]);
+                }
+            }
+        }
+
         if ($task->project) {
             $task->project->recalculateCompletion();
         }
@@ -307,7 +426,7 @@ class TaskService
                 $taskQuery->whereDate('due_date', '<=', $request->due_date);
             }
 
-            $taskQuery->with('assignedUsers');
+            $taskQuery->with(['assignedUsers', 'readStatuses', 'subtasks.assignedUsers', 'subtasks.readStatuses']);
         };
 
         $projectsQuery = Project::query()
@@ -365,5 +484,46 @@ class TaskService
 
         $perPage = max(1, (int) $request->get('per_page', 5));
         return $projectsQuery->paginate($perPage)->appends($request->query());
+    }
+    public function getFilteredTasks(Request $request, $user)
+    {
+        $sortDir = strtolower((string) $request->get('sort_dir', ''));
+        $sortDir = in_array($sortDir, ['asc', 'desc'], true) ? $sortDir : 'desc';
+
+        $query = Task::query()
+            ->whereNull('parent_id') // Only top-level tasks for the main list
+            ->with(['project.staffUser', 'assignedUsers', 'readStatuses', 'subtasks.assignedUsers', 'subtasks.readStatuses']);
+
+        // Role-based filtering
+        if (!$user->hasRole('admin')) {
+            $query->where(function ($q) use ($user) {
+                // User can see tasks if they are the staff (project leader) or assigned to it
+                $q->whereHas('project', fn($p) => $p->where('staff_id', $user->id))
+                    ->orWhereHas('assignedUsers', fn($u) => $u->whereKey($user->id));
+            });
+        }
+
+        // Filters
+        if ($request->filled('search')) {
+            $query->where('title', 'like', '%' . $request->search . '%');
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('start_date')) {
+            $query->whereDate('start_date', '>=', $request->start_date);
+        }
+        if ($request->filled('due_date')) {
+            $query->whereDate('due_date', '<=', $request->due_date);
+        }
+        if ($request->filled('project_id')) {
+            $query->where('project_id', $request->project_id);
+        }
+
+        // Sorting
+        $query->orderBy('title', $sortDir);
+
+        $perPage = max(1, (int) $request->get('per_page', 5));
+        return $query->paginate($perPage)->appends($request->query());
     }
 }

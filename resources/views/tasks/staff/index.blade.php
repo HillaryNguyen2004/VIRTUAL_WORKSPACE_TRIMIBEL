@@ -207,7 +207,12 @@
 
                                                         {{-- ADDED: Matching Width w-[30%] --}}
                                                         <td class="w-[30%] py-3 px-3 text-sm font-medium text-main">
-                                                            {{ $task->title }}
+                                                            <div class="flex items-center gap-2">
+                                                                @if($task->isUnread())
+                                                                    <span class="w-2 h-2 rounded-full bg-red-500 shadow-sm shadow-red-500/50 flex-shrink-0 animate-pulse" title="New/Updated"></span>
+                                                                @endif
+                                                                {{ $task->title }}
+                                                            </div>
                                                         </td>
 
                                                         {{-- ADDED: Matching Width w-[12%] --}}
@@ -240,7 +245,7 @@
                                                             <div class="flex justify-end gap-1">
                                                                 {{-- VIEW DETAILS --}}
                                                                 <button class="toggle-task p-1.5 rounded-lg text-muted-400 hover:bg-primary/5 hover:text-primary transition-colors"
-                                                                    data-target="taskDetails{{ $task->id }}">
+                                                                    data-target="taskDetails{{ $task->id }}" data-id="{{ $task->id }}">
                                                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 fill-current">
                                                                         <path d="M320 96C239.2 96 174.5 132.8 127.4 176.6C80.6 220.1 49.3 272 34.4 307.7C31.1 315.6 31.1 324.4 34.4 332.3C49.3 368 80.6 420 127.4 463.4C174.5 507.1 239.2 544 320 544C400.8 544 465.5 507.2 512.6 463.4C559.4 419.9 590.7 368 605.6 332.3C608.9 324.4 608.9 315.6 605.6 307.7C590.7 272 559.4 220 512.6 176.6C465.5 132.9 400.8 96 320 96zM176 320C176 240.5 240.5 176 320 176C399.5 176 464 240.5 464 320C464 399.5 399.5 464 320 464C240.5 464 176 399.5 176 320z" />
                                                                     </svg>
@@ -340,4 +345,33 @@
 
     </div>
     @endrole
+
+    @push('scripts')
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.toggle-task').forEach(button => {
+            button.addEventListener('click', function() {
+                const taskId = this.dataset.id;
+                const row = this.closest('tr');
+                if (!row) return;
+                const dot = row.querySelector('.bg-red-500');
+                
+                if (dot && taskId) {
+                    fetch(`/management/tasks/${taskId}/mark-read`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        }
+                    }).then(response => {
+                        if (response.ok) {
+                            dot.remove();
+                        }
+                    });
+                }
+            });
+        });
+    });
+    </script>
+    @endpush
 @endsection

@@ -1,7 +1,7 @@
 @vite(['resources/js/request_dayoff/request_dayoff_dialog.js'])
 
 <div id="request-dayoff-dialog"
-     class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+     class="hidden fixed inset-0 z-50 bg-black/50 items-center justify-center">
 
     <div class="flex flex-col w-[320px] sm:w-[380px] md:w-[450px]
                 bg-white rounded-2xl shadow-xl overflow-hidden">

@@ -10,6 +10,7 @@
     'optionValue' => null,
     'optionLabel' => null,
     'showChevron' => true,
+    'disabled' => false,
 ])
 
 @php
@@ -20,7 +21,7 @@
 
     $padding = $showChevron ? "pl-4 pr-12" : "px-4";
 
-    $baseClass = "block w-full bg-canvas border text-main cursor-pointer h-[50px] {$padding} rounded-xl placeholder-muted-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none";
+    $baseClass = "block w-full bg-canvas border text-main cursor-pointer h-[50px] {$padding} rounded-xl placeholder-muted-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none " . ($disabled ? 'bg-gray-200 cursor-not-allowed' : '');
 
     $hasError = $errors->has($key);
     $selectClass = $baseClass . ' ' . ($hasError ? 'border-danger focus:ring-danger/20 focus:border-danger' : 'border-muted-200');
@@ -44,6 +45,7 @@
             id="{{ $id ?? $name }}"
             class="{{ $selectClass }}"
             @if($isRequired) required @endif
+            @if($disabled) disabled @endif
         >
             @if(!is_null($placeholder))
                 <option value="" disabled hidden @selected($isPlaceholderSelected)>

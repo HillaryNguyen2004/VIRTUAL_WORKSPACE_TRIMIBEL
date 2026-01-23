@@ -46,7 +46,7 @@ return [
 
     'my_projects' => 'Tổng quan dự án',
     'project_name' => 'DỰ ÁN',
-    'progress' => 'TIẾN ĐỘ',
+    'percentage' => 'TIẾN ĐỘ',
     'tasks_count' => 'SỐ CÔNG VIỆC',
     'status' => 'TRẠNG THÁI',
     'active' => 'Hoạt động',

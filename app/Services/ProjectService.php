@@ -26,7 +26,7 @@ class ProjectService
             'description' => $data['description'] ?? null,
             'staff_id' => $data['staff_id'],
             'status' => $data['status'] ?? 'active',
-            'progress' => 0,
+            'percentage' => 0,
             'start_date' => $data['start_date'],
             'due_date' => $data['due_date']
         ]);
@@ -34,11 +34,16 @@ class ProjectService
 
     public function getAllProjects(Request $request)
     {
-        $activeTab = $request->get('tab', 'projects');
-
         $perPage = max(1, (int) $request->get('per_page', 5));
 
+        $user = auth()->user();
+
         $query = Project::query()->with('staffUser');
+
+        if (!$user->hasRole('admin')) {
+            // Staff can only see their own projects
+            $query->where('staff_id', $user->id);
+        }
 
         // sort by project title
         $applyProjectSort = function ($q) use ($request) {
@@ -49,52 +54,6 @@ class ProjectService
                 $q->orderByDesc('due_date');
             }
         };
-
-        if ($activeTab === 'tasks') {
-            // Filters apply to TASKS
-            $taskFilters = function ($q) use ($request) {
-                if ($request->filled('search')) {
-                    $q->where('title', 'like', '%' . $request->search . '%');
-                }
-
-                if ($request->filled('status')) {
-                    $q->where('status', $request->status);
-                }
-
-                if ($request->filled('start_date')) {
-                    $q->whereDate('start_date', '>=', $request->start_date);
-                }
-
-                if ($request->filled('due_date')) {
-                    $q->whereDate('due_date', '<=', $request->due_date);
-                }
-
-                $q->orderByDesc('due_date');
-            };
-
-            // Only include projects that have tasks matching filters
-            if (
-                $request->filled('search') ||
-                $request->filled('status') ||
-                $request->filled('start_date') ||
-                $request->filled('due_date')
-            ) {
-                $query->whereHas('tasks', $taskFilters);
-            }
-
-            // Eager-load only matching tasks (and any relations you render)
-            $query->with([
-                'tasks' => function ($q) use ($taskFilters) {
-                    $taskFilters($q);
-                    $q->with('assignedUsers');
-                }
-            ]);
-
-            // Sorting applies to PROJECTS (even on tasks tab)
-            $applyProjectSort($query);
-
-            return $query->paginate($perPage)->appends($request->query());
-        }
 
         // filter projects
         if ($request->filled('search')) {
@@ -144,6 +103,20 @@ class ProjectService
         }
 
         return $project;
+    }
+
+    public function getProjectTasks(int $projectId, int $perPage = 10)
+    {
+        return \App\Models\Task::where('project_id', $projectId)
+            ->whereNull('parent_id') // Only root tasks
+            ->with(['assignedUsers', 'subtasks.assignedUsers', 'subtasks.readStatuses', 'phase', 'readStatuses'])
+            // Order by phase_id so tasks in the same phase are grouped together. 
+            // Phase-less tasks (null) usually come first or last depending on DB, 
+            // so we might need a raw order if specific placement is needed. 
+            // For now, simple ordering is sufficient.
+            ->orderBy('phase_id', 'asc')
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
     }
 
     private function ensureStaff(int $userId): void
