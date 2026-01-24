@@ -29,13 +29,19 @@
                 <!-- Camera feed container -->
                 <div class="relative mx-auto" style="width: 640px; height: 480px;">
                     <!-- Video element - FIXED: Added id and proper attributes -->
+
                     <video id="video" 
                            width="640" 
                            height="480" 
                            autoplay 
                            muted
                            playsinline
-                           class="rounded-xl border-2 border-muted-300 bg-gray-900"></video>
+                           class="rounded-xl border-2 border-muted-300 bg-gray-900">
+                    </video>
+                     <button id="startCameraBtn"
+                            class="mb-4 px-6 py-3 bg-primary text-white rounded-xl font-medium">
+                        Start Camera
+                    </button>
                     
                     <!-- Face guide overlay -->
                     <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
@@ -637,10 +643,12 @@ async function initializeFaceCheckin() {
     }
 }
 
-// Start when page loads
-document.addEventListener('DOMContentLoaded', function() {
+// Start when click button
+document.getElementById('startCameraBtn').addEventListener('click', async () => {
+    document.getElementById('startCameraBtn').remove();
     initializeFaceCheckin();
 });
+
 
 // Clean up on page unload
 window.addEventListener('beforeunload', cleanup);
