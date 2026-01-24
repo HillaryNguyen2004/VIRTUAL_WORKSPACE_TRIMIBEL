@@ -33,6 +33,7 @@
                            width="640" 
                            height="480" 
                            autoplay 
+                           muted
                            playsinline
                            class="rounded-xl border-2 border-muted-300 bg-gray-900"></video>
                     
@@ -268,6 +269,11 @@ async function loadModels() {
 
 // Start webcam - FIXED: Better error handling
 async function startWebcam() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    updateStatus('Camera not supported or blocked by browser', 'error');
+    return false;
+}
+
     try {
         updateStatus('Requesting camera access...', 'info');
         
@@ -287,6 +293,7 @@ async function startWebcam() {
         
         // Set video source
         video.srcObject = stream;
+        await video.play();
         
         // Wait for video to be ready
         await new Promise((resolve) => {

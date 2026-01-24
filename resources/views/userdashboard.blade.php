@@ -48,18 +48,15 @@
                             Click the buttons below to check in or check out using face recognition.
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        {{-- Used 'accent' (Cyan) for Check In to act as a vibrant 'Go' button --}}
-                        <button id="checkInBtn"
-                            class="flex justify-center items-center gap-2 w-full bg-accent hover:bg-accent-hover text-white rounded-xl py-2.5 font-medium transition-colors shadow-lg shadow-accent/20">
+                    <a href="{{ route('checkin.face.page', 'checkin') }}"
+                        class="btn btn-success btn-lg me-2">
                             <i class="fas fa-camera"></i> Face Check In
-                        </button>
-                        {{-- Used 'muted' for Check Out to signify neutral/leaving state --}}
-                        <button id="checkOutBtn"
-                            class="flex justify-center items-center gap-2 w-full bg-muted-100 hover:bg-muted-200 text-muted-600 rounded-xl py-2.5 font-medium transition-colors">
+                        </a>
+
+                        <a href="{{ route('checkin.face.page', 'checkout') }}"
+                        class="btn btn-danger btn-lg">
                             <i class="fas fa-camera"></i> Face Check Out
-                        </button>
-                    </div>
+                        </a>
                 </div>
             </div>
 
@@ -260,36 +257,6 @@
         </div>
     @endrole
 
-    <!-- Face Verification Modal -->
-    <div class="modal fade" id="faceModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Face Verification</h5>
-                </div>
-                <div class="modal-body text-center">
-                    <div style="position:relative">
-                        <video id="video" width="320" height="320" autoplay></video>
-
-                        <!-- Face guide circle -->
-                        <div style="
-                            position:absolute;
-                            top:50%;
-                            left:50%;
-                            width:200px;
-                            height:200px;
-                            border:3px solid #28a745;
-                            border-radius:50%;
-                            transform:translate(-50%,-50%);
-                        "></div>
-                    </div>
-
-                    <canvas id="canvas" width="320" height="320" hidden></canvas>
-                    <p id="status" class="mt-3 text-muted">Initializing camera...</p>
-                </div>
-            </div>
-        </div>
-    </div>
 @endsection
 
 @push('scripts')

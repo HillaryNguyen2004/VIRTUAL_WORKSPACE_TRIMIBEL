@@ -128,6 +128,17 @@ class CheckInController extends Controller
             return false;
         }
     }
+
+    public function showFacePage(string $type)
+    {
+        $workingHour = CompanyHour::first();
+
+        return view('face-checkin', [
+            'checkType'   => $type,
+            'workingHour'=> $workingHour,
+        ]);
+    }
+
     
     // ... rest of your existing methods ...
     public function index(Request $request, CheckInExportService $exportService)

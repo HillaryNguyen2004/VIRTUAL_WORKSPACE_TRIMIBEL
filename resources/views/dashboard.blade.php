@@ -19,20 +19,16 @@
             Click the buttons below to check in or check out using face recognition.
         </div>
         
-        <button id="checkInBtn" class="btn btn-success btn-lg me-2">
+        <a href="{{ route('checkin.face.page', 'checkin') }}"
+        class="btn btn-success btn-lg me-2">
             <i class="fas fa-camera"></i> Face Check In
-        </button>
-        <button id="checkOutBtn" class="btn btn-danger btn-lg">
+        </a>
+
+        <a href="{{ route('checkin.face.page', 'checkout') }}"
+        class="btn btn-danger btn-lg">
             <i class="fas fa-camera"></i> Face Check Out
-        </button>
-        
-        <div class="mt-3">
-            <small class="text-muted">
-                <i class="fas fa-info-circle"></i> Make sure you have registered your face profile first.
-                <a href="{{ route('face.register') }}">Register face here</a>
-            </small>
-        </div>
-        
+        </a>
+
         @if($workingHour)
             <div class="alert alert-info mt-3">
                 <strong>Company Working Hours:</strong><br>
