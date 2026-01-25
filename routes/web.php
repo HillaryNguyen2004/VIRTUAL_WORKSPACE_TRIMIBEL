@@ -18,7 +18,8 @@ use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\TeamProgressController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\FaceRegisterController;
-use App\Http\Controllers\Api\CheckInController;
+use App\Http\Controllers\Api\CheckInController as ApiCheckInController;
+
 
 // Route::group(['middleware' => ['web', 'core']], function () {
 //     include_once 'admin/user.php';
@@ -363,7 +364,7 @@ Route::middleware(['auth'])->group(function () {
 
 // Update your existing check-in routes to use the face check-in
 Route::middleware(['auth'])->group(function () {
-    Route::get('/checkin/face/{type}', [CheckInController::class, 'showFacePage'])
+    Route::get('/checkin/face/{type}', [ApiCheckInController::class, 'showFacePage'])
         ->whereIn('type', ['checkin', 'checkout'])
         ->name('checkin.face.page');
 });
@@ -375,5 +376,5 @@ Route::post(
 
 Route::post(
     '/checkin/manual/process',
-    [CheckInController::class, 'manualProcess']
+    [ApiCheckInController::class, 'manualProcess']
 )->middleware('auth')->name('checkin.manual.process');
