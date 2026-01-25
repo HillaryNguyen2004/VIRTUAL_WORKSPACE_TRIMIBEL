@@ -203,6 +203,26 @@ let isProcessing = false;
 let detectionInterval = null;
 let stream = null;
 
+const startButton = document.getElementById('startCameraBtn');
+
+function stopActiveStream() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+    if (video && video.srcObject) {
+        video.srcObject = null;
+    }
+}
+
+function setStartButtonLoading(isLoading) {
+    if (!startButton) return;
+    startButton.disabled = isLoading;
+    startButton.classList.toggle('opacity-70', isLoading);
+    startButton.classList.toggle('cursor-not-allowed', isLoading);
+    startButton.textContent = isLoading ? 'Starting...' : 'Start Camera';
+}
+
 // Configuration
 const checkType = document.getElementById('checkType').value;
 const username = document.getElementById('username').value;
@@ -275,13 +295,26 @@ async function loadModels() {
 
 // Start webcam - FIXED: Better error handling
 async function startWebcam() {
+    if (!video) {
+        updateStatus('Camera element not found on page', 'error');
+        return false;
+    }
+
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        updateStatus('Camera requires HTTPS. Please use a secure connection.', 'error');
+        return false;
+    }
+
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    updateStatus('Camera not supported or blocked by browser', 'error');
-    return false;
-}
+        updateStatus('Camera not supported or blocked by browser', 'error');
+        return false;
+    }
 
     try {
         updateStatus('Requesting camera access...', 'info');
+
+        // Ensure any previous stream is stopped before requesting again
+        stopActiveStream();
         
         // Try different constraints for better compatibility
         const constraints = {
@@ -332,7 +365,10 @@ async function startWebcam() {
         } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
             updateStatus('No camera found. Please connect a camera.', 'error');
         } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
-            updateStatus('Camera is already in use by another application.', 'error');
+            updateStatus('Camera is already in use by another application. Closing other apps and retrying...', 'warning');
+            stopActiveStream();
+            await new Promise(resolve => setTimeout(resolve, 800));
+            return startWebcamFallback(true);
         } else if (error.name === 'OverconstrainedError') {
             updateStatus('Camera doesn\'t support required constraints. Trying fallback...', 'warning');
             // Try with simpler constraints
@@ -346,12 +382,19 @@ async function startWebcam() {
 }
 
 // Fallback webcam with simpler constraints
-async function startWebcamFallback() {
+async function startWebcamFallback(useDeviceId = false) {
     try {
-        const fallbackConstraints = {
-            video: true, // Let browser decide
-            audio: false
-        };
+        let videoConstraint = true;
+
+        if (useDeviceId) {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const firstCamera = devices.find(device => device.kind === 'videoinput');
+            if (firstCamera?.deviceId) {
+                videoConstraint = { deviceId: { exact: firstCamera.deviceId } };
+            }
+        }
+
+        const fallbackConstraints = { video: videoConstraint, audio: false };
         
         stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
         video.srcObject = stream;
@@ -613,21 +656,27 @@ function cleanup() {
 // Initialize everything
 async function initializeFaceCheckin() {
     try {
-        // Load models first
-        const loaded = await loadModels();
-        
-        if (!loaded) {
-            updateStatus('Failed to load face recognition', 'error');
-            return;
-        }
-        
-        // Start webcam
+        // Start webcam first for immediate feedback
         const started = await startWebcam();
         
         if (!started) {
             updateStatus('Failed to start camera', 'error');
             document.getElementById('manualCheckContainer').classList.remove('hidden');
-            return;
+            return false;
+        }
+
+        // Load models after camera is ready
+        if (!window.faceapi) {
+            updateStatus('Face API library failed to load', 'error');
+            document.getElementById('manualCheckContainer').classList.remove('hidden');
+            return false;
+        }
+
+        const loaded = await loadModels();
+        if (!loaded) {
+            updateStatus('Failed to load face recognition', 'error');
+            document.getElementById('manualCheckContainer').classList.remove('hidden');
+            return false;
         }
         
         // Wait a moment for camera to stabilize
@@ -635,18 +684,25 @@ async function initializeFaceCheckin() {
         
         // Start face detection
         startFaceDetection();
+        return true;
         
     } catch (error) {
         console.error('Initialization error:', error);
         updateStatus('Initialization failed: ' + error.message, 'error');
         document.getElementById('manualCheckContainer').classList.remove('hidden');
+        return false;
     }
 }
 
 // Start when click button
-document.getElementById('startCameraBtn').addEventListener('click', async () => {
-    document.getElementById('startCameraBtn').remove();
-    initializeFaceCheckin();
+startButton?.addEventListener('click', async () => {
+    setStartButtonLoading(true);
+    const ok = await initializeFaceCheckin();
+    if (!ok) {
+        setStartButtonLoading(false);
+    } else {
+        startButton?.classList.add('hidden');
+    }
 });
 
 

@@ -42,8 +42,6 @@
     </style>
 </head>
 
-@stack('scripts')
-
 <body id="page-top" class="flex flex-row bg-canvas/50 text-main font-nunito antialiased h-screen overflow-hidden">
     
     <div class="flex flex-row fixed xl:static h-screen w-screen xl:w-fit z-50 xl:z-auto pointer-events-none" id="rounded-sidebar">
@@ -406,6 +404,7 @@
         }
     </script>
 
+    @stack('scripts')
 </body>
 
 </html>
