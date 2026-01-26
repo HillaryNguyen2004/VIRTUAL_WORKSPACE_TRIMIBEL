@@ -82,6 +82,12 @@
                         <button id='toggleScreen' class="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 shadow-lg bg-gray-700 text-white hover:bg-gray-600 border border-white/5">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                         </button>
+                        <div class="flex items-center gap-2">
+                            <button id='toggleRecording' class="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 shadow-lg bg-gray-700 text-white hover:bg-gray-600 border border-white/5" title="Record meeting">
+                                <span class="inline-flex items-center justify-center w-3 h-3 rounded-full bg-red-500 shadow"></span>
+                            </button>
+                            <span id="recordingTimer" class="text-xs font-semibold text-red-400 hidden">00:00</span>
+                        </div>
                         <div class="w-px h-8 bg-white/10 mx-1"></div>
                         <button id='leaveMeeting' class="h-12 px-6 rounded-xl flex items-center justify-center transition-all duration-200 shadow-lg bg-red-600 hover:bg-red-700 text-white gap-2 font-medium text-sm">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
