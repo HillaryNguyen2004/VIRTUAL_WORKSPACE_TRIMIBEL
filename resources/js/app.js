@@ -18,6 +18,268 @@ let screenSharingOn = false;
 let localVideoStream = null;
 let activeSpeakerId = null;
 let meetingInfo = {};
+let recordingActive = false;
+let mediaRecorder = null;
+let recordingChunks = [];
+let recordingStream = null;
+let recordingTimerInterval = null;
+let recordingStartTime = null;
+let audioContext = null;
+let audioDestination = null;
+const audioSources = new Map();
+const remoteAudioTracks = new Map();
+let recordingCanvas = null;
+let recordingCanvasCtx = null;
+let recordingAnimationFrame = null;
+
+function ensureAudioContext() {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    audioDestination = audioContext.createMediaStreamDestination();
+  }
+}
+
+function addAudioTrackToMix(track) {
+  if (!track || audioSources.has(track.id)) return;
+  ensureAudioContext();
+  const trackStream = new MediaStream([track]);
+  const sourceNode = audioContext.createMediaStreamSource(trackStream);
+  sourceNode.connect(audioDestination);
+  audioSources.set(track.id, sourceNode);
+}
+
+function removeAudioTrackFromMix(track) {
+  if (!track) return;
+  const sourceNode = audioSources.get(track.id);
+  if (sourceNode) {
+    sourceNode.disconnect();
+    audioSources.delete(track.id);
+  }
+}
+
+function formatDuration(ms) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+  const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+  return `${minutes}:${seconds}`;
+}
+
+function updateRecordingUI(isRecording) {
+  const btn = document.getElementById('toggleRecording');
+  const timer = document.getElementById('recordingTimer');
+  if (btn) {
+    if (isRecording) {
+      btn.classList.remove('bg-gray-700', 'hover:bg-gray-600');
+      btn.classList.add('bg-red-600', 'hover:bg-red-700');
+      btn.setAttribute('title', 'Stop recording');
+    } else {
+      btn.classList.add('bg-gray-700', 'hover:bg-gray-600');
+      btn.classList.remove('bg-red-600', 'hover:bg-red-700');
+      btn.setAttribute('title', 'Record meeting');
+    }
+  }
+  if (timer) {
+    if (isRecording) {
+      timer.classList.remove('hidden');
+    } else {
+      timer.classList.add('hidden');
+      timer.textContent = '00:00';
+    }
+  }
+}
+
+function getRecordingSourceVideoEl() {
+  const activeVideo = document.getElementById('activeSpeakerVideo');
+  if (activeVideo && activeVideo.srcObject) return activeVideo;
+  const localVideo = document.getElementById('localVideoTag');
+  if (localVideo && localVideo.srcObject) return localVideo;
+  return null;
+}
+
+function setupRecordingCanvas() {
+  if (!recordingCanvas) {
+    recordingCanvas = document.createElement('canvas');
+    recordingCanvas.width = 1280;
+    recordingCanvas.height = 720;
+    recordingCanvasCtx = recordingCanvas.getContext('2d');
+  }
+}
+
+function startCanvasRenderLoop() {
+  setupRecordingCanvas();
+  const renderFrame = () => {
+    if (!recordingCanvasCtx) return;
+    const sourceVideo = getRecordingSourceVideoEl();
+    if (sourceVideo && sourceVideo.videoWidth && sourceVideo.videoHeight) {
+      if (recordingCanvas.width !== sourceVideo.videoWidth || recordingCanvas.height !== sourceVideo.videoHeight) {
+        recordingCanvas.width = sourceVideo.videoWidth;
+        recordingCanvas.height = sourceVideo.videoHeight;
+      }
+      recordingCanvasCtx.drawImage(sourceVideo, 0, 0, recordingCanvas.width, recordingCanvas.height);
+    } else {
+      recordingCanvasCtx.fillStyle = '#000000';
+      recordingCanvasCtx.fillRect(0, 0, recordingCanvas.width, recordingCanvas.height);
+    }
+    recordingAnimationFrame = requestAnimationFrame(renderFrame);
+  };
+  recordingAnimationFrame = requestAnimationFrame(renderFrame);
+}
+
+function stopCanvasRenderLoop() {
+  if (recordingAnimationFrame) {
+    cancelAnimationFrame(recordingAnimationFrame);
+    recordingAnimationFrame = null;
+  }
+}
+
+function startRecordingTimer() {
+  const timer = document.getElementById('recordingTimer');
+  if (!timer) return;
+  recordingStartTime = Date.now();
+  timer.textContent = '00:00';
+  recordingTimerInterval = setInterval(() => {
+    const elapsed = Date.now() - recordingStartTime;
+    timer.textContent = formatDuration(elapsed);
+  }, 1000);
+}
+
+function stopRecordingTimer() {
+  if (recordingTimerInterval) {
+    clearInterval(recordingTimerInterval);
+    recordingTimerInterval = null;
+  }
+  recordingStartTime = null;
+}
+
+function getSupportedRecorderOptions() {
+  if (!window.MediaRecorder || !window.MediaRecorder.isTypeSupported) return undefined;
+  const types = [
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm;codecs=vp9',
+    'video/webm;codecs=vp8',
+    'video/webm'
+  ];
+  for (const type of types) {
+    if (MediaRecorder.isTypeSupported(type)) {
+      return { mimeType: type };
+    }
+  }
+  return undefined;
+}
+
+async function getLocalAudioTrackIfAvailable() {
+  if (meeting && typeof meeting.getLocalAudioStream === 'function') {
+    try {
+      const localAudioStream = await meeting.getLocalAudioStream();
+      if (localAudioStream && localAudioStream.getAudioTracks().length) {
+        return localAudioStream.getAudioTracks()[0];
+      }
+    } catch (error) {
+      console.warn('Unable to access local audio stream for recording', error);
+    }
+  }
+  return null;
+}
+
+async function startMeetingRecording() {
+  if (!window.MediaRecorder) {
+    alert('Your browser does not support meeting recording.');
+    return;
+  }
+
+  if (recordingActive) return;
+
+  startCanvasRenderLoop();
+  let videoTrack = null;
+  if (recordingCanvas && recordingCanvas.captureStream) {
+    const canvasStream = recordingCanvas.captureStream(30);
+    if (canvasStream && canvasStream.getVideoTracks().length) {
+      videoTrack = canvasStream.getVideoTracks()[0];
+    }
+  }
+
+  ensureAudioContext();
+  if (audioContext && audioContext.state === 'suspended') {
+    await audioContext.resume();
+  }
+
+  const localAudioTrack = await getLocalAudioTrackIfAvailable();
+  if (localAudioTrack) {
+    addAudioTrackToMix(localAudioTrack);
+  }
+
+  for (const track of remoteAudioTracks.values()) {
+    addAudioTrackToMix(track);
+  }
+
+  recordingStream = new MediaStream();
+  if (videoTrack) {
+    recordingStream.addTrack(videoTrack);
+  }
+
+  const mixedAudioTrack = audioDestination?.stream?.getAudioTracks?.()[0];
+  if (mixedAudioTrack) {
+    recordingStream.addTrack(mixedAudioTrack);
+  }
+
+  if (recordingStream.getTracks().length === 0) {
+    alert('No media tracks available to record.');
+    return;
+  }
+
+  const options = getSupportedRecorderOptions();
+  mediaRecorder = options ? new MediaRecorder(recordingStream, options) : new MediaRecorder(recordingStream);
+  recordingChunks = [];
+
+  mediaRecorder.ondataavailable = (event) => {
+    if (event.data && event.data.size > 0) {
+      recordingChunks.push(event.data);
+    }
+  };
+
+  mediaRecorder.onstop = () => {
+    stopRecordingTimer();
+    updateRecordingUI(false);
+    recordingActive = false;
+    stopCanvasRenderLoop();
+
+    if (recordingChunks.length) {
+      const blobType = recordingChunks[0]?.type || 'video/webm';
+      const recordingBlob = new Blob(recordingChunks, { type: blobType });
+      const downloadUrl = URL.createObjectURL(recordingBlob);
+      const anchor = document.createElement('a');
+      const safeTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      anchor.href = downloadUrl;
+      anchor.download = `meeting-${window.MEETING_ID || 'recording'}-${safeTimestamp}.webm`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+    }
+
+    recordingChunks = [];
+    recordingStream = null;
+    mediaRecorder = null;
+
+    for (const sourceNode of audioSources.values()) {
+      sourceNode.disconnect();
+    }
+    audioSources.clear();
+  };
+
+  mediaRecorder.start(1000);
+  recordingActive = true;
+  updateRecordingUI(true);
+  startRecordingTimer();
+}
+
+function stopMeetingRecording() {
+  if (!recordingActive) return;
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+}
 
 function initMeetingChat() {
   const chatContainer = document.getElementById('meetingChatMessages');
@@ -361,6 +623,12 @@ meeting.on("remoteTrackStarted", function (remoteTrackItem) {
   }
 
   if (remoteTrackItem.type === "audio") {
+    if (remoteTrackItem.track) {
+      remoteAudioTracks.set(remoteTrackItem.track.id, remoteTrackItem.track);
+      if (recordingActive) {
+        addAudioTrackToMix(remoteTrackItem.track);
+      }
+    }
     if (jquery("#audio-" + remoteTrackItem.participantSessionId)[0]) {
       jquery("#audio-" + remoteTrackItem.participantSessionId)[0].srcObject =
         mediaStream;
@@ -386,6 +654,10 @@ meeting.on("remoteTrackStopped", function (remoteTrackItem) {
   }
 
   if (remoteTrackItem.type === "audio") {
+    if (remoteTrackItem.track) {
+      remoteAudioTracks.delete(remoteTrackItem.track.id);
+      removeAudioTrackFromMix(remoteTrackItem.track);
+    }
     if (jquery("#audio-" + remoteTrackItem.participantSessionId)[0]) {
       jquery("#audio-" + remoteTrackItem.participantSessionId)[0].srcObject =
         null;
@@ -547,7 +819,18 @@ jquery("#toggleScreen").on("click", async function () {
   }
 });
 
+jquery("#toggleRecording").on("click", async function () {
+  if (recordingActive) {
+    stopMeetingRecording();
+  } else {
+    await startMeetingRecording();
+  }
+});
+
 jquery("#leaveMeeting").on("click", async function () {
+  if (recordingActive) {
+    stopMeetingRecording();
+  }
   await recordMeetingLeave();
   await meeting.leaveMeeting();
   jquery("#meetingView").addClass("hidden");
