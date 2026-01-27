@@ -23,6 +23,11 @@
                 </h2>
                 <p class="text-muted-500 text-sm mt-2">{{ __('user_permission.subtitle') ?? 'Manage role-based access controls' }}</p>
             </div>
+            <a href="{{ route('admin.subadmins.index') }}"
+            class="px-3 py-2 text-sm rounded-xl border border-muted-200 bg-white hover:bg-muted-50 transition">
+                Create subadmin
+            </a>
+
         </div>
 
         {{-- SUCCESS ALERT --}}
@@ -38,7 +43,7 @@
         {{-- ROLES GRID --}}
         <div class="grid gap-6 animate-fade-in-up [animation-delay:150ms]">
             @foreach ($roles as $role)
-                @if ($role->name !== 'admin')
+                @if ($role->name !== 'admin'&& $role->name !== 'subadmin')
                     <form action="{{ route('admin.permissions.update') }}" method="POST"
                           class="bg-white rounded-2xl border border-muted-200 shadow-lg shadow-main/5 p-6 hover:border-primary/30 transition-all">
                         @csrf

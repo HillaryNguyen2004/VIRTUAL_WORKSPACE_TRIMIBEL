@@ -138,6 +138,11 @@ public function conversations()
         return $this->belongsToMany(Task::class, 'task_user')
                     ->withTimestamps();
     }
+
+    public function delegatablePermissionNames(): array
+    {
+        return $this->getAllPermissions()->pluck('name')->values()->all();
+    }
   
 
     // Accessors for progress tracking

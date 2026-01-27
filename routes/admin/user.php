@@ -44,6 +44,23 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/check-ins/export', [CheckInController::class, 'export'])->name('checkins.export');
 
 
+    // Subadmin Management Routes
+    Route::get('/admin/subadmins', [UserController::class, 'subadminIndex'])
+        ->name('admin.subadmins.index');
+
+    // 2) Make a specific user become subadmin
+    Route::post('/admin/subadmins/{user}/make', [UserController::class, 'makeSubadmin'])
+        ->name('admin.subadmins.make');
+
+    // 3) Edit subadmin permissions for a user (direct permissions)
+    Route::get('/admin/subadmins/{user}/permissions', [UserController::class, 'editSubadminPermissions'])
+        ->name('admin.subadmins.permissions.edit');
+
+    // 4) Update subadmin permissions for a user (direct permissions)
+    Route::post('/admin/subadmins/{user}/permissions', [UserController::class, 'updateSubadminPermissions'])
+        ->name('admin.subadmins.permissions.update');
+
+
     // Route::get('/tasks/new', [TaskController::class, 'create'])->name('tasks.create');
     // Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
     // Route::get('/management/tasks', [TaskController::class, 'index'])->name('tasks.index');
