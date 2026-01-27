@@ -23,6 +23,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
+        'department_id',
         'username',
         'google_email',
         'google_access_token',
@@ -73,6 +74,11 @@ public function assignedTasks()
 {
     // return $this->belongsToMany(Task::class, 'task_user', 'user_id', 'task_id', 'id', 'task_id')->withTimestamps();
     return $this->belongsToMany(Task::class, 'task_user', 'user_id', 'task_id')->withTimestamps();
+}
+
+public function department()
+{
+    return $this->belongsTo(Department::class);
 }
 
 public function teamLeader()

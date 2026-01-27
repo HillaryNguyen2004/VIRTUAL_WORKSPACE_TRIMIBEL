@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Department;
 use Illuminate\Support\Facades\Password;
 use App\Http\Requests\FilterUserRequest;
 use App\Http\Requests\UpdateUserRequest;
@@ -84,7 +85,9 @@ class UserController extends Controller
 
     public function create()
     {
-        return view('users.create');
+        $departments = Department::orderBy('name')->get();
+
+        return view('users.create', compact('departments'));
     }
 
     public function store(StoreUserRequest $request)
