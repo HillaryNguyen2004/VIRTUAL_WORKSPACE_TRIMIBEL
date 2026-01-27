@@ -53,7 +53,7 @@
                     {{-- Role / Position --}}
                     <span class="text-primary">{{ Auth::user()->roles->first()->name ?? 'Staff' }}</span>
                     <span class="text-muted-300">|</span>
-                    <span>{{ Auth::user()->department ?? 'Product Department' }}</span>
+                    <span>{{ Auth::user()->department?->name ?? 'Product Department' }}</span>
                 </div>
             </div>
         </div>

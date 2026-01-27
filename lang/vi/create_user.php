@@ -10,6 +10,8 @@ return [
     'select_role' => 'Chọn vai trò',
     'user_role' => 'Người dùng',
     'staff_role' => 'Nhân viên',
+    'department_label' => 'Phòng ban',
+    'select_department' => 'Chọn phòng ban',
     'submit_button' => 'Tạo',
     'error_message' => 'Lỗi: :error',
 

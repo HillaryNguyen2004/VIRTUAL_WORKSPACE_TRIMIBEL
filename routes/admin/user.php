@@ -7,6 +7,7 @@ use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\UserExportController;
 use App\Http\Controllers\Api\CheckInController;
+use App\Http\Controllers\DepartmentController;
 
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
@@ -21,6 +22,12 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/admin/users/store', [UserController::class, 'store'])->name('admin.users.store');
 
     Route::get('/management/users', [UserController::class, 'index'])->name('users.index');
+    Route::get('/admin/departments', [DepartmentController::class, 'index'])->name('admin.departments.index');
+    Route::post('/admin/departments', [DepartmentController::class, 'store'])->name('admin.departments.store');
+    Route::put('/admin/departments/{department}', [DepartmentController::class, 'update'])->name('admin.departments.update');
+    Route::delete('/admin/departments/{department}', [DepartmentController::class, 'destroy'])->name('admin.departments.destroy');
+    Route::post('/admin/departments/{department}/assign', [DepartmentController::class, 'assignStaff'])->name('admin.departments.assign');
+    Route::delete('/admin/departments/{department}/remove/{user}', [DepartmentController::class, 'removeStaff'])->name('admin.departments.remove');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy')->middleware('role:admin');
     Route::get('/admin/permissions', [UserController::class, 'permissions'])->name('admin.permissions');
     Route::post('/admin/permissions', [UserController::class, 'updatePermissions'])->name('admin.permissions.update');

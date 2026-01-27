@@ -88,6 +88,7 @@ class UserService
         'name'          => $data['name'],
         'email'         => $data['email'],
         'password'      => $password,
+        'department_id' => $data['department_id'] ?? null,
         'team_leader_id'=> $data['team_leader_id'] ?? null,
         'username'      => $username,
     ]);
