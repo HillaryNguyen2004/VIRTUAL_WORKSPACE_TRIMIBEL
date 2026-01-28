@@ -51,6 +51,13 @@ class DashboardPermissionsSeeder extends Seeder
             'guard_name' => 'web',
         ]);
 
+        // ✅ Admin has FULL global access
+        $admin->syncPermissions(Permission::where('guard_name', $guard)->get());
+
+        // ✅ Subadmin role should be "base only" (or empty)
+        // so every subadmin is customized by direct permissions
+        $subadmin->syncPermissions([]); // important
+
         // Re-cache
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
