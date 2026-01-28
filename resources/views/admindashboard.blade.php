@@ -1,8 +1,8 @@
 @extends('layout_dashboard')
 @section('title', __('admin_dashboard.title'))
-
+@can('admin.dashboard.view')
 @section('content')
-    @role('admin')
+    
     
     @php
         // --- 1. RECEIVE DATA & HELPERS ---
@@ -518,5 +518,5 @@
                 <p class="text-muted-500 mt-2">You do not have permission to view the Admin Dashboard.</p>
             </div>
         </div>
-    @endrole
+    @endcan
 @endsection
