@@ -19,6 +19,7 @@ use App\Http\Controllers\TeamProgressController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\FaceRegisterController;
 use App\Http\Controllers\Api\CheckInController as ApiCheckInController;
+use App\Http\Controllers\AdminDashboardController;
 
 
 // Route::group(['middleware' => ['web', 'core']], function () {
@@ -378,3 +379,7 @@ Route::post(
     '/checkin/manual/process',
     [ApiCheckInController::class, 'manualProcess']
 )->middleware('auth')->name('checkin.manual.process');
+
+Route::get('/subadmin/dashboard', [AdminDashboardController::class, 'index'])
+    ->middleware(['auth', 'permission:admin.dashboard.view'])
+    ->name('subadmin.dashboard');

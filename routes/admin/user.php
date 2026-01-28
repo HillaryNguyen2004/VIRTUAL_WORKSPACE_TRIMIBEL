@@ -59,6 +59,10 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // 4) Update subadmin permissions for a user (direct permissions)
     Route::post('/admin/subadmins/{user}/permissions', [UserController::class, 'updateSubadminPermissions'])
         ->name('admin.subadmins.permissions.update');
+    
+    // Route::get('/subadmin/dashboard', [AdminDashboardController::class, 'index'])
+    // ->middleware(['auth', 'permission:admin.dashboard.view'])
+    // ->name('subadmin.dashboard');
 
 
     // Route::get('/tasks/new', [TaskController::class, 'create'])->name('tasks.create');

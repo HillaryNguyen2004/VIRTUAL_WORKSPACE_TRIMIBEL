@@ -22,7 +22,11 @@ class UserRoleRedirectService
 
             if ($user->hasRole('admin')) {
                 return route('admin.dashboard');
-            } elseif ($user->hasRole('staff')) {
+            }
+            elseif ($user->hasRole('subadmin')) {
+                return route('subadmin.dashboard');
+            }
+             elseif ($user->hasRole('staff')) {
                 return route('staff.dashboard');
             } elseif ($user->hasRole('user')) {
                 return route('user.dashboard');
