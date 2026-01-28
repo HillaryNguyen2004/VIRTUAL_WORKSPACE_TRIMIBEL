@@ -1,8 +1,7 @@
 @extends('layout_dashboard')
 @section('title', __('admin_dashboard.title'))
-@can('admin.dashboard.view')
 @section('content')
-    
+@can('admin.dashboard.view')    
     
     @php
         // --- 1. RECEIVE DATA & HELPERS ---
@@ -180,7 +179,7 @@
             @endcan
 
             {{-- 3. Working Hours --}}
-             @can('admin.company_hours.view')
+            @can('admin.company_hours.view')
             <div class="@4xl:col-span-4 bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-accent/30 hover:shadow-accent/10 transition-all duration-300 flex flex-col h-full">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-lg font-semibold text-main">{{ __('admin_dashboard.company_hours') }}</h3>
@@ -278,7 +277,7 @@
 
         {{-- GRID ROW 2 --}}
         <div class="grid grid-cols-1 @4xl:grid-cols-12 gap-6 w-full animate-fade-in-up [animation-delay:100ms]">
-             @can('admin.projects.view')
+            @can('admin.projects.view')
             {{-- 4. Project Health --}}
             <div class="@4xl:col-span-8 bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-primary/30 hover:shadow-primary/10 transition-all duration-300">
                 <div class="flex items-center justify-between mb-6">
@@ -327,7 +326,7 @@
             @endcan
 
             {{-- 5. Recent Attendance --}}
-             @can('admin.attendance.view')
+            @can('admin.attendance.view')
             <div class="@4xl:col-span-4 bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-primary/30 hover:shadow-primary/10 transition-all duration-300 flex flex-col h-full">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-lg font-semibold text-main">{{ __('admin_dashboard.recent_attendance') }}</h3>
@@ -365,13 +364,14 @@
                     @endif
                 </div>
             </div>
+            @endcan
         </div>
-        @endcan
 
         {{-- GRID ROW 3 --}}
         <div class="grid grid-cols-1 @4xl:grid-cols-12 gap-6 w-full animate-fade-in-up [animation-delay:200ms]">
             
             {{-- 6. Campaign Timeline --}}
+            @can('admin.campaigns.view')
             <div class="@4xl:col-span-4 bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-primary/30 hover:shadow-primary/10 transition-all duration-300 flex flex-col gap-6">
                 <div class="flex items-center justify-between">
                     <h3 class="text-lg font-semibold text-main">{{ __('admin_dashboard.campaign_management') }}</h3>
@@ -421,8 +421,10 @@
                     </div>
                 </div>
             </div>
+            @endcan
 
             {{-- 7. Email Templates (Updated) --}}
+            @can('admin.email_templates.view')
             <div class="@4xl:col-span-4 flex flex-col h-full">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-main">{{ __('admin_dashboard.email_templates') }}</h3>
@@ -468,8 +470,10 @@
                     @endforeach
                 </div>
             </div>
+            @endcan
 
             {{-- 8. Activity Log --}}
+            @can('admin.activity_logs.view')
             <div class="@4xl:col-span-4 bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-primary/30 hover:shadow-primary/10 transition-all duration-300">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-lg font-semibold text-main">{{ __('admin_dashboard.recent_activities') }}</h3>
@@ -506,17 +510,18 @@
                     @endif
                 </div>
             </div>
+            @endcan
         </div>
     </div>
-    @else
-        <div class="flex items-center justify-center min-h-[400px]">
-            <div class="text-center">
-                <div class="inline-block p-4 rounded-full bg-danger/10 text-danger mb-4">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                </div>
-                <h4 class="text-xl font-bold text-main">{{ __('admin_dashboard.access_denied') }}</h4>
-                <p class="text-muted-500 mt-2">You do not have permission to view the Admin Dashboard.</p>
+@else
+    <div class="flex items-center justify-center min-h-[400px]">
+        <div class="text-center">
+            <div class="inline-block p-4 rounded-full bg-danger/10 text-danger mb-4">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
             </div>
+            <h4 class="text-xl font-bold text-main">{{ __('admin_dashboard.access_denied') }}</h4>
+            <p class="text-muted-500 mt-2">You do not have permission to view the Admin Dashboard.</p>
         </div>
-    @endcan
+    </div>
+@endcan
 @endsection
