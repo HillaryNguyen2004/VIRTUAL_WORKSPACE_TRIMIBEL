@@ -30,7 +30,10 @@ class UserPolicy
         }
 
         if ($actorMax <= $targetMax) {
-            return Response::deny("You can't manage a user with equal/higher role.");
+            $isAdminDemotion = $actor->hasRole('admin') && $target->hasRole('admin') && $roleName !== 'admin';
+            if (!$isAdminDemotion) {
+                return Response::deny("You can't manage a user with equal/higher role.");
+            }
         }
 
         return Response::allow();
