@@ -15,6 +15,7 @@ use App\Models\CompanyHour;
 use App\Models\CheckIn;
 use App\Models\ActivityLog;
 use App\Models\DayOffRequest;
+use App\Models\Holiday;
 
 class AdminDashboardController extends Controller
 {
@@ -121,6 +122,11 @@ class AdminDashboardController extends Controller
             ->take(4)
             ->get();
 
+        // -- 8. HOLIDAYS --
+        $upcomingHolidays = Holiday::where('start_date', '>=', now())
+            ->orderBy('start_date', 'asc')
+            ->get();
+
         return view('admindashboard', compact(
             'recentLogs', 
             'recentCheckIns',
@@ -135,7 +141,8 @@ class AdminDashboardController extends Controller
             'projectsHealth',
             'upcomingCampaigns',
             'sentCampaigns',
-            'emailTemplates'
+            'emailTemplates',
+            'upcomingHolidays',
         ));
     }
 
