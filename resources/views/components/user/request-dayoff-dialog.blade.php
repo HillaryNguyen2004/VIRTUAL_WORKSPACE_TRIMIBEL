@@ -130,6 +130,106 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const startDate = document.getElementById('start_date');
     const endDate = document.getElementById('end_date');
+    const form = document.getElementById('request-dayoff-form');
+
+    let holidays = [];
+
+    // Fetch holidays when dialog opens
+    async function fetchHolidays() {
+        try {
+            const res = await fetch("{{ route('holidays.index') }}", {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                // Assuming the response contains holidays array
+                holidays = data.holidays || data.data || data;
+            }
+        } catch (error) {
+            console.error('Failed to fetch holidays:', error);
+        }
+    }
+
+    // Check if a date falls within any holiday
+    function isHoliday(dateStr) {
+        const checkDate = new Date(dateStr);
+        
+        for (const holiday of holidays) {
+            const holidayStart = new Date(holiday.start_date);
+            const holidayEnd = new Date(holiday.end_date);
+            
+            if (checkDate >= holidayStart && checkDate <= holidayEnd) {
+                return holiday;
+            }
+        }
+        return null;
+    }
+
+    // Validate dates against holidays
+    function validateDates() {
+        // Remove any existing error messages
+        const existingErrors = document.querySelectorAll('.holiday-error-message');
+        existingErrors.forEach(error => error.remove());
+        
+        if (!startDate.value || !endDate.value) {
+            return true;
+        }
+
+        const start = new Date(startDate.value);
+        const end = new Date(endDate.value);
+        const conflictingHolidays = [];
+
+        // Check each date in the range
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const dateStr = d.toISOString().split('T')[0];
+            const holiday = isHoliday(dateStr);
+            
+            if (holiday && !conflictingHolidays.find(h => h.title === holiday.title)) {
+                conflictingHolidays.push(holiday);
+            }
+        }
+
+        if (conflictingHolidays.length > 0) {
+            displayHolidayError(conflictingHolidays);
+            return false;
+        }
+
+        return true;
+    }
+
+    // Display error message for holiday conflicts
+    function displayHolidayError(conflictingHolidays) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'holiday-error-message mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700';
+        
+        const holidayList = conflictingHolidays.map(h => {
+            const startDate = new Date(h.start_date);
+            const formattedDate = startDate.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+            });
+            return `<strong>${h.title}</strong> (${formattedDate})`;
+        }).join(', ');
+        
+        errorDiv.innerHTML = `
+            <div class="flex items-start gap-2">
+                <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                </svg>
+                <div>
+                    <div class="font-medium">Cannot request day-off on holiday dates</div>
+                    <div class="mt-1">${holidayList}</div>
+                </div>
+            </div>
+        `;
+        
+        endDate.parentElement.appendChild(errorDiv);
+    }
 
     function isSingleDay() {
         return startDate.value && endDate.value && startDate.value === endDate.value;
@@ -174,11 +274,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Event listeners
     leaveType.addEventListener('change', toggleHalfDay);
-    startDate.addEventListener('change', toggleHalfDay);
-    endDate.addEventListener('change', toggleHalfDay);
+    startDate.addEventListener('change', () => {
+        toggleHalfDay();
+        validateDates();
+    });
+    endDate.addEventListener('change', () => {
+        toggleHalfDay();
+        validateDates();
+    });
     halfSelect.addEventListener('change', loadPreview);
 
+    // Prevent form submission if there are holiday conflicts
+    form.addEventListener('submit', (e) => {
+        if (!validateDates()) {
+            e.preventDefault();
+            
+            // Scroll to error message
+            const errorMsg = document.querySelector('.holiday-error-message');
+            if (errorMsg) {
+                errorMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    });
+
+    // Fetch holidays when page loads
+    fetchHolidays();
     toggleHalfDay();
 });
 </script>

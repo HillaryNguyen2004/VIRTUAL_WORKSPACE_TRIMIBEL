@@ -512,16 +512,73 @@
             </div>
             @endcan
         </div>
+
+        <div class="grid grid-cols-1 @4xl:grid-cols-12 gap-6 w-full animate-fade-in-up [animation-delay:300ms]">
+            
+            <div class="@4xl:col-span-12 flex flex-col h-full">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-main">Upcoming Holidays</h3>
+                    <div class="flex items-center gap-2">
+                        {{-- Add Button --}}
+                        <button id="openHolidayModal" class="flex items-center gap-1 bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                            </svg>
+                            Add New
+                        </button>
+                        
+                        {{-- <a href="{{ route('holidays.index') }}" title="View All" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                        </a> --}}
+                    </div>
+                </div>
+
+                {{-- Holidays Grid --}}
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    @forelse($upcomingHolidays ?? [] as $holiday)
+                        <div onclick="openHolidayModal('edit', {{ json_encode($holiday) }})" 
+                             class="group flex items-center gap-4 p-4 rounded-2xl bg-white border border-muted-200 shadow-lg shadow-main/5 hover:border-accent/30 hover:shadow-accent/10 transition-all duration-300 cursor-pointer">
+                            
+                            {{-- Calendar Icon --}}
+                            <div class="relative w-12 h-12 flex-none bg-accent/5 rounded-xl flex flex-col items-center justify-center border border-accent/10 group-hover:bg-accent/10 transition-colors">
+                                <span class="text-[10px] font-bold text-accent uppercase tracking-wider">{{ $holiday->start_date->format('M') }}</span>
+                                <span class="text-lg font-bold text-main leading-none">{{ $holiday->start_date->format('d') }}</span>
+                            </div>
+                            
+                            {{-- Info --}}
+                            <div class="flex-1 min-w-0">
+                                <h4 class="text-sm font-bold text-main group-hover:text-accent transition-colors truncate">{{ $holiday->title }}</h4>
+                                <p class="text-xs text-muted-500 mt-0.5 truncate">
+                                    {{ $holiday->start_date->format('l, H:i') }}
+                                </p>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="col-span-full text-center py-6 text-muted-400 text-sm border border-dashed border-muted-200 rounded-2xl">
+                            No upcoming holidays found.
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
     </div>
-@else
-    <div class="flex items-center justify-center min-h-[400px]">
-        <div class="text-center">
-            <div class="inline-block p-4 rounded-full bg-danger/10 text-danger mb-4">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+    @include ('holidays_modal')
+    @else
+        <div class="flex items-center justify-center min-h-[400px]">
+            <div class="text-center">
+                <div class="inline-block p-4 rounded-full bg-danger/10 text-danger mb-4">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <h4 class="text-xl font-bold text-main">{{ __('admin_dashboard.access_denied') }}</h4>
+                <p class="text-muted-500 mt-2">You do not have permission to view the Admin Dashboard.</p>
             </div>
             <h4 class="text-xl font-bold text-main">{{ __('admin_dashboard.access_denied') }}</h4>
             <p class="text-muted-500 mt-2">You do not have permission to view the Admin Dashboard.</p>
         </div>
-    </div>
-@endcan
 @endsection
+
+@push('scripts')
+    @vite(['resources/js/admin/edit_holiday.js'])
+@endpush
