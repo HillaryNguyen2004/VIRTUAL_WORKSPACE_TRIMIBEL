@@ -17,6 +17,7 @@ use App\Http\Controllers\DayOffController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\TeamProgressController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\HolidayController;
 
 // Route::group(['middleware' => ['web', 'core']], function () {
 //     include_once 'admin/user.php';
@@ -317,7 +318,7 @@ Route::post('/meeting/{meetingId}/chat', [MeetingController::class, 'sendChatMes
     ->middleware(['auth'])
     ->name('meeting.chat.send');
 
-// routes/web.php
+
 Route::get('/team-progress', [TeamProgressController::class, 'index'])->name('team-progress');
 Route::get('/user-tasks/{userId}', [App\Http\Controllers\TaskController::class, 'getUserTasks'])->name('user.tasks');
 
@@ -332,3 +333,5 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/calendar/google/connect', [CalendarController::class, 'connectGoogle'])->name('calendar.google.connect');
     Route::get('/calendar/google/callback', [CalendarController::class, 'googleCallback']);
 });
+
+Route::resource('holidays', HolidayController::class);
