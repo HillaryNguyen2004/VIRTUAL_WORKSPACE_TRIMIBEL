@@ -287,6 +287,61 @@ class UserController extends Controller
         return back()->with('success', 'Subadmin permissions updated');
     }
 
+    public function makeSubstaff(User $user)
+    {
+        abort_unless(auth()->user()->can('staff.substaff.create'), 403);
+
+        $this->authorize('assignRole', [$user, 'substaff']);
+
+        $user->syncRoles(['substaff']);
+        $user->syncPermissions([]); // start empty
+
+        return redirect()
+            ->route('staff.substaff.permissions.edit', $user)
+            ->with('success', 'Substaff created. Now choose permissions.');
+    }
+
+    public function editSubstaffPermissions(User $user)
+    {
+        abort_unless(auth()->user()->can('staff.substaff.permissions.manage'), 403);
+
+        if (!$user->hasRole('substaff')) {
+            return back()->with('error', 'This user is not substaff.');
+        }
+
+        $grantableNames = auth()->user()->delegatablePermissionNames();
+
+        $permissions = Permission::query()
+            ->where('guard_name', 'web')
+            ->whereIn('name', $grantableNames)
+            ->orderBy('name')
+            ->get();
+
+        return view('users.substaff.permissions', compact('user', 'permissions'));
+    }
+
+    public function updateSubstaffPermissions(Request $request, User $user)
+    {
+        abort_unless(auth()->user()->can('staff.substaff.permissions.manage'), 403);
+
+        if (!$user->hasRole('substaff')) {
+            return back()->with('error', 'This user is not substaff.');
+        }
+
+        $permissionNames = $request->input('permissions', []);
+        if (!is_array($permissionNames)) $permissionNames = [];
+
+        // ✅ Waterfall enforced by your policy
+        $this->authorize('syncPermissions', [$user, $permissionNames]);
+
+        $user->syncPermissions($permissionNames);
+
+        return back()->with('success', 'Substaff permissions updated');
+    }
+
+
+
+
     // ==========================
     // Import/Template
     // ==========================

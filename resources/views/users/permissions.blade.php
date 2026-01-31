@@ -43,7 +43,7 @@
         {{-- ROLES GRID --}}
         <div class="grid gap-6 animate-fade-in-up [animation-delay:150ms]">
             @foreach ($roles as $role)
-                @if ($role->name !== 'admin'&& $role->name !== 'subadmin')
+                @if ($role->name !== 'admin'&& $role->name !== 'subadmin' && $role->name !== 'substaff')
                     <form action="{{ route('admin.permissions.update') }}" method="POST"
                           class="bg-white rounded-2xl border border-muted-200 shadow-lg shadow-main/5 p-6 hover:border-primary/30 transition-all">
                         @csrf

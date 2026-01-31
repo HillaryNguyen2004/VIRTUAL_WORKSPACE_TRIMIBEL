@@ -2,29 +2,92 @@
 @section('title', __('staff_dashboard.title'))
 
 @section('content')
-    @role('staff')
+
+@php
+    // ✅ Mode: 'staff' or 'substaff' (Controller should pass: $dashboardMode = 'substaff' for substaff route)
+    $dashboardMode = $dashboardMode ?? 'staff';
+
+    $isStaff = auth()->user()->hasRole('staff');
+    $isSubstaffDashboard = ($dashboardMode === 'substaff');
+
+    // ✅ Access rule:
+    // - Staff dashboard: staff role only
+    // - Substaff dashboard: permission only
+    $canView = $isSubstaffDashboard
+        ? auth()->user()->can('staff.dashboard.view')
+        : $isStaff;
+
+    // ✅ SAFETY: avoid "Undefined variable $teamMembers"
+    $teamMembers = $teamMembers ?? collect();
+
+    // ✅ Route helper (only used if you need a "back to dashboard" link somewhere)
+    $dashboardHomeRoute = $isSubstaffDashboard ? route('substaff.dashboard') : route('staff.dashboard');
+@endphp
+
+@if($canView)
     {{-- Main Container --}}
-    <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
-        
+    <div class="flex flex-col gap-6 w-full max-w-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
+
         {{-- Header Section --}}
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-center w-full">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between w-full">
             <div class="flex items-center gap-3">
                 <h2 class="font-bold text-3xl text-main tracking-tight">{{ __('staff_dashboard.dashboard') }}</h2>
                 <span class="inline-flex items-center px-3 py-1 rounded-full bg-secondary/10 text-secondary text-xs font-semibold uppercase tracking-wide">
-                    {{ __('staff_dashboard.staff') }}
+                    {{ $isSubstaffDashboard ? 'Substaff' : __('staff_dashboard.staff') }}
                 </span>
             </div>
+            <!-- {{-- ✅ BUTTON IN HEADER --}}
+            @can('staff.substaff.create')
+                <a href="#team-members"
+                   class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white font-semibold hover:bg-primary-hover transition-colors shadow-lg shadow-primary/20">
+                    {{-- icon --}}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Create Substaff
+                </a>
+            @endcan -->
         </div>
 
-        {{-- Top Cards Section (Converted from x-staff components to standard cards) --}}
+        {{-- ✅ TEAM MEMBERS SECTION (kept as is, just moved BELOW header and anchored) --}}
+        @can('staff.substaff.create')
+            <div id="team-members" class="bg-white rounded-2xl p-6 border border-muted-200">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold">Team Members</h3>
+                </div>
+
+                @if($teamMembers->isEmpty())
+                    <div class="text-sm text-muted-500">
+                        No team members found for your account.
+                    </div>
+                @else
+                    @foreach($teamMembers as $member)
+                        <div class="flex items-center justify-between py-2 border-b last:border-0">
+                            <div>
+                                <div class="font-medium">{{ $member->name }}</div>
+                                <div class="text-xs text-muted-500">{{ $member->email }}</div>
+                            </div>
+
+                            <form method="POST" action="{{ route('staff.substaff.make', $member) }}">
+                                @csrf
+                                <button class="px-3 py-2 rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors" type="submit">
+                                    Make Substaff
+                                </button>
+                            </form>
+                        </div>
+                    @endforeach
+                @endif
+            </div>
+        @endcan
+
+        {{-- Top Cards Section --}}
         <div class="grid grid-cols-1 @2xl:grid-cols-2 @4xl:grid-cols-3 gap-6 w-full animate-fade-in-up">
-            
+
             {{-- Card 1: Upcoming Tasks --}}
             <div class="bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-primary/30 hover:shadow-primary/10 transition-all duration-300 flex flex-col justify-between h-full group">
                 <div>
                     <div class="flex items-center gap-3 mb-3">
                         <div class="p-3 rounded-xl bg-primary/10 text-primary group-hover:scale-110 transition-transform duration-300">
-                             {{-- Using a generic icon for consistency or the one from previous code --}}
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                             </svg>
@@ -102,16 +165,16 @@
                     <div class="col-span-3 @2xl:col-span-2 text-right">{{ __('staff_dashboard.status') }}</div>
                     <div class="col-span-3 @2xl:col-span-2 text-right">{{ __('staff_dashboard.tasks_count') }}</div>
                 </div>
-                
+
                 {{-- List Rows --}}
                 @forelse ($projects->take(3) as $project)
                     <div class="grid grid-cols-12 gap-4 py-4 items-center border-b border-muted-100 last:border-0 hover:bg-canvas transition-colors px-2 rounded-lg -mx-2">
                         <div class="col-span-6">
                             <p class="text-sm font-medium text-main truncate" title="{{ $project->name }}">{{ $project->title }}</p>
                         </div>
-                        
+
                         <div class="col-span-2 text-center hidden @2xl:block">
-                            <span class="text-sm text-muted-500 font-medium">{{ $project->percentage }}%</span>
+                            <span class="text-sm text-muted-500 font-medium">{{ $project->percentage ?? 0 }}%</span>
                         </div>
 
                         <div class="col-span-3 @2xl:col-span-2 flex justify-end">
@@ -121,7 +184,7 @@
                         </div>
 
                         <div class="col-span-3 @2xl:col-span-2 flex justify-end">
-                            <span class="text-sm text-muted-500 font-medium">{{$project->tasks->count()}}</span>    
+                            <span class="text-sm text-muted-500 font-medium">{{ $project->tasks->count() }}</span>
                         </div>
                     </div>
                 @empty
@@ -139,25 +202,21 @@
             </div>
 
             @php
-                // Using semantic colors consistent with UserDashboard theme
                 $activityStatusMap = [
                     'add' => 'bg-secondary/10 text-secondary ring-1 ring-inset ring-secondary/20',
-                    'remove' => 'bg-danger/10 text-danger ring-1 ring-inset ring-danger/20', // Assuming 'danger' config exists, else use red classes
+                    'remove' => 'bg-danger/10 text-danger ring-1 ring-inset ring-danger/20',
                     'completed' => 'bg-accent/10 text-accent ring-1 ring-inset ring-accent/20',
                 ];
             @endphp
-            
+
             <div class="w-full">
-                 {{-- Header Row --}}
                 <div class="grid grid-cols-12 gap-4 pb-3 border-b border-muted-200 text-xs font-semibold text-muted-400 uppercase tracking-wider">
                     <div class="col-span-6">{{ __('staff_dashboard.activity_title') }}</div>
                     <div class="col-span-3 text-center hidden @2xl:block">{{ __('staff_dashboard.activity_time') }}</div>
                     <div class="col-span-6 @2xl:col-span-3 text-right">{{ __('staff_dashboard.activity_status_label') }}</div>
                 </div>
 
-                {{-- Activity Rows (Examples hardcoded in source, adapted styles) --}}
-                
-                {{-- Row 1: Add --}}
+                {{-- Example rows --}}
                 <div class="grid grid-cols-12 gap-4 py-4 items-center border-b border-muted-100 hover:bg-canvas transition-colors px-2 rounded-lg -mx-2">
                     <div class="col-span-6">
                         <p class="text-sm font-medium text-main truncate">Viết báo cáo</p>
@@ -167,15 +226,11 @@
                     </div>
                     <div class="col-span-6 @2xl:col-span-3 flex justify-end">
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium {{ $activityStatusMap['add'] }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-3 h-3 fill-current">
-                                <path d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z" />
-                            </svg>
                             Add
                         </span>
                     </div>
                 </div>
 
-                {{-- Row 2: Remove --}}
                 <div class="grid grid-cols-12 gap-4 py-4 items-center border-b border-muted-100 hover:bg-canvas transition-colors px-2 rounded-lg -mx-2">
                     <div class="col-span-6">
                         <p class="text-sm font-medium text-main truncate">Viết báo cáo</p>
@@ -185,15 +240,11 @@
                     </div>
                     <div class="col-span-6 @2xl:col-span-3 flex justify-end">
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium {{ $activityStatusMap['remove'] }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-3 h-3 fill-current">
-                                <path d="M183.1 137.4C170.6 124.9 150.3 124.9 137.8 137.4C125.3 149.9 125.3 170.2 137.8 182.7L275.2 320L137.9 457.4C125.4 469.9 125.4 490.2 137.9 502.7C150.4 515.2 170.7 515.2 183.2 502.7L320.5 365.3L457.9 502.6C470.4 515.1 490.7 515.1 503.2 502.6C515.7 490.1 515.7 469.8 503.2 457.3L365.8 320L503.1 182.6C515.6 170.1 515.6 149.8 503.1 137.3C490.6 124.8 470.3 124.8 457.8 137.3L320.5 274.7L183.1 137.4z" />
-                            </svg>
                             Remove
                         </span>
                     </div>
                 </div>
 
-                {{-- Row 3: Completed --}}
                 <div class="grid grid-cols-12 gap-4 py-4 items-center hover:bg-canvas transition-colors px-2 rounded-lg -mx-2">
                     <div class="col-span-6">
                         <p class="text-sm font-medium text-main truncate">Viết báo cáo</p>
@@ -203,24 +254,27 @@
                     </div>
                     <div class="col-span-6 @2xl:col-span-3 flex justify-end">
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium {{ $activityStatusMap['completed'] }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-3 h-3 fill-current">
-                                <path d="M530.8 134.1C545.1 144.5 548.3 164.5 537.9 178.8L281.9 530.8C276.4 538.4 267.9 543.1 258.5 543.9C249.1 544.7 240 541.2 233.4 534.6L105.4 406.6C92.9 394.1 92.9 373.8 105.4 361.3C117.9 348.8 138.2 348.8 150.7 361.3L252.2 462.8L486.2 141.1C496.6 126.8 516.6 123.6 530.9 134z" />
-                            </svg>
                             Done
                         </span>
                     </div>
                 </div>
+
             </div>
+        </div>
+
+    </div>
+@else
+    <div class="flex items-center justify-center min-h-[400px]">
+        <div class="text-center">
+            <div class="inline-block p-4 rounded-full bg-danger/10 text-danger mb-4">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <h4 class="text-xl font-bold text-main">{{ __('staff_dashboard.no_permission') }}</h4>
         </div>
     </div>
-    @else
-        <div class="flex items-center justify-center min-h-[400px]">
-             <div class="text-center">
-                <div class="inline-block p-4 rounded-full bg-danger/10 text-danger mb-4">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                </div>
-                <h4 class="text-xl font-bold text-main">{{ __('staff_dashboard.no_permission') }}</h4>
-            </div>
-        </div>
-    @endrole
+@endif
+
 @endsection

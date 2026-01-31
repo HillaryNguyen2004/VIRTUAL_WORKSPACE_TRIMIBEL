@@ -10,7 +10,10 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Project;
 use App\Models\Task;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Gate;
+
 
 class TaskController extends Controller
 {
@@ -446,23 +449,75 @@ class TaskController extends Controller
     //     return view('staffdashboard', compact('tasks'));
     // }
 
-    public function upcomingTasks()
-    {
-        $projects = Project::with(['tasks'])
-            ->where('staff_id', auth()->id())
-            ->latest()
-            ->take(3)
-            ->get();
+    // public function upcomingTasks()
+    // {
+    //     $projects = Project::with(['tasks'])
+    //         ->where('staff_id', auth()->id())
+    //         ->latest()
+    //         ->take(3)
+    //         ->get();
 
-        // Calculate completion percentage for each project
-        // foreach ($projects as $project) {
-        //     $totalTasks = $project->tasks->count();
-        //     $completedTasks = $project->tasks->where('status', 'completed')->count();
-        //     $project->completion_percentage = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100) : 0;
-        // }
+    //     // Calculate completion percentage for each project
+    //     // foreach ($projects as $project) {
+    //     //     $totalTasks = $project->tasks->count();
+    //     //     $completedTasks = $project->tasks->where('status', 'completed')->count();
+    //     //     $project->completion_percentage = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100) : 0;
+    //     // }
 
-        return view('staffdashboard', compact('projects'));
-    }
+    //     return view('staffdashboard', compact('projects'));
+    // }
+
+    
+
+public function upcomingTasks()
+{
+    $staff = Auth::user();
+    // 1) Staff projects (same logic as you)
+    $projects = Project::with('tasks')
+        ->where('staff_id', $staff->id)
+        ->latest()
+        ->take(3)
+        ->get();
+
+    // 2) Team members: only users in staff's team
+    // team_leader_id = staff_id
+    $teamMembers = User::query()
+        ->where('team_leader_id', $staff->id)
+        // optional: don't allow picking admins/staff as substaff targets
+        ->whereDoesntHave('roles', fn ($q) => $q->whereIn('name', ['admin', 'staff']))
+        ->orderBy('name')
+        ->get();
+
+    // 3) Return view with all required vars
+    return view('staffdashboard', [
+        'staff' => $staff,
+        'projects' => $projects,
+        'teamMembers' => $teamMembers,
+    ]);
+}
+
+
+public function substaffDashboard()
+{
+    // permission middleware already checks, but keep safe:
+    abort_unless(auth()->user()->can('staff.dashboard.view'), 403);
+    $staff = Auth::user();
+    // Load same data as staff dashboard (or adjust if needed)
+    // $projects = auth()->user()->projects()->with('tasks')->latest()->get(); // adjust to your app
+    $projects = Project::with('tasks')
+        ->where('staff_id', $staff->id)
+        ->latest()
+        ->take(3)
+        ->get();
+    // $teamMembers = collect(); // optional, or load if you want substaff to manage members
+
+    // Use SAME blade, but pass a flag to change label + routes
+    return view('staffdashboard', [
+        'projects' => $projects,
+        'dashboardMode' => 'substaff', // 👈 important
+    ]);
+}
+
 
 
     /**

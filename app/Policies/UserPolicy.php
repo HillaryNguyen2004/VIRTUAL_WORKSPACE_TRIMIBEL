@@ -19,6 +19,9 @@ class UserPolicy
         if ($actor->id === $target->id) {
             return Response::deny("You can't change your own role.");
         }
+        if ($roleName === 'substaff' && !$actor->can('staff.substaff.create')) {
+            return Response::deny("You don't have permission to create substaff.");
+        }
 
         $role = Role::where('name', $roleName)->where('guard_name','web')->firstOrFail();
 
