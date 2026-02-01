@@ -502,10 +502,16 @@ public function substaffDashboard()
     // permission middleware already checks, but keep safe:
     abort_unless(auth()->user()->can('staff.dashboard.view'), 403);
     $staff = Auth::user();
+    $leaderId = (int) $staff->team_leader_id;
     // Load same data as staff dashboard (or adjust if needed)
     // $projects = auth()->user()->projects()->with('tasks')->latest()->get(); // adjust to your app
-    $projects = Project::with('tasks')
-        ->where('staff_id', $staff->id)
+    // $projects = Project::with('tasks')
+    //     ->where('staff_id', $staff->id)
+    //     ->latest()
+    //     ->take(3)
+    //     ->get();
+     $projects = Project::with('tasks')
+        ->where('staff_id', $leaderId)     // ✅ projects belong to leader staff
         ->latest()
         ->take(3)
         ->get();
