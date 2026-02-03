@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -28,7 +29,7 @@
 
     <!-- Dashboard layout -->
     @vite(['resources/js/dashboard_layout/switch_lang.js'])
-    
+
 </head>
 
 <body class="flex flex-row h-screen p-[35px] lg:justify-between justify-center gap-9 overflow-auto">

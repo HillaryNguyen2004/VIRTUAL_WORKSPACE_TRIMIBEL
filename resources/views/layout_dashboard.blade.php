@@ -63,6 +63,8 @@
                             $dashRoute = 'subadmin.dashboard';
                         } elseif (auth()->user()->hasRole('staff') && Route::has('staff.dashboard')) {
                             $dashRoute = 'staff.dashboard';
+                        } elseif (auth()->user()->hasRole('substaff') && Route::has('substaff.dashboard')) {
+                            $dashRoute = 'substaff.dashboard';
                         }
                     @endphp
                     <x-nav-link href="{{ route($dashRoute) }}" :active="request()->routeIs(['*.dashboard'])"

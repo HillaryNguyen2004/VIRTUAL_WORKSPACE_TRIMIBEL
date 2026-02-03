@@ -10,7 +10,7 @@ use App\Http\Controllers\Api\CheckInController;
 use App\Http\Controllers\DepartmentController;
 
 
-Route::middleware(['auth', 'role:admin'])->group(function () {
+Route::middleware(['auth', 'role:admin|subadmin'])->group(function () {
     // Route::get('/admin/dashboard', function () {
     //     return view('admindashboard');
     // })->name('admin.dashboard');
