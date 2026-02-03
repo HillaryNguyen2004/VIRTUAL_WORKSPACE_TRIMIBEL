@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Spatie\Permission\Traits\HasRoles;
+use Spatie\Permission\Models\Permission;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -142,6 +143,31 @@ public function conversations()
     public function delegatablePermissionNames(): array
     {
         return $this->getAllPermissions()->pluck('name')->values()->all();
+    }
+
+    public function syncDepartmentAddonPermissions(): void
+    {
+        // Admin should not be touched
+        if ($this->hasRole('admin')) return;
+
+        // Remove previous department permissions:
+        // easiest approach: recompute full "department addon set" and sync ONLY that addon set
+        // BUT we don't want to destroy user's own custom direct perms (if you have).
+        // So we tag department perms by naming convention or store in a separate table.
+        // For now: simplest method -> treat ALL direct perms as "department addon"
+        // If you want per-user extra perms later, see STEP 9.
+
+        $deptPermNames = [];
+
+        if ($this->department_id) {
+            $deptPermNames = Permission::query()
+                ->whereIn('id', $this->department->permissions()->pluck('permissions.id'))
+                ->pluck('name')
+                ->toArray();
+        }
+
+        // Direct permissions = department addon
+        $this->syncPermissions($deptPermNames);
     }
   
 

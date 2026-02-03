@@ -133,8 +133,8 @@ class UserController extends Controller
 
         $roles = Role::with('permissions')->get();
         $permissions = $this->permissionRepo->getAllPermissions();
-
-        return view('users.permissions', compact('roles', 'permissions'));
+        $departments = Department::with('permissions')->orderBy('name')->get();
+        return view('users.permissions', compact('roles', 'permissions', 'departments'));
     }
 
     /**

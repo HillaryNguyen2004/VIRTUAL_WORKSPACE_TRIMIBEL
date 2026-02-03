@@ -26,7 +26,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/admin/departments', [DepartmentController::class, 'store'])->name('admin.departments.store');
     Route::put('/admin/departments/{department}', [DepartmentController::class, 'update'])->name('admin.departments.update');
     Route::delete('/admin/departments/{department}', [DepartmentController::class, 'destroy'])->name('admin.departments.destroy');
-    Route::post('/admin/departments/{department}/assign', [DepartmentController::class, 'assignStaff'])->name('admin.departments.assign');
+    Route::post('/admin/departments/{department}/assfcamign', [DepartmentController::class, 'assignStaff'])->name('admin.departments.assign');
     Route::delete('/admin/departments/{department}/remove/{user}', [DepartmentController::class, 'removeStaff'])->name('admin.departments.remove');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy')->middleware('role:admin');
     Route::get('/admin/permissions', [UserController::class, 'permissions'])->name('admin.permissions');
@@ -59,6 +59,13 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // 4) Update subadmin permissions for a user (direct permissions)
     Route::post('/admin/subadmins/{user}/permissions', [UserController::class, 'updateSubadminPermissions'])
         ->name('admin.subadmins.permissions.update');
+
+    Route::get('/admin/departments/{department}/permissions', [DepartmentController::class, 'editPermissions'])
+        ->name('admin.departments.permissions.edit');
+
+    Route::post('/admin/departments/{department}/permissions', [DepartmentController::class, 'updatePermissions'])
+        ->name('admin.departments.permissions.update');
+
     
     // Route::get('/subadmin/dashboard', [AdminDashboardController::class, 'index'])
     // ->middleware(['auth', 'permission:admin.dashboard.view'])
