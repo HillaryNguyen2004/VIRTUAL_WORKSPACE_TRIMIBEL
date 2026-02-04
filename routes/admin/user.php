@@ -10,75 +10,229 @@ use App\Http\Controllers\Api\CheckInController;
 use App\Http\Controllers\DepartmentController;
 
 
-Route::middleware(['auth', 'role:admin|subadmin'])->group(function () {
-    // Route::get('/admin/dashboard', function () {
-    //     return view('admindashboard');
-    // })->name('admin.dashboard');
-
+Route::middleware(['auth'])->group(function () {
+    // Dashboard
     Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])
+        ->middleware('admin_or_permission:permission:admin.dashboard.view')
         ->name('admin.dashboard');
-    Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
-    Route::get('/admin/users/create', [UserController::class, 'create'])->name('admin.users.create');
-    Route::post('/admin/users/store', [UserController::class, 'store'])->name('admin.users.store');
 
-    Route::get('/management/users', [UserController::class, 'index'])->name('users.index');
-    Route::get('/admin/departments', [DepartmentController::class, 'index'])->name('admin.departments.index');
-    Route::post('/admin/departments', [DepartmentController::class, 'store'])->name('admin.departments.store');
-    Route::put('/admin/departments/{department}', [DepartmentController::class, 'update'])->name('admin.departments.update');
-    Route::delete('/admin/departments/{department}', [DepartmentController::class, 'destroy'])->name('admin.departments.destroy');
-    Route::post('/admin/departments/{department}/assfcamign', [DepartmentController::class, 'assignStaff'])->name('admin.departments.assign');
-    Route::delete('/admin/departments/{department}/remove/{user}', [DepartmentController::class, 'removeStaff'])->name('admin.departments.remove');
-    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy')->middleware('role:admin');
-    Route::get('/admin/permissions', [UserController::class, 'permissions'])->name('admin.permissions');
-    Route::post('/admin/permissions', [UserController::class, 'updatePermissions'])->name('admin.permissions.update');
-    Route::get('/admin/activity-logs', [App\Http\Controllers\AdminDashboardController::class, 'viewAllLogs'])->name('admin.activity.logs');
-    Route::resource('campaigns', CampaignController::class)->middleware(['auth', 'role:admin']);
-    Route::resource('email-templates', EmailTemplateController::class)->middleware(['auth', 'role:admin']);
-    Route::post('/campaigns/{campaign}/send-now', [CampaignController::class, 'sendNow'])->name('campaigns.sendNow');
-    Route::get('/export-users-excel', [UserExportController::class, 'exportExcel']);
-    Route::get('/admin/users/import', [UserController::class, 'showImportForm'])->name('admin.users.import.form');
-    Route::post('/admin/users/import', [UserController::class, 'import'])->name('admin.users.import');
-    Route::get('/admin/users/import/template', [UserController::class, 'downloadTemplate'])->name('admin.users.import.template');
-    Route::put('/campaigns/{campaign}/reset', [CampaignController::class, 'reset'])->name('campaigns.reset');
-    Route::get('/check-ins', [CheckInController::class, 'index'])->name('users.checkin_index');
-    Route::get('/admin/check-ins/export', [CheckInController::class, 'export'])->name('checkins.export');
+    // ===== USERS MODULE =====
+    Route::get('/management/users', [UserController::class, 'index'])
+        ->middleware('admin_or_permission:permission:admin.users.view')
+        ->name('users.index');
 
+    Route::get('/admin/users/create', [UserController::class, 'create'])
+        ->middleware('admin_or_permission:permission:admin.users.create')
+        ->name('admin.users.create');
+
+    Route::post('/admin/users/store', [UserController::class, 'store'])
+        ->middleware('admin_or_permission:permission:admin.users.create')
+        ->name('admin.users.store');
+
+    Route::put('/users/{user}', [UserController::class, 'update'])
+        ->middleware('admin_or_permission:permission:admin.users.edit')
+        ->name('users.update');
+
+    Route::delete('/users/{user}', [UserController::class, 'destroy'])
+        ->middleware('admin_or_permission:permission:admin.users.delete')
+        ->name('users.destroy');
+
+    Route::get('/export-users-excel', [UserExportController::class, 'exportExcel'])
+        ->middleware('admin_or_permission:permission:admin.users.view');
+
+    Route::get('/admin/users/import', [UserController::class, 'showImportForm'])
+        ->middleware('admin_or_permission:permission:admin.users.create')
+        ->name('admin.users.import.form');
+
+    Route::post('/admin/users/import', [UserController::class, 'import'])
+        ->middleware('admin_or_permission:permission:admin.users.create')
+        ->name('admin.users.import');
+
+    Route::get('/admin/users/import/template', [UserController::class, 'downloadTemplate'])
+        ->middleware('admin_or_permission:permission:admin.users.create')
+        ->name('admin.users.import.template');
+
+    // ===== ROLES & PERMISSIONS MODULE =====
+    Route::get('/admin/permissions', [UserController::class, 'permissions'])
+        ->middleware('admin_or_permission:permission:admin.roles.view')
+        ->name('admin.permissions');
+
+    Route::post('/admin/permissions', [UserController::class, 'updatePermissions'])
+        ->middleware('admin_or_permission:permission:admin.roles.edit')
+        ->name('admin.permissions.update');
 
     // Subadmin Management Routes
     Route::get('/admin/subadmins', [UserController::class, 'subadminIndex'])
+        ->middleware('admin_or_permission:permission:admin.roles.view')
         ->name('admin.subadmins.index');
 
-    // 2) Make a specific user become subadmin
     Route::post('/admin/subadmins/{user}/make', [UserController::class, 'makeSubadmin'])
+        ->middleware('admin_or_permission:permission:admin.roles.edit')
         ->name('admin.subadmins.make');
 
-    // 3) Edit subadmin permissions for a user (direct permissions)
     Route::get('/admin/subadmins/{user}/permissions', [UserController::class, 'editSubadminPermissions'])
+        ->middleware('admin_or_permission:permission:admin.roles.view')
         ->name('admin.subadmins.permissions.edit');
 
-    // 4) Update subadmin permissions for a user (direct permissions)
     Route::post('/admin/subadmins/{user}/permissions', [UserController::class, 'updateSubadminPermissions'])
+        ->middleware('permission:admin.roles.edit')
         ->name('admin.subadmins.permissions.update');
 
+    // ===== CAMPAIGNS MODULE =====
+    Route::resource('campaigns', CampaignController::class)
+        ->middleware('admin_or_permission:permission:admin.campaigns.view');
+
+    Route::post('/campaigns/{campaign}/send-now', [CampaignController::class, 'sendNow'])
+        ->middleware('permission:admin.campaigns.edit')
+        ->name('campaigns.sendNow');
+
+    Route::put('/campaigns/{campaign}/reset', [CampaignController::class, 'reset'])
+        ->middleware('padmin_or_permission:permission:admin.campaigns.edit')
+        ->name('campaigns.reset');
+
+    // ===== EMAIL TEMPLATES MODULE =====
+    Route::resource('email-templates', EmailTemplateController::class)
+        ->middleware('admin_or_permission:permission:admin.email_templates.view');
+
+    // ===== ACTIVITY LOGS MODULE =====
+    Route::get('/admin/activity-logs', [AdminDashboardController::class, 'viewAllLogs'])
+        ->middleware('admin_or_permission:permission:admin.activity_logs.view')
+        ->name('admin.activity.logs');
+
+    // ===== ATTENDANCE MODULE =====
+    Route::get('/check-ins', [CheckInController::class, 'index'])
+        ->middleware('permission:admin.attendance.view')
+        ->name('users.checkin_index');
+
+    Route::get('/admin/check-ins/export', [CheckInController::class, 'export'])
+        ->middleware('admin_or_permission:permission:admin.attendance.view')
+        ->name('checkins.export');
+
+    // ===== COMPANY HOURS MODULE =====
+    // Add routes for company_hours if they exist in your controller
+    // Route::resource('company-hours', CompanyHoursController::class)
+    //     ->middleware('permission:admin.company_hours.view');
+
+    // ===== PROJECTS MODULE =====
+    // Add routes for projects if they exist in your controller
+    // Route::resource('projects', ProjectController::class)
+    //     ->middleware('permission:admin.projects.view');
+
+    // ===== SUBSTAFF MODULE =====
+    // Add routes for staff.substaff if they exist in your controller
+    // Route::resource('substaffs', SubstaffController::class)
+    //     ->middleware('permission:staff.substaff.view');
+
+    // ===== DEPARTMENTS (implicit module, using admin.users permissions) =====
+    Route::get('/admin/departments', [DepartmentController::class, 'index'])
+        ->middleware('admin_or_permission:permission:admin.users.view')
+        ->name('admin.departments.index');
+
+    Route::post('/admin/departments', [DepartmentController::class, 'store'])
+        ->middleware('admin_or_permission:permission:admin.users.create')
+        ->name('admin.departments.store');
+
+    Route::put('/admin/departments/{department}', [DepartmentController::class, 'update'])
+        ->middleware('admin_or_permission:permission:admin.users.edit')
+        ->name('admin.departments.update');
+
+    Route::delete('/admin/departments/{department}', [DepartmentController::class, 'destroy'])
+        ->middleware('admin_or_permission:permission:admin.users.delete')
+        ->name('admin.departments.destroy');
+
+    Route::post('/admin/departments/{department}/assfcamign', [DepartmentController::class, 'assignStaff'])
+        ->middleware('admin_or_permission:permission:admin.users.edit')
+        ->name('admin.departments.assign');
+
+    Route::delete('/admin/departments/{department}/remove/{user}', [DepartmentController::class, 'removeStaff'])
+        ->middleware('permission:admin.users.edit')
+        ->name('admin.departments.remove');
+
     Route::get('/admin/departments/{department}/permissions', [DepartmentController::class, 'editPermissions'])
+        ->middleware('admin_or_permission:permission:admin.roles.view')
         ->name('admin.departments.permissions.edit');
 
     Route::post('/admin/departments/{department}/permissions', [DepartmentController::class, 'updatePermissions'])
+        ->middleware('permission:admin.roles.edit')
         ->name('admin.departments.permissions.update');
-
-    
-    // Route::get('/subadmin/dashboard', [AdminDashboardController::class, 'index'])
-    // ->middleware(['auth', 'permission:admin.dashboard.view'])
-    // ->name('subadmin.dashboard');
-
-
-    // Route::get('/tasks/new', [TaskController::class, 'create'])->name('tasks.create');
-    // Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
-    // Route::get('/management/tasks', [TaskController::class, 'index'])->name('tasks.index');
-    // Route::get('/management/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
-    // Route::get('/management/tasks/{task}/edit', [TaskController::class, 'edit'])->name('tasks.edit');
-    // // Route::put('/management/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
-    // Route::put('/management/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
-
-    // Route::delete('/management/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
 });
+
+// Route::middleware(['auth'])->group(function () {
+
+//     Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])
+//         ->middleware('admin_or_permission:admin.dashboard.view')
+//         ->name('admin.dashboard');
+
+//     Route::get('/management/users', [UserController::class, 'index'])
+//         ->middleware('admin_or_permission:admin.users.view')
+//         ->name('users.index');
+
+//     Route::get('/admin/users/create', [UserController::class, 'create'])
+//         ->middleware('admin_or_permission:admin.users.create')
+//         ->name('admin.users.create');
+
+//     Route::post('/admin/users/store', [UserController::class, 'store'])
+//         ->middleware('admin_or_permission:admin.users.create')
+//         ->name('admin.users.store');
+
+//     Route::put('/users/{user}', [UserController::class, 'update'])
+//         ->middleware('admin_or_permission:admin.users.edit')
+//         ->name('users.update');
+
+//     Route::delete('/users/{user}', [UserController::class, 'destroy'])
+//         ->middleware('admin_or_permission:admin.users.delete')
+//         ->name('users.destroy');
+
+//     Route::resource('campaigns', CampaignController::class)
+//         ->middleware('admin_or_permission:admin.campaigns.view');
+
+//     Route::post('/campaigns/{campaign}/send-now', [CampaignController::class, 'sendNow'])
+//         ->middleware('admin_or_permission:admin.campaigns.edit')
+//         ->name('campaigns.sendNow');
+
+//     Route::put('/campaigns/{campaign}/reset', [CampaignController::class, 'reset'])
+//         ->middleware('admin_or_permission:admin.campaigns.edit')
+//         ->name('campaigns.reset');
+
+//     Route::resource('email-templates', EmailTemplateController::class)
+//         ->middleware('admin_or_permission:admin.email_templates.view');
+
+//     Route::get('/admin/activity-logs', [AdminDashboardController::class, 'viewAllLogs'])
+//         ->middleware('admin_or_permission:admin.activity_logs.view')
+//         ->name('admin.activity.logs');
+
+//     Route::get('/check-ins', [CheckInController::class, 'index'])
+//         ->middleware('admin_or_permission:admin.attendance.view')
+//         ->name('users.checkin_index');
+
+//     Route::get('/admin/check-ins/export', [CheckInController::class, 'export'])
+//         ->middleware('admin_or_permission:admin.attendance.view')
+//         ->name('checkins.export');
+
+//     // Departments
+//     Route::get('/admin/departments', [DepartmentController::class, 'index'])
+//         ->middleware('admin_or_permission:admin.users.view')
+//         ->name('admin.departments.index');
+
+//     Route::post('/admin/departments', [DepartmentController::class, 'store'])
+//         ->middleware('admin_or_permission:admin.users.create')
+//         ->name('admin.departments.store');
+
+//     Route::put('/admin/departments/{department}', [DepartmentController::class, 'update'])
+//         ->middleware('admin_or_permission:admin.users.edit')
+//         ->name('admin.departments.update');
+
+//     Route::delete('/admin/departments/{department}', [DepartmentController::class, 'destroy'])
+//         ->middleware('admin_or_permission:admin.users.delete')
+//         ->name('admin.departments.destroy');
+
+//     Route::get('/admin/departments/{department}/permissions', [DepartmentController::class, 'editPermissions'])
+//         ->middleware('admin_or_permission:admin.roles.view')
+//         ->name('admin.departments.permissions.edit');
+
+//     Route::post('/admin/departments/{department}/permissions', [DepartmentController::class, 'updatePermissions'])
+//         ->middleware('admin_or_permission:admin.roles.edit')
+//         ->name('admin.departments.permissions.update');
+// });
+
+
