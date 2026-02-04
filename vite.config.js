@@ -19,21 +19,21 @@ export default defineConfig({
         }),
     ],
     server: {
-        host: '0.0.0.0',
+        host: "0.0.0.0",
         port: 5173,
         strictPort: true,
         hmr: {
-            host: 'localhost',
-            protocol: 'ws'
+            host: "localhost",
+            protocol: "ws",
         },
         cors: {
             origin: [
-                'https://unperceptible-genevie-surmisedly.ngrok-free.dev',
-                'https://do-an-chuyen-nganh-rho.vercel.app',
-                'http://localhost:8000',
-                'http://127.0.0.1:8000'
+                "https://unperceptible-genevie-surmisedly.ngrok-free.dev",
+                "https://do-an-chuyen-nganh-rho.vercel.app",
+                "http://localhost:8000",
+                "http://127.0.0.1:8000",
             ],
-            credentials: true
-        }
+            credentials: true,
+        },
     },
 });

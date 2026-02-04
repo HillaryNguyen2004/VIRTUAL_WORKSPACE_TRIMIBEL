@@ -52,7 +52,7 @@
             </div>
 
             {{-- Camera loading indicator --}}
-            <div id="cameraLoading" class="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden">
+            <div id="cameraLoading" class="absolute inset-0 bg-black bg-opacity-70 items-center justify-center hidden">
                 <div class="text-center">
                     <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
                     <p class="text-white font-medium">Initializing camera...</p>

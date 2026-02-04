@@ -18,6 +18,9 @@ use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\TeamProgressController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\HolidayController;
+use App\Http\Controllers\Api\CheckInController;
+use App\Http\Controllers\FaceRegisterController;
+use App\Http\Controllers\AdminDashboardController;
 
 // Route::group(['middleware' => ['web', 'core']], function () {
 //     include_once 'admin/user.php';
@@ -260,7 +263,7 @@ Route::get('/profile/check-face-status', function () {
     ]);
 })->middleware('auth');
 
-Route::post('/face/verify', [App\Http\Controllers\Api\CheckInController::class, 'verify'])
+Route::post('/face/verify', [CheckInController::class, 'verify'])
     ->middleware('auth');
 
 
@@ -344,7 +347,7 @@ Route::post('/meeting/{meetingId}/chat', [MeetingController::class, 'sendChatMes
 
 
 Route::get('/team-progress', [TeamProgressController::class, 'index'])->name('team-progress');
-Route::get('/user-tasks/{userId}', [App\Http\Controllers\TaskController::class, 'getUserTasks'])->name('user.tasks');
+Route::get('/user-tasks/{userId}', [TaskController::class, 'getUserTasks'])->name('user.tasks');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar');
@@ -363,19 +366,19 @@ Route::middleware(['auth'])->group(function () {
 
 // Update your existing check-in routes to use the face check-in
 Route::middleware(['auth'])->group(function () {
-    Route::get('/checkin/face/{type}', [ApiCheckInController::class, 'showFacePage'])
+    Route::get('/checkin/face/{type}', [CheckInController::class, 'showFacePage'])
         ->whereIn('type', ['checkin', 'checkout'])
         ->name('checkin.face.page');
 });
 
 Route::post(
     '/checkin/face/process',
-    [App\Http\Controllers\Api\CheckInController::class, 'faceProcess']
+    [CheckInController::class, 'faceProcess']
 )->middleware('auth')->name('checkin.face.process');
 
 Route::post(
     '/checkin/manual/process',
-    [ApiCheckInController::class, 'manualProcess']
+    [CheckInController::class, 'manualProcess']
 )->middleware('auth')->name('checkin.manual.process');
 
 Route::get('/subadmin/dashboard', [AdminDashboardController::class, 'index'])

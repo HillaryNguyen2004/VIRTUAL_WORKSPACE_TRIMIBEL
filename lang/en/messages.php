@@ -38,5 +38,7 @@ return [
     'success_approve' => 'Day-off request approved.',
     'success_reject' => 'Day-off request rejected.',
     'notice_approved' => 'Your day-off request for :date was approved.',
-    'wrong_username' => 'It\'s not your username'
+    'wrong_username' => 'It\'s not your username',
+    'not_in_working_hours' => 'You are not within working hours.',
+    'working_hour_not_configured' => 'Working hours are not configured. Please contact admin.',
 ];

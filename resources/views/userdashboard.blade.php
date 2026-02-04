@@ -48,15 +48,17 @@
                             Click the buttons below to check in or check out using face recognition.
                         </div>
                     </div>
-                    <a href="{{ route('checkin.face.page', 'checkin') }}"
-                        class="btn btn-success btn-lg me-2">
+                    <div class="flex flex-col items-center justify-center gap-3 w-full">
+                        <a href="{{ route('checkin.face.page', 'checkin') }}"
+                            class="text-center w-full flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-white font-medium shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover focus:ring-4 focus:ring-primary/30">
                             <i class="fas fa-camera"></i> Face Check In
                         </a>
 
                         <a href="{{ route('checkin.face.page', 'checkout') }}"
-                        class="btn btn-danger btn-lg">
+                            class="text-center w-full flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-white font-medium shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover focus:ring-4 focus:ring-primary/30">
                             <i class="fas fa-camera"></i> Face Check Out
                         </a>
+                    </div>
                 </div>
             </div>
 
@@ -409,7 +411,7 @@
             
             <div class="@4xl:col-span-5 flex flex-col gap-6">
                 @if ($teamLeader)
-                    <div class="bg-white border border-muted-200 shadow-lg shadow-main/5 rounded-2xl p-6 flex flex-col items-center text-center">
+                    <div class="bg-white border border-muted-200 shadow-lg shadow-main/5 hover:border-primary/30 hover:shadow-primary/10 transition-colors rounded-2xl p-6 flex flex-col items-center text-center">
                         <div class="relative">
                             <div class="absolute inset-0 bg-primary/20 rounded-full blur-lg opacity-50"></div>
                             <img src="/img/undraw_profile_2.svg" alt="leader_avatar" class="relative w-20 h-20 rounded-full border-4 border-white shadow-lg shadow-main/5 object-cover">
