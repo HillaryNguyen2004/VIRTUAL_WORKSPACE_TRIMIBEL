@@ -7,9 +7,10 @@ use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\UserExportController;
 use App\Http\Controllers\Api\CheckInController;
+use App\Http\Controllers\DepartmentController;
 
 
-Route::middleware(['auth', 'role:admin'])->group(function () {
+Route::middleware(['auth', 'role:admin|subadmin'])->group(function () {
     // Route::get('/admin/dashboard', function () {
     //     return view('admindashboard');
     // })->name('admin.dashboard');
@@ -21,6 +22,12 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/admin/users/store', [UserController::class, 'store'])->name('admin.users.store');
 
     Route::get('/management/users', [UserController::class, 'index'])->name('users.index');
+    Route::get('/admin/departments', [DepartmentController::class, 'index'])->name('admin.departments.index');
+    Route::post('/admin/departments', [DepartmentController::class, 'store'])->name('admin.departments.store');
+    Route::put('/admin/departments/{department}', [DepartmentController::class, 'update'])->name('admin.departments.update');
+    Route::delete('/admin/departments/{department}', [DepartmentController::class, 'destroy'])->name('admin.departments.destroy');
+    Route::post('/admin/departments/{department}/assfcamign', [DepartmentController::class, 'assignStaff'])->name('admin.departments.assign');
+    Route::delete('/admin/departments/{department}/remove/{user}', [DepartmentController::class, 'removeStaff'])->name('admin.departments.remove');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy')->middleware('role:admin');
     Route::get('/admin/permissions', [UserController::class, 'permissions'])->name('admin.permissions');
     Route::post('/admin/permissions', [UserController::class, 'updatePermissions'])->name('admin.permissions.update');
@@ -35,6 +42,34 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::put('/campaigns/{campaign}/reset', [CampaignController::class, 'reset'])->name('campaigns.reset');
     Route::get('/check-ins', [CheckInController::class, 'index'])->name('users.checkin_index');
     Route::get('/admin/check-ins/export', [CheckInController::class, 'export'])->name('checkins.export');
+
+
+    // Subadmin Management Routes
+    Route::get('/admin/subadmins', [UserController::class, 'subadminIndex'])
+        ->name('admin.subadmins.index');
+
+    // 2) Make a specific user become subadmin
+    Route::post('/admin/subadmins/{user}/make', [UserController::class, 'makeSubadmin'])
+        ->name('admin.subadmins.make');
+
+    // 3) Edit subadmin permissions for a user (direct permissions)
+    Route::get('/admin/subadmins/{user}/permissions', [UserController::class, 'editSubadminPermissions'])
+        ->name('admin.subadmins.permissions.edit');
+
+    // 4) Update subadmin permissions for a user (direct permissions)
+    Route::post('/admin/subadmins/{user}/permissions', [UserController::class, 'updateSubadminPermissions'])
+        ->name('admin.subadmins.permissions.update');
+
+    Route::get('/admin/departments/{department}/permissions', [DepartmentController::class, 'editPermissions'])
+        ->name('admin.departments.permissions.edit');
+
+    Route::post('/admin/departments/{department}/permissions', [DepartmentController::class, 'updatePermissions'])
+        ->name('admin.departments.permissions.update');
+
+    
+    // Route::get('/subadmin/dashboard', [AdminDashboardController::class, 'index'])
+    // ->middleware(['auth', 'permission:admin.dashboard.view'])
+    // ->name('subadmin.dashboard');
 
 
     // Route::get('/tasks/new', [TaskController::class, 'create'])->name('tasks.create');

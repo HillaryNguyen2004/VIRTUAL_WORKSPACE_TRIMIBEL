@@ -9,38 +9,138 @@ use Illuminate\Support\Str;
 use Carbon\Carbon;
 use App\Models\CompanyHour;
 use Illuminate\Support\Facades\DB;
-use App\Services\CheckInExportService;
 use App\Services\CheckInService;
-use App\Http\Requests\CheckInRequest;
-use App\Http\Requests\CheckOutRequest;
-
-// use Maatwebsite\Excel\Facades\Excel;
-// use App\Exports\CheckInExport;
-
-
+use App\Services\FaceService;
+use App\Services\CheckInExportService;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class CheckInController extends Controller
 {
     protected $checkInService;
+    protected $faceService;
 
-    public function __construct(CheckInService $checkInService)
+    public function __construct(CheckInService $checkInService, FaceService $faceService)
     {
         $this->checkInService = $checkInService;
+        $this->faceService = $faceService;
     }
-   
-    // public function index(Request $request, CheckInExportService $exportService)
-    // {
-    //     // $query = $exportService->getFilteredCheckIns($request);
-    //     // $checkIns = $query->paginate(3);
+    
+    // New method to handle face verification and check-in/out
+    public function faceProcess(Request $request)
+    {
+        try {
+            $request->validate([
+                'username' => 'required|string',
+                'check_type' => 'required|in:checkin,checkout',
+                'image_data' => 'required|string'
+            ]);
+            
+            $user = User::where('username', $request->username)->first();
+            
+            if (!$user) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'User not found'
+                ], 404);
+            }
+            
+            // Verify face if user has registered face
+            if ($user->face_hash) {
+                $faceVerified = $this->verifyFaceFromImage($user, $request->image_data);
+                
+                if (!$faceVerified) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Face verification failed. Please try again or use manual check.',
+                        'requires_verification' => true
+                    ], 400);
+                }
+            }
+            
+            // Process check-in or check-out
+            if ($request->check_type === 'checkin') {
+                $result = $this->checkInService->processCheckIn($request->username, $user->id);
+            } else {
+                $result = $this->checkInService->processCheckOut($request->username, $user->id);
+            }
+            
+            return response()->json($result);
+            
+        } catch (\Exception $e) {
+            Log::error('Face check-in error: ' . $e->getMessage());
+            
+            return response()->json([
+                'status' => false,
+                'message' => 'An error occurred. Please try again.'
+            ], 500);
+        }
+    }
+    
+    private function verifyFaceFromImage(User $user, string $imageData): bool
+    {
+        try {
+            // Remove data URL prefix
+            $imageData = str_replace('data:image/jpeg;base64,', '', $imageData);
+            $imageData = str_replace(' ', '+', $imageData);
+            
+            // Decode base64
+            $imageBinary = base64_decode($imageData);
+            
+            if ($imageBinary === false) {
+                Log::error('Failed to decode image data');
+                return false;
+            }
+            
+            // Save temp file
+            $tempPath = storage_path('app/temp/face_verify_' . time() . '.jpg');
+            file_put_contents($tempPath, $imageBinary);
+            
+            // Create UploadedFile instance
+            $file = new \Illuminate\Http\UploadedFile(
+                $tempPath,
+                'face.jpg',
+                'image/jpeg',
+                null,
+                true
+            );
+            
+            // Generate hash from the captured image
+            $capturedHash = $this->faceService->generateHash($file);
+            
+            // Compare with stored hash
+            $distance = levenshtein($user->face_hash, $capturedHash);
+            
+            // Clean up temp file
+            unlink($tempPath);
+            
+            Log::info('Face verification', [
+                'user_id' => $user->id,
+                'distance' => $distance,
+                'threshold' => 2000
+            ]);
+            
+            // Return true if distance is within acceptable range
+            return $distance <= 2000;
+            
+        } catch (\Exception $e) {
+            Log::error('Face verification error: ' . $e->getMessage());
+            return false;
+        }
+    }
 
-    //     // return view('users.checkin_index', compact('checkIns'));
-    //     $query = $exportService->getFilteredCheckIns($request);
+    public function showFacePage(string $type)
+    {
+        $workingHour = CompanyHour::first();
 
-    //     // Eager load the related user and their dayOffRequests
-    //     $checkIns = $query->with(['user.dayOffRequests'])->paginate(3);
+        return view('face-checkin', [
+            'checkType'   => $type,
+            'workingHour'=> $workingHour,
+        ]);
+    }
 
-    //     return view('users.checkin_index', compact('checkIns'));
-    // }
+    
+    // ... rest of your existing methods ...
     public function index(Request $request, CheckInExportService $exportService)
     {
         $query = $exportService->getFilteredCheckIns($request);
@@ -75,29 +175,6 @@ class CheckInController extends Controller
         return view('users.checkin_index', compact('checkIns'));
     }
 
-
-    public function checkIn(CheckInRequest $request)
-    {
-        
-        $result = $this->checkInService->processCheckIn($request->username, $request->currentUserId);
-
-        return $result['status']
-            ? response()->json(['message' => $result['message'], 'token' => $result['token']])
-            : response()->json(['message' => $result['message']], 400);
-    }
-
-
-    public function checkOut(CheckOutRequest $request)
-    {
-       
-        $result = $this->checkInService->processCheckOut($request->username, $request->currentUserId);
-
-        return $result['status']
-            ? response()->json(['message' => $result['message']])
-            : response()->json(['message' => $result['message']], 400);
-    }
-
-    
 
     public function export(Request $request, CheckInExportService $exportService)
     {
@@ -142,8 +219,4 @@ class CheckInController extends Controller
             return false;
         }
     }
-
-
 }
-
-

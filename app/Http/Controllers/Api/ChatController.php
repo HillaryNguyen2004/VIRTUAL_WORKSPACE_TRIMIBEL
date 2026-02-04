@@ -675,8 +675,8 @@ class ChatController extends Controller
                 ], 403);
             }
 
-            $METERED_DOMAIN = env('METERED_DOMAIN');
-            $METERED_SECRET_KEY = env('METERED_SECRET_KEY');
+            $METERED_DOMAIN = config('services.metered.domain');
+            $METERED_SECRET_KEY = config('services.metered.secret_key');
 
             // Create meeting room
             $response = Http::post("https://{$METERED_DOMAIN}/api/v1/room?secretKey={$METERED_SECRET_KEY}", [
@@ -747,8 +747,8 @@ class ChatController extends Controller
                 ], 403);
             }
 
-            $METERED_DOMAIN = env('METERED_DOMAIN');
-            $METERED_SECRET_KEY = env('METERED_SECRET_KEY');
+            $METERED_DOMAIN = config('services.metered.domain');
+            $METERED_SECRET_KEY = config('services.metered.secret_key');
             $meetingId = $request->meeting_id;
 
             // Validate meeting exists

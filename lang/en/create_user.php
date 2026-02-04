@@ -10,6 +10,8 @@ return [
     'select_role' => 'Select a role',
     'user_role' => 'User',
     'staff_role' => 'Staff',
+    'department_label' => 'Department',
+    'select_department' => 'Select a department',
     'submit_button' => 'Create',
     'error_message' => 'Error: :error',
 

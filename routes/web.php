@@ -237,8 +237,32 @@ Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallba
 // Profile and Settings
 Route::get('/profile', [ProfileController::class, 'showProfile'])->name('profile');
 Route::get('/settings', [ProfileController::class, 'showSettings'])->name('settings');
+Route::post('/profile/register-face', [ProfileController::class, 'registerFace'])->name('profile.register.face');
 Route::put('/settings/update-name', [SettingsController::class, 'updateName'])->name('settings.update.name');
 Route::put('/settings/update-avatar', [SettingsController::class, 'updateAvatar'])->name('settings.update.avatar');
+Route::get('/face/register', [ProfileController::class, 'showFaceRegister'])
+    ->name('face.register');
+// Route::post('/face/register', [ProfileController::class, 'storeFaceRegister'])
+//     ->name('face.register.store');
+Route::post('/face/register', [FaceRegisterController::class, 'store'])
+    ->name('face.register.store')
+    ->middleware('auth');
+
+Route::post('/profile/register-face', [ProfileController::class, 'registerFace'])
+    ->name('profile.register.face')
+    ->middleware('auth');
+
+// routes/web.php
+Route::get('/profile/check-face-status', function () {
+    $user = auth()->user();
+    return response()->json([
+        'face_registered' => !empty($user->face_image_path)
+    ]);
+})->middleware('auth');
+
+Route::post('/face/verify', [App\Http\Controllers\Api\CheckInController::class, 'verify'])
+    ->middleware('auth');
+
 
 Route::get('lang/{locale}', function ($locale) {
     if (in_array($locale, ['en', 'vi'])) {
@@ -334,4 +358,34 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/calendar/google/callback', [CalendarController::class, 'googleCallback']);
 });
 
+
+// Face check-in routes
+
+// Update your existing check-in routes to use the face check-in
+Route::middleware(['auth'])->group(function () {
+    Route::get('/checkin/face/{type}', [ApiCheckInController::class, 'showFacePage'])
+        ->whereIn('type', ['checkin', 'checkout'])
+        ->name('checkin.face.page');
+});
+
+Route::post(
+    '/checkin/face/process',
+    [App\Http\Controllers\Api\CheckInController::class, 'faceProcess']
+)->middleware('auth')->name('checkin.face.process');
+
+Route::post(
+    '/checkin/manual/process',
+    [ApiCheckInController::class, 'manualProcess']
+)->middleware('auth')->name('checkin.manual.process');
+
+Route::get('/subadmin/dashboard', [AdminDashboardController::class, 'index'])
+    ->middleware(['auth', 'permission:admin.dashboard.view'])
+    ->name('subadmin.dashboard');
+
 Route::resource('holidays', HolidayController::class);
+
+// Route::get('/staff/dashboard', [TaskController::class, 'upcomingTasks'])->middleware(['auth', 'permission:staff.dashboard.view|role:staff'])->name('staff.dashboard');
+Route::get('/substaff/dashboard', [TaskController::class, 'substaffDashboard'])
+    ->middleware(['auth', 'permission:staff.dashboard.view'])
+    ->name('substaff.dashboard');
+

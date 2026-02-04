@@ -90,6 +90,15 @@
                             ]"
                         />
 
+                        {{-- Department --}}
+                        <x-form.select
+                            label="create_user.department_label"
+                            name="department_id"
+                            placeholder="create_user.select_department"
+                            :isRequired="true"
+                            :options="$departments->pluck('name', 'id')->toArray()"
+                        />
+
 
                         <div class="mt-auto pt-4">
                             <button type="submit" class="{{ $btnPrimary }} w-full">
