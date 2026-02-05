@@ -91,7 +91,7 @@ class CheckInController extends Controller
                 ], 400);
             }
 
-            $faceVerified = $this->verifyFaceFromImage($user, $request->image_data);
+            $faceVerified = $this->faceService->verify($user, $request->image_data);
 
             if (!$faceVerified) {
                 return response()->json([
@@ -117,28 +117,6 @@ class CheckInController extends Controller
                 'status' => false,
                 'message' => 'An error occurred. Please try again.'
             ], 500);
-        }
-    }
-
-    private function verifyFaceFromImage(User $user, string $imageData): bool
-    {
-        try {
-            // Remove data URL prefix (handle jpeg/png/jpg generically)
-            $imageData = preg_replace('#^data:image/\w+;base64,#i', '', $imageData);
-            $imageData = str_replace(' ', '+', $imageData);
-
-            $imageBinary = base64_decode($imageData, true);
-
-            if ($imageBinary === false) {
-                Log::error('Failed to decode image data');
-                return false;
-            }
-
-            return true;
-
-        } catch (\Throwable $e) {
-            Log::error('Face verification error: ' . $e->getMessage());
-            return false;
         }
     }
 

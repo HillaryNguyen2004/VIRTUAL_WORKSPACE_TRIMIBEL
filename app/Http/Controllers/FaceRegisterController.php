@@ -51,7 +51,7 @@ class FaceRegisterController extends Controller
             }
 
             // Update user
-            $user->face_image_path = 'img/' . $path;
+            $user->face_image_path = $path;
             $hash = $this->faceService->generateHash($file);
             $user->face_hash = $hash;
             $user->save();
@@ -65,7 +65,7 @@ class FaceRegisterController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Face registered successfully!',
-                'face_path' => 'img/' . $path
+                'face_path' => asset('storage/' . $path),
             ]);
 
         } catch (\Exception $e) {
