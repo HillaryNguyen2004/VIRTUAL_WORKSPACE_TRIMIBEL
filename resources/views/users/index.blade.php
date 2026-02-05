@@ -15,7 +15,7 @@
         }
     @endphp
 
-    @role('admin')
+    @if(auth()->user()->hasRole('admin') || auth()->user()->can('admin.users.view'))
     <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
         
         {{-- HEADER SECTION --}}
@@ -32,17 +32,6 @@
 
             {{-- BUTTONS --}}
             <div class="flex items-center gap-4">
-                {{-- Export Excel --}}
-                <a href="{{ url('/export-users-excel') . '?' . http_build_query(request()->all()) }}" 
-                    title="{{ __('user_management.export_excel') }}"
-                    class="flex items-center justify-center gap-2 bg-white px-5 py-2.5 rounded-xl text-primary font-medium border border-muted-200 shadow-lg shadow-main/5 hover:border-primary/50 hover:shadow-primary/10 transition-all duration-300">
-                    
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span class="font-medium">{{ __('user_management.export_excel') }}</span>
-                </a>
-                
                 {{-- Add User --}}
                 <a href="{{ route('admin.users.create') }}"
                     class="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-primary/20">
@@ -107,8 +96,6 @@
                             <path d="M88 256L232 256C241.7 256 250.5 250.2 254.2 241.2C257.9 232.2 255.9 221.9 249 215L202.3 168.3C277.6 109.7 386.6 115 455.8 184.2C530.8 259.2 530.8 380.7 455.8 455.7C380.8 530.7 259.3 530.7 184.3 455.7C174.1 445.5 165.3 434.4 157.9 422.7C148.4 407.8 128.6 403.4 113.7 412.9C98.8 422.4 94.4 442.2 103.9 457.1C113.7 472.7 125.4 487.5 139 501C239 601 401 601 501 501C601 401 601 239 501 139C406.8 44.7 257.3 39.3 156.7 122.8L105 71C98.1 64.2 87.8 62.1 78.8 65.8C69.8 69.5 64 78.3 64 88L64 232C64 245.3 74.7 256 88 256z" />
                         </svg>
                     </a>
-
-                    
                 </div>
             </form>
 
@@ -141,7 +128,7 @@
                                 // Badge Styles to match Index.blade pill styles
                                 $badgeClass = match($role) {
                                     'admin' => 'bg-primary/10 text-primary ring-primary/20',
-                                    'staff' => 'bg-secondary/10 text-secondary ring-secondary/20', // Assuming 'secondary' exists, else use green
+                                    'staff' => 'bg-secondary/10 text-secondary ring-secondary/20',
                                     'user' => 'bg-muted-100 text-muted-600 ring-muted-500/10',
                                     default => 'bg-muted-100 text-muted-600 ring-muted-500/10',
                                 };
@@ -183,7 +170,7 @@
                                             </svg>
                                         </button>
 
-                                        {{-- Edit --}}
+                                        {{-- Edit -- Only show if user has permission --}}
                                         <button class="open-update-user p-1.5 rounded-lg text-muted-400 hover:bg-secondary/10 hover:text-secondary transition-colors"
                                             title="{{ __('tasks.edit') }}"
                                             data-user-id="{{ $user->id }}"
@@ -193,8 +180,9 @@
                                                 <path d="M535.6 85.7C513.7 63.8 478.3 63.8 456.4 85.7L432 110.1L529.9 208L554.3 183.6C576.2 161.7 576.2 126.3 554.3 104.4L535.6 85.7zM236.4 305.7C230.3 311.8 225.6 319.3 222.9 327.6L193.3 416.4C190.4 425 192.7 434.5 199.1 441C205.5 447.5 215 449.7 223.7 446.8L312.5 417.2C320.7 414.5 328.2 409.8 334.4 403.7L496 241.9L398.1 144L236.4 305.7zM160 128C107 128 64 171 64 224L64 480C64 533 107 576 160 576L416 576C469 576 512 533 512 480L512 384C512 366.3 497.7 352 480 352C462.3 352 448 366.3 448 384L448 480C448 497.7 433.7 512 416 512L160 512C142.3 512 128 497.7 128 480L128 224C128 206.3 142.3 192 160 192L256 192C273.7 192 288 177.7 288 160C288 142.3 273.7 128 256 128L160 128z" />
                                             </svg>
                                         </button>
+                                        
 
-                                        {{-- Delete --}}
+                                        {{-- Delete -- Only show if user has permission --}}
                                         <form action="{{ route('users.destroy', $user->id) }}" method="POST"
                                             onsubmit="return confirm('{{ __('user_row.delete_confirm') }}');">
                                             @csrf
@@ -206,6 +194,7 @@
                                                 </svg>
                                             </button>
                                         </form>
+                                        
                                     </div>
                                 </td>
                             </tr>
@@ -274,5 +263,16 @@
             </div>
         @endif
     </div>
-    @endrole
+    @else
+    {{-- Show access denied message if user doesn't have permission --}}
+    <div class="flex items-center justify-center min-h-[400px]">
+        <div class="text-center">
+            <div class="inline-block p-4 rounded-full bg-danger/10 text-danger mb-4">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+            <h4 class="text-xl font-bold text-main">{{ __('user_dashboard.no_permission') ?? 'Access Denied' }}</h4>
+            <p class="text-muted-500 mt-2">You do not have permission to view user management.</p>
+        </div>
+    </div>
+    @endif
 @endsection
