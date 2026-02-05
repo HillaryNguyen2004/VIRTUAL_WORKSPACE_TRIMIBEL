@@ -42,4 +42,7 @@ return [
         'domain' => env('METERED_DOMAIN'),
         'secret_key' => env('METERED_SECRET_KEY'),
     ],
+    'face' => [
+        'url' => env('FACE_SERVICE_URL'),
+    ],
 ];

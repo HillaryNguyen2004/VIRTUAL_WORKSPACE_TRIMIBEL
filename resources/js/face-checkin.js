@@ -440,9 +440,11 @@ async function verifyAndSubmit() {
 
         if (!response.ok) {
             showToast(`${result.message || "An error occurred during verification."}`, "error");
-            setTimeout(() => {
-                window.location.href = '/profile';
-            }, 2000);
+            updateStatus("Verification failed", "error");
+            isProcessing = false;
+            // setTimeout(() => {
+            //     window.location.href = '/profile';
+            // }, 2000);
             return;
         }
 
