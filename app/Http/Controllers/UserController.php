@@ -195,6 +195,9 @@ class UserController extends Controller
 
         // Direct permissions on the user
         $user->syncPermissions($permissionNames);
+        
+        // Clear Spatie permission cache
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
 
         return back()->with('success', 'User permissions updated');
     }
@@ -236,6 +239,9 @@ class UserController extends Controller
         // OPTIONAL: start with empty direct permissions (recommended)
         // so each subadmin is purely custom-limited:
         $user->syncPermissions([]);
+        
+        // Clear Spatie permission cache
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
 
         return redirect()
             ->route('admin.subadmins.permissions.edit', $user)
@@ -282,8 +288,9 @@ class UserController extends Controller
         $this->authorize('syncPermissions', [$user, $permissionNames]);
 
         // Save direct permissions
-        $user->syncPermissions($permissionNames);
-
+        $user->syncPermissions($permissionNames);        
+        // Clear Spatie permission cache
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
         return back()->with('success', 'Subadmin permissions updated');
     }
 
@@ -295,6 +302,9 @@ class UserController extends Controller
 
         $user->syncRoles(['substaff']);
         $user->syncPermissions([]); // start empty
+        
+        // Clear Spatie permission cache
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
 
         return redirect()
             ->route('staff.substaff.permissions.edit', $user)
@@ -335,6 +345,9 @@ class UserController extends Controller
         $this->authorize('syncPermissions', [$user, $permissionNames]);
 
         $user->syncPermissions($permissionNames);
+        
+        // Clear Spatie permission cache
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
 
         return back()->with('success', 'Substaff permissions updated');
     }

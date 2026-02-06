@@ -29,5 +29,8 @@ class UserPermissionRepository implements UserPermissionRepositoryInterface
     {
         $role = Role::where('name', $roleName)->firstOrFail();
         $role->syncPermissions($permissions);
+        
+        // Clear Spatie permission cache
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }
