@@ -301,7 +301,7 @@
                             </svg>
                         </div>
                     </div>
-                    <a href="{{ route('users.index') }}" class="flex justify-center items-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white rounded-lg py-2 font-medium transition-colors text-sm">
+                    <a href="{{ route('admin.users.index') }}" class="flex justify-center items-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white rounded-lg py-2 font-medium transition-colors text-sm">
                         Manage Users
                     </a>
                 </div>
