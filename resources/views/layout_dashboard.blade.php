@@ -33,8 +33,6 @@
         'resources/js/chat_bot.js',
         'resources/js/admin/edit_company_hours.js'
     ])
-
-    @vite(['resources/js/user_dashboard/check_in_out_api.js'])
     
     <style>
         /* Smooth transition for the sidebar width */
@@ -43,8 +41,6 @@
         }
     </style>
 </head>
-
-@stack('scripts')
 
 <body id="page-top" class="flex flex-row bg-canvas/50 text-main font-nunito antialiased h-screen overflow-hidden">
     
@@ -63,8 +59,12 @@
                         $dashRoute = 'user.dashboard';
                         if (auth()->user()->hasRole('admin') && Route::has('admin.dashboard')) {
                             $dashRoute = 'admin.dashboard';
+                        } elseif (auth()->user()->hasRole('subadmin') && Route::has('subadmin.dashboard')) {
+                            $dashRoute = 'subadmin.dashboard';
                         } elseif (auth()->user()->hasRole('staff') && Route::has('staff.dashboard')) {
                             $dashRoute = 'staff.dashboard';
+                        } elseif (auth()->user()->hasRole('substaff') && Route::has('substaff.dashboard')) {
+                            $dashRoute = 'substaff.dashboard';
                         }
                     @endphp
                     <x-nav-link href="{{ route($dashRoute) }}" :active="request()->routeIs(['*.dashboard'])"
@@ -408,6 +408,7 @@
         }
     </script>
 
+    @stack('scripts')
 </body>
 
 </html>

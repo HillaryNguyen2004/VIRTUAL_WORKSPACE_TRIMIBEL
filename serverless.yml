@@ -14,6 +14,8 @@ provider:
     AWS_BUCKET: ${env:AWS_BUCKET}
     AWS_ACCESS_KEY_ID: ${env:AWS_ACCESS_KEY_ID}
     AWS_SECRET_ACCESS_KEY: ${env:AWS_SECRET_ACCESS_KEY}
+    METERED_DOMAIN: ${env:METERED_DOMAIN}
+    METERED_SECRET_KEY: ${env:METERED_SECRET_KEY}
 
 plugins:
   - ./vendor/bref/bref

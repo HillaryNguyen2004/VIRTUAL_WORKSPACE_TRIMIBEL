@@ -14,21 +14,30 @@
 
     <!-- Check In/Out Buttons -->
     <div class="mb-4">
-        <div class="mb-2">
-            <label for="usernameInput" class="form-label fw-bold">Enter Username to Check In</label>
-            <input type="text" id="usernameInput" class="form-control" placeholder="Enter your username">
+        <div class="alert alert-info">
+            <strong>Face Recognition Check-in System</strong><br>
+            Click the buttons below to check in or check out using face recognition.
         </div>
-        <button id="checkInBtn" class="btn btn-success me-2">Check In</button>
-        <button id="checkOutBtn" class="btn btn-danger">Check Out</button>
-        <div id="checkInAlert" class="mt-3"></div>
+        
+        <a href="{{ route('checkin.face.page', 'checkin') }}"
+        class="btn btn-success btn-lg me-2">
+            <i class="fas fa-camera"></i> Face Check In
+        </a>
+
+        <a href="{{ route('checkin.face.page', 'checkout') }}"
+        class="btn btn-danger btn-lg">
+            <i class="fas fa-camera"></i> Face Check Out
+        </a>
+
         @if($workingHour)
-            <div class="alert alert-info">
+            <div class="alert alert-info mt-3">
                 <strong>Company Working Hours:</strong><br>
                 Start: <span class="text-primary">{{ \Carbon\Carbon::createFromFormat('H:i:s', $workingHour->start_at)->format('H:i') }}</span><br>
                 End: <span class="text-danger">{{ \Carbon\Carbon::createFromFormat('H:i:s', $workingHour->end_at)->format('H:i') }}</span>
             </div>
         @endif
     </div>
+
 
     <div class="row mb-4">
         <div class="col-md-4">
@@ -254,4 +263,118 @@
     </div>
 </div>
 @endrole
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script>
+let actionType = null;
+let stream = null;
+let detecting = false;
+
+document.getElementById('checkInBtn').onclick = () => startFaceCheck('checkin');
+document.getElementById('checkOutBtn').onclick = () => startFaceCheck('checkout');
+
+$('#faceModal').on('hidden.bs.modal', () => {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+    detecting = false;
+});
+
+async function startFaceCheck(type) {
+    actionType = type;
+    $('#faceModal').modal('show');
+
+    const video = document.getElementById('video');
+    document.getElementById('status').textContent = 'Initializing camera...';
+
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "user" }
+        });
+
+        video.srcObject = stream;
+
+        video.onloadedmetadata = async () => {
+            document.getElementById('status').textContent = 'Loading face detection models...';
+            await loadModels();
+            document.getElementById('status').textContent = 'Detecting face...';
+            detecting = true;
+            detectFace();
+        };
+    } catch (error) {
+        document.getElementById('status').textContent = 'Camera access denied or unavailable';
+    }
+}
+
+async function loadModels() {
+    await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights/');
+}
+
+function detectFace() {
+    if (!detecting) return;
+
+    const video = document.getElementById('video');
+
+    faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).then(detection => {
+        if (detection) {
+            const box = detection.box;
+            const centerX = box.x + box.width / 2;
+            const centerY = box.y + box.height / 2;
+            const videoCenterX = 160;
+            const videoCenterY = 160;
+            const distance = Math.sqrt((centerX - videoCenterX) ** 2 + (centerY - videoCenterY) ** 2);
+
+            if (distance < 100) {
+                document.getElementById('status').textContent = 'Face aligned! Capturing...';
+                detecting = false;
+                setTimeout(captureFace, 500); // small delay
+            } else {
+                document.getElementById('status').textContent = 'Align your face inside the circle';
+            }
+        } else {
+            document.getElementById('status').textContent = 'No face detected';
+        }
+
+        requestAnimationFrame(detectFace);
+    }).catch(() => {
+        requestAnimationFrame(detectFace);
+    });
+}
+
+function captureFace() {
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob(blob => {
+        sendFace(blob);
+    }, 'image/jpeg', 0.9);
+}
+
+function sendFace(blob) {
+    const form = new FormData();
+    form.append('face_image', blob);
+    form.append('action', actionType);
+    form.append('_token', '{{ csrf_token() }}');
+
+    fetch('/face/verify', {
+        method: 'POST',
+        body: form
+    })
+    .then(r => r.json())
+    .then(res => {
+        $('#faceModal').modal('hide');
+        alert(res.message);
+        if (res.status) {
+            location.reload();
+        }
+    })
+    .catch(() => {
+        $('#faceModal').modal('hide');
+        alert('Verification failed');
+    });
+}
+</script>
 @endsection

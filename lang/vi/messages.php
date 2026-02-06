@@ -38,5 +38,7 @@ return [
     'success_approve' => 'Yêu cầu nghỉ phép đã được chấp thuận.',
     'success_reject' => 'Yêu cầu nghỉ phép đã bị từ chối.',
     'notice_approved' => 'Yêu cầu nghỉ phép của bạn vào ngày :date đã được chấp thuận.',
-    'wrong_username' => 'Đây không phải là username của bạn'
+    'wrong_username' => 'Đây không phải là username của bạn',
+    'not_in_working_hours' => 'Bạn không trong giờ làm việc.',
+    'working_hour_not_configured' => 'Giờ làm việc chưa được cấu hình. Vui lòng liên hệ quản trị viên.',
 ];

@@ -23,6 +23,7 @@
         "@popperjs/core": "^2.11.8",
         "bootstrap": "^5.3.8",
         "dompurify": "^3.3.1",
+        "face-api.js": "^0.22.2",
         "jquery": "^3.7.1",
         "jquery.easing": "^1.4.1",
         "laravel-echo": "^2.2.0",

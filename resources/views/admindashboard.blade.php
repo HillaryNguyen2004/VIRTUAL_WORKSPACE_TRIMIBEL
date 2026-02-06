@@ -1,12 +1,13 @@
 @extends('layout_dashboard')
+
 @section('title', __('admin_dashboard.title'))
 
 @section('content')
-    @role('admin')
-    
+@can('admin.dashboard.view')
+
     @php
         // --- 1. RECEIVE DATA & HELPERS ---
-        
+
         // Helper: Convert decimal hour (12.5) to string ("12:30")
         $floatToString = function($decimal) {
             if ($decimal === null) return '--:--';
@@ -19,7 +20,7 @@
         // IMPORTANT: Defaults should match Controller defaults if null is passed unexpectedly
         $startVal = $companyStartHour ?? 8;
         $endVal   = $companyEndHour   ?? 17;
-        
+
         // Check mode based on NULL values passed from Controller
         // If lunch is NULL in DB, Controller sends NULL. If Midday is NULL, Controller sends NULL.
         $lunchStartVal = $companyLunchStartHour; // Can be null
@@ -27,28 +28,28 @@
         $midDayVal     = $companyMidDayHour;     // Can be null
 
         // --- 2. DETERMINE MODE & VALUES ---
-        
+
         // Logic: If Lunch variables exist (are not null), use Lunch Mode.
         // If Lunch is null but Midday exists, use Midday Mode.
         // If BOTH are null (shouldn't happen with correct DB defaults, but safe fallback), default to Lunch.
-        
+
         $hasLunch = !is_null($lunchStartVal); // Strict null check
-        
+
         // Initialize Display Strings and Math Values
         $startStr = $floatToString($startVal);
         $endStr   = $floatToString($endVal);
-        
+
         // Math Percentages (Always based on 24hr clock)
         $workStartPct = ($startVal / 24) * 100;
         $workWidthPct = (($endVal - $startVal) / 24) * 100;
-        
+
         $currentHour = \Carbon\Carbon::now()->floatDiffInHours(\Carbon\Carbon::today());
         $currentMarkerPct = ($currentHour / 24) * 100;
 
         $lunchStartPct = 0;
         $lunchWidthPct = 0;
         $midDayPct = 0;
-        
+
         $lunchRangeStr = "";
         $midDayStr = "";
 
@@ -57,34 +58,42 @@
             $lunchStartPct = ($lunchStartVal / 24) * 100;
             $lunchDuration = $lunchEndVal - $lunchStartVal;
             $lunchWidthPct = ($lunchDuration / 24) * 100;
-            
+
             $lunchRangeStr = $floatToString($lunchStartVal) . " - " . $floatToString($lunchEndVal);
         } else {
             // --- MIDDAY MODE ---
             // If midDayVal is null here (rare fallback), default to 12 for safety
-            $safeMidDay = $midDayVal ?? 12; 
-            
+            $safeMidDay = $midDayVal ?? 12;
+
             $midDayPct = ($safeMidDay / 24) * 100;
             $midDayStr = $floatToString($safeMidDay);
         }
     @endphp
 
     {{-- Main Container (Matches User Dashboard) --}}
-    <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
-        
+    <div class="flex flex-col gap-6 w-full mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
+
         {{-- Header Section --}}
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center w-full">
             <div class="flex items-center gap-3">
                 <h2 class="font-bold text-3xl text-main tracking-tight">{{ __('admin_dashboard.admin_dashboard') }}</h2>
-                <span class="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wide">
-                    {{ __('admin_dashboard.admin') }}
-                </span>
+
+                {{-- Label shows Admin/Subadmin based on role (visual only) --}}
+                @if(auth()->user()->hasRole('admin'))
+                    <span class="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wide">
+                        {{ __('admin_dashboard.admin') }}
+                    </span>
+                @else
+                    <span class="inline-flex items-center px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-semibold uppercase tracking-wide">
+                        Subadmin
+                    </span>
+                @endif
             </div>
         </div>
 
         {{-- GRID ROW 1 --}}
         <div class="grid grid-cols-1 @4xl:grid-cols-12 gap-6 w-full animate-fade-in-up">
-            
+            @can('admin.users.view')
             {{-- 1. User Management --}}
             <div class="@4xl:col-span-5 flex flex-col justify-between h-full min-h-[200px] border bg-white border-muted-200 shadow-lg shadow-main/5 hover:border-primary/50 hover:shadow-primary/10 rounded-2xl p-6 relative overflow-hidden group transition-all duration-300">
                 {{-- Decorative background element --}}
@@ -95,7 +104,7 @@
                         <h3 class="text-lg font-semibold text-main">{{ __('admin_dashboard.total_users') }}</h3>
                         <p class="text-muted-500 text-sm">Last 30 Days</p>
                     </div>
-                    
+
                     {{-- Action Area --}}
                     <div class="flex items-center gap-2">
                         <div class="bg-accent/10 text-accent px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
@@ -103,7 +112,7 @@
                             {{ $userGrowthPercentage ?? 0 }}%
                         </div>
 
-                        <a href="{{ route('users.index') }}" title="{{ __('admin_dashboard.view_details') }}" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
+                        <a href="{{ route('admin.users.index') }}" title="{{ __('admin_dashboard.view_details') }}" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                             </svg>
@@ -127,8 +136,10 @@
                     </div>
                 </div>
             </div>
+            @endcan
 
             {{-- 2. Permission Management --}}
+            @can('admin.roles.view')
             <div class="@4xl:col-span-3 bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-primary/30 hover:shadow-primary/10 transition-all duration-300 flex flex-col h-full">
                 <div class="flex justify-between items-start mb-4">
                     <h3 class="text-lg font-semibold text-main">{{ __('admin_dashboard.roles_overview') }}</h3>
@@ -166,12 +177,14 @@
                     </div>
                 </div>
             </div>
+            @endcan
 
             {{-- 3. Working Hours --}}
+            @can('admin.company_hours.view')
             <div class="@4xl:col-span-4 bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-accent/30 hover:shadow-accent/10 transition-all duration-300 flex flex-col h-full">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-lg font-semibold text-main">{{ __('admin_dashboard.company_hours') }}</h3>
-                    
+
                     <div class="flex items-center gap-3">
                         <span class="text-xs font-mono text-muted-500 bg-muted-100 px-2 py-1 rounded-md border border-muted-200">{{ date('H:i') }}</span>
                         <button id="open-company-hours-btn" type="button" class="text-muted-400 hover:text-primary hover:bg-muted-50 p-1 rounded-md transition-colors cursor-pointer" title="Edit Hours">
@@ -185,31 +198,31 @@
                 <div class="flex-1 flex flex-col justify-between">
                     <div class="my-auto">
                         {{-- TIMELINE BAR --}}
-                        <div class="relative w-full h-8 bg-muted-100 rounded-full overflow-hidden shadow-inner">                   
+                        <div class="relative w-full h-8 bg-muted-100 rounded-full overflow-hidden shadow-inner">
                             {{-- 1. Main Work Shift --}}
-                            <div class="absolute top-0 bottom-0 bg-accent/20 border-x border-accent/50" 
+                            <div class="absolute top-0 bottom-0 bg-accent/20 border-x border-accent/50"
                                 style="left: {{ $workStartPct }}%; width: {{ $workWidthPct }}%;"></div>
 
                             {{-- 2. Conditional: Lunch vs Midday --}}
                             @if($hasLunch)
                                 {{-- Lunch Block (Solid Range) --}}
-                                <div class="absolute top-0 bottom-0 bg-secondary/40 border-x border-secondary/60" 
+                                <div class="absolute top-0 bottom-0 bg-secondary/40 border-x border-secondary/60"
                                     style="left: {{ $lunchStartPct }}%; width: {{ $lunchWidthPct }}%;"></div>
                             @else
                                 {{-- Midday Marker (Dashed Line) --}}
-                                <div class="absolute top-0 bottom-0 border-l-2 border-dashed border-secondary z-10" 
+                                <div class="absolute top-0 bottom-0 border-l-2 border-dashed border-secondary z-10"
                                     style="left: {{ $midDayPct }}%;"></div>
                             @endif
 
                             {{-- 3. Current Time Marker --}}
-                            <div class="absolute top-0 bottom-0 w-0.5 bg-danger z-20 shadow-[0_0_8px_rgba(239,68,68,0.8)]" 
+                            <div class="absolute top-0 bottom-0 w-0.5 bg-danger z-20 shadow-[0_0_8px_rgba(239,68,68,0.8)]"
                                 style="left: {{ $currentMarkerPct }}%;"></div>
                         </div>
 
                         {{-- TIMELINE LABELS --}}
                         <div class="relative w-full h-6 mt-2 text-xs text-muted-400 font-medium">
                             <span class="absolute left-0">00:00</span>
-                            
+
                             {{-- Start Time Label --}}
                             <span class="absolute -translate-x-1/2 text-main font-bold" style="left: {{ $workStartPct }}%;">
                                 {{ $startStr }}
@@ -247,24 +260,22 @@
                         @else
                             <div class="flex items-center gap-2 w-full">
                                 {{-- Purple Marker for Midday --}}
-                                <div class="w-2.5 h-0.5 bg-secondary border-none"></div> {{-- Flat line icon --}}
+                                <div class="w-2.5 h-0.5 bg-secondary border-none"></div>
                                 <div class="flex flex-col gap-0.5">
                                     <span class="text-[10px] uppercase text-muted-400 font-bold tracking-wider">{{ __('admin_dashboard.midday') }}</span>
-                                    <span class="text-xs text-main font-medium leading-none">
-                                        {{ $midDayStr }}
-                                    </span>
+                                    <span class="text-xs text-main font-medium leading-none">{{ $midDayStr }}</span>
                                 </div>
                             </div>
                         @endif
                     </div>
                 </div>
             </div>
-            
+            @endcan
         </div>
 
         {{-- GRID ROW 2 --}}
         <div class="grid grid-cols-1 @4xl:grid-cols-12 gap-6 w-full animate-fade-in-up [animation-delay:100ms]">
-            
+            @can('admin.projects.view')
             {{-- 4. Project Health --}}
             <div class="@4xl:col-span-8 bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-primary/30 hover:shadow-primary/10 transition-all duration-300">
                 <div class="flex items-center justify-between mb-6">
@@ -280,7 +291,7 @@
                 <div class="flex flex-col gap-6">
                     @forelse($projectsHealth ?? [] as $project)
                         @php
-                            $total = $project->total_tasks > 0 ? $project->total_tasks : 1; 
+                            $total = $project->total_tasks > 0 ? $project->total_tasks : 1;
                             $completedPct = ($project->completed / $total) * 100;
                             $inProgressPct = ($project->in_progress / $total) * 100;
                             $todoPct = ($project->todo / $total) * 100;
@@ -310,8 +321,10 @@
                     @endforelse
                 </div>
             </div>
+            @endcan
 
             {{-- 5. Recent Attendance --}}
+            @can('admin.attendance.view')
             <div class="@4xl:col-span-4 bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-primary/30 hover:shadow-primary/10 transition-all duration-300 flex flex-col h-full">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-lg font-semibold text-main">{{ __('admin_dashboard.recent_attendance') }}</h3>
@@ -321,7 +334,7 @@
                         </svg>
                     </a>
                 </div>
-                
+
                 <div class="overflow-y-visible max-h-[300px] pr-2 custom-scrollbar">
                     @if($recentCheckIns->isNotEmpty())
                         <ul class="flex flex-col gap-4">
@@ -349,12 +362,13 @@
                     @endif
                 </div>
             </div>
+            @endcan
         </div>
 
         {{-- GRID ROW 3 --}}
         <div class="grid grid-cols-1 @4xl:grid-cols-12 gap-6 w-full animate-fade-in-up [animation-delay:200ms]">
-            
             {{-- 6. Campaign Timeline --}}
+            @can('admin.campaigns.view')
             <div class="@4xl:col-span-4 bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-primary/30 hover:shadow-primary/10 transition-all duration-300 flex flex-col gap-6">
                 <div class="flex items-center justify-between">
                     <h3 class="text-lg font-semibold text-main">{{ __('admin_dashboard.campaign_management') }}</h3>
@@ -365,7 +379,7 @@
                         </svg>
                     </a>
                 </div>
-                
+
                 <div class="flex flex-col gap-6">
                     <div>
                         <h4 class="text-xs font-bold text-muted-400 uppercase tracking-wider mb-4">{{ __('admin_dashboard.campaign_scheduled') }}</h4>
@@ -404,8 +418,10 @@
                     </div>
                 </div>
             </div>
+            @endcan
 
             {{-- 7. Email Templates (Updated) --}}
+            @can('admin.email_templates.view')
             <div class="@4xl:col-span-4 flex flex-col h-full">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-main">{{ __('admin_dashboard.email_templates') }}</h3>
@@ -415,7 +431,7 @@
                         </svg>
                     </a>
                 </div>
-                
+
                 {{-- Template List --}}
                 <div class="flex flex-col gap-4 flex-1">
                     @foreach($emailTemplates->take(4) as $template)
@@ -423,17 +439,17 @@
                             {{-- Circular ID Ring --}}
                             <div class="relative w-12 h-12 flex-none">
                                 <svg class="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                                    <path class="text-primary/10" 
-                                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
-                                          fill="none" 
-                                          stroke="currentColor" 
+                                    <path class="text-primary/10"
+                                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                          fill="none"
+                                          stroke="currentColor"
                                           stroke-width="3" />
-                                    <path class="text-primary/40 group-hover:text-primary transition-colors duration-300" 
-                                          stroke-dasharray="{{ rand(40, 85) }}, 100" 
-                                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
-                                          fill="none" 
-                                          stroke="currentColor" 
-                                          stroke-width="3" 
+                                    <path class="text-primary/40 group-hover:text-primary transition-colors duration-300"
+                                          stroke-dasharray="{{ rand(40, 85) }}, 100"
+                                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          stroke-width="3"
                                           stroke-linecap="round" />
                                 </svg>
                                 {{-- ID Number --}}
@@ -441,7 +457,7 @@
                                     {{ $template->id }}
                                 </div>
                             </div>
-                            
+
                             {{-- Text Content --}}
                             <div class="flex-1 min-w-0">
                                 <h4 class="text-base font-bold text-main group-hover:text-primary transition-colors">{{ $template->name }}</h4>
@@ -451,8 +467,10 @@
                     @endforeach
                 </div>
             </div>
+            @endcan
 
             {{-- 8. Activity Log --}}
+            @can('admin.activity_logs.view')
             <div class="@4xl:col-span-4 bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-primary/30 hover:shadow-primary/10 transition-all duration-300">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-lg font-semibold text-main">{{ __('admin_dashboard.recent_activities') }}</h3>
@@ -464,10 +482,10 @@
                 </div>
 
                 <div class="relative">
-                     @if($recentLogs->isNotEmpty())
+                    @if($recentLogs->isNotEmpty())
                         {{-- Timeline Line --}}
                         <div class="absolute left-1.5 top-2 bottom-4 w-px bg-muted-200"></div>
-                        
+
                         <ul class="flex flex-col gap-6 relative">
                             @foreach($recentLogs->take(3) as $log)
                                 <li class="flex gap-4 group">
@@ -475,7 +493,7 @@
                                     <div class="relative z-10 w-4 h-4 rounded-full bg-white border-2 border-primary mt-0.5 flex-shrink-0 shadow-sm group-hover:scale-110 ring-8 ring-white transition-transform"></div>
                                     <div class="flex-1">
                                         <p class="text-sm font-medium text-main">
-                                            <span class="font-bold text-primary">{{ $log->user->name ?? 'User' }}</span> 
+                                            <span class="font-bold text-primary">{{ $log->user->name ?? 'User' }}</span>
                                             {{ $log->action }}
                                         </p>
                                         <p class="text-xs text-muted-500 mt-1 line-clamp-2">{{ $log->description }}</p>
@@ -489,10 +507,10 @@
                     @endif
                 </div>
             </div>
+            @endcan
         </div>
 
         <div class="grid grid-cols-1 @4xl:grid-cols-12 gap-6 w-full animate-fade-in-up [animation-delay:300ms]">
-            
             <div class="@4xl:col-span-12 flex flex-col h-full">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-main">Upcoming Holidays</h3>
@@ -504,27 +522,21 @@
                             </svg>
                             Add New
                         </button>
-                        
-                        {{-- <a href="{{ route('holidays.index') }}" title="View All" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                            </svg>
-                        </a> --}}
                     </div>
                 </div>
 
                 {{-- Holidays Grid --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     @forelse($upcomingHolidays ?? [] as $holiday)
-                        <div onclick="openHolidayModal('edit', {{ json_encode($holiday) }})" 
+                        <div onclick="openHolidayModal('edit', {{ json_encode($holiday) }})"
                              class="group flex items-center gap-4 p-4 rounded-2xl bg-white border border-muted-200 shadow-lg shadow-main/5 hover:border-accent/30 hover:shadow-accent/10 transition-all duration-300 cursor-pointer">
-                            
+
                             {{-- Calendar Icon --}}
                             <div class="relative w-12 h-12 flex-none bg-accent/5 rounded-xl flex flex-col items-center justify-center border border-accent/10 group-hover:bg-accent/10 transition-colors">
                                 <span class="text-[10px] font-bold text-accent uppercase tracking-wider">{{ $holiday->start_date->format('M') }}</span>
                                 <span class="text-lg font-bold text-main leading-none">{{ $holiday->start_date->format('d') }}</span>
                             </div>
-                            
+
                             {{-- Info --}}
                             <div class="flex-1 min-w-0">
                                 <h4 class="text-sm font-bold text-main group-hover:text-accent transition-colors truncate">{{ $holiday->title }}</h4>
@@ -542,18 +554,20 @@
             </div>
         </div>
     </div>
-    @include ('holidays_modal')
-    @else
-        <div class="flex items-center justify-center min-h-[400px]">
-            <div class="text-center">
-                <div class="inline-block p-4 rounded-full bg-danger/10 text-danger mb-4">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                </div>
-                <h4 class="text-xl font-bold text-main">{{ __('admin_dashboard.access_denied') }}</h4>
-                <p class="text-muted-500 mt-2">You do not have permission to view the Admin Dashboard.</p>
+
+    @include('holidays_modal')
+
+@else
+    <div class="flex items-center justify-center min-h-[400px]">
+        <div class="text-center">
+            <div class="inline-block p-4 rounded-full bg-danger/10 text-danger mb-4">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
             </div>
+            <h4 class="text-xl font-bold text-main">{{ __('admin_dashboard.access_denied') }}</h4>
+            <p class="text-muted-500 mt-2">You do not have permission to view the Admin Dashboard.</p>
         </div>
-    @endrole
+    </div>
+@endcan
 @endsection
 
 @push('scripts')

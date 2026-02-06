@@ -3,7 +3,7 @@ use Illuminate\Support\Facades\Route;
 use NguyenNguyen\CompanyHour\Controllers\CompanyHourController;
 
 
-Route::middleware(['web', 'auth'])->prefix('admin/company-hours')->name('companyhour.')->group(function () {
+Route::middleware(['web', 'auth'])->prefix('admin/company-hours')->name('admin.company_hours.')->group(function () {
     Route::get('/', [CompanyHourController::class, 'index'])->name('index');
     Route::get('/create', [CompanyHourController::class, 'create'])->name('create');
     Route::post('/', [CompanyHourController::class, 'store'])->name('store');

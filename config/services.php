@@ -37,5 +37,12 @@ return [
         'chatbot' => [
             'base_url' => env('CHATBOT_BASE_URL', 'http://localhost:8080'), // FastAPI URL
         ],
-    ]
+    ],
+    'metered' => [
+        'domain' => env('METERED_DOMAIN'),
+        'secret_key' => env('METERED_SECRET_KEY'),
+    ],
+    'face' => [
+        'url' => env('FACE_SERVICE_URL'),
+    ],
 ];

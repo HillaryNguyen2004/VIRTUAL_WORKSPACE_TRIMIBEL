@@ -37,7 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // CSRF Cookie route for Sanctum
-Route::get('/sanctum/csrf-cookie', function() {
+Route::get('/sanctum/csrf-cookie', function () {
     return response()->json(['message' => 'CSRF cookie set']);
 });
 
@@ -55,7 +55,7 @@ Route::middleware(['auth:sanctum'])->prefix('chat')->group(function () {
     Route::get('/users/search', [ChatController::class, 'searchUsers']);
     Route::post('/conversations/{conversation}/participants', [ChatController::class, 'addParticipants']);
     Route::get('/users/online', [ChatController::class, 'getOnlineUsers']);
-    
+
     // Video meeting integration
     Route::post('/conversations/{conversation}/video-call', [ChatController::class, 'createVideoCall']);
     Route::post('/conversations/{conversation}/join-video', [ChatController::class, 'joinVideoCall']);

@@ -196,6 +196,7 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         App\Providers\RepositoryServiceProvider::class,
+        Intervention\Image\ImageServiceProvider::class,
 
     ],
 
@@ -215,4 +216,5 @@ return [
     ])->toArray(),
     
     'FileUpload' => App\Facades\FileUpload::class,
+    'Image' => Intervention\Image\Facades\Image::class,
 ];
