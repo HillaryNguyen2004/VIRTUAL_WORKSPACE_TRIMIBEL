@@ -12,6 +12,6 @@
                 @endforeach
             </ul>
         @endif
-        <x-companyhour::form-action :title="__('company_hour.update_title')" :formAction="route('companyhour.update')" :startTime="$companyhour->start_at" :endTime="$companyhour->end_at" />
+        <x-companyhour::form-action :title="__('company_hour.update_title')" :formAction="route('admin.company_hours.update')" :startTime="$companyhour->start_at" :endTime="$companyhour->end_at" />
     </x-action-layout>
 @endsection

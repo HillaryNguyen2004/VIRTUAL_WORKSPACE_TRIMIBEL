@@ -125,7 +125,8 @@ class DepartmentController extends Controller
         $permissionIds = $request->input('permissions', []);
         if (!is_array($permissionIds)) $permissionIds = [];
 
-        // save template
+        // IMPORTANT: Use sync() to REPLACE all permissions (removes unchecked ones)
+        // DO NOT use attach() which would ADD permissions without removing
         $department->permissions()->sync($permissionIds);
 
         // apply to all users in this department except admin

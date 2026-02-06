@@ -10,6 +10,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Spatie\Permission\Traits\HasRoles;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -145,31 +146,100 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->getAllPermissions()->pluck('name')->values()->all();
     }
 
+    // public function syncDepartmentAddonPermissions(): void
+    // {
+    //     // Admin should not be touched
+    //     if ($this->hasRole('admin'))
+    //         return;
+
+    //     // Remove previous department permissions:
+    //     // easiest approach: recompute full "department addon set" and sync ONLY that addon set
+    //     // BUT we don't want to destroy user's own custom direct perms (if you have).
+    //     // So we tag department perms by naming convention or store in a separate table.
+    //     // For now: simplest method -> treat ALL direct perms as "department addon"
+    //     // If you want per-user extra perms later, see STEP 9.
+
+    //     $deptPermNames = [];
+
+    //     if ($this->department_id) {
+    //         $deptPermNames = Permission::query()
+    //             ->whereIn('id', $this->department->permissions()->pluck('permissions.id'))
+    //             ->pluck('name')
+    //             ->toArray();
+    //     }
+    //     // 2) Direct permissions user already has (important for subadmin)
+    //     $currentDirectPermissionNames = $this->permissions
+    //         ->pluck('name')
+    //         ->toArray();
+
+    //     // 3) Merge (don't overwrite subadmin perms)
+    //     $merged = array_values(array_unique(array_merge(
+    //         $currentDirectPermissionNames,
+    //         $deptPermissionNames
+    //     )));
+
+    //     // Direct permissions = department addon
+    //     $this->syncPermissions($deptPermNames);
+    // }
+
+    // public function syncDepartmentAddonPermissions(): void
+    // {
+    //     // Admin should not be touched (admin bypasses all anyway)
+    //     if ($this->hasRole('admin')) {
+    //         return;
+    //     }
+
+    //     // If user has no department, do nothing (or you can clear dept perms if you want)
+    //     if (!$this->department_id || !$this->department) {
+    //         return;
+    //     }
+
+    //     // 1) Get department permission NAMES
+    //     $deptPermNames = $this->department
+    //         ->permissions()
+    //         ->pluck('name')
+    //         ->toArray();
+
+    //     // 2) Get user's current DIRECT permissions (important for subadmin custom perms)
+    //     $currentDirectPermissionNames = $this->permissions
+    //         ->pluck('name')
+    //         ->toArray();
+
+    //     // 3) Merge (keep subadmin direct perms + add department perms)
+    //     $merged = array_values(array_unique(array_merge(
+    //         $currentDirectPermissionNames,
+    //         $deptPermNames
+    //     )));
+
+    //     // 4) Apply merged list as direct permissions
+    //     $this->syncPermissions($merged);
+
+    //     // 5) Clear Spatie cache (important)
+    //     app(PermissionRegistrar::class)->forgetCachedPermissions();
+    // }
+
+
     public function syncDepartmentAddonPermissions(): void
     {
-        // Admin should not be touched
-        if ($this->hasRole('admin'))
-            return;
+        if ($this->hasRole('admin')) return;
 
-        // Remove previous department permissions:
-        // easiest approach: recompute full "department addon set" and sync ONLY that addon set
-        // BUT we don't want to destroy user's own custom direct perms (if you have).
-        // So we tag department perms by naming convention or store in a separate table.
-        // For now: simplest method -> treat ALL direct perms as "department addon"
-        // If you want per-user extra perms later, see STEP 9.
+        if (!$this->department_id || !$this->department) return;
 
-        $deptPermNames = [];
+        $deptPermNames = $this->department->permissions()->pluck('name')->toArray();
 
-        if ($this->department_id) {
-            $deptPermNames = Permission::query()
-                ->whereIn('id', $this->department->permissions()->pluck('permissions.id'))
-                ->pluck('name')
-                ->toArray();
+        // subadmin keeps direct perms + dept perms
+        if ($this->hasRole('subadmin')) {
+            $direct = $this->permissions->pluck('name')->toArray();
+            $merged = array_values(array_unique(array_merge($direct, $deptPermNames)));
+            $this->syncPermissions($merged);
+        } else {
+            // staff/user/substaff: department is the source of truth
+            $this->syncPermissions($deptPermNames);
         }
 
-        // Direct permissions = department addon
-        $this->syncPermissions($deptPermNames);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
+
 
 
     // Accessors for progress tracking
