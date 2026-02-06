@@ -16,7 +16,7 @@
         </div>
 
         <div class="w-full">
-            <form id="edit-company-hours-form" action="{{ route('companyhour.update') }}" method="POST">
+            <form id="edit-company-hours-form" action="{{ route('admin.company_hours.update') }}" method="POST">
                 @csrf
                 
                 <div class="p-6 flex flex-col gap-5 w-full">

@@ -145,10 +145,18 @@ class UserController extends Controller
     {
         abort_unless(auth()->user()->hasRole('admin'), 403);
 
+        $permissionNames = $request->input('permissions', []);
+        if (!is_array($permissionNames)) {
+            $permissionNames = [];
+        }
+
         $this->permissionRepo->updateRolePermissions(
             $request->role_name,
-            $request->permissions ?? []
+            $permissionNames
         );
+        
+        // Clear Spatie permission cache
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
 
         return redirect()->back()->with('success', __('messages.permissions_updated'));
     }

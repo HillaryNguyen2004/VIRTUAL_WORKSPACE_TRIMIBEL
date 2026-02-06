@@ -28,6 +28,9 @@ class UserPermissionRepository implements UserPermissionRepositoryInterface
     public function updateRolePermissions(string $roleName, array $permissions): void
     {
         $role = Role::where('name', $roleName)->firstOrFail();
+        
+        // IMPORTANT: Use sync() to REPLACE all permissions (removes unchecked ones)
+        // DO NOT use attach() which would ADD permissions without removing
         $role->syncPermissions($permissions);
         
         // Clear Spatie permission cache

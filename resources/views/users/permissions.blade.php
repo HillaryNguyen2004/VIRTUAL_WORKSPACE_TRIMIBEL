@@ -112,8 +112,8 @@
                                                    name="permissions[]"
                                                    value="{{ $permission->name }}"
                                                    id="perm-role-{{ $role->id }}-{{ str_replace('.', '-', $permission->name) }}"
-                                                   class="peer h-5 w-5 rounded-md border-muted-300 text-primary focus:ring-primary/20 transition-all cursor-pointer"
-                                                   {{ $role->hasPermissionTo($permission->name) ? 'checked' : '' }}>
+                                                   class="w-5 h-5 rounded-md border-muted-300 text-primary focus:ring-primary/20 cursor-pointer"
+                                                   @if($role->hasPermissionTo($permission->name)) checked @endif>
                                         </div>
 
                                         <span class="text-sm font-medium text-muted-600 group-hover:text-main transition-colors select-none">
@@ -215,8 +215,8 @@
                                                name="permissions[]"
                                                value="{{ $permission->id }}"
                                                id="perm-dept-{{ $selectedDepartment->id }}-{{ str_replace('.', '-', $permission->name) }}"
-                                               class="peer h-5 w-5 rounded-md border-muted-300 text-primary focus:ring-primary/20 transition-all cursor-pointer"
-                                               {{ $isChecked ? 'checked' : '' }}>
+                                               class="w-5 h-5 rounded-md border-muted-300 text-primary focus:ring-primary/20 cursor-pointer"
+                                               @if($isChecked) checked @endif>
                                     </div>
 
                                     <span class="text-sm font-medium text-muted-600 group-hover:text-main transition-colors select-none">
@@ -238,8 +238,7 @@
                         </div>
 
                         {{-- Keep tab + department selected after POST (if your controller redirects back) --}}
-                        <input type="hidden" name="tab" value="departments">
-                        <input type="hidden" name="department_id" value="{{ $selectedDepartment->id }}">
+
                     </form>
                 </div>
             @endif

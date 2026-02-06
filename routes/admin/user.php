@@ -19,7 +19,7 @@ Route::middleware(['auth'])->group(function () {
     // ===== USERS MODULE =====
     Route::get('/management/users', [UserController::class, 'index'])
         ->middleware('admin_or_permission:admin.users.view')
-        ->name('users.index');
+        ->name('admin.users.index');
 
     Route::get('/admin/users/create', [UserController::class, 'create'])
         ->middleware('admin_or_permission:admin.users.create')
