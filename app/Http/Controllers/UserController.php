@@ -94,7 +94,7 @@ class UserController extends Controller
 
         $this->userService->updateUser($user, $data);
 
-        return redirect()->route('users.index')->with('success', __('messages.user_updated'));
+        return redirect()->route('admin.users.index')->with('success', __('messages.user_updated'));
     }
 
     public function destroy(User $user)
@@ -105,7 +105,7 @@ class UserController extends Controller
             return back()->with('error', __('messages.user_not_deleted'));
         }
 
-        return redirect()->route('users.index')->with('success', __('messages.user_deleted'));
+        return redirect()->route('admin.users.index')->with('success', __('messages.user_deleted'));
     }
 
     public function create()
