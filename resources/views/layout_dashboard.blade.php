@@ -112,6 +112,18 @@
                         <span class="hidden sm:inline font-medium">{{ __('app.video_chat') }}</span>
                     </x-nav-link>
                 </li>
+
+                <li>
+                    <x-nav-link href="{{ route('wbo.index') }}" :active="request()->routeIs('wbo.*')"
+                        class="flex items-center gap-4 px-4 py-3 hover:bg-muted-50 rounded-xl cursor-pointer transition-colors group {{ request()->routeIs('wbo.*') ? 'text-primary bg-primary/5' : 'text-muted-500' }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 transition-colors {{ request()->routeIs('wbo.*') ? 'text-primary' : 'text-muted-400 group-hover:text-primary' }}" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9" />
+                        </svg>
+                        <span class="hidden sm:inline font-medium">{{ __('app.whiteboard') }}</span>
+                    </x-nav-link>
+                </li>
+
                 @if (auth()->user()->hasRole('user'))
                 <li>
                     <x-nav-link href="{{ route('team-progress') }}" :active="request()->routeIs('team-progress')"

@@ -59,6 +59,7 @@ return [
     'cancel' => 'Cancel',
     'chat_box' => 'Messages',
     'video_chat' => 'Video Meeting',
+    'whiteboard' => 'Whiteboard',
     'team_progress' => 'Team Progress',
     'calendar' => 'Calendar',
 
@@ -71,4 +72,18 @@ return [
     'btn_update' => 'Update',
     'btn_delete' => 'Delete',
     'btn_cancel' => 'Cancel',
+    
+    // Whiteboard translations
+    'whiteboard_description' => 'Choose to create a new whiteboard or open an existing one to collaborate with your team.',
+    'create_new_board' => 'Create New Board',
+    'create_new_board_description' => 'Start a new whiteboard session and share the board ID with your team members.',
+    'open_existing_board' => 'Open Existing Board',
+    'open_existing_board_description' => 'Join an existing whiteboard session by entering the board ID.',
+    'open_board' => 'Open Board',
+    'board_id' => 'Board ID',
+    'copy_board_id' => 'Copy Board ID',
+    'board_id_copied' => 'Board ID copied to clipboard!',
+    'back' => 'Back',
+    'whiteboard_info_title' => 'How to Share',
+    'whiteboard_info_description' => 'Copy and share the board ID with your team members. They can use the same ID to join your whiteboard session and collaborate in real-time.',
 ];
