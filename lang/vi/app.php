@@ -86,4 +86,7 @@ return [
     'back' => 'Quay Lại',
     'whiteboard_info_title' => 'Cách Chia Sẻ',
     'whiteboard_info_description' => 'Sao chép và chia sẻ mã bảng với các thành viên nhóm của bạn. Họ có thể sử dụng mã bảng tương tự để tham gia phiên bảng trắng của bạn và cộng tác theo thời gian thực.',
+    'recent_boards' => 'Bảng Trắng Gần Đây',
+    'created' => 'Đã Tạo',
+    'opened' => 'Đã Mở',
 ];

@@ -86,4 +86,7 @@ return [
     'back' => 'Back',
     'whiteboard_info_title' => 'How to Share',
     'whiteboard_info_description' => 'Copy and share the board ID with your team members. They can use the same ID to join your whiteboard session and collaborate in real-time.',
+    'recent_boards' => 'Recent Boards',
+    'created' => 'Created',
+    'opened' => 'Opened',
 ];

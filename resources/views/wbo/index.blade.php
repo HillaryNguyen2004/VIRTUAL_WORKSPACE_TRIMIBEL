@@ -67,6 +67,47 @@
         </div>
     </div>
 
+    <!-- Recent Boards History -->
+    @if (!empty($recentBoards) && count($recentBoards) > 0)
+    <div class="mt-4">
+        <h2 class="text-2xl font-bold text-main mb-4">{{ __('app.recent_boards') }}</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @foreach ($recentBoards as $board)
+            <a href="{{ route('wbo.board', $board['id']) }}" 
+               class="bg-white rounded-xl border border-muted-200 p-4 hover:shadow-lg transition-shadow hover:border-primary group">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="flex-shrink-0">
+                                @if ($board['action'] === 'created')
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        {{ __('app.created') }}
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        {{ __('app.opened') }}
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                        <p class="text-xs text-muted-500 truncate">
+                            <code>{{ substr($board['id'], 0, 13) }}...</code>
+                        </p>
+                        <p class="text-xs text-muted-400 mt-1">
+                            {{ \Carbon\Carbon::parse($board['accessed_at'])->diffForHumans() }}
+                        </p>
+                    </div>
+                    <svg class="w-5 h-5 text-muted-400 group-hover:text-primary transition-colors flex-shrink-0" 
+                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </div>
+            </a>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
     <!-- Info Section -->
     <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4">
         <div class="flex gap-3">
