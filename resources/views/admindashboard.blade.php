@@ -365,6 +365,53 @@
             @endcan
         </div>
 
+        {{-- DEPARTMENT MANAGEMENT --}}
+        @can('admin.departments.view')
+        <div class="grid grid-cols-1 @4xl:grid-cols-12 gap-6 w-full animate-fade-in-up [animation-delay:150ms]">
+            <div class="@4xl:col-span-4 bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-primary/30 hover:shadow-primary/10 transition-all duration-300 flex flex-col h-full">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h3 class="text-lg font-semibold text-main">{{ __('admin_dashboard.departments') ?? 'Departments' }}</h3>
+                        <p class="text-muted-500 text-sm mt-1">Manage organizational structure</p>
+                    </div>
+                    <a href="{{ route('admin.departments.index') }}" title="{{ __('admin_dashboard.view_all') }}" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                    </a>
+                </div>
+
+                <div class="flex flex-col gap-3 flex-1 justify-center">
+                    {{-- Total Departments Count --}}
+                    <div class="flex items-center justify-between p-4 rounded-xl bg-primary/5 border border-primary/10">
+                        <div class="flex items-center gap-3">
+                            <div class="w-2.5 h-2.5 rounded-full bg-primary shadow-sm shadow-primary/40"></div>
+                            <span class="text-sm font-medium text-main">Total Departments</span>
+                        </div>
+                        <span class="text-2xl font-bold text-main">{{ $departmentCount ?? 0 }}</span>
+                    </div>
+
+                    {{-- Staff Count in Departments --}}
+                    <div class="flex items-center justify-between p-4 rounded-xl bg-secondary/5 border border-secondary/10">
+                        <div class="flex items-center gap-3">
+                            <div class="w-2.5 h-2.5 rounded-full bg-secondary shadow-sm shadow-secondary/40"></div>
+                            <span class="text-sm font-medium text-main">Assigned Staff</span>
+                        </div>
+                        <span class="text-2xl font-bold text-main">{{ $staffInDepartmentsCount ?? 0 }}</span>
+                    </div>
+
+                    {{-- Action Button --}}
+                    <a href="{{ route('admin.departments.index') }}" class="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-hover text-white font-medium rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98]">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Manage Departments
+                    </a>
+                </div>
+            </div>
+        </div>
+        @endcan
+
         {{-- GRID ROW 3 --}}
         <div class="grid grid-cols-1 @4xl:grid-cols-12 gap-6 w-full animate-fade-in-up [animation-delay:200ms]">
             {{-- 6. Campaign Timeline --}}

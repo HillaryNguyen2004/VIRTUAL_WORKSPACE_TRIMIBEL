@@ -11,18 +11,24 @@ class DepartmentController extends Controller
 {
     public function index()
     {
+        // Load all departments with their users (all roles except admin)
         $departments = Department::with(['users' => function ($query) {
-            $query->whereHas('roles', function ($roleQuery) {
-                $roleQuery->where('name', 'staff');
+            $query->whereDoesntHave('roles', function ($roleQuery) {
+                $roleQuery->where('name', 'admin');
             })->orderBy('name');
         }])->orderBy('name')->get();
 
-        $staffUsers = User::role('staff')
+        // Get available users: those NOT assigned to any department, excluding admins
+        $availableUsers = User::whereNull('department_id')
+            ->orWhere('department_id', 0)
+            ->whereDoesntHave('roles', function ($roleQuery) {
+                $roleQuery->where('name', 'admin');
+            })
             ->with('department')
             ->orderBy('name')
             ->get();
 
-        return view('departments.index', compact('departments', 'staffUsers'));
+        return view('departments.index', compact('departments', 'availableUsers'));
     }
 
     public function store(Request $request)
@@ -62,9 +68,9 @@ class DepartmentController extends Controller
 
         $user = User::findOrFail($data['user_id']);
 
-        if (!$user->hasRole('staff')) {
-            return redirect()->route('admin.departments.index')->with('error', 'Chỉ được gán nhân viên (staff) vào phòng ban.');
-        }
+        // if (!$user->hasRole('staff')) {
+        //     return redirect()->route('admin.departments.index')->with('error', 'Chỉ được gán nhân viên (staff) vào phòng ban.');
+        // }
 
         $user->department_id = $department->id;
         $user->save();
@@ -74,9 +80,9 @@ class DepartmentController extends Controller
 
     public function removeStaff(Department $department, User $user)
     {
-        if (!$user->hasRole('staff')) {
-            return redirect()->route('admin.departments.index')->with('error', 'Chỉ được thao tác với nhân viên (staff).');
-        }
+        // if (!$user->hasRole('staff')) {
+        //     return redirect()->route('admin.departments.index')->with('error', 'Chỉ được thao tác với nhân viên (staff).');
+        // }
 
         if ($user->department_id !== $department->id) {
             return redirect()->route('admin.departments.index')->with('error', 'Nhân viên không thuộc phòng ban này.');
