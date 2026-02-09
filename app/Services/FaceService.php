@@ -12,17 +12,27 @@ class FaceService
     public function verify(User $user, string $liveImageDataUrl): bool
     {
         try {
-            if (!$user->face_image_path)
-                return false;
-
-            // File exists?
-            if (!Storage::disk('public')->exists($user->face_image_path)) {
-                Log::error("Enrolled face missing in storage: {$user->face_image_path}");
+            if (!$user->face_image_path) {
+                Log::warning("FaceService: User {$user->id} has no face_image_path");
                 return false;
             }
 
+            // Normalize path (existing records might have 'img/' prefix)
+            $normalizedPath = $user->face_image_path;
+            if (strpos($normalizedPath, 'img/') === 0) {
+                $normalizedPath = substr($normalizedPath, 4);
+            }
+
+            // File exists?
+            if (!Storage::disk('public')->exists($normalizedPath)) {
+                Log::error("FaceService: Enrolled face missing in storage for user {$user->id}: {$normalizedPath}");
+                return false;
+            }
+
+            Log::info("FaceService: Sending request to Python service for user {$user->id}. Path: {$normalizedPath}");
+
             // Read enrolled image from storage/app/public/...
-            $binary = Storage::disk('public')->get($user->face_image_path);
+            $binary = Storage::disk('public')->get($normalizedPath);
             $enrolledDataUrl = "data:image/jpeg;base64," . base64_encode($binary);
 
             $resp = Http::timeout(8)
@@ -33,17 +43,17 @@ class FaceService
                 ]);
 
             if (!$resp->ok()) {
-                Log::error("Face service error: status={$resp->status()} body=" . $resp->body());
+                Log::error("FaceService: Python service error for user {$user->id}: status={$resp->status()} body=" . $resp->body());
                 return false;
             }
 
             $json = $resp->json();
-            Log::info("Face verify user_id={$user->id} sim=" . ($json['similarity'] ?? 'n/a'));
+            Log::info("FaceService: Result for user {$user->id}: sim=" . ($json['similarity'] ?? 'n/a') . " match=" . (($json['match'] ?? false) ? 'YES' : 'NO'));
 
             return (bool) ($json['match'] ?? false);
 
         } catch (\Throwable $e) {
-            Log::error("FaceService verify error: " . $e->getMessage());
+            Log::error("FaceService: verify error for user {$user->id}: " . $e->getMessage());
             return false;
         }
     }
