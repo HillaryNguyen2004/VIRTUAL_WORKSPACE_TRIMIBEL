@@ -46,8 +46,8 @@
         <!-- Content -->
         <div class="flex flex-col items-center justify-center w-full h-full pb-10 m-auto sm:w-96">
 
-            <h1 class="text-xl md:text-3xl font-medium text-gray-900 text-center">{{ __('login.welcome_to_dashboard') }}</h1>
-            <p class="text-sm md:text-base mt-2 text-center text-gray-500">{{ __('login.fill_the_form_below_to_login') }}</p>
+            <h1 class="text-xl md:text-3xl font-medium text-main text-center">{{ __('login.welcome_to_dashboard') }}</h1>
+            <p class="text-sm md:text-base mt-2 text-center text-muted-400">{{ __('login.fill_the_form_below_to_login') }}</p>
 
             <!-- Google button -->
             <a href="{{ route('google.login') }}"
@@ -60,9 +60,9 @@
                 @csrf
                 <!-- Divider -->
                 <div class="my-6 flex items-center gap-3 w-full">
-                    <div class="h-px flex-1 bg-gray-200"></div>
-                    <span class="text-xs text-gray-400">{{ __('login.or') }}</span>
-                    <div class="h-px flex-1 bg-gray-200"></div>
+                    <div class="h-px flex-1 bg-muted-200"></div>
+                    <span class="text-xs text-muted-400">{{ __('login.or') }}</span>
+                    <div class="h-px flex-1 bg-muted-200"></div>
                 </div>
 
                 <!-- Email -->
@@ -88,13 +88,13 @@
                 />
 
                 <div class="flex justify-end">
-                    <a href="{{ route('password.request') }}" class="text-xs md:text-sm text-[#5D3FD3] hover:underline">
+                    <a href="{{ route('password.request') }}" class="text-xs md:text-sm text-primary font-medium hover:underline">
                         {{ __('login.forget_password') }}
                     </a>
                 </div>
 
                 <!-- Submit -->
-                <button type="submit" id="submit-btn" class="w-full py-2 px-3 rounded-xl text-white font-medium bg-btn-login
+                <button type="submit" id="submit-btn" class="w-full py-2 px-3 rounded-xl text-white font-medium bg-primary-gradient
                             shadow-[0_8px_24px_rgba(99,102,241,0.35)] hover:opacity-95 transition
                             inline-flex items-center justify-center gap-2 text-sm md:text-base
                             disabled:opacity-60 disabled:cursor-not-allowed" aria-live="polite">
@@ -106,9 +106,9 @@
                 </button>
 
                 <!-- Route to signup -->
-                <p class="text-center text-xs md:text-sm text-gray-500">
+                <p class="text-center text-xs md:text-sm text-muted-400">
                     {{ __('login.dont_have_account') }}
-                    <a href="{{ route('register') }}" class="text-[#5D3FD3] hover:underline font-medium">{{ __('login.sign_up_here') }}</a>
+                    <a href="{{ route('register') }}" class="text-primary hover:underline font-medium">{{ __('login.sign_up_here') }}</a>
                 </p>
             </form>
         </div>
