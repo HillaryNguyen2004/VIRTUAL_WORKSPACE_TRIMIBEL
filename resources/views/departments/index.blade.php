@@ -88,15 +88,14 @@
                                     <form method="POST" action="{{ route('admin.departments.assign', $department) }}" class="flex items-center gap-2">
                                         @csrf
                                         <select name="user_id" class="bg-canvas border text-main h-[42px] px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" required>
-                                            <option value="" disabled selected>Chọn staff</option>
-                                            @foreach($staffUsers as $staff)
-                                                <option value="{{ $staff->id }}">
-                                                    {{ $staff->name }}
-                                                    @if($staff->department)
-                                                        ({{ $staff->department->name }})
-                                                    @else
-                                                        (Chưa gán)
-                                                    @endif
+                                            <option value="" disabled selected>Chọn nhân viên</option>
+                                            @foreach($availableUsers as $user)
+                                                <option value="{{ $user->id }}">
+                                                    {{ $user->name }}
+                                                    @php
+                                                        $roles = $user->getRoleNames()->join(', ');
+                                                    @endphp
+                                                    ({{ $roles ?: 'No role' }})
                                                 </option>
                                             @endforeach
                                         </select>

@@ -16,6 +16,7 @@ use App\Models\CheckIn;
 use App\Models\ActivityLog;
 use App\Models\DayOffRequest;
 use App\Models\Holiday;
+use App\Models\Department;
 
 class AdminDashboardController extends Controller
 {
@@ -127,6 +128,12 @@ class AdminDashboardController extends Controller
             ->orderBy('start_date', 'asc')
             ->get();
 
+        // -- 9. DEPARTMENTS --
+        $departmentCount = Department::count();
+        $staffInDepartmentsCount = User::whereNotNull('department_id')
+            ->where('department_id', '!=', 0)
+            ->count();
+
         return view('admindashboard', compact(
             'recentLogs', 
             'recentCheckIns',
@@ -143,6 +150,8 @@ class AdminDashboardController extends Controller
             'sentCampaigns',
             'emailTemplates',
             'upcomingHolidays',
+            'departmentCount',
+            'staffInDepartmentsCount',
         ));
     }
 

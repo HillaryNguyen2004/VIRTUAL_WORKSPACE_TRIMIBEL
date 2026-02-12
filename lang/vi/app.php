@@ -59,6 +59,7 @@ return [
     'cancel' => 'Hủy',
     'chat_box' => 'Tin nhắn',
     'video_chat' => 'Họp Video',
+    'whiteboard' => 'Bảng trắng',
     'team_progress' => 'Tiến độ nhóm',
     'calendar' => 'Lịch',
 
@@ -71,4 +72,21 @@ return [
     'btn_update' => 'Cập nhật',
     'btn_delete' => 'Xoá',
     'btn_cancel' => 'Bỏ qua',
+    
+    // Translations for Whiteboard
+    'whiteboard_description' => 'Chọn để tạo một bảng trắng mới hoặc mở một bảng trắng hiện có để cộng tác với nhóm của bạn.',
+    'create_new_board' => 'Tạo Bảng Trắng Mới',
+    'create_new_board_description' => 'Bắt đầu một phiên bảng trắng mới và chia sẻ mã bảng với các thành viên nhóm của bạn.',
+    'open_existing_board' => 'Mở Bảng Trắng Hiện Có',
+    'open_existing_board_description' => 'Tham gia một phiên bảng trắng hiện có bằng cách nhập mã bảng.',
+    'open_board' => 'Mở Bảng Trắng',
+    'board_id' => 'Mã Bảng',
+    'copy_board_id' => 'Sao Chép Mã Bảng',
+    'board_id_copied' => 'Mã bảng đã được sao chép vào clipboard!',
+    'back' => 'Quay Lại',
+    'whiteboard_info_title' => 'Cách Chia Sẻ',
+    'whiteboard_info_description' => 'Sao chép và chia sẻ mã bảng với các thành viên nhóm của bạn. Họ có thể sử dụng mã bảng tương tự để tham gia phiên bảng trắng của bạn và cộng tác theo thời gian thực.',
+    'recent_boards' => 'Bảng Trắng Gần Đây',
+    'created' => 'Đã Tạo',
+    'opened' => 'Đã Mở',
 ];

@@ -21,6 +21,7 @@ use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\Api\CheckInController;
 use App\Http\Controllers\FaceRegisterController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\WBOController;
 
 // Route::group(['middleware' => ['web', 'core']], function () {
 //     include_once 'admin/user.php';
@@ -345,6 +346,13 @@ Route::post('/meeting/{meetingId}/chat', [MeetingController::class, 'sendChatMes
     ->middleware(['auth'])
     ->name('meeting.chat.send');
 
+// Whiteboard (WBO) Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/whiteboard', [WBOController::class, 'index'])->name('wbo.index');
+    Route::post('/whiteboard/create', [WBOController::class, 'create'])->name('wbo.create');
+    Route::post('/whiteboard/open', [WBOController::class, 'open'])->name('wbo.open');
+    Route::get('/whiteboard/{boardId}', [WBOController::class, 'board'])->name('wbo.board');
+});
 
 Route::get('/team-progress', [TeamProgressController::class, 'index'])->name('team-progress');
 Route::get('/user-tasks/{userId}', [TaskController::class, 'getUserTasks'])->name('user.tasks');
@@ -392,3 +400,7 @@ Route::get('/substaff/dashboard', [TaskController::class, 'substaffDashboard'])
     ->middleware(['auth', 'permission:staff.dashboard.view'])
     ->name('substaff.dashboard');
 
+Route::middleware('auth')->get('/whiteboard/{board}', function (Request $request, string $board) {
+    $wboUrl = 'http://127.0.0.1:5001/boards/' . rawurlencode($board);
+    return view('whiteboard.show', compact('wboUrl', 'board'));
+})->name('whiteboard.show');
