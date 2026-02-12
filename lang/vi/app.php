@@ -29,7 +29,7 @@ return [
     'upgrade_to_pro' => 'Nâng Cấp Lên Pro!',
     'search_placeholder' => 'Tìm kiếm...',
     'search' => 'Tìm kiếm',
-    'lang_english' => 'Tiếng Anh',
+    'lang_english' => 'English',
     'lang_vietnamese' => 'Tiếng Việt',
     'alerts_center' => 'Trung Tâm Thông Báo',
     'alert_date_1' => '12 Tháng 12, 2019',

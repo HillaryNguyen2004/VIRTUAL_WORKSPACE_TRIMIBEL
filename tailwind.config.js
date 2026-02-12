@@ -10,29 +10,29 @@ module.exports = {
       backgroundImage: {
         'panel-right-gradient': 'linear-gradient(160deg, #7FBFFF 0%, #766CD6 80%)',
         'panel-left-gradient': 'linear-gradient(160deg, #766CD6 10%, #5FE1E0 120%)',
-        'btn-login': 'linear-gradient(90deg, #766CD6 0%, #5347CC 100%)'
+        'primary-gradient': 'linear-gradient(90deg, #766CD6 0%, #5347CC 100%)'
       },
       colors: {
         primary: {
-          DEFAULT: '#5347CC', 
-          hover: '#4538A8',   
-          light: '#766CD6',   
+          DEFAULT: '#5347CC',
+          hover: '#4538A8',
+          light: '#766CD6',
 
         },
         secondary: {
-          DEFAULT: '#4896FE', 
+          DEFAULT: '#4896FE',
           hover: '#2680F6',
-          light: '#7FBFFF',   
+          light: '#7FBFFF',
         },
         accent: {
-          DEFAULT: '#17C8C6', 
+          DEFAULT: '#17C8C6',
           hover: '#13A6A4',
           light: '#5FE1E0',
         },
 
         // --- BASE COLORS (Updated) ---
         main: '#070416',      // Your deep navy text (Kept)
-        
+
         // CHANGED: Switched from Lavender (#F1EFFC) to a Neutral Cool White (#F9FAFB)
         // This makes the UI feel cleaner and less "tinted"
         canvas: '#F9FAFB',

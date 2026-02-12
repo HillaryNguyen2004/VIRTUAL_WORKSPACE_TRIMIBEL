@@ -5,7 +5,7 @@
 <div class="@container flex w-full overflow-hidden h-[calc(100vh-4rem)] text-main relative transition-all">
     
     {{-- LEFT PANE: Sidebar / Controls --}}
-    <div class="hidden @4xl:flex w-full @4xl:w-[28%] h-full overflow-y-auto border-r border-muted-200 flex-col shrink-0 bg-white/50 z-5 @4xl:z-0 custom-scrollbar shadow-sm">
+    <div id="calendarSidebar" class="hidden @4xl:flex w-[85%] max-w-sm @4xl:w-[28%] @4xl:max-w-none h-screen @4xl:h-full overflow-y-auto border-r border-muted-200 flex-col shrink-0 bg-white z-50 @4xl:z-0 custom-scrollbar shadow-xl @4xl:shadow-sm fixed @4xl:relative left-0 top-0">
         
         {{-- Header Section --}}
         <div class="px-6 py-6 border-b border-muted-200">
@@ -118,7 +118,7 @@
         {{-- Calendar Toolbar --}}
         <div class="h-20 px-6 py-4 border-b border-muted-200 flex justify-between items-center bg-white shrink-0 shadow-sm">
             <div class="flex items-center gap-4">
-                <button class="@4xl:hidden p-2 rounded-lg text-muted-500 hover:bg-muted-100">
+                <button id="hamburgerBtn" class="@4xl:hidden p-2 rounded-lg text-muted-500 hover:bg-muted-100 transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </button>
 
@@ -835,6 +835,39 @@ document.addEventListener('DOMContentLoaded', function() {
     if(document.getElementById('todayBtn')) document.getElementById('todayBtn').addEventListener('click', () => calendar.today());
     
     renderMiniCalendar();
+
+    // Mobile Sidebar Toggle
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const sidebar = document.getElementById('calendarSidebar');
+    
+    if (hamburgerBtn && sidebar) {
+        // Create overlay backdrop
+        const overlay = document.createElement('div');
+        overlay.id = 'sidebarOverlay';
+        overlay.className = 'fixed inset-0 bg-black/30 z-40 hidden @4xl:hidden';
+        document.body.appendChild(overlay);
+        
+        // Toggle sidebar
+        hamburgerBtn.addEventListener('click', function() {
+            const isHidden = sidebar.classList.contains('hidden');
+            if (isHidden) {
+                sidebar.classList.remove('hidden');
+                sidebar.classList.add('flex');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('hidden');
+                sidebar.classList.remove('flex');
+                overlay.classList.add('hidden');
+            }
+        });
+        
+        // Close sidebar when clicking overlay
+        overlay.addEventListener('click', function() {
+            sidebar.classList.add('hidden');
+            sidebar.classList.remove('flex');
+            overlay.classList.add('hidden');
+        });
+    }
 });
 </script>
 
