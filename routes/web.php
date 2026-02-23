@@ -150,11 +150,11 @@ Route::get('/test-task-notification', function () {
 
 // CREATE TASK
 Route::get('/management/tasks/create', [TaskController::class, 'create'])
-    ->middleware('permission:task.create')
+    ->middleware('admin_or_permission:task.create')
     ->name('tasks.create');
 
 Route::post('/management/tasks', [TaskController::class, 'store'])
-    ->middleware('permission:task.create')
+    ->middleware('admin_or_permission:task.create')
     ->name('tasks.store');
 
 // LIST + SHOW
@@ -170,16 +170,16 @@ Route::get('/admin/back-to-project-tasks', function () {
 
 // EDIT TASK
 Route::get('/management/tasks/{task}/edit', [TaskController::class, 'edit'])
-    ->middleware('permission:task.edit')
+    ->middleware('admin_or_permission:task.edit')
     ->name('tasks.edit');
 
 Route::put('/management/tasks/{task}', [TaskController::class, 'update'])
-    ->middleware('permission:task.edit')
+    ->middleware('admin_or_permission:task.edit')
     ->name('tasks.update');
 
 // DELETE TASK
 Route::delete('/management/tasks/{task}', [TaskController::class, 'destroy'])
-    ->middleware('permission:task.delete')
+    ->middleware('admin_or_permission:task.delete')
     ->name('tasks.destroy');
 
 // DETAIL TASK
@@ -197,18 +197,22 @@ Route::get('/projects', [ProjectController::class, 'index'])
     ->name('projects.index');
 
 Route::get('/projects/create', [ProjectController::class, 'create'])
+    ->middleware('admin_or_permission:admin.projects.create')
     ->name('projects.create');
 
 Route::post('/projects/store', [ProjectController::class, 'store'])
     ->name('projects.store');
 
 Route::get('/projects/{id}/edit', [ProjectController::class, 'edit'])
+    ->middleware('admin_or_permission:admin.projects.edit')
     ->name('projects.edit');
 
 Route::put('/projects/{id}', [ProjectController::class, 'update'])
+    ->middleware('admin_or_permission:admin.projects.edit')
     ->name('projects.update');
 
 Route::delete('/projects/{id}', [ProjectController::class, 'destroy'])
+    ->middleware('admin_or_permission:admin.projects.delete')
     ->name('projects.destroy');
 
 Route::get('/projects/{id}/details', [ProjectController::class, 'details'])

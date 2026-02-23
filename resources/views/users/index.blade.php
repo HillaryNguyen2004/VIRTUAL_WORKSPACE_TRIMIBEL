@@ -7,11 +7,16 @@
     @php
         use Illuminate\Support\Facades\Route;
 
+        // Determine dashboard route based on role
         $dashRoute = 'user.dashboard';
         if (auth()->user()->hasRole('admin') && Route::has('admin.dashboard')) {
             $dashRoute = 'admin.dashboard';
+        } elseif (auth()->user()->hasRole('subadmin') && Route::has('subadmin.dashboard')) {
+            $dashRoute = 'subadmin.dashboard';
         } elseif (auth()->user()->hasRole('staff') && Route::has('staff.dashboard')) {
             $dashRoute = 'staff.dashboard';
+        } elseif (auth()->user()->hasRole('substaff') && Route::has('substaff.dashboard')) {
+            $dashRoute = 'substaff.dashboard';
         }
     @endphp
 
@@ -120,6 +125,8 @@
                                 if ($roles->contains('admin')) $role = 'admin';
                                 elseif ($roles->contains('staff')) $role = 'staff';
                                 elseif ($roles->contains('user')) $role = 'user';
+                                elseif ($roles->contains('subadmin')) $role = 'subadmin';
+                                elseif ($roles->contains('substaff')) $role = 'substaff';
                                 
                                 $isStaff = $role === 'staff';
                                 $teamLeader = $user->team_leader_id ? $users->firstWhere('id', $user->team_leader_id) : null;
@@ -130,6 +137,8 @@
                                     'admin' => 'bg-primary/10 text-primary ring-primary/20',
                                     'staff' => 'bg-secondary/10 text-secondary ring-secondary/20',
                                     'user' => 'bg-muted-100 text-muted-600 ring-muted-500/10',
+                                    'subadmin' => 'bg-indigo-100 text-indigo-600 ring-indigo-500/20',
+                                    'substaff' => 'bg-emerald-100 text-emerald-600 ring-emerald-500/20',
                                     default => 'bg-muted-100 text-muted-600 ring-muted-500/10',
                                 };
                             @endphp

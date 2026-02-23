@@ -2,7 +2,6 @@
 @section('title', __('projects.edit_project'))
 
 @section('content')
-    @role('admin')
     {{-- Main Container --}}
     <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
 
@@ -158,5 +157,4 @@
 
         </div>
     </div>
-    @endrole
 @endsection
