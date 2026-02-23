@@ -10,8 +10,12 @@
         $dashRoute = 'user.dashboard';
         if (auth()->user()->hasRole('admin') && Route::has('admin.dashboard')) {
             $dashRoute = 'admin.dashboard';
+        } elseif (auth()->user()->hasRole('subadmin') && Route::has('subadmin.dashboard')) {
+            $dashRoute = 'subadmin.dashboard';
         } elseif (auth()->user()->hasRole('staff') && Route::has('staff.dashboard')) {
             $dashRoute = 'staff.dashboard';
+        } elseif (auth()->user()->hasRole('substaff') && Route::has('substaff.dashboard')) {
+            $dashRoute = 'substaff.dashboard';
         }
     @endphp
 
@@ -30,13 +34,15 @@
                 </div>
             </div>
 
-            <a href="{{ route('campaigns.create') }}"
-                class="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-primary/20">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 fill-current">
-                    <path d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z" />
-                </svg>
-                <span class="font-medium">{{ __('campaigns.create_new_campaign') }}</span>
-            </a>
+            @if(auth()->user()->hasRole('admin') || auth()->user()->hasDepartmentRolePermission('admin.campaigns.create'))
+                <a href="{{ route('campaigns.create') }}"
+                    class="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-primary/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 fill-current">
+                        <path d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z" />
+                    </svg>
+                    <span class="font-medium">{{ __('campaigns.create_new_campaign') }}</span>
+                </a>
+            @endif
         </div>
 
         {{-- CARD CONTAINER --}}
@@ -190,13 +196,15 @@
                                             </button>
 
                                             {{-- Edit --}}
-                                            <a href="{{ route('campaigns.edit', $campaign->id) }}"
-                                                class="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-muted-600 hover:bg-muted-50 hover:text-main transition-colors">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-muted-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                </svg>
-                                                {{ __('tasks.edit') }}
-                                            </a>
+                                            @if(auth()->user()->hasRole('admin') || auth()->user()->hasDepartmentRolePermission('admin.campaigns.edit'))
+                                                <a href="{{ route('campaigns.edit', $campaign->id) }}"
+                                                    class="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-muted-600 hover:bg-muted-50 hover:text-main transition-colors">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-muted-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    </svg>
+                                                    {{ __('tasks.edit') }}
+                                                </a>
+                                            @endif
 
                                             {{-- Actions Divider --}}
                                             <div class="h-px bg-muted-100 my-1 mx-2"></div>
@@ -231,17 +239,19 @@
                                             @endif
 
                                             {{-- Delete --}}
-                                            <form action="{{ route('campaigns.destroy', $campaign->id) }}" method="POST"
-                                                onsubmit="return confirm('{{ __('campaigns.confirm_delete') }}')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button class="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-danger hover:bg-danger/5 transition-colors">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                    </svg>
-                                                    {{ __('tasks.delete') }}
-                                                </button>
-                                            </form>
+                                            @if(auth()->user()->hasRole('admin') || auth()->user()->hasDepartmentRolePermission('admin.campaigns.delete'))
+                                                <form action="{{ route('campaigns.destroy', $campaign->id) }}" method="POST"
+                                                    onsubmit="return confirm('{{ __('campaigns.confirm_delete') }}')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button class="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-danger hover:bg-danger/5 transition-colors">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                        {{ __('tasks.delete') }}
+                                                    </button>
+                                                </form>
+                                            @endif
                                         </div>
                                     </div>
                                 </td>

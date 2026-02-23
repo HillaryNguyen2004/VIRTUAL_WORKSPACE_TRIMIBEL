@@ -6,15 +6,19 @@
     @php
         use Illuminate\Support\Facades\Route;
 
+        // Determine dashboard route based on role
         $dashRoute = 'user.dashboard';
         if (auth()->user()->hasRole('admin') && Route::has('admin.dashboard')) {
             $dashRoute = 'admin.dashboard';
+        } elseif (auth()->user()->hasRole('subadmin') && Route::has('subadmin.dashboard')) {
+            $dashRoute = 'subadmin.dashboard';
         } elseif (auth()->user()->hasRole('staff') && Route::has('staff.dashboard')) {
             $dashRoute = 'staff.dashboard';
+        } elseif (auth()->user()->hasRole('substaff') && Route::has('substaff.dashboard')) {
+            $dashRoute = 'substaff.dashboard';
         }
     @endphp
 
-    @role('admin')
     <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
 
         {{-- HEADER SECTION --}}
@@ -342,12 +346,4 @@
             @endif
         </div>
     </div>
-    @endrole
-
-    @unlessrole('admin')
-    <div class="container py-12 text-center">
-        <h4 class="text-xl font-bold text-danger">{{ __('checkin_logs.access_denied_title') }}</h4>
-        <p class="text-muted-500 mt-2">{{ __('checkin_logs.access_denied_message') }}</p>
-    </div>
-    @endunlessrole
 @endsection

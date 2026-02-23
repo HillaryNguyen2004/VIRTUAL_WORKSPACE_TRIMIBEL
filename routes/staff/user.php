@@ -10,7 +10,9 @@ use App\Http\Controllers\UserController;
 
 // Route::get('/tasks/staff', [TaskController::class, 'staffTasks'])->name('tasks.staff');
 Route::middleware(['auth', 'role:staff|substaff'])->group(function () {
-    Route::get('/staff/dashboard', [TaskController::class, 'upcomingTasks'])->name('staff.dashboard');
+    Route::get('/staff/dashboard', [TaskController::class, 'upcomingTasks'])
+        ->middleware('admin_or_permission:staff.dashboard.view')
+        ->name('staff.dashboard');
     Route::get('/staff/tasks', [TaskController::class, 'index'])->name('tasks.staff.index');
     Route::get('/staff/team', [TeamController::class, 'index'])->name('team.overview');
     Route::post('/team/assign-task', [TeamController::class, 'assignTask'])->name('team.assignTask');
@@ -19,12 +21,15 @@ Route::middleware(['auth', 'role:staff|substaff'])->group(function () {
     Route::post('/dayoff/{id}/reject', [DayOffController::class, 'reject'])->name('dayoff.reject');
     Route::middleware(['auth'])->group(function () {
     Route::post('/staff/substaff/{user}/make', [UserController::class, 'makeSubstaff'])
+        ->middleware('admin_or_permission:staff.substaff.create')
         ->name('staff.substaff.make');
 
     Route::get('/staff/substaff/{user}/permissions', [UserController::class, 'editSubstaffPermissions'])
+        ->middleware('admin_or_permission:staff.substaff.edit')
         ->name('staff.substaff.permissions.edit');
 
     Route::post('/staff/substaff/{user}/permissions', [UserController::class, 'updateSubstaffPermissions'])
+        ->middleware('admin_or_permission:staff.substaff.edit')
         ->name('staff.substaff.permissions.update');
     });
     // Route::get('/staff/substaff/create', [UserController::class, 'createSubstaff'])

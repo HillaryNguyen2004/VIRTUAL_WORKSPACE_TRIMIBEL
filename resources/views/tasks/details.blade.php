@@ -46,7 +46,7 @@
             </div>
 
             <div class="flex gap-2">
-                @can('task.edit')
+                @if(auth()->user()->hasRole('admin') || auth()->user()->hasDepartmentRolePermission('task.edit'))
                     <a href="{{ route('tasks.edit', $task->id) }}"
                         class="flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all shadow-lg text-sm border text-muted-400 hover:bg-secondary/10 hover:text-secondary">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 fill-current">
@@ -55,9 +55,9 @@
                         </svg>
                         {{ __('tasks.edit') }}
                     </a>
-                @endcan
+                @endif
 
-                @can('task.delete')
+                @if(auth()->user()->hasRole('admin') || auth()->user()->hasDepartmentRolePermission('task.delete'))
                     @if($task->subtasks()->count() === 0)
                         <form method="POST" action="{{ route('tasks.destroy', $task->id) }}"
                             onsubmit="return confirm('{{ __('tasks.confirm_delete') }}')">
@@ -73,7 +73,7 @@
                             </button>
                         </form>
                     @endif
-                @endcan
+                @endif
             </div>
         </div>
 
@@ -286,12 +286,12 @@
                                 {{ $task->subTasks->where('status', 'completed')->count() }} {{ __('tasks.closed') }})
                             </span>
                         </h3>
-                        @can('task.create')
+                        @if(auth()->user()->hasRole('admin') || auth()->user()->hasDepartmentRolePermission('task.create'))
                             <a href="{{ route('tasks.create', ['parent_id' => $task->id]) }}"
                                 class="text-sm text-primary hover:underline">
                                 {{ __('tasks.add') }}
                             </a>
-                        @endcan
+                        @endif
                     </div>
 
                     @if($task->subTasks->count() > 0)

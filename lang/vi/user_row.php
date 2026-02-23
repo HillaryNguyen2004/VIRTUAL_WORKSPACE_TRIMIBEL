@@ -3,6 +3,8 @@ return [
     'user_role' => 'Người dùng',
     'staff_role' => 'Nhân viên',
     'admin_role' => 'Quản trị viên',
+    'subadmin_role' => 'Quản trị viên phụ',
+    'substaff_role' => 'Nhân viên phụ',
     'assign_team_members' => 'Chỉ định thành viên nhóm',
     'select_member' => '-- Chọn thành viên --',
     'remove_member' => '🗑',

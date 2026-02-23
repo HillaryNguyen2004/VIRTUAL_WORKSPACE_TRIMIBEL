@@ -22,4 +22,14 @@ class Department extends Model
         return $this->belongsToMany(Permission::class, 'department_permission')
             ->withTimestamps();
     }
+
+    public function rolePermissions()
+{
+    return $this->belongsToMany(
+        Permission::class,
+        'department_role_permissions',
+        'department_id',
+        'permission_id'
+    )->withPivot('role_name')->withTimestamps();
+}
 }

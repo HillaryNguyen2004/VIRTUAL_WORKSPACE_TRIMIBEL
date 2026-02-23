@@ -149,133 +149,6 @@
                     </div>
                 </div>
                 @endforeach
-
-                {{-- NEW PERMISSION-BASED CARDS FOR USERS --}}
-
-                {{-- Card 1: Create Task --}}
-                <!-- @can('create task')
-                <div class="bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-success/30 hover:shadow-success/10 transition-all duration-300 group">
-                    <div class="flex items-start h-full justify-between">
-                        <div class="flex flex-col justify-between h-full">
-                            <p class="text-muted-500 font-medium text-sm">Create Task</p>
-                            <p class="text-2xl font-semibold text-main tracking-tight">New Task</p>
-                        </div>
-                        <div class="p-3 rounded-xl bg-success/10 text-success group-hover:scale-110 transition-transform duration-300">
-                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 4v16m8-8H4" />
-                            </svg>
-                        </div>
-                    </div>
-                    <a href="{{ route('tasks.create') }}" class="mt-4 flex justify-center items-center gap-2 w-full bg-success hover:bg-success-hover text-white rounded-lg py-2 font-medium transition-colors text-sm">
-                        Create New Task
-                    </a>
-                </div>
-                @endcan
-
-                {{-- Card 2: Edit Task --}}
-                @can('edit task')
-                <div class="bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-warning/30 hover:shadow-warning/10 transition-all duration-300 group">
-                    <div class="flex items-start h-full justify-between">
-                        <div class="flex flex-col justify-between h-full">
-                            <p class="text-muted-500 font-medium text-sm">Edit Tasks</p>
-                            <p class="text-2xl font-semibold text-main tracking-tight">Modify Tasks</p>
-                        </div>
-                        <div class="p-3 rounded-xl bg-warning/10 text-warning group-hover:scale-110 transition-transform duration-300">
-                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                            </svg>
-                        </div>
-                    </div>
-                    <a href="{{ route('tasks.index') }}" class="mt-4 flex justify-center items-center gap-2 w-full bg-warning hover:bg-warning-hover text-white rounded-lg py-2 font-medium transition-colors text-sm">
-                        Edit Tasks
-                    </a>
-                </div>
-                @endcan
-
-                {{-- Card 3: Delete Task --}}
-                @can('delete task')
-                <div class="bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-danger/30 hover:shadow-danger/10 transition-all duration-300 group">
-                    <div class="flex items-start h-full justify-between">
-                        <div class="flex flex-col justify-between h-full">
-                            <p class="text-muted-500 font-medium text-sm">Delete Tasks</p>
-                            <p class="text-2xl font-semibold text-main tracking-tight">Remove Tasks</p>
-                        </div>
-                        <div class="p-3 rounded-xl bg-danger/10 text-danger group-hover:scale-110 transition-transform duration-300">
-                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                            </svg>
-                        </div>
-                    </div>
-                    <a href="{{ route('tasks.index') }}" class="mt-4 flex justify-center items-center gap-2 w-full bg-danger hover:bg-danger-hover text-white rounded-lg py-2 font-medium transition-colors text-sm">
-                        Manage Tasks
-                    </a>
-                </div>
-                @endcan
-
-                {{-- Card 4: View All Tasks --}}
-                @can('view all tasks')
-                <div class="bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-info/30 hover:shadow-info/10 transition-all duration-300 group">
-                    <div class="flex items-start h-full justify-between">
-                        <div class="flex flex-col justify-between h-full">
-                            <p class="text-muted-500 font-medium text-sm">All Tasks</p>
-                            <p class="text-2xl font-semibold text-main tracking-tight">View All</p>
-                        </div>
-                        <div class="p-3 rounded-xl bg-info/10 text-info group-hover:scale-110 transition-transform duration-300">
-                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
-                            </svg>
-                        </div>
-                    </div>
-                    <a href="{{ route('tasks.index') }}" class="mt-4 flex justify-center items-center gap-2 w-full bg-info hover:bg-info-hover text-white rounded-lg py-2 font-medium transition-colors text-sm">
-                        View All Tasks
-                    </a>
-                </div>
-                @endcan
-
-                {{-- Card 5: Staff Dashboard View --}}
-                @can('staff.dashboard.view')
-                <div class="bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-purple-500/30 hover:shadow-purple-500/10 transition-all duration-300 group">
-                    <div class="flex items-start h-full justify-between">
-                        <div class="flex flex-col justify-between h-full">
-                            <p class="text-muted-500 font-medium text-sm">Staff Dashboard</p>
-                            <p class="text-2xl font-semibold text-main tracking-tight">Staff View</p>
-                        </div>
-                        <div class="p-3 rounded-xl bg-purple-500/10 text-purple-600 group-hover:scale-110 transition-transform duration-300">
-                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg>
-                        </div>
-                    </div>
-                    <a href="{{ route('staff.dashboard') }}" class="mt-4 flex justify-center items-center gap-2 w-full bg-purple-500 hover:bg-purple-600 text-white rounded-lg py-2 font-medium transition-colors text-sm">
-                        Go to Staff Dashboard
-                    </a>
-                </div>
-                @endcan
-
-                {{-- Card 6: Manage Team --}}
-                @can('manage team')
-                <div class="bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-indigo-500/30 hover:shadow-indigo-500/10 transition-all duration-300 group">
-                    <div class="flex items-start h-full justify-between">
-                        <div class="flex flex-col justify-between h-full">
-                            <p class="text-muted-500 font-medium text-sm">Team Management</p>
-                            <p class="text-2xl font-semibold text-main tracking-tight">Team Tools</p>
-                        </div>
-                        <div class="p-3 rounded-xl bg-indigo-500/10 text-indigo-600 group-hover:scale-110 transition-transform duration-300">
-                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="9" cy="7" r="4"></circle>
-                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <a href="{{ route('team.overview') }}" class="mt-4 flex justify-center items-center gap-2 w-full bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg py-2 font-medium transition-colors text-sm">
-                        Manage Team
-                    </a>
-                </div>
-                @endcan -->
-
             </div>
         </div>
 
@@ -508,247 +381,112 @@
         </div>
 
         {{-- SECTION: Admin Permissions Container --}}
-        @if(auth()->user()->can('admin.dashboard.view') || 
-            auth()->user()->can('admin.users.view') || 
-            auth()->user()->can('admin.users.create') ||
-            auth()->user()->can('admin.users.edit') ||
-            auth()->user()->can('admin.users.delete') ||
-            auth()->user()->can('admin.roles.view') || 
-            auth()->user()->can('admin.roles.edit') ||
-            auth()->user()->can('admin.campaigns.view') ||
-            auth()->user()->can('admin.campaigns.edit') ||
-            auth()->user()->can('admin.email_templates.view') ||
-            auth()->user()->can('admin.activity_logs.view') ||
-            auth()->user()->can('admin.attendance.view'))
         <div class="">
             <!-- <h3 class="text-2xl font-semibold text-main mb-6">{{ __('user_dashboard.admin_section') ?? 'Admin Management' }}</h3> -->
             <div class="grid grid-cols-1 @2xl:grid-cols-2 @4xl:grid-cols-3 gap-6 w-full animate-fade-in-up [animation-delay:150ms]">
-                
-                {{-- Admin Dashboard View --}}
-                <!-- @can('admin.dashboard.view')
-                <div class="bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-blue-500/30 hover:shadow-blue-500/10 transition-all duration-300 group">
-                    <div class="flex items-start h-full justify-between mb-4">
-                        <div class="flex flex-col justify-between h-full">
-                            <p class="text-muted-500 font-medium text-sm">Dashboard</p>
-                            <p class="text-md md:text-lg font-semibold text-main tracking-tight">Admin Overview</p>
-                        </div>
-                        <div class="p-3 rounded-xl bg-blue-500/10 text-blue-600 group-hover:scale-110 transition-transform duration-300">
-                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                                <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                            </svg>
-                        </div>
-                    </div>
-                    <a href="{{ route('admin.dashboard') }}" class="flex justify-center items-center gap-2 w-full bg-blue-500 hover:bg-blue-600 text-white rounded-lg py-2 font-medium transition-colors text-sm">
-                        Dashboard
-                    </a>
-                </div>
-                @endcan -->
-
-                {{-- Admin Users Management --}}
-                <!-- @if(auth()->user()->can('admin.users.view') || auth()->user()->can('admin.users.create') || auth()->user()->can('admin.users.edit') || auth()->user()->can('admin.users.delete'))
-                <div class="bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-green-500/30 hover:shadow-green-500/10 transition-all duration-300 group">
-                    <div class="flex items-start justify-between">
-                        <p class="text-md md:text-lg font-semibold text-main tracking-tight">User Management</p>
-                        <a href="{{ route('admin.users.index') }}" class="p-3 rounded-xl bg-green-500/10 text-green-600 group-hover:scale-110 transition-transform duration-300">
-                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="9" cy="7" r="4"></circle>
-                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                            </svg>
-                        </a>
-                    </div>
-                </div>
-                @endif -->
-
-                {{-- Admin Roles & Permissions --}}
-                <!-- @if(auth()->user()->can('admin.roles.view') || auth()->user()->can('admin.roles.edit'))
-                <div class="bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-purple-500/30 hover:shadow-purple-500/10 transition-all duration-300 group">
-                    <div class="flex items-start h-full justify-between mb-4">
-                        <div class="flex flex-col justify-between h-full">
-                            <p class="text-muted-500 font-medium text-sm">Roles</p>
-                            <p class="text-md md:text-lg font-semibold text-main tracking-tight">Role & Permission</p>
-                        </div>
-                        <div class="p-3 rounded-xl bg-purple-500/10 text-purple-600 group-hover:scale-110 transition-transform duration-300">
-                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                            </svg>
-                        </div>
-                    </div>
-                    <a href="{{ route('admin.permissions') }}" class="flex justify-center items-center gap-2 w-full bg-purple-500 hover:bg-purple-600 text-white rounded-lg py-2 font-medium transition-colors text-sm">
-                        Manage Roles
-                    </a>
-                </div>
-                @endif -->
-
                 {{-- Admin Campaigns --}}
-                @if(auth()->user()->can('admin.campaigns.view') || auth()->user()->can('admin.campaigns.edit'))
-                <div class=" bg-white rounded-2xl p-6 border border-muted-300 hover:border-primary/30 transition-all duration-300 flex flex-col gap-6">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-md md:text-lg font-semibold text-main">{{ __('admin_dashboard.campaign_management') }}</h3>
+                @if(auth()->user()->hasRole('admin') || auth()->user()->hasDepartmentRolePermission('admin.campaigns.view'))
+                    <div class=" bg-white rounded-2xl p-6 border border-muted-300 hover:border-primary/30 transition-all duration-300 flex flex-col gap-6">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-md md:text-lg font-semibold text-main">{{ __('admin_dashboard.campaign_management') }}</h3>
 
-                        <a href="{{ route('campaigns.index') }}" title="{{ __('admin_dashboard.view_all') }}" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M17 7H8m9 0v9" />
-                            </svg>
-                        </a>
-                    </div>
+                            <a href="{{ route('campaigns.index') }}" title="{{ __('admin_dashboard.view_all') }}" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M17 7H8m9 0v9" />
+                                </svg>
+                            </a>
+                        </div>
 
-                    <div class="flex flex-col gap-6">
-                        <div>
-                            <h4 class="text-xs font-semibold text-muted-400 uppercase tracking-wider mb-4">{{ __('admin_dashboard.campaign_scheduled') }}</h4>
-                            <ul class="space-y-4">
-                                @forelse($upcomingCampaigns ?? [] as $camp)
-                                    <li class="pl-4 border-l-2 border-primary/30 relative">
-                                        <div class="absolute -left-[5px] w-2 h-2 rounded-full bg-primary"></div>
-                                        <p class="text-xs font-semibold text-main uppercase tracking-wide">{{ $camp->scheduled_at->format('M d, H:i') }}</p>
-                                        <p class="text-xs md:text-sm text-muted-600 mt-0.5">{{ $camp->name }}</p>
-                                        <span class="inline-block mt-2 px-2 py-0.5 bg-primary/10 text-primary text-[10px] rounded-full font-semibold">Scheduled</span>
-                                    </li>
-                                @empty
-                                    <li class="text-xs md:text-sm text-muted-400">{{ __('admin_dashboard.campaign_no_scheduled') }}</li>
-                                @endforelse
-                            </ul>
-                        </div>
-                        <hr class="border-muted-200">
-                        <div>
-                            <h4 class="text-xs font-semibold text-muted-400 uppercase tracking-wider mb-4">{{ __('admin_dashboard.campaign_sent') }}</h4>
-                            <ul class="space-y-4">
-                                @forelse($sentCampaigns ?? [] as $camp)
-                                    <li class="flex justify-between items-center group">
-                                        <div>
-                                            <p class="text-xs md:text-sm font-semibold text-main group-hover:text-primary transition-colors">{{ $camp->name }}</p>
-                                            <span class="inline-block mt-1 px-2 py-0.5 bg-accent/10 text-accent text-[10px] rounded-full font-semibold">Sent</span>
-                                        </div>
-                                        <div class="text-right">
-                                            <p class="text-md md:text-lg font-semibold text-main">{{ number_format($camp->sent_count) }}</p>
-                                            <p class="text-[10px] text-muted-400">{{ __('admin_dashboard.campaign_users_reached') }}</p>
-                                        </div>
-                                    </li>
-                                @empty
-                                    <li class="text-xs md:text-sm text-muted-400">{{ __('admin_dashboard.campaign_no_sent') }}</li>
-                                @endforelse
-                            </ul>
+                        <div class="flex flex-col gap-6">
+                            <div>
+                                <h4 class="text-xs font-semibold text-muted-400 uppercase tracking-wider mb-4">{{ __('admin_dashboard.campaign_scheduled') }}</h4>
+                                <ul class="space-y-4">
+                                    @forelse($upcomingCampaigns ?? [] as $camp)
+                                        <li class="pl-4 border-l-2 border-primary/30 relative">
+                                            <div class="absolute -left-[5px] w-2 h-2 rounded-full bg-primary"></div>
+                                            <p class="text-xs font-semibold text-main uppercase tracking-wide">{{ $camp->scheduled_at->format('M d, H:i') }}</p>
+                                            <p class="text-xs md:text-sm text-muted-600 mt-0.5">{{ $camp->name }}</p>
+                                            <span class="inline-block mt-2 px-2 py-0.5 bg-primary/10 text-primary text-[10px] rounded-full font-semibold">Scheduled</span>
+                                        </li>
+                                    @empty
+                                        <li class="text-xs md:text-sm text-muted-400">{{ __('admin_dashboard.campaign_no_scheduled') }}</li>
+                                    @endforelse
+                                </ul>
+                            </div>
+                            <hr class="border-muted-200">
+                            <div>
+                                <h4 class="text-xs font-semibold text-muted-400 uppercase tracking-wider mb-4">{{ __('admin_dashboard.campaign_sent') }}</h4>
+                                <ul class="space-y-4">
+                                    @forelse($sentCampaigns ?? [] as $camp)
+                                        <li class="flex justify-between items-center group">
+                                            <div>
+                                                <p class="text-xs md:text-sm font-semibold text-main group-hover:text-primary transition-colors">{{ $camp->name }}</p>
+                                                <span class="inline-block mt-1 px-2 py-0.5 bg-accent/10 text-accent text-[10px] rounded-full font-semibold">Sent</span>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-md md:text-lg font-semibold text-main">{{ number_format($camp->sent_count) }}</p>
+                                                <p class="text-[10px] text-muted-400">{{ __('admin_dashboard.campaign_users_reached') }}</p>
+                                            </div>
+                                        </li>
+                                    @empty
+                                        <li class="text-xs md:text-sm text-muted-400">{{ __('admin_dashboard.campaign_no_sent') }}</li>
+                                    @endforelse
+                                </ul>
+                            </div>
                         </div>
                     </div>
-                </div>
                 @endif
 
                 {{-- Admin Email Templates --}}
-                @can('admin.email_templates.view')
-                <div class=" flex flex-col h-full">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-md md:text-lg font-semibold text-main">{{ __('admin_dashboard.email_templates') }}</h3>
-                        <a href="{{ route('email-templates.index') }}" title="{{ __('admin_dashboard.view_all') }}" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                            </svg>
-                        </a>
-                    </div>
+                @if(auth()->user()->hasRole('admin') || auth()->user()->hasDepartmentRolePermission('admin.email_templates.view'))
+                    <div class=" flex flex-col h-full">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-md md:text-lg font-semibold text-main">{{ __('admin_dashboard.email_templates') }}</h3>
+                            <a href="{{ route('email-templates.index') }}" title="{{ __('admin_dashboard.view_all') }}" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                </svg>
+                            </a>
+                        </div>
 
-                    {{-- Template List --}}
-                    <div class="flex flex-col gap-4 flex-1">
-                        @foreach($emailTemplates->take(4) as $template)
-                            <div class="group flex items-center gap-4 p-4 rounded-2xl bg-white border border-muted-300 hover:border-primary/30 transition-all duration-300 cursor-pointer">
-                                {{-- Circular ID Ring --}}
-                                <div class="relative w-12 h-12 flex-none">
-                                    <svg class="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                                        <path class="text-primary/10"
-                                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            stroke-width="3" />
-                                        <path class="text-primary/40 group-hover:text-primary transition-colors duration-300"
-                                            stroke-dasharray="{{ rand(40, 85) }}, 100"
-                                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            stroke-width="3"
-                                            stroke-linecap="round" />
-                                    </svg>
-                                    {{-- ID Number --}}
-                                    <div class="absolute inset-0 flex items-center justify-center text-sm font-semibold text-main">
-                                        {{ mb_substr($template->name ?? '', 0, 1) }}
+                        {{-- Template List --}}
+                        <div class="flex flex-col gap-4 flex-1">
+                            @foreach($emailTemplates->take(4) as $template)
+                                <div class="group flex items-center gap-4 p-4 rounded-2xl bg-white border border-muted-300 hover:border-primary/30 transition-all duration-300 cursor-pointer">
+                                    {{-- Circular ID Ring --}}
+                                    <div class="relative w-12 h-12 flex-none">
+                                        <svg class="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                                            <path class="text-primary/10"
+                                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="3" />
+                                            <path class="text-primary/40 group-hover:text-primary transition-colors duration-300"
+                                                stroke-dasharray="{{ rand(40, 85) }}, 100"
+                                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="3"
+                                                stroke-linecap="round" />
+                                        </svg>
+                                        {{-- ID Number --}}
+                                        <div class="absolute inset-0 flex items-center justify-center text-sm font-semibold text-main">
+                                            {{ mb_substr($template->name ?? '', 0, 1) }}
+                                        </div>
+                                    </div>
+
+                                    {{-- Text Content --}}
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="text-sm md:text-base font-semibold text-main group-hover:text-primary transition-colors">{{ $template->name }}</h4>
+                                        <p class="text-xs text-muted-500 mt-1 truncate">{{ $template->subject }}</p>
                                     </div>
                                 </div>
-
-                                {{-- Text Content --}}
-                                <div class="flex-1 min-w-0">
-                                    <h4 class="text-sm md:text-base font-semibold text-main group-hover:text-primary transition-colors">{{ $template->name }}</h4>
-                                    <p class="text-xs text-muted-500 mt-1 truncate">{{ $template->subject }}</p>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-                @endcan
-
-                {{-- Admin Activity Logs --}}
-                @can('admin.activity_logs.view')
-                <!-- <div class=" bg-white rounded-2xl p-6 border border-muted-300 hover:border-primary/30 transition-all duration-300">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-md md:text-lg font-semibold text-main">{{ __('admin_dashboard.recent_activities') }}</h3>
-                        <a href="{{ route('admin.activity.logs') }}" title="{{ __('admin_dashboard.view_all') }}" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M17 7H8m9 0v9" />
-                            </svg>
-                        </a>
-                    </div>
-
-                    <div class="relative">
-                        @if($recentLogs->isNotEmpty())
-                            {{-- Timeline Line --}}
-                            <div class="absolute left-1.5 top-2 bottom-4 w-px bg-muted-200"></div>
-
-                            <ul class="flex flex-col gap-6 relative">
-                                @foreach($recentLogs->take(3) as $log)
-                                    <li class="flex gap-4 group">
-                                        {{-- Dot --}}
-                                        <div class="relative z-10 w-4 h-4 rounded-full bg-white border-2 border-primary mt-0.5 flex-shrink-0 shadow-sm group-hover:scale-110 ring-8 ring-white transition-transform"></div>
-                                        <div class="flex-1">
-                                            <p class="text-sm font-medium text-main">
-                                                <span class="font-semibold text-primary">{{ $log->user->name ?? 'User' }}</span>
-                                                {{ $log->action }}
-                                            </p>
-                                            <p class="text-xs text-muted-500 mt-1 line-clamp-2">{{ $log->description }}</p>
-                                            <p class="text-[10px] text-muted-400 mt-1.5">{{ $log->created_at->diffForHumans() }}</p>
-                                        </div>
-                                    </li>
-                                @endforeach
-                            </ul>
-                        @else
-                            <div class="text-center py-6 text-muted-400 text-sm">{{ __('admin_dashboard.no_activity_logs') }}</div>
-                        @endif
-                    </div>
-                </div> -->
-                
-                @endcan
-
-                {{-- Admin Attendance --}}
-                <!-- @can('admin.attendance.view')
-                <div class="bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-cyan-500/30 hover:shadow-cyan-500/10 transition-all duration-300 group">
-                    <div class="flex items-start h-full justify-between mb-4">
-                        <div class="flex flex-col justify-between h-full">
-                            <p class="text-muted-500 font-medium text-sm">Attendance</p>
-                            <p class="text-md md:text-lg font-semibold text-main tracking-tight">Check-ins</p>
-                        </div>
-                        <div class="p-3 rounded-xl bg-cyan-500/10 text-cyan-600 group-hover:scale-110 transition-transform duration-300">
-                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M9 11l3 3L22 4"></path>
-                                <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
+                            @endforeach
                         </div>
                     </div>
-                    <a href="{{ route('users.checkin_index') }}" class="flex justify-center items-center gap-2 w-full bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg py-2 font-medium transition-colors text-sm">
-                        Attendance
-                    </a>
-                </div>
-                @endcan -->
-
+                @endif
             </div>
         </div>
-        @endif
     </div>
     @else
         <div class="flex items-center justify-center min-h-[400px]">

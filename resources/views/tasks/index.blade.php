@@ -9,8 +9,12 @@
         $dashRoute = 'user.dashboard';
         if (auth()->user()->hasRole('admin') && Route::has('admin.dashboard')) {
             $dashRoute = 'admin.dashboard';
+        } elseif (auth()->user()->hasRole('subadmin') && Route::has('subadmin.dashboard')) {
+            $dashRoute = 'subadmin.dashboard';
         } elseif (auth()->user()->hasRole('staff') && Route::has('staff.dashboard')) {
             $dashRoute = 'staff.dashboard';
+        } elseif (auth()->user()->hasRole('substaff') && Route::has('substaff.dashboard')) {
+            $dashRoute = 'substaff.dashboard';
         }
     @endphp
 
@@ -28,7 +32,7 @@
                 </div>
             </div>
 
-            @can('task.create')
+            @if(auth()->user()->hasRole('admin') || auth()->user()->hasDepartmentRolePermission('task.create'))
                 <a href="{{ route('tasks.create') }}"
                     class="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-primary/20">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 fill-current">
@@ -37,7 +41,7 @@
                     </svg>
                     <span class="font-medium">{{ __('staff_dashboard.new_task') }}</span>
                 </a>
-            @endcan
+            @endif
         </div>
 
         {{-- COMBINED CARD CONTAINER (Filters + Table) --}}
