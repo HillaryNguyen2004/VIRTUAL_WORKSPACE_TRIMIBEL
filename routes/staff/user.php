@@ -20,17 +20,17 @@ Route::middleware(['auth', 'role:staff|substaff'])->group(function () {
     Route::post('/dayoff/{id}/approve', [DayOffController::class, 'approve'])->name('dayoff.approve');
     Route::post('/dayoff/{id}/reject', [DayOffController::class, 'reject'])->name('dayoff.reject');
     Route::middleware(['auth'])->group(function () {
-    Route::post('/staff/substaff/{user}/make', [UserController::class, 'makeSubstaff'])
-        ->middleware('admin_or_permission:staff.substaff.create')
-        ->name('staff.substaff.make');
+        Route::post('/staff/substaff/{user}/make', [UserController::class, 'makeSubstaff'])
+            ->middleware('admin_or_permission:staff.substaff.create')
+            ->name('staff.substaff.make');
 
-    Route::get('/staff/substaff/{user}/permissions', [UserController::class, 'editSubstaffPermissions'])
-        ->middleware('admin_or_permission:staff.substaff.edit')
-        ->name('staff.substaff.permissions.edit');
+        Route::get('/staff/substaff/{user}/permissions', [UserController::class, 'editSubstaffPermissions'])
+            ->middleware('admin_or_permission:staff.substaff.edit')
+            ->name('staff.substaff.permissions.edit');
 
-    Route::post('/staff/substaff/{user}/permissions', [UserController::class, 'updateSubstaffPermissions'])
-        ->middleware('admin_or_permission:staff.substaff.edit')
-        ->name('staff.substaff.permissions.update');
+        Route::post('/staff/substaff/{user}/permissions', [UserController::class, 'updateSubstaffPermissions'])
+            ->middleware('admin_or_permission:staff.substaff.edit')
+            ->name('staff.substaff.permissions.update');
     });
     // Route::get('/staff/substaff/create', [UserController::class, 'createSubstaff'])
     // ->name('staff.substaff.create');
