@@ -67,7 +67,7 @@
                         $dashRoute = 'substaff.dashboard';
                     }
                 @endphp
-                @if(auth()->user()->hasRole(['admin', 'user']) || (auth()->user()->hasRole('substaff') && auth()->user()->hasDepartmentRolePermission('staff.dashboard.view')) || (auth()->user()->hasRole('subadmin') && auth()->user()->can('admin.dashboard.view')))
+                @if(auth()->user()->hasRole(['admin', 'staff', 'user']) || (auth()->user()->hasRole('substaff') && auth()->user()->hasDepartmentRolePermission('staff.dashboard.view')) || (auth()->user()->hasRole('subadmin') && auth()->user()->can('admin.dashboard.view')))
                     <li>
                         <x-nav-link href="{{ route($dashRoute) }}" :active="request()->routeIs(['*.dashboard'])"
                             class="flex items-center gap-4 px-4 py-3 hover:bg-muted-50 rounded-xl cursor-pointer transition-colors group {{ request()->routeIs(['*.dashboard']) ? 'text-primary bg-primary/5' : 'text-muted-500' }}">
