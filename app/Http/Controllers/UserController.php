@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Department;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\DB;
 
 use App\Http\Requests\FilterUserRequest;
 use App\Http\Requests\UpdateUserRequest;
@@ -50,7 +51,8 @@ class UserController extends Controller
         foreach ($allUsers as $staff) {
             if ($staff->hasRole('staff')) {
                 $availableUsers[$staff->id] = $allUsers
-                    ->filter(fn($u) =>
+                    ->filter(
+                        fn($u) =>
                         $u->hasRole('user') &&
                         !$u->hasRole('admin') &&
                         !$u->hasRole('staff') &&
@@ -67,7 +69,7 @@ class UserController extends Controller
         foreach ($allUsers as $staff) {
             if ($staff->hasRole('staff')) {
                 $teamMembersByStaff[$staff->id] = $allUsers
-                    ->filter(fn($u) => $u->hasRole('user') && (int)$u->team_leader_id === (int)$staff->id)
+                    ->filter(fn($u) => $u->hasRole('user') && (int) $u->team_leader_id === (int) $staff->id)
                     ->values()
                     ->map(fn($u) => ['id' => $u->id, 'name' => $u->name])
                     ->all();
@@ -129,12 +131,40 @@ class UserController extends Controller
      */
     public function permissions()
     {
-        abort_unless(auth()->user()->hasRole('admin'), 403);
+        // abort_unless(auth()->user()->hasRole('admin'), 403);
 
-        $roles = Role::with('permissions')->get();
-        $permissions = $this->permissionRepo->getAllPermissions();
-        $departments = Department::with('permissions')->orderBy('name')->get();
-        return view('users.permissions', compact('roles', 'permissions', 'departments'));
+        $departments = Department::orderBy('name')->get();
+
+        $userRole = Role::where('name', 'user')->first();
+        $staffRole = Role::where('name', 'staff')->first();
+
+        // Permissions to DISPLAY in each card (from role_has_permissions)
+        $permissionsByRoleId = [];
+
+        if ($userRole) {
+            $permissionsByRoleId[$userRole->id] = Permission::query()
+                ->select('permissions.*')
+                ->join('role_has_permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
+                ->where('role_has_permissions.role_id', $userRole->id)
+                ->orderBy('permissions.name')
+                ->get();
+        }
+
+        if ($staffRole) {
+            $permissionsByRoleId[$staffRole->id] = Permission::query()
+                ->select('permissions.*')
+                ->join('role_has_permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
+                ->where('role_has_permissions.role_id', $staffRole->id)
+                ->orderBy('permissions.name')
+                ->get();
+        }
+
+        return view('users.permissions', compact(
+            'departments',
+            'userRole',
+            'staffRole',
+            'permissionsByRoleId'
+        ));
     }
 
     /**
@@ -154,7 +184,7 @@ class UserController extends Controller
             $request->role_name,
             $permissionNames
         );
-        
+
         // Clear Spatie permission cache
         app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
 
@@ -203,14 +233,14 @@ class UserController extends Controller
 
         // Direct permissions on the user
         $user->syncPermissions($permissionNames);
-        
+
         // Clear Spatie permission cache
         app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
 
         return back()->with('success', 'User permissions updated');
     }
 
-        // ==========================
+    // ==========================
     // ✅ Subadmin management pages (NEW)
     // ==========================
 
@@ -247,7 +277,7 @@ class UserController extends Controller
         // OPTIONAL: start with empty direct permissions (recommended)
         // so each subadmin is purely custom-limited:
         $user->syncPermissions([]);
-        
+
         // Clear Spatie permission cache
         app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
 
@@ -296,7 +326,7 @@ class UserController extends Controller
         $this->authorize('syncPermissions', [$user, $permissionNames]);
 
         // Save direct permissions
-        $user->syncPermissions($permissionNames);        
+        $user->syncPermissions($permissionNames);
         // Clear Spatie permission cache
         app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
         return back()->with('success', 'Subadmin permissions updated');
@@ -304,13 +334,11 @@ class UserController extends Controller
 
     public function makeSubstaff(User $user)
     {
-        abort_unless(auth()->user()->can('staff.substaff.create'), 403);
-
         $this->authorize('assignRole', [$user, 'substaff']);
 
         $user->syncRoles(['substaff']);
         $user->syncPermissions([]); // start empty
-        
+
         // Clear Spatie permission cache
         app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
 
@@ -321,8 +349,6 @@ class UserController extends Controller
 
     public function editSubstaffPermissions(User $user)
     {
-        abort_unless(auth()->user()->can('staff.substaff.permissions.manage'), 403);
-
         if (!$user->hasRole('substaff')) {
             return back()->with('error', 'This user is not substaff.');
         }
@@ -340,27 +366,61 @@ class UserController extends Controller
 
     public function updateSubstaffPermissions(Request $request, User $user)
     {
-        abort_unless(auth()->user()->can('staff.substaff.permissions.manage'), 403);
-
         if (!$user->hasRole('substaff')) {
             return back()->with('error', 'This user is not substaff.');
         }
 
         $permissionNames = $request->input('permissions', []);
-        if (!is_array($permissionNames)) $permissionNames = [];
+        if (!is_array($permissionNames))
+            $permissionNames = [];
 
         // ✅ Waterfall enforced by your policy
         $this->authorize('syncPermissions', [$user, $permissionNames]);
 
         $user->syncPermissions($permissionNames);
-        
+
         // Clear Spatie permission cache
         app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
 
         return back()->with('success', 'Substaff permissions updated');
     }
 
+    public function updateDepartmentRolePermissions(Request $request, Department $department, Role $role)
+    {
+        abort_unless(auth()->user()->hasRole('admin'), 403);
 
+        // Restrict to only user/staff if you want
+        abort_unless(in_array($role->name, ['user', 'staff'], true), 404);
+
+        $permissionIds = $request->input('permissions', []);
+        if (!is_array($permissionIds))
+            $permissionIds = [];
+
+        $permissionIds = Permission::whereIn('id', $permissionIds)->pluck('id')->all();
+
+        DB::transaction(function () use ($department, $role, $permissionIds) {
+            DB::table('department_role_permissions')
+                ->where('department_id', $department->id)
+                ->where('role_id', $role->id)
+                ->delete();
+
+            if (!empty($permissionIds)) {
+                $rows = array_map(fn($pid) => [
+                    'department_id' => $department->id,
+                    'role_id' => $role->id,
+                    'permission_id' => $pid,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ], $permissionIds);
+
+                DB::table('department_role_permissions')->insert($rows);
+            }
+        });
+
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+        return back()->with('success', "{$department->name} - {$role->name} permissions updated.");
+    }
 
 
     // ==========================

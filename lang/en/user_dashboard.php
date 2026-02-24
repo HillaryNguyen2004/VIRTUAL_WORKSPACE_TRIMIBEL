@@ -27,8 +27,10 @@ return [
     // Chat translations
     'team_chat' => 'Team Chat',
     'join_team_conversation' => 'Join Team Conversation',
-    'check_attendence' => 'Check attendance',
-    'working_hour' => 'Working hour',
-    'enter_username' => 'Enter your username',
+    'check_attendence' => 'Check Attendance',
+    'working_hour' => 'Work Hour',
+    'working_hour_unavailable' => 'No work hours available',
+    'check_in' => 'Check In',
+    'check_out' => 'Check Out',
     'task_status' => 'Status',
 ];

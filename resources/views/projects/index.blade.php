@@ -30,7 +30,7 @@
                 </div>
             </div>
 
-            @role('admin')
+            @can('admin.projects.create')
             <a href="{{ route('projects.create') }}"
                 class="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-primary/20">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 fill-current">
@@ -38,7 +38,7 @@
                 </svg>
                 <span class="font-medium">{{ __('projects.create') }}</span>
             </a>
-            @endrole
+            @endcan
         </div>
 
         <div class="animate-fade-in-up">

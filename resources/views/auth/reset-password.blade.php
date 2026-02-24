@@ -138,7 +138,7 @@
                     <p id="pwd-match" class="mt-1 ml-2 text-[12px] text-gray-300 hidden">{{ __('reset_password.validation_match') }}</p>
                 </div>
 
-                <button type="submit" class="btn btn-primary w-full py-2 px-3 rounded-xl text-white font-medium bg-btn-login
+                <button type="submit" class="btn btn-primary w-full py-2 px-3 rounded-xl text-white font-medium bg-primary-gradient
                             shadow-[0_8px_24px_rgba(99,102,241,0.35)] hover:opacity-95 transition
                             inline-flex items-center justify-center gap-2 text-sm md:text-base
                             disabled:opacity-60 disabled:cursor-not-allowed" aria-live="polite">

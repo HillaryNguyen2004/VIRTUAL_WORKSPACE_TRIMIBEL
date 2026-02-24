@@ -50,6 +50,7 @@
 
                     <div class="flex items-center gap-2 shrink-0">
                         @if($u->hasRole('subadmin'))
+                            
                             <a href="{{ route('admin.subadmins.permissions.edit', $u) }}"
                                class="px-3 py-2 text-sm rounded-xl border border-muted-200 bg-white hover:bg-muted-50 transition">
                                 Edit permissions

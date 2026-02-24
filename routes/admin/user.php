@@ -1,7 +1,6 @@
 <?php
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\TaskController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\EmailTemplateController;
@@ -61,6 +60,15 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('admin_or_permission:admin.roles.edit')
         ->name('admin.permissions.update');
 
+    // routes/web.php
+    Route::get('/admin/users/permissions', [UserController::class, 'permissions'])
+        ->middleware('admin_or_permission:admin.roles.view')
+        ->name('admin.users.permissions');
+
+    Route::post('/admin/departments/{department}/roles/{role}/permissions', [UserController::class, 'updateDepartmentRolePermissions'])
+        ->middleware('admin_or_permission:admin.roles.edit')
+        ->name('admin.departments.roles.permissions.update');
+
     // Subadmin Management Routes
     Route::get('/admin/subadmins', [UserController::class, 'subadminIndex'])
         ->middleware('admin_or_permission:admin.roles.view')
@@ -83,7 +91,7 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('admin_or_permission:admin.campaigns.view');
 
     Route::post('/campaigns/{campaign}/send-now', [CampaignController::class, 'sendNow'])
-        ->middleware('permission:admin.campaigns.edit')
+        ->middleware('admin_or_permission:admin.campaigns.edit')
         ->name('campaigns.sendNow');
 
     Route::put('/campaigns/{campaign}/reset', [CampaignController::class, 'reset'])
@@ -101,7 +109,7 @@ Route::middleware(['auth'])->group(function () {
 
     // ===== ATTENDANCE MODULE =====
     Route::get('/check-ins', [CheckInController::class, 'index'])
-        ->middleware('permission:admin.attendance.view')
+        ->middleware('admin_or_permission:admin.attendance.view')
         ->name('users.checkin_index');
 
     Route::get('/admin/check-ins/export', [CheckInController::class, 'export'])

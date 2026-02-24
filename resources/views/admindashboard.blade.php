@@ -143,7 +143,7 @@
             <div class="@4xl:col-span-3 bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5 hover:border-primary/30 hover:shadow-primary/10 transition-all duration-300 flex flex-col h-full">
                 <div class="flex justify-between items-start mb-4">
                     <h3 class="text-lg font-semibold text-main">{{ __('admin_dashboard.roles_overview') }}</h3>
-                    <a href="{{ route('admin.permissions') }}" title="{{ __('admin_dashboard.permission_management') }}" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
+                    <a href="{{ route('admin.users.permissions') }}" title="{{ __('admin_dashboard.permission_management') }}" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                         </svg>
@@ -557,19 +557,22 @@
             @endcan
         </div>
 
+        @can('admin.holidays.view')
         <div class="grid grid-cols-1 @4xl:grid-cols-12 gap-6 w-full animate-fade-in-up [animation-delay:300ms]">
             <div class="@4xl:col-span-12 flex flex-col h-full">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-main">Upcoming Holidays</h3>
-                    <div class="flex items-center gap-2">
-                        {{-- Add Button --}}
-                        <button id="openHolidayModal" class="flex items-center gap-1 bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-                            </svg>
-                            Add New
-                        </button>
-                    </div>
+                    @can('admin.holidays.create')
+                        <div class="flex items-center gap-2">
+                            {{-- Add Button --}}
+                            <button id="openHolidayModal" class="flex items-center gap-1 bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                                </svg>
+                                Add New
+                            </button>
+                        </div>
+                    @endcan
                 </div>
 
                 {{-- Holidays Grid --}}
@@ -600,6 +603,7 @@
                 </div>
             </div>
         </div>
+        @endcan
     </div>
 
     @include('holidays_modal')
