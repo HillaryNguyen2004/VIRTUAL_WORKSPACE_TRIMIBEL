@@ -11,7 +11,6 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Spatie\Permission\Traits\HasRoles;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
-use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -142,6 +141,18 @@ class User extends Authenticatable implements MustVerifyEmail
             ->withTimestamps();
     }
 
+    public function ownedDocuments()
+    {
+        return $this->hasMany(Document::class, 'owner_id');
+    }
+
+    public function sharedDocuments()
+    {
+        return $this->belongsToMany(Document::class, 'document_shares')
+            ->withPivot('permission')
+            ->withTimestamps();
+    }
+
     public function delegatablePermissionNames(): array
     {
         return $this->getAllPermissions()->pluck('name')->values()->all();
@@ -222,11 +233,9 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function syncDepartmentAddonPermissions(): void
     {
-        if ($this->hasRole('admin'))
-            return;
+        if ($this->hasRole('admin')) return;
 
-        if (!$this->department_id || !$this->department)
-            return;
+        if (!$this->department_id || !$this->department) return;
 
         $deptPermNames = $this->department->permissions()->pluck('name')->toArray();
 
@@ -243,40 +252,6 @@ class User extends Authenticatable implements MustVerifyEmail
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
-    public function hasDepartmentRolePermission(string $permissionName): bool
-    {
-        // Admin always allowed
-        if ($this->hasRole('admin')) {
-            return true;
-        }
-
-        // Subadmin uses Spatie direct/role permissions
-        if ($this->hasRole('subadmin')) {
-            return $this->can($permissionName);
-        }
-
-        // Must have a department for department-based checks
-        if (!$this->department_id) {
-            return false;
-        }
-
-        // Get all role IDs user has (Spatie)
-        $roleIds = $this->roles->pluck('id')->all();
-        if (empty($roleIds)) {
-            $roleIds = $this->roles()->pluck('roles.id')->all(); // make explicit
-        }
-
-        if (empty($roleIds)) {
-            return false;
-        }
-
-        return DB::table('department_role_permissions as drp')
-            ->join('permissions as p', 'p.id', '=', 'drp.permission_id')
-            ->where('drp.department_id', $this->department_id)
-            ->whereIn('drp.role_id', $roleIds)
-            ->where('p.name', $permissionName)
-            ->exists();
-    }
 
 
     // Accessors for progress tracking

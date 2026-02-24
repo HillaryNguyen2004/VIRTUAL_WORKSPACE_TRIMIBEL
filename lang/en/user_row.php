@@ -3,8 +3,6 @@ return [
     'user_role' => 'User',
     'staff_role' => 'Staff',
     'admin_role' => 'Admin',
-    'subadmin_role' => 'Subadmin',
-    'substaff_role' => 'Substaff',
     'assign_team_members' => 'Assign Team Members',
     'select_member' => '-- Select Member --',
     'remove_member' => '🗑',

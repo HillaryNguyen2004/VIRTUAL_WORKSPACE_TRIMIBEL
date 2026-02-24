@@ -1,0 +1,20 @@
+# Mammoth style map for DOCX import
+# Edit this file to map Word styles to HTML elements with inline styles.
+# See https://github.com/mwilliamson/mammoth.js for style map syntax.
+#
+# Examples:
+# p[style-name='Heading 1'] => h1:fresh
+# p[style-name='Heading 2'] => h2:fresh
+# r[style-name='Emphasis'] => em
+# r[style-name='Strong'] => strong
+# r[style-name='Title Font'] => span[style='font-family: Georgia; color: #111827']
+
+# Default paragraph font (apply when Word uses styles)
+p[style-name='Normal'] => p:fresh[style='font-family: Calibri']
+p[style-name='Heading 1'] => h1:fresh[style='font-family: Calibri']
+p[style-name='Heading 2'] => h2:fresh[style='font-family: Calibri']
+p[style-name='Heading 3'] => h3:fresh[style='font-family: Calibri']
+
+# Character styles (apply when Word text uses named character styles)
+r[style-name='Calibri'] => span[style='font-family: Calibri']
+r[style-name='Times New Roman'] => span[style='font-family: "Times New Roman"']
