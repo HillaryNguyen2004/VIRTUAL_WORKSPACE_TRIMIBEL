@@ -5,6 +5,7 @@ namespace App\Providers;
 // use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -15,8 +16,7 @@ class AuthServiceProvider extends ServiceProvider
      */
     protected $policies = [
         // 'App\Models\Model' => 'App\Policies\ModelPolicy',
-            \App\Models\User::class => \App\Policies\UserPolicy::class,
-            \App\Models\Document::class => \App\Policies\DocumentPolicy::class,
+        \App\Models\User::class => \App\Policies\UserPolicy::class,
     ];
 
     /**
@@ -27,12 +27,33 @@ class AuthServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->registerPolicies();
-        Gate::before(function ($user, $ability) {
-            if ($user->hasRole('admin')) {
-                return true; // admin can do everything
+
+        Gate::before(function ($user, string $ability) {
+            // Only apply to dotted permission strings (e.g. 'staff.substaff.create')
+            // Skip policy method names like 'assignRole', 'syncPermissions', etc.
+            if (!str_contains($ability, '.')) {
+                return null; // let the policy / Spatie handle it normally
             }
-            return null;
+
+            // Only apply department-based permissions to user/staff
+            $role = $user->roles()->select('id', 'name')->first();
+            if (!$role || !in_array($role->name, ['user', 'staff'], true)) {
+                return null; // fallback to Spatie normal behavior
+            }
+
+            if (empty($user->department_id)) {
+                return false;
+            }
+
+            // department_role_permissions is the source of truth for user/staff
+            $allowed = DB::table('department_role_permissions as drp')
+                ->join('permissions as p', 'p.id', '=', 'drp.permission_id')
+                ->where('drp.department_id', $user->department_id)
+                ->where('drp.role_id', $role->id)     // role_id
+                ->where('p.name', $ability)
+                ->exists();
+
+            return $allowed; // overrides @can()
         });
-        //
     }
 }
