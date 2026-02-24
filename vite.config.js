@@ -10,6 +10,7 @@ export default defineConfig({
             input: [
                 "resources/css/app.css",
                 "resources/js/app.js",
+                "resources/js/online_docs/editor.js",
                 // "resources/js/vendor/jquery.js",
                 // "resources/js/vendor/bootstrap.js",
                 // "resources/js/vendor/jquery-easing.js",

@@ -62,6 +62,8 @@ return [
     'whiteboard' => 'Whiteboard',
     'team_progress' => 'Team Progress',
     'calendar' => 'Calendar',
+    'online_documents' => 'Online Documents',
+    'online_documents_desc' => 'A single hub for Docs, Excel, and PowerPoint.',
 
     'notifications' => 'Notifications',
     'no_new_notifications' => 'No new notifications',

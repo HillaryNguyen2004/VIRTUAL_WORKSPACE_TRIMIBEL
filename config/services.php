@@ -45,4 +45,6 @@ return [
     'face' => [
         'url' => env('FACE_SERVICE_URL'),
     ],
+
+    'node_binary' => env('NODE_BINARY', 'node'),
 ];
