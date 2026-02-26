@@ -2,6 +2,78 @@
 @tailwind components;
 @tailwind utilities;
 
+.tiptap-editor .ProseMirror {
+  min-height: 460px;
+  outline: none;
+  font-family: "Calibri", "Segoe UI", Arial, sans-serif;
+}
+
+.tiptap-editor .ProseMirror table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tiptap-editor .ProseMirror img {
+  max-width: 100%;
+  height: auto;
+}
+
+.tiptap-editor .ProseMirror th,
+.tiptap-editor .ProseMirror td {
+  padding: 8px;
+}
+
+.tiptap-editor .ProseMirror table.table-grid th,
+.tiptap-editor .ProseMirror table.table-grid td {
+  border: 1px solid #e2e8f0;
+}
+
+.tiptap-editor .ProseMirror table.table-light th,
+.tiptap-editor .ProseMirror table.table-light td {
+  border: 1px solid #e5e7eb;
+}
+
+.tiptap-editor .ProseMirror table.table-light th {
+  background: #f8fafc;
+}
+
+.tiptap-editor .ProseMirror table:not(.table-none):not(.table-light):not(.table-grid) th,
+.tiptap-editor .ProseMirror table:not(.table-none):not(.table-light):not(.table-grid) td {
+  border: 1px solid #e2e8f0;
+}
+
+.tiptap-editor .ProseMirror table.table-none th,
+.tiptap-editor .ProseMirror table.table-none td {
+  border: none;
+}
+
+.tiptap-editor .ProseMirror blockquote {
+  border-left: 4px solid #cbd5f5;
+  margin: 1rem 0;
+  padding-left: 1rem;
+  color: #4b5563;
+}
+
+.tiptap-editor .ProseMirror ul,
+.tiptap-editor .ProseMirror ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.tiptap-editor .ProseMirror ul {
+  list-style: disc;
+}
+
+.tiptap-editor .ProseMirror ol {
+  list-style: decimal;
+}
+
+.doc-toolbar-active {
+  background-color: rgba(83, 71, 204, 0.12);
+  border-color: rgba(83, 71, 204, 0.45);
+  color: #3a2dc1;
+}
+
 @layer utilities {
   @keyframes fade-in-up {
     from { opacity: 0; transform: translateY(12px); }

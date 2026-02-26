@@ -134,6 +134,20 @@
                     </x-nav-link>
                 </li>
 
+                <li>
+                    <x-nav-link href="{{ route('online-docs.docs') }}" :active="request()->routeIs('online-docs.*')"
+                        class="flex items-center gap-4 px-4 py-3 hover:bg-muted-50 rounded-xl cursor-pointer transition-colors group {{ request()->routeIs('online-docs.*') ? 'text-primary bg-primary/5' : 'text-muted-500' }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 transition-colors {{ request()->routeIs('online-docs.*') ? 'text-primary' : 'text-muted-400 group-hover:text-primary' }}" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14 3v5h5" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17h6" />
+                        </svg>
+                        <span class="hidden sm:inline font-medium">{{ __('app.online_documents') }}</span>
+                    </x-nav-link>
+                </li>
+
                 @if (auth()->user()->hasRole('user'))
                     <li>
                         <x-nav-link href="{{ route('team-progress') }}" :active="request()->routeIs('team-progress')"
