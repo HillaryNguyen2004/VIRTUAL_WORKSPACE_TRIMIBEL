@@ -142,6 +142,18 @@ class User extends Authenticatable implements MustVerifyEmail
             ->withTimestamps();
     }
 
+    public function ownedDocuments()
+    {
+        return $this->hasMany(Document::class, 'owner_id');
+    }
+
+    public function sharedDocuments()
+    {
+        return $this->belongsToMany(Document::class, 'document_shares')
+            ->withPivot('permission')
+            ->withTimestamps();
+    }
+
     public function delegatablePermissionNames(): array
     {
         return $this->getAllPermissions()->pluck('name')->values()->all();

@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\CheckInController;
 use App\Http\Controllers\FaceRegisterController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\WBOController;
+use App\Http\Controllers\OnlineDocumentController;
 
 // Route::group(['middleware' => ['web', 'core']], function () {
 //     include_once 'admin/user.php';
@@ -57,6 +58,18 @@ Route::get('/dashboard', function (UserRoleRedirectService $redirectService) {
 })->middleware(['auth'])->name('dashboard');
 
 Route::get('/user/dashboard', [DashboardController::class, 'user'])->name('user.dashboard')->middleware('auth');
+
+Route::middleware(['auth'])->prefix('online-docs')->name('online-docs.')->group(function () {
+    Route::get('/docs', [OnlineDocumentController::class, 'index'])->name('docs');
+    Route::post('/docs', [OnlineDocumentController::class, 'store'])->name('docs.store');
+    Route::get('/docs/{document}', [OnlineDocumentController::class, 'show'])->name('docs.show');
+    Route::put('/docs/{document}', [OnlineDocumentController::class, 'update'])->name('docs.update');
+    Route::post('/docs/{document}/import', [OnlineDocumentController::class, 'importDocx'])->name('docs.import');
+    Route::get('/docs/{document}/export', [OnlineDocumentController::class, 'exportDocx'])->name('docs.export');
+    Route::post('/docs/{document}/share', [OnlineDocumentController::class, 'share'])->name('docs.share');
+    Route::put('/docs/{document}/share', [OnlineDocumentController::class, 'updateShare'])->name('docs.share.update');
+    Route::delete('/docs/{document}/share', [OnlineDocumentController::class, 'removeShare'])->name('docs.share.remove');
+});
 
 Route::get('/dayoff/request', [DayOffController::class, 'create'])->name('dayoff.request');
 Route::post('/dayoff/request', [DayOffController::class, 'store'])->name('dayoff.request.store');
