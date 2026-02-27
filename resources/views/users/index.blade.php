@@ -20,7 +20,6 @@
         }
     @endphp
 
-    @if(auth()->user()->hasRole('admin') || auth()->user()->can('admin.users.view'))
     <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
         
         {{-- HEADER SECTION --}}
@@ -68,9 +67,10 @@
                     placeholder="user_management.all_roles"
                     :value="request('role')"
                     :options="[
-                        'admin' => __('user_management.admin_role'),
                         'staff' => __('user_management.staff_role'),
                         'user'  => __('user_management.user_role'),
+                        'subadmin' => __('user_management.subadmin_role'),
+                        'substaff' => __('user_management.substaff_role')
                     ]"
                 />
 
@@ -109,8 +109,8 @@
                 <table class="w-full table-fixed">
                     <thead class="bg-muted-50 border-b border-muted-200">
                         <tr>
-                            <th class="w-[5%] py-4 pl-6 pr-3 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">ID</th>
-                            <th class="w-[20%] py-4 px-3 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('user_management.username_column') }}</th>
+                            <th class="w-[20%] py-4 px-3 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('user_management.user_fullname_column') }}</th>
+                            <th class="w-[20%] py-4 pl-6 pr-3 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('user_management.user_username_column') }}</th>
                             <th class="w-[25%] py-4 px-3 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('user_management.email_column') }}</th>
                             <th class="w-[15%] py-4 px-3 text-center text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('user_management.role_column') }}</th>
                             <th class="w-[20%] py-4 pr-6 pl-3 text-right text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('user_management.actions_column') }}</th>
@@ -121,20 +121,16 @@
                         @forelse($users as $user)
                             @php
                                 $roles = $user->getRoleNames();
-                                $role = null;
-                                if ($roles->contains('admin')) $role = 'admin';
-                                elseif ($roles->contains('staff')) $role = 'staff';
-                                elseif ($roles->contains('user')) $role = 'user';
-                                elseif ($roles->contains('subadmin')) $role = 'subadmin';
-                                elseif ($roles->contains('substaff')) $role = 'substaff';
+                                $role = collect(['staff', 'user', 'subadmin', 'substaff'])
+                                    ->first(fn ($r) => $roles->contains($r));
+
                                 
-                                $isStaff = $role === 'staff';
+                                $isLeader = in_array($role, ['staff', 'substaff']);
                                 $teamLeader = $user->team_leader_id ? $users->firstWhere('id', $user->team_leader_id) : null;
-                                $teamMembers = isset($user) ? $users->filter(fn($u) => $u->team_leader_id === $user->id) : collect();
+                                $teamMembers = isset($user) ? $allUsers->filter(fn($u) => (int)$u->team_leader_id === (int)$user->id) : collect();
 
                                 // Badge Styles to match Index.blade pill styles
                                 $badgeClass = match($role) {
-                                    'admin' => 'bg-primary/10 text-primary ring-primary/20',
                                     'staff' => 'bg-secondary/10 text-secondary ring-secondary/20',
                                     'user' => 'bg-muted-100 text-muted-600 ring-muted-500/10',
                                     'subadmin' => 'bg-indigo-100 text-indigo-600 ring-indigo-500/20',
@@ -144,14 +140,14 @@
                             @endphp
 
                             <tr class="hover:bg-canvas transition-colors">
-                                {{-- Id --}}
-                                <td class="py-4 pl-6 pr-3 text-sm text-muted-500 truncate" title="{{ $user->id }}">
-                                    {{ $user->id }}
+                                {{-- Name --}}
+                                <td class="py-4 pl-6 px-3 text-sm font-medium text-main truncate" title="{{ $user->name }}">
+                                    {{ $user->name }}
                                 </td>
 
-                                {{-- Name --}}
-                                <td class="py-4 px-3 text-sm font-medium text-main truncate" title="{{ $user->name }}">
-                                    {{ $user->name }}
+                                {{-- Username --}}
+                                <td class="py-4 pl-6 pr-3 text-sm text-muted-500 truncate" title="{{ $user->username }}">
+                                    {{ $user->username }}
                                 </td>
 
                                 {{-- Email --}}
@@ -169,6 +165,15 @@
                                 {{-- Actions --}}
                                 <td class="py-4 pr-6 pl-3 text-right">
                                     <div class="flex items-center justify-end gap-1">
+                                        {{-- Permission for subadmin --}}
+                                        @if($user->hasRole('subadmin'))
+                                            <a href="{{ route('admin.subadmins.permissions.edit', $user) }}" class="p-1.5 rounded-lg text-muted-400 hover:bg-primary/5 hover:text-primary transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 fill-current">
+                                                    <path d="M256.1 312C322.4 312 376.1 258.3 376.1 192C376.1 125.7 322.4 72 256.1 72C189.8 72 136.1 125.7 136.1 192C136.1 258.3 189.8 312 256.1 312zM226.4 368C127.9 368 48.1 447.8 48.1 546.3C48.1 562.7 61.4 576 77.8 576L274.3 576L285.2 521.5C289.5 499.8 300.2 479.9 315.8 464.3L383.1 397C355.1 378.7 321.7 368.1 285.7 368.1L226.3 368.1zM332.3 530.9L320.4 590.5C320.2 591.4 320.1 592.4 320.1 593.4C320.1 601.4 326.6 608 334.7 608C335.7 608 336.6 607.9 337.6 607.7L397.2 595.8C409.6 593.3 421 587.2 429.9 578.3L548.8 459.4L468.8 379.4L349.9 498.3C341 507.2 334.9 518.6 332.4 531zM600.1 407.9C622.2 385.8 622.2 350 600.1 327.9C578 305.8 542.2 305.8 520.1 327.9L491.3 356.7L571.3 436.7L600.1 407.9z"/>
+                                                </svg>
+                                            </a>
+                                        @endif
+
                                         {{-- View: toggle details row --}}
                                         <button type="button" class="toggle-row p-1.5 rounded-lg text-muted-400 hover:bg-primary/5 hover:text-primary transition-colors"
                                             id="view-btn-{{ $user->id }}" data-target="taskDetails{{ $user->id }}"
@@ -184,7 +189,8 @@
                                             title="{{ __('tasks.edit') }}"
                                             data-user-id="{{ $user->id }}"
                                             data-user-name="{{ $user->name }}"
-                                            data-user-role="{{ $role ?? 'user' }}">
+                                            data-user-role="{{ $role ?? 'user' }}"
+                                            data-has-leader="{{ !empty($user->team_leader_id) ? 'true' : 'false' }}">
                                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 fill-current">
                                                 <path d="M535.6 85.7C513.7 63.8 478.3 63.8 456.4 85.7L432 110.1L529.9 208L554.3 183.6C576.2 161.7 576.2 126.3 554.3 104.4L535.6 85.7zM236.4 305.7C230.3 311.8 225.6 319.3 222.9 327.6L193.3 416.4C190.4 425 192.7 434.5 199.1 441C205.5 447.5 215 449.7 223.7 446.8L312.5 417.2C320.7 414.5 328.2 409.8 334.4 403.7L496 241.9L398.1 144L236.4 305.7zM160 128C107 128 64 171 64 224L64 480C64 533 107 576 160 576L416 576C469 576 512 533 512 480L512 384C512 366.3 497.7 352 480 352C462.3 352 448 366.3 448 384L448 480C448 497.7 433.7 512 416 512L160 512C142.3 512 128 497.7 128 480L128 224C128 206.3 142.3 192 160 192L256 192C273.7 192 288 177.7 288 160C288 142.3 273.7 128 256 128L160 128z" />
                                             </svg>
@@ -212,7 +218,7 @@
                             <tr id="taskDetails{{ $user->id }}" class="detail-row hidden bg-canvas">
                                 <td colspan="5" class="p-6 border-b border-muted-100 shadow-inner">
                                     <div class="grid md:grid-cols-2 gap-6">
-                                        @if($isStaff)
+                                        @if($isLeader)
                                             <div>
                                                 <strong class="text-sm font-bold text-main">{{ __('user_row.team_members_label') }}</strong>
                                                 <ul class="mt-2 space-y-2">
@@ -272,16 +278,11 @@
             </div>
         @endif
     </div>
-    @else
-    {{-- Show access denied message if user doesn't have permission --}}
-    <div class="flex items-center justify-center min-h-[400px]">
-        <div class="text-center">
-            <div class="inline-block p-4 rounded-full bg-danger/10 text-danger mb-4">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-            </div>
-            <h4 class="text-xl font-bold text-main">{{ __('user_dashboard.no_permission') ?? 'Access Denied' }}</h4>
-            <p class="text-muted-500 mt-2">You do not have permission to view user management.</p>
-        </div>
-    </div>
-    @endif
+
+    @push('scripts')
+        <script>
+            window.availableUsers = @json($availableUsers ?? []);
+            window.teamMembersByStaff = @json($teamMembersByStaff ?? []);
+        </script>
+    @endpush
 @endsection

@@ -47,29 +47,30 @@ class UserController extends Controller
         $users = $this->userRepo->filterUsers($request->filters());
         $allUsers = User::all();
 
-        $availableUsers = [];
-        foreach ($allUsers as $staff) {
-            if ($staff->hasRole('staff')) {
-                $availableUsers[$staff->id] = $allUsers
-                    ->filter(
-                        fn($u) =>
-                        $u->hasRole('user') &&
-                        !$u->hasRole('admin') &&
-                        !$u->hasRole('staff') &&
-                        $u->id !== $staff->id &&
-                        ($u->team_leader_id === null || $u->team_leader_id == 0 || $u->team_leader_id == '')
-                    )
-                    ->values()
-                    ->map(fn($u) => ['id' => $u->id, 'name' => $u->name])
-                    ->all();
-            }
-        }
+        // Group potential members (only 'user' role can be teammates)
+        $potentialMembers = $allUsers->filter(fn($u) => $u->hasRole('user'));
 
+        $availableUsers = [];
         $teamMembersByStaff = [];
-        foreach ($allUsers as $staff) {
-            if ($staff->hasRole('staff')) {
-                $teamMembersByStaff[$staff->id] = $allUsers
-                    ->filter(fn($u) => $u->hasRole('user') && (int) $u->team_leader_id === (int) $staff->id)
+
+        foreach ($allUsers as $person) {
+            $isLeaderRole = $person->hasRole(['staff', 'substaff']);
+
+            // 1. Available users for this person (potential leader)
+            $availableUsers[$person->id] = $potentialMembers
+                ->filter(
+                    fn($u) =>
+                    $u->id !== $person->id &&
+                    (empty($u->team_leader_id) || (int) $u->team_leader_id === (int) $person->id)
+                )
+                ->values()
+                ->map(fn($u) => ['id' => $u->id, 'name' => $u->name])
+                ->all();
+
+            // 2. Current team members (if they are a leader)
+            if ($isLeaderRole) {
+                $teamMembersByStaff[$person->id] = $allUsers
+                    ->filter(fn($u) => (int) $u->team_leader_id === (int) $person->id)
                     ->values()
                     ->map(fn($u) => ['id' => $u->id, 'name' => $u->name])
                     ->all();

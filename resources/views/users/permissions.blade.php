@@ -66,12 +66,12 @@
                 </p>
             </div>
 
-            @can('admin.roles.view')
+            <!-- @can('admin.roles.view')
                 <a href="{{ route('admin.subadmins.index') }}"
                     class="px-3 py-2 text-sm rounded-xl border border-muted-200 bg-white hover:bg-muted-50 transition">
                     Create subadmin
                 </a>
-            @endcan
+            @endcan -->
         </div>
 
         {{-- SUCCESS ALERT --}}

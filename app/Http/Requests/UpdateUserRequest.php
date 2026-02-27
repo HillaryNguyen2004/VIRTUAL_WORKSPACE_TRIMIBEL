@@ -15,7 +15,7 @@ class UpdateUserRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'role' => 'required|in:user,staff,admin',
+            'role' => 'required|in:user,staff,admin,subadmin,substaff',
             'team_members' => 'nullable|array',
             'team_members.*' => 'nullable|exists:users,id',
         ];
