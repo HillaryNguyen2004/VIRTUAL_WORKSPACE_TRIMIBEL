@@ -7,27 +7,24 @@
     <div class="mb-10 ">
         <div class="md:flex md:items-center md:justify-between mb-6">
             <div class="flex-1 min-w-0">
-                <h2 class="text-2xl font-bold leading-7 text-main sm:text-3xl sm:truncate tracking-tight">
+                <h1 class="font-semibold text-2xl md:text-3xl text-main tracking-tight">
                     {{ __('video_chat.title') }}
-                </h2>
-                <p class="mt-1 text-sm text-muted-500">
+                </h1>
+                <p class="text-muted-500 text-sm md:text-base mt-1">
                     {{ __('video_chat.subtitle') }}
                 </p>
             </div>
         </div>
 
-        <div class="bg-white border border-muted-200 shadow-sm rounded-2xl overflow-hidden relative animate-fade-in-up">
-            {{-- Decorative blurry blob --}}
-            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-secondary/10 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
-
+        <div class="bg-white border border-muted-300 rounded-2xl overflow-hidden relative animate-fade-in-up">
             <div class="p-8">
                 <div class="grid grid-cols-1 @4xl:grid-cols-2 gap-10 items-center relative z-10">
                     
                     {{-- Join Section --}}
                     <div class="flex flex-col gap-4">
                         <div>
-                            <h3 class="text-lg font-semibold text-main">{{ __('video_chat.join_section_title') }}</h3>
-                            <p class="text-sm text-muted-500">{{ __('video_chat.join_section_desc') }}</p>
+                            <h4 class="text-md md:text-lg font-semibold text-main">{{ __('video_chat.join_section_title') }}</h4>
+                            <p class="text-muted-500 text-xs md:text-sm mt-1">{{ __('video_chat.join_section_desc') }}</p>
                         </div>
                         
                         <form method="post" action="{{ route('validateMeeting') }}">
@@ -54,13 +51,13 @@
                     {{-- Create Section --}}
                     <div class="flex flex-row @4xl:flex-col justify-between items-start border-t @4xl:border-t-0 @4xl:border-l border-muted-200 @4xl:pl-10 pt-8 @4xl:pt-0">
                         <div class="mb-4 text-left">
-                            <h3 class="text-lg font-semibold text-main">{{ __('video_chat.create_section_title') }}</h3>
-                            <p class="text-sm text-muted-500">{{ __('video_chat.create_section_desc') }}</p>
+                            <h4 class="text-md md:text-lg font-semibold text-main">{{ __('video_chat.create_section_title') }}</h4>
+                            <p class="text-muted-500 text-xs md:text-sm mt-1">{{ __('video_chat.create_section_desc') }}</p>
                         </div>
                         
                         <form method="post" action="{{ route('createMeeting') }}" class="w-auto">
                             {{ csrf_field() }}
-                            <button type="submit" class="group w-auto inline-flex justify-center items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-primary/25 text-white bg-primary hover:bg-primary-hover focus:outline-none focus:ring-4 focus:ring-primary/20 transition-all active:scale-95">
+                            <button type="submit" class="group flex items-center justify-center gap-2 rounded-xl bg-primary-gradient px-6 py-3 text-white text-md md:text-base font-semibold shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover focus:ring-4 focus:ring-primary/30 active:scale-95">
                                 {{-- Icon --}}
                                 <svg class=" mr-2 -ml-1 h-5 w-5 group-hover:scale-110 transition-transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -77,19 +74,16 @@
 
     {{-- History Section --}}
     <div class="flex items-center justify-between mb-6 animate-fade-in-up [animation-delay:150ms]">
-        <h3 class="text-xl font-bold text-main tracking-tight">{{ __('video_chat.recent_meetings_title') }}</h3>
+        <h4 class="text-md md:text-lg font-semibold text-main">{{ __('video_chat.recent_meetings_title') }}</h4>
         
-        <a href="{{ route('meetings.history') }}" class="text-sm font-medium text-primary hover:text-primary-hover flex items-center gap-1 group transition-colors">
+        <a href="{{ route('meetings.history') }}" class="text-xs md:text-sm text-primary font-medium hover:underline transition-colors">
             {{ __('video_chat.view_all_history') }}
-            <svg class="h-4 w-4 transform group-hover:translate-x-1 transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-            </svg>
         </a>
     </div>
 
     <div class="grid grid-cols-1 @2xl:grid-cols-2 @5xl:grid-cols-3 gap-6 animate-fade-in-up [animation-delay:200ms]">
         @forelse($meetingHistory->take(4) as $meeting)
-        <div class="bg-white rounded-2xl shadow-sm border border-muted-200 hover:shadow-md hover:border-primary/30 transition-all duration-300 flex flex-col h-full group">
+        <div class="bg-white rounded-2xl border border-muted-300 hover:border-primary/30 transition-all duration-300 flex flex-col h-full group">
             
             {{-- Card Header --}}
             <div class="px-6 py-5 border-b border-muted-100 flex justify-between items-start">

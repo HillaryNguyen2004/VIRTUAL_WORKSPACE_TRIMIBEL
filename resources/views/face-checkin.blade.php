@@ -2,9 +2,25 @@
 @section('title', 'Face Recognition Check-in')
 
 @section('content')
+    @php
+        use Illuminate\Support\Facades\Route;
+
+        // Determine dashboard route based on role
+        $dashRoute = 'user.dashboard';
+        if (auth()->user()->hasRole('admin') && Route::has('admin.dashboard')) {
+            $dashRoute = 'admin.dashboard';
+        } elseif (auth()->user()->hasRole('subadmin') && Route::has('subadmin.dashboard')) {
+            $dashRoute = 'subadmin.dashboard';
+        } elseif (auth()->user()->hasRole('staff') && Route::has('staff.dashboard')) {
+            $dashRoute = 'staff.dashboard';
+        } elseif (auth()->user()->hasRole('substaff') && Route::has('substaff.dashboard')) {
+            $dashRoute = 'substaff.dashboard';
+        }
+    @endphp
     <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
 
-        <div class="flex flex-col gap-4 @2xl:flex-row @2xl:justify-between @2xl:items-center w-full">
+        <div class="flex flex-col gap-4 @2xl:flex-row @2xl:items-center w-full">
+            @include('components.back-btn' , ['route' => $dashRoute])
             <div>
                 <h2 class="font-bold text-3xl text-main tracking-tight">
                     @if($checkType === 'checkin')
@@ -15,12 +31,6 @@
                 </h2>
                 <p class="text-muted-500 text-sm mt-1">Position your face inside the circle for verification</p>
             </div>
-
-            <a href="{{ route('user.dashboard') }}"
-                class="group flex items-center justify-center gap-2 rounded-xl bg-muted-100 px-4 py-2 text-muted-600 font-medium hover:bg-muted-200 transition-colors">
-                <i class="fas fa-arrow-left"></i>
-                Back to Dashboard
-            </a>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

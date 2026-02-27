@@ -23,12 +23,8 @@
 
         <div class="grid grid-cols-1 @4xl:grid-cols-12 gap-6 w-full">
             
+            {{-- Attendance Check --}}
             <div class="@4xl:col-span-5 flex flex-col justify-between h-full min-h-[320px] bg-primary-gradient border-muted-200 shadow-xl shadow-primary/20 rounded-2xl p-6 relative overflow-hidden group">
-                
-                {{-- Decorative Background: Subtle Tech Pattern --}}
-                <!-- <div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 transition-all duration-700 group-hover:bg-primary/10"></div>
-                <div class="absolute bottom-0 left-0 w-24 h-24 bg-accent/5 rounded-full blur-2xl -ml-12 -mb-12"></div> -->
-
                 {{-- Header: Title + Live Status --}}
                 <div class="relative z-10 flex justify-between items-start">
                     <div class="flex justify-between w-full">
@@ -158,7 +154,7 @@
                     <div class="@2xl:col-span-1 @4xl:col-span-2 bg-white border border-muted-300 hover:border-primary/30 transition-colors rounded-2xl p-6 flex flex-col items-center text-center">
                         <div class="relative my-auto">
                             <div class="absolute inset-0 bg-primary/20 rounded-full blur-lg opacity-50"></div>
-                            <img src="/img/undraw_profile_2.svg" alt="leader_avatar" class="relative w-24 h-24 rounded-full ring ring-muted-200 ring-offset-8 object-cover">
+                            <img src="{{ $teamLeader->user_profile_photo ?? '/img/undraw_profile_2.svg' }}" alt="leader_avatar" class="relative w-24 h-24 rounded-full ring ring-muted-200 ring-offset-8 object-cover">
                         </div>
                         
                         <div class="py-4">

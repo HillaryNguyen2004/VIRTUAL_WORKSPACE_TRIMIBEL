@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\DayOffController;
@@ -10,7 +11,7 @@ use App\Http\Controllers\UserController;
 
 // Route::get('/tasks/staff', [TaskController::class, 'staffTasks'])->name('tasks.staff');
 Route::middleware(['auth', 'role:staff|substaff'])->group(function () {
-    Route::get('/staff/dashboard', [TaskController::class, 'upcomingTasks'])
+    Route::get('/staff/dashboard', [DashboardController::class, 'upcomingTasks'])
         ->middleware('admin_or_permission:staff.dashboard.view')
         ->name('staff.dashboard');
     Route::get('/staff/tasks', [TaskController::class, 'index'])->name('tasks.staff.index');

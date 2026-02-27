@@ -412,8 +412,7 @@ Route::get('/subadmin/dashboard', [AdminDashboardController::class, 'index'])
 
 Route::resource('holidays', HolidayController::class);
 
-// Route::get('/staff/dashboard', [TaskController::class, 'upcomingTasks'])->middleware(['auth', 'permission:staff.dashboard.view|role:staff'])->name('staff.dashboard');
-Route::get('/substaff/dashboard', [TaskController::class, 'substaffDashboard'])
+Route::get('/substaff/dashboard', [DashboardController::class, 'substaffDashboard'])
     ->middleware(['auth', 'permission:staff.dashboard.view'])
     ->name('substaff.dashboard');
 

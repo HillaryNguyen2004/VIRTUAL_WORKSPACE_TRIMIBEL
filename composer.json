@@ -2,17 +2,21 @@
     "name": "laravel/laravel",
     "type": "project",
     "description": "The Laravel Framework.",
-    "keywords": ["framework", "laravel"],
+    "keywords": [
+        "framework",
+        "laravel"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.2",
         "ext-gd": "*",
         "ext-zip": "*",
+        "google/apiclient": "^2.19",
         "guzzlehttp/guzzle": "^7.2",
-        "intervention/image": "2.7",
+        "intervention/image": "^2.7",
         "laravel/framework": "^9.19",
         "laravel/sanctum": "^3.0",
-        "laravel/socialite": "^5.21",
+        "laravel/socialite": "^5.24",
         "laravel/tinker": "^2.7",
         "maatwebsite/excel": "^1.1",
         "nguyen_nguyen/company-hour": "*",
@@ -77,14 +81,13 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "repositories": [
-    {
-        "type": "path",
-        "url": "packages/Nguyen_Nguyen/CompanyHour"
-    },
-    {
-        "type": "composer",
-        "url": "https://repo.packagist.org"
-    }
+        {
+            "type": "path",
+            "url": "packages/Nguyen_Nguyen/CompanyHour"
+        },
+        {
+            "type": "composer",
+            "url": "https://repo.packagist.org"
+        }
     ]
-
 }

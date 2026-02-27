@@ -5,28 +5,29 @@
 <div class="@container flex w-full overflow-hidden h-[calc(100vh-4rem)] text-main relative transition-all">
     
     {{-- LEFT PANE: Sidebar / Controls --}}
-    <div id="calendarSidebar" class="hidden @4xl:flex w-[85%] max-w-sm @4xl:w-[28%] @4xl:max-w-none h-screen @4xl:h-full overflow-y-auto border-r border-muted-200 flex-col shrink-0 bg-white z-50 @4xl:z-0 custom-scrollbar shadow-xl @4xl:shadow-sm fixed @4xl:relative left-0 top-0">
+    <div id="calendarSidebar" class="hidden @4xl:flex w-[85%] max-w-sm @4xl:w-[28%] @4xl:max-w-none h-full @4xl:h-full overflow-y-auto border-r border-muted-200 flex-col shrink-0 bg-white z-40 @4xl:z-0 custom-scrollbar shadow-md absolute @4xl:relative left-0 top-0">
         
         {{-- Header Section --}}
-        <div class="px-6 py-6 border-b border-muted-200">
+        <div class="flex flex-col px-6 py-8 border-b border-muted-200 gap-4">
+            {{-- Mobile close button --}}
             <div class="md:flex md:items-center md:justify-between">
             <div class="flex-1 min-w-0">
-                {{-- Updated text-main (#070416) --}}
-                <h2 class="text-2xl font-bold leading-7 text-main sm:text-3xl sm:truncate tracking-tight">
-                    {{ __('calendar.title') }}
-                </h2>
-                {{-- Updated text-muted-500 (#6B7280) --}}
-                <p class="mt-1 text-sm text-muted-500">
-                    {{ __('calendar.subtitle') }}
-                </p>
-
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h1 class="font-semibold text-2xl md:text-3xl text-main">{{ __('calendar.title') }}</h1>
+                        <p class="text-muted-500 text-sm md:text-base mt-1">{{ __('calendar.subtitle') }}</p>
+                    </div>
+                    <button id="closeSidebarBtn" class="@4xl:hidden p-2 rounded-lg text-muted-400 hover:bg-muted-100 hover:text-main transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
                 {{-- Action Button --}}
                 <div class="mt-6">
                     @if(auth()->user()->is_google_connected)
                         {{-- CONNECTED STATE --}}
                         <div class="flex items-center justify-center gap-2 rounded-xl bg-green-50 border border-green-200 w-full py-2.5 text-green-700 font-medium">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                            <span class="text-sm">Google Calendar Synced</span>
+                            <span class="text-sm">{{ __('calendar.google_synced') }}</span>
                         </div>
                     @else
                         {{-- DISCONNECTED STATE --}}
@@ -42,70 +43,68 @@
         </div>
 
         {{-- Mini Calendar --}}
-        <div class="px-6 py-2">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-sm font-bold text-main" id="miniCalendarTitle"></h3>
+        <div class="p-6 border-b">
+            <div class="flex justify-between items-center mb-2">
+                <h4 class="text-md md:text-lg font-semibold text-main" id="miniCalendarTitle"></h4>
                 <div class="flex gap-1">
                     <button id="miniPrevBtn" class="p-1 hover:bg-muted-100 rounded text-muted-500 transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
                     <button id="miniNextBtn" class="p-1 hover:bg-muted-100 rounded text-muted-500 transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
                 </div>
             </div>
-            <div class="grid grid-cols-7 gap-1 text-center text-xs mb-6">
-                <span class="text-muted-400 font-medium py-1">Mo</span>
-                <span class="text-muted-400 font-medium py-1">Tu</span>
-                <span class="text-muted-400 font-medium py-1">We</span>
-                <span class="text-muted-400 font-medium py-1">Th</span>
-                <span class="text-muted-400 font-medium py-1">Fr</span>
-                <span class="text-muted-400 font-medium py-1">Sa</span>
-                <span class="text-muted-400 font-medium py-1">Su</span>
+            <div class="grid grid-cols-7 gap-1 text-center text-xs">
+                <span class="text-muted-400 font-medium py-1">{{ __('calendar.day_mo') }}</span>
+                <span class="text-muted-400 font-medium py-1">{{ __('calendar.day_tu') }}</span>
+                <span class="text-muted-400 font-medium py-1">{{ __('calendar.day_we') }}</span>
+                <span class="text-muted-400 font-medium py-1">{{ __('calendar.day_th') }}</span>
+                <span class="text-muted-400 font-medium py-1">{{ __('calendar.day_fr') }}</span>
+                <span class="text-muted-400 font-medium py-1">{{ __('calendar.day_sa') }}</span>
+                <span class="text-muted-400 font-medium py-1">{{ __('calendar.day_su') }}</span>
                 <div id="miniCalendarDays" class="col-span-7 grid grid-cols-7 gap-1"></div>
             </div>
         </div>
-
-        <hr class="border-muted-200 mx-6">
 
         {{-- Filters List --}}
         <div class="flex-1 overflow-y-auto px-6 py-6 space-y-6">
             {{-- My Calendars --}}
             <div>
-                <div class="flex justify-between items-center mb-3 cursor-pointer group">
-                    <h3 class="text-sm font-bold text-main">Calendars</h3>
-                    <svg class="w-4 h-4 text-muted-400 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                <div class="flex justify-between items-center mb-3 cursor-pointer group" onclick="toggleCalendarsList()">
+                    <h4 class="text-md md:text-lg font-semibold text-main">{{ __('calendar.calendars') }}</h4>
+                    <svg id="calendars-toggle-icon" class="w-4 h-4 text-muted-400 group-hover:text-primary transition-colors transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
-                <ul class="space-y-3">
+                <ul id="calendars-list" class="space-y-3">
                     <li class="flex items-center gap-3">
                         <input type="checkbox" checked class="calendar-filter w-4 h-4 rounded border-muted-300 text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer" data-calendar="tasks">
-                        <span class="text-sm font-medium text-main">Khoa Beu</span>
+                        <span class="text-sm font-medium text-main">{{ __('calendar.my_calendar') }}</span>
                     </li>
                     <li class="flex items-center gap-3">
                         {{-- CHANGE 'daily-sync' TO 'google' HERE --}}
                         <input type="checkbox" checked class="calendar-filter w-4 h-4 rounded border-muted-300 text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer" data-calendar="google">
-                        <span class="text-sm font-medium text-main">Google Calendar</span>
+                        <span class="text-sm font-medium text-main">{{ __('calendar.google_calendar') }}</span>
                     </li>
                 </ul>
             </div>
 
             {{-- Categories --}}
             <div>
-                <div class="flex justify-between items-center mb-3 cursor-pointer group">
-                    <h3 class="text-sm font-bold text-main">Categories</h3>
-                    <svg class="w-4 h-4 text-muted-400 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                <div class="flex justify-between items-center mb-3 cursor-pointer group" onclick="toggleCategoriesList()">
+                    <h4 class="text-md md:text-lg font-semibold text-main">{{ __('calendar.categories') }}</h4>
+                    <svg id="categories-toggle-icon" class="w-4 h-4 text-muted-400 group-hover:text-primary transition-colors transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
-                <ul class="space-y-3">
+                <ul id="categories-list" class="space-y-3">
                     <li class="flex items-center gap-3 group cursor-pointer category-filter-item" data-category="tasks">
                         <input type="checkbox" checked class="category-filter w-4 h-4 rounded border-muted-300 text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer" data-category="tasks">
                         <div class="w-2.5 h-2.5 rounded-full bg-primary ring-2 ring-transparent group-hover:ring-primary/20 transition-all"></div>
-                        <span class="text-sm font-medium text-main">Tasks</span>
+                        <span class="text-sm font-medium text-main">{{ __('calendar.cat_tasks') }}</span>
                     </li>
                     <li class="flex items-center gap-3 group cursor-pointer category-filter-item" data-category="meeting">
                         <input type="checkbox" checked class="category-filter w-4 h-4 rounded border-muted-300 text-accent focus:ring-accent focus:ring-offset-0 cursor-pointer" data-category="meeting">
                         <div class="w-2.5 h-2.5 rounded-full bg-accent ring-2 ring-transparent group-hover:ring-accent/20 transition-all"></div>
-                        <span class="text-sm font-medium text-main">Meeting</span>
+                        <span class="text-sm font-medium text-main">{{ __('calendar.cat_meeting') }}</span>
                     </li>
                     <li class="flex items-center gap-3 group cursor-pointer category-filter-item" data-category="other">
                         <input type="checkbox" checked class="category-filter w-4 h-4 rounded border-muted-300 text-secondary focus:ring-secondary focus:ring-offset-0 cursor-pointer" data-category="other">
                         <div class="w-2.5 h-2.5 rounded-full bg-secondary ring-2 ring-transparent group-hover:ring-secondary/20 transition-all"></div>
-                        <span class="text-sm font-medium text-main">Other</span>
+                        <span class="text-sm font-medium text-main">{{ __('calendar.cat_other') }}</span>
                     </li>
                 </ul>
             </div>
@@ -116,31 +115,29 @@
     <div class="flex-1 flex flex-col h-full overflow-hidden bg-white relative z-auto">
         
         {{-- Calendar Toolbar --}}
-        <div class="h-20 px-6 py-4 border-b border-muted-200 flex justify-between items-center bg-white shrink-0 shadow-sm">
-            <div class="flex items-center gap-4">
-                <button id="hamburgerBtn" class="@4xl:hidden p-2 rounded-lg text-muted-500 hover:bg-muted-100 transition-colors">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        <div class="px-4 @4xl:px-6 py-3 border-b border-muted-200 flex flex-wrap @xl:flex-nowrap justify-between items-center gap-y-2 bg-white shrink-0 shadow-sm">
+            {{-- Row 1 (left): Panel toggle + Date title --}}
+            <div class="flex items-center gap-2 w-full @xl:w-auto">
+                <button id="leftPanelBtn" class="@4xl:hidden p-2 rounded-lg text-muted-400 hover:bg-primary/5 hover:text-primary transition-colors shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-panel-left-icon lucide-panel-left w-5 h-5">
+                        <rect width="18" height="18" x="3" y="3" rx="2"/>
+                        <path d="M9 3v18"/>
+                    </svg>
                 </button>
-
-                <div>
-                    <h2 class="text-2xl font-bold text-main tracking-tight" id="calendarTitle"></h2>
-                    <!-- <div class="flex items-center gap-2 text-xs text-muted-500">
-                        <span class="inline-block w-2 h-2 rounded-full bg-primary"></span>
-                        <span id="currentDateDisplay">Today</span>
-                    </div> -->
-                </div>
+                <h2 class="text-xl md:text-2xl font-bold text-main tracking-tight leading-tight" id="calendarTitle"></h2>
             </div>
 
-            <div class="flex items-center gap-2">
+            {{-- Row 2 (right on large, full-width row on small): View switcher + Nav --}}
+            <div class="flex items-center gap-2 w-full @xl:w-auto justify-between @xl:justify-end">
                 <div class="flex bg-muted-100 rounded-lg p-1">
-                    <button class="px-3 py-1.5 text-xs font-bold rounded-md text-muted-500 hover:text-main transition-all" id="viewDay">Day</button>
-                    <button class="px-3 py-1.5 text-xs font-bold rounded-md bg-white text-main shadow-sm transition-all" id="viewWeek">Week</button>
-                    <button class="px-3 py-1.5 text-xs font-bold rounded-md text-muted-500 hover:text-main transition-all" id="viewMonth">Month</button>
+                    <button class="px-3 py-1.5 text-xs font-bold rounded-md text-muted-500 hover:text-main transition-all" id="viewDay">{{ __('calendar.view_day') }}</button>
+                    <button class="px-3 py-1.5 text-xs font-bold rounded-md bg-white text-main shadow-sm transition-all" id="viewWeek">{{ __('calendar.view_week') }}</button>
+                    <button class="px-3 py-1.5 text-xs font-bold rounded-md text-muted-500 hover:text-main transition-all" id="viewMonth">{{ __('calendar.view_month') }}</button>
                 </div>
 
-                <div class="flex gap-1 ml-2">
+                <div class="flex gap-1">
                     <button id="prevBtn" class="p-2 rounded-lg border border-muted-200 text-muted-500 hover:text-primary hover:border-primary/30 transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
-                    <button id="todayBtn" class="px-3 py-1.5 text-xs font-bold rounded-lg border border-muted-200 text-muted-500 hover:text-primary hover:border-primary/30 transition-all">Today</button>
+                    <button id="todayBtn" class="px-3 py-1.5 text-xs font-bold rounded-lg border border-muted-200 text-muted-500 hover:text-primary hover:border-primary/30 transition-all">{{ __('calendar.today') }}</button>
                     <button id="nextBtn" class="p-2 rounded-lg border border-muted-200 text-muted-500 hover:text-primary hover:border-primary/30 transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
                 </div>
             </div>
@@ -155,7 +152,7 @@
                 <div class="p-5 flex flex-col gap-4">
                     <div class="flex justify-between items-center pb-2 border-b border-muted-200">
                         {{-- Dynamic Title --}}
-                        <h3 class="text-base font-bold text-main" id="modalTitle">Add Event</h3>
+                        <h3 class="text-base font-bold text-main" id="modalTitle">{{ __('calendar.add_event') }}</h3>
                         <button id="close-modal" class="text-muted-400 hover:text-primary">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
@@ -166,7 +163,7 @@
 
                     {{-- Title Input --}}
                     <div>
-                        <input type="text" id="eventTitle" placeholder="New event title" class="w-full px-0 py-2 border-0 border-b border-muted-200 focus:ring-0 focus:border-primary text-lg font-medium placeholder-muted-300 text-main">
+                        <input type="text" id="eventTitle" placeholder="{{ __('calendar.event_title_placeholder') }}" class="w-full px-0 py-2 border-0 border-b border-muted-200 focus:ring-0 focus:border-primary text-lg font-medium placeholder-muted-300 text-main">
                     </div>
 
                     <div class="flex flex-col gap-3">
@@ -192,9 +189,9 @@
                         {{-- Category --}}
                         <div class="relative">
                             <select id="eventCategory" class="w-full p-3 bg-white rounded-xl border border-muted-200 text-sm text-muted-500 focus:ring-primary focus:border-primary appearance-none">
-                                <option value="tasks">Tasks</option>
-                                <option value="meeting">Meeting</option>
-                                <option value="other">Other</option>
+                                <option value="tasks">{{ __('calendar.cat_tasks') }}</option>
+                                <option value="meeting">{{ __('calendar.cat_meeting') }}</option>
+                                <option value="other">{{ __('calendar.cat_other') }}</option>
                             </select>
                             <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                 <svg class="w-4 h-4 text-muted-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -204,7 +201,7 @@
                         {{-- Meeting Link Input --}}
                         <div class="relative mt-3 group">
                             {{-- Left Icon / Button --}}
-                            <button type="button" id="copyMeetingBtn" class="absolute inset-y-0 left-0 pl-3 flex items-center text-muted-400 hover:text-primary transition-colors focus:outline-none z-10 cursor-pointer" title="Copy Meeting Link">
+                            <button type="button" id="copyMeetingBtn" class="absolute inset-y-0 left-0 pl-3 flex items-center text-muted-400 hover:text-primary transition-colors focus:outline-none z-10 cursor-pointer" title="{{ __('calendar.copy_meeting_link') }}">
                                 
                                 {{-- Default Link Icon --}}
                                 <svg id="iconLink" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -217,27 +214,27 @@
                                 </svg>
                             </button>
 
-                            <input type="url" id="meetingId" placeholder="Meeting ID or External URL" class="pl-10 w-full p-3 bg-muted-50 rounded-xl border border-muted-200 text-sm text-main focus:ring-primary focus:border-primary">
+                            <input type="url" id="meetingId" placeholder="{{ __('calendar.meeting_url_placeholder') }}" class="pl-10 w-full p-3 bg-muted-50 rounded-xl border border-muted-200 text-sm text-main focus:ring-primary focus:border-primary">
                         </div>
 
                         {{-- Recurrence Options --}}
                         <div class="mt-3 p-3 bg-muted-50 rounded-xl border border-muted-200">
-                            <label class="text-xs font-bold text-muted-500 uppercase tracking-wider mb-2 block">Repeat</label>
+                            <label class="text-xs font-bold text-muted-500 uppercase tracking-wider mb-2 block">{{ __('calendar.repeat') }}</label>
                             
                             <div class="flex gap-3 mb-3">
                                 <select id="recurrenceType" class="flex-1 p-2 bg-white rounded-lg border border-muted-200 text-sm focus:ring-primary">
-                                    <option value="none">Don't Repeat</option>
-                                    <option value="daily">Daily</option>
-                                    <option value="weekly">Weekly</option>
-                                    <option value="monthly">Monthly</option>
-                                    <option value="yearly">Yearly</option>
+                                    <option value="none">{{ __('calendar.no_repeat') }}</option>
+                                    <option value="daily">{{ __('calendar.daily') }}</option>
+                                    <option value="weekly">{{ __('calendar.weekly') }}</option>
+                                    <option value="monthly">{{ __('calendar.monthly') }}</option>
+                                    <option value="yearly">{{ __('calendar.yearly') }}</option>
                                 </select>
                                 
                                 {{-- Show 'Every X days/weeks' --}}
                                 <div id="recurrenceIntervalGroup" class="hidden flex items-center gap-2">
-                                    <span class="text-sm text-muted-500">Every</span>
+                                    <span class="text-sm text-muted-500">{{ __('calendar.every') }}</span>
                                     <input type="number" id="recurrenceInterval" value="1" min="1" class="w-16 p-2 bg-white rounded-lg border border-muted-200 text-sm text-center focus:ring-primary">
-                                    <span class="text-sm text-muted-500" id="intervalLabel">day(s)</span>
+                                    <span class="text-sm text-muted-500" id="intervalLabel">{{ __('calendar.daily') }}</span>
                                 </div>
                             </div>
 
@@ -245,12 +242,12 @@
                             <div id="recurrenceEndGroup" class="hidden space-y-2">
                                 <div class="flex items-center gap-2">
                                     <input type="radio" name="recurrenceEnd" value="never" id="endNever" checked class="text-primary focus:ring-primary">
-                                    <label for="endNever" class="text-sm text-main">Forever</label>
+                                    <label for="endNever" class="text-sm text-main">{{ __('calendar.recur_forever') }}</label>
                                 </div>
                                 
                                 <div class="flex items-center gap-2">
                                     <input type="radio" name="recurrenceEnd" value="date" id="endDateRadio" class="text-primary focus:ring-primary">
-                                    <label for="endDateRadio" class="text-sm text-main">Until Date:</label>
+                                    <label for="endDateRadio" class="text-sm text-main">{{ __('calendar.recur_until') }}</label>
                                     <input type="date" id="recurrenceEndDate" class="p-1 text-sm border border-muted-200 rounded disabled:opacity-50" disabled>
                                 </div>
                             </div>
@@ -262,12 +259,12 @@
                     <div class="flex justify-between pt-2">
                         {{-- Delete Button (Hidden by default) --}}
                         <button id="deleteEventBtn" class="hidden px-4 py-2 rounded-xl text-danger font-medium text-sm hover:bg-danger/10 transition-colors">
-                            Delete
+                            {{ __('calendar.delete') }}
                         </button>
                         
                         {{-- Save/Update Button --}}
                         <button id="saveEventBtn" class="ml-auto px-6 py-2 rounded-xl bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20 hover:bg-primary-hover transition-all active:scale-95">
-                            Save
+                            {{ __('calendar.save') }}
                         </button>
                     </div>
                 </div>
@@ -279,6 +276,23 @@
 
 {{-- Scripts --}}
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+<script>
+window._calendarI18n = {
+    add_event:      @json(__('calendar.add_event')),
+    edit_event:     @json(__('calendar.edit_event')),
+    save:           @json(__('calendar.save')),
+    update:         @json(__('calendar.update')),
+    delete_confirm: @json(__('calendar.confirm_delete')),
+    fill_required:  @json(__('calendar.fill_required')),
+    error_saving:   @json(__('calendar.error_saving')),
+    interval_labels: {
+        daily:   @json(__('calendar.daily')),
+        weekly:  @json(__('calendar.weekly')),
+        monthly: @json(__('calendar.monthly')),
+        yearly:  @json(__('calendar.yearly')),
+    },
+};
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
@@ -408,7 +422,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 2. Handle Creating New Event (Select)
         select: function(info) {
-            resetModal('Add Event');
+            resetModal(_calendarI18n.add_event);
             
             if (info.allDay) {
                 // Handle All Day selection (YYYY-MM-DD from startStr)
@@ -451,7 +465,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // 2. FOR EVERYTHING ELSE (Internal Events) -> OPEN MODAL
-            resetModal('Edit Event');
+            resetModal(_calendarI18n.edit_event);
             
             const event = info.event;
             const start = event.start;
@@ -516,7 +530,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Show Delete Button
             deleteBtn.classList.remove('hidden');
-            saveBtn.textContent = 'Update'; // Change button text
+            saveBtn.textContent = _calendarI18n.update;
             
             modal.classList.remove('hidden');
         },
@@ -550,7 +564,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('meetingId').value = '';
         document.getElementById('eventCategory').value = 'tasks';
         deleteBtn.classList.add('hidden'); // Hide delete by default
-        saveBtn.textContent = 'Save';
+        saveBtn.textContent = _calendarI18n.save;
     }
 
     // Helper: Format Time HH:mm
@@ -569,7 +583,7 @@ document.addEventListener('DOMContentLoaded', function() {
             recurIntervalGroup.classList.remove('hidden');
             recurEndGroup.classList.remove('hidden');
             // Update label (e.g., "weeks")
-            const map = { daily: 'day(s)', weekly: 'week(s)', monthly: 'month(s)', yearly: 'year(s)' };
+            const map = { daily: _calendarI18n.interval_labels.daily, weekly: _calendarI18n.interval_labels.weekly, monthly: _calendarI18n.interval_labels.monthly, yearly: _calendarI18n.interval_labels.yearly };
             intervalLabel.textContent = map[this.value];
         }
     });
@@ -591,7 +605,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const category = document.getElementById('eventCategory').value;
         const meetingId = document.getElementById('meetingId').value;
 
-        if(!title || !datePart || !startTime) return alert('Fill required fields');
+        if(!title || !datePart || !startTime) return alert(_calendarI18n.fill_required);
 
         const fullStart = `${datePart} ${startTime}:00`;
         const fullEnd = `${datePart} ${endTime}:00`;
@@ -639,7 +653,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 modal.classList.add('hidden');
                 calendar.refetchEvents();
             } else {
-                alert('Error saving');
+                alert(_calendarI18n.error_saving);
             }
         });
     });
@@ -647,7 +661,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // DELETE BUTTON CLICK
     deleteBtn.addEventListener('click', function() {
         const id = eventIdInput.value;
-        if(!id || !confirm('Are you sure you want to delete this event?')) return;
+        if(!id || !confirm(_calendarI18n.delete_confirm)) return;
 
         fetch("{{ route('calendar.destroy') }}", {
             method: "DELETE",
@@ -837,38 +851,50 @@ document.addEventListener('DOMContentLoaded', function() {
     renderMiniCalendar();
 
     // Mobile Sidebar Toggle
-    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const leftPanelBtn = document.getElementById('leftPanelBtn');
     const sidebar = document.getElementById('calendarSidebar');
     
-    if (hamburgerBtn && sidebar) {
-        // Create overlay backdrop
-        const overlay = document.createElement('div');
-        overlay.id = 'sidebarOverlay';
-        overlay.className = 'fixed inset-0 bg-black/30 z-40 hidden @4xl:hidden';
-        document.body.appendChild(overlay);
-        
-        // Toggle sidebar
-        hamburgerBtn.addEventListener('click', function() {
-            const isHidden = sidebar.classList.contains('hidden');
-            if (isHidden) {
-                sidebar.classList.remove('hidden');
-                sidebar.classList.add('flex');
-                overlay.classList.remove('hidden');
-            } else {
-                sidebar.classList.add('hidden');
-                sidebar.classList.remove('flex');
-                overlay.classList.add('hidden');
-            }
-        });
-        
-        // Close sidebar when clicking overlay
-        overlay.addEventListener('click', function() {
+    if (leftPanelBtn && sidebar) {
+        function closeSidebar() {
             sidebar.classList.add('hidden');
             sidebar.classList.remove('flex');
-            overlay.classList.add('hidden');
+        }
+
+        function openSidebar() {
+            sidebar.classList.remove('hidden');
+            sidebar.classList.add('flex');
+        }
+
+        leftPanelBtn.addEventListener('click', function() {
+            if (sidebar.classList.contains('hidden')) {
+                openSidebar();
+            } else {
+                closeSidebar();
+            }
         });
+
+        const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+        if (closeSidebarBtn) {
+            closeSidebarBtn.addEventListener('click', closeSidebar);
+        }
     }
 });
+
+function toggleCalendarsList() {
+    const list = document.getElementById('calendars-list');
+    const icon = document.getElementById('calendars-toggle-icon');
+    if (!list || !icon) return;
+    const isCollapsed = list.classList.toggle('hidden');
+    icon.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+}
+
+function toggleCategoriesList() {
+    const list = document.getElementById('categories-list');
+    const icon = document.getElementById('categories-toggle-icon');
+    if (!list || !icon) return;
+    const isCollapsed = list.classList.toggle('hidden');
+    icon.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+}
 </script>
 
 {{-- STYLES: Now clean and minimal, only handling FullCalendar overrides --}}
