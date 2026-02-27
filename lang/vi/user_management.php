@@ -6,6 +6,8 @@ return [
     'all_roles' => 'Tất cả vai trò',
     'admin_role'=> 'Quản trị viên',
     'staff_role' => 'Nhân viên',
+    'subadmin_role' => 'Quản trị viên phụ',
+    'substaff_role' => 'Nhân viên phụ',
     'user_role' => 'Người dùng',
     'sort_label' => 'Sắp xếp',
     'sort_asc' => 'A → Z',

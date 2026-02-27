@@ -137,9 +137,11 @@
                 <li>
                     <x-nav-link href="{{ route('online-docs.docs') }}" :active="request()->routeIs('online-docs.*')"
                         class="flex items-center gap-4 px-4 py-3 hover:bg-muted-50 rounded-xl cursor-pointer transition-colors group {{ request()->routeIs('online-docs.*') ? 'text-primary bg-primary/5' : 'text-muted-500' }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 transition-colors {{ request()->routeIs('online-docs.*') ? 'text-primary' : 'text-muted-400 group-hover:text-primary' }}" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                            class="w-5 h-5 transition-colors {{ request()->routeIs('online-docs.*') ? 'text-primary' : 'text-muted-400 group-hover:text-primary' }}"
+                            fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="M14 3v5h5" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 17h6" />
@@ -404,9 +406,14 @@
     {{-- edit phase dialog --}}
     <x-phases.edit-dialog />
 
-    @isset($user)
-        @include('users.update', ['users' => $users ?? collect()])
-    @endisset
+    @if(request()->routeIs('admin.users.index'))
+        @include('users.update', [
+            'users' => $users ?? collect(),
+            'allUsers' => $allUsers ?? collect(),
+            'user' => isset($users) && $users->count() > 0 ? $users->first() : (auth()->user() ?? null)
+        ])
+    @endif
+
     @include('edit_company_hours_dialog')
 
     {{-- Bundled libs are loaded via Vite app bundle; removed CDN scripts to avoid Tracking Prevention issues --}}

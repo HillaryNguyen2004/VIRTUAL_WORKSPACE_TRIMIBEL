@@ -10,6 +10,7 @@
 <div class="w-full max-w-[1200px] mx-auto px-4 md:px-8 lg:px-16 xl:px-24 py-8 text-main">
 
     <div class="flex items-center justify-between gap-4 mb-6">
+        @include('components.back-btn', ['route' => 'admin.users.index'])
         <div>
             <h2 class="text-3xl font-bold tracking-tight">
                 Subadmin Permissions: {{ $user->name }}
@@ -18,11 +19,6 @@
                 Direct permissions only (each subadmin can be different).
             </p>
         </div>
-
-        <a href="{{ route('admin.subadmins.index') }}"
-           class="px-3 py-2 text-sm rounded-xl border border-muted-200 bg-white hover:bg-muted-50 transition">
-            Back
-        </a>
     </div>
 
     @if(session('success'))
