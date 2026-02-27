@@ -25,11 +25,14 @@ class UserService
         $originalRole = $user->getRoleNames()->first();
         $user->name = $data['name'];
 
-        if ($data['role'] === 'staff') {
+        if ($data['role'] === 'staff' || $data['role'] === 'substaff') {
             User::where('team_leader_id', $user->id)->update(['team_leader_id' => null]);
 
             if (!empty($data['team_members'])) {
-                User::whereIn('id', $data['team_members'])->update(['team_leader_id' => $user->id]);
+                $memberIds = array_filter($data['team_members'], fn($id) => !empty($id));
+                if (!empty($memberIds)) {
+                    User::whereIn('id', $memberIds)->update(['team_leader_id' => $user->id]);
+                }
             }
         } else {
             User::where('team_leader_id', $user->id)->update(['team_leader_id' => null]);
@@ -78,46 +81,46 @@ class UserService
     // }
 
     public function createUser(array $data): User
-{
-    $password = Hash::make(Str::random(12));
+    {
+        $password = Hash::make(Str::random(12));
 
-    // Generate unique username
-    $username = $this->generateUniqueUsername();
+        // Generate unique username
+        $username = $this->generateUniqueUsername();
 
-    $user = $this->userRepo->create([
-        'name'          => $data['name'],
-        'email'         => $data['email'],
-        'password'      => $password,
-        'department_id' => $data['department_id'] ?? null,
-        'team_leader_id'=> $data['team_leader_id'] ?? null,
-        'username'      => $username,
-    ]);
+        $user = $this->userRepo->create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => $password,
+            'department_id' => $data['department_id'] ?? null,
+            'team_leader_id' => $data['team_leader_id'] ?? null,
+            'username' => $username,
+        ]);
 
-    $user->assignRole($data['roles']);
+        $user->assignRole($data['roles']);
 
-    ActivityLog::create([
-        'user_id'    => Auth::id(), // admin performing the creation
-        'action'     => 'User Created',
-        'description'=> "Admin created a {$data['roles']} with ID {$user->id}, email {$user->email}, and username {$user->username}.",
-    ]);
+        ActivityLog::create([
+            'user_id' => Auth::id(), // admin performing the creation
+            'action' => 'User Created',
+            'description' => "Admin created a {$data['roles']} with ID {$user->id}, email {$user->email}, and username {$user->username}.",
+        ]);
 
-    return $user;
-}
+        return $user;
+    }
 
     /**
      * Generate a unique alphanumeric username.
      */
     private function generateUniqueUsername(): string
-{
-    do {
-        // Example: random string of 6–10 chars (letters + numbers, no special chars)
-        $username = Str::upper(Str::random(8)); 
-        // Or if you want "userX" pattern:
-        // $username = 'user' . (User::max('id') + 1);
-    } while (User::where('username', $username)->exists());
+    {
+        do {
+            // Example: random string of 6–10 chars (letters + numbers, no special chars)
+            $username = Str::upper(Str::random(8));
+            // Or if you want "userX" pattern:
+            // $username = 'user' . (User::max('id') + 1);
+        } while (User::where('username', $username)->exists());
 
-    return $username;
-}
+        return $username;
+    }
 
 
 }
