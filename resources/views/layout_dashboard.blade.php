@@ -148,30 +148,26 @@
                     </x-nav-link>
                 </li>
 
-                @if (auth()->user()->hasRole('user'))
-                    <li>
-                        <x-nav-link href="{{ route('team-progress') }}" :active="request()->routeIs('team-progress')"
-                            class="flex items-center gap-4 px-4 py-3 hover:bg-muted-50 rounded-xl cursor-pointer transition-colors group {{ request()->routeIs('team-progress') ? 'text-primary bg-primary/5' : 'text-muted-500' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg"
-                                class="w-5 h-5 transition-colors {{ request()->routeIs('team-progress') ? 'text-primary' : 'text-muted-400 group-hover:text-primary' }}"
-                                fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                            </svg>
-                            <span class="hidden sm:inline font-medium">{{ __('app.team_progress') }}</span>
-                        </x-nav-link>
-                    </li>
-                @endif
+                <!-- @if (auth()->user()->hasRole('user'))
+                <li>
+                    <x-nav-link href="{{ route('team-progress') }}" :active="request()->routeIs('team-progress')"
+                        class="flex items-center gap-4 px-4 py-3 hover:bg-muted-50 rounded-xl cursor-pointer transition-colors group {{ request()->routeIs('team-progress') ? 'text-primary bg-primary/5' : 'text-muted-500' }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 transition-colors {{ request()->routeIs('team-progress') ? 'text-primary' : 'text-muted-400 group-hover:text-primary' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                        <span class="hidden sm:inline font-medium">{{ __('app.team_progress') }}</span>
+                    </x-nav-link>
+                </li>
+                @endif -->
             </ul>
         </nav>
         <div class="hidden fixed bg-main/20 h-screen w-screen z-30 pointer-events-auto" id="sidebar-bg-addition"></div>
     </div>
 
     <div class="flex flex-col w-full h-full min-h-0">
-
-        <nav
-            class="flex justify-between xl:justify-end pl-10 pr-10 xl:pr-[64px] py-3 bg-white border-muted-200 shadow-[0_4px_40px_0_rgba(206,197,242,0.2)] z-20 shrink-0">
-            <button class="flex items-center xl:hidden hover:bg-muted-50 rounded-full p-2 text-primary"
-                id="sidebar-menu-btn">
+        
+        <nav class="flex justify-between xl:justify-end pl-10 pr-10 xl:pr-[64px] py-3 bg-white border-muted-200 shadow-[0_4px_40px_0_rgba(206,197,242,0.2)] z-50 shrink-0">
+            <button class="flex items-center xl:hidden hover:bg-muted-50 rounded-full p-2 text-primary" id="sidebar-menu-btn">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-6 h-6 fill-current">
                     <path
                         d="M96 160C96 142.3 110.3 128 128 128L512 128C529.7 128 544 142.3 544 160C544 177.7 529.7 192 512 192L128 192C110.3 192 96 177.7 96 160zM96 320C96 302.3 110.3 288 128 288L512 288C529.7 288 544 302.3 544 320C544 337.7 529.7 352 512 352L128 352C110.3 352 96 337.7 96 320zM544 480C544 497.7 529.7 512 512 512L128 512C110.3 512 96 497.7 96 480C96 462.3 110.3 448 128 448L512 448C529.7 448 544 462.3 544 480z" />
@@ -313,10 +309,8 @@
                 class="hidden absolute inset-0 bg-black/20 z-30 transition-opacity opacity-0 xl:hidden">
             </div>
 
-            <div id="main-content-area" class="flex-1 overflow-y-auto w-full transition-all duration-300">
-                <div class="@container flex justify-center w-full min-h-full">
-                    @yield('content')
-                </div>
+        <div id="main-content-area" class="flex-1 @container overflow-y-auto w-full transition-all duration-300">
+            @yield('content')
 
                 {{-- Scroll to top button --}}
                 <div class="fixed bottom-5 right-5 flex flex-col items-end gap-3 z-30 transition-all duration-300"
@@ -402,6 +396,7 @@
 
     {{-- team member dialog --}}
     <x-user.team-member-dialog :teamMembers="$teamMembers ?? collect()" />
+    @include('components.staff.team-dialog')
     {{-- task dialog --}}
     <x-user.task-dialog :assignedTasks="$assignedTasks ?? collect()" />
     {{-- request day off dialog --}}

@@ -25,41 +25,45 @@
     <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
 
         {{-- HEADER SECTION --}}
-        <div class="flex items-center gap-4 mb-4">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
             @include('components.back-btn' , ['route' => $dashRoute])
 
             <div class="flex-1">
-                <h2 class="font-bold text-3xl text-main tracking-tight">
-                    {{ __('user_permission.title') ?? 'Substaff Permissions' }}
-                </h2>
-                <p class="text-muted-500 text-sm mt-2">
-                    {{ __('user_permission.subtitle') ?? 'Manage permissions for a specific substaff user' }}
+                <h1 class="font-semibold text-2xl md:text-3xl text-main tracking-tight">
+                    {{ __('substaff_permission.title') }}
+                </h1>
+                <p class="text-muted-500 text-sm md:text-base mt-1">
+                    {{ __('substaff_permission.subtitle') }}
                 </p>
-
-                @if($user)
-                    <div class="mt-2 text-sm text-muted-500">
-                        Editing:
-                        <span class="font-semibold text-main">{{ $user->name }}</span>
-                        <span class="text-muted-400">({{ $user->email }})</span>
-                    </div>
-                @endif
             </div>
 
             {{-- Optional: quick jump back to team section on staff dashboard --}}
-            @can('staff.substaff.create')
+            <!-- @can('staff.substaff.create')
                 @if(Route::has('staff.dashboard'))
                     <a href="{{ route('staff.dashboard') }}#team-members"
                        class="px-3 py-2 text-sm rounded-xl border border-muted-200 bg-white hover:bg-muted-50 transition">
                         Create substaff
                     </a>
                 @endif
-            @endcan
+            @endcan -->
+            @if($user)
+            <div class="flex items-center bg-primary/10 rounded-2xl py-3 px-6 gap-3 border border-primary/50 transition-all duration-300 group">
+                    <div class="relative my-auto">
+                        <div class="absolute inset-0 bg-primary/20 rounded-full blur-lg opacity-50"></div>
+                        <img src="{{ $user->user_profile_photo ?? '/img/undraw_profile_2.svg' }}" alt="leader_avatar" class="relative w-10 h-10 rounded-full">
+                    </div>
+                    <div class="flex flex-col justify-between h-full">
+                        <h3 class="text-primary text-md md:text-lg font-semibold">{{ $user->name }}</h3>
+                        <p class="text-primary/70 text-xs md:text-sm">{{ $user->email }}</p>
+                    </div>
+            </div>
+            @endif
         </div>
 
         {{-- Guard: if no user passed --}}
         @if(!$user)
             <div class="bg-danger/10 text-danger border border-danger/20 text-sm font-medium px-4 py-3 rounded-xl">
-                Missing substaff user.
+                {{ __('substaff_permission.missing_user') }}
             </div>
         @else
 
@@ -76,11 +80,11 @@
             {{-- MAIN CARD --}}
             <div class="grid gap-6 animate-fade-in-up [animation-delay:150ms]">
                 <form action="{{ route('staff.substaff.permissions.update', $user) }}" method="POST"
-                      class="bg-white rounded-2xl border border-muted-200 shadow-lg shadow-main/5 p-6 hover:border-primary/30 transition-all">
+                      class="bg-white rounded-2xl border border-muted-300 p-6 hover:border-primary/50 transition-all">
                     @csrf
 
                     {{-- Card Header --}}
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-muted-100 pb-4">
+                    <!-- <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-muted-100 pb-4">
                         <div>
                             <h5 class="text-xl font-bold text-main flex items-center gap-2">
                                 {{ __('user_permission.manage_for') ?? 'Manage permissions for' }}
@@ -99,12 +103,12 @@
                                 {{ $user->getRoleNames()->implode(', ') ?: 'N/A' }}
                             </span>
                         </div>
-                    </div>
+                    </div> -->
 
                     {{-- Permissions Grid --}}
                     @if($permissions->isEmpty())
                         <div class="text-sm text-muted-500">
-                            No permissions available for you to grant.
+                             {{ __('substaff_permission.no_permissions') }}
                         </div>
                     @else
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -127,7 +131,7 @@
                                     </div>
 
                                     <span class="text-sm font-medium text-muted-600 group-hover:text-main transition-colors select-none">
-                                        {{ __('user_permission.' . str_replace('.', '_', $permName)) }}
+                                         {{ __('substaff_permission.' . str_replace('.', '_', $permName)) }}
                                     </span>
                                 </label>
                             @endforeach
@@ -137,11 +141,12 @@
                     {{-- Action Footer --}}
                     <div class="flex items-center justify-end w-full pt-2 border-t border-muted-100">
                         <button type="submit"
-                                class="flex gap-2 items-center justify-center px-6 py-2.5 bg-primary hover:bg-primary-hover text-white font-medium rounded-xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 fill-current">
-                                <path d="M535.6 85.7C513.7 63.8 478.3 63.8 456.4 85.7L432 110.1L529.9 208L554.3 183.6C576.2 161.7 576.2 126.3 554.3 104.4L535.6 85.7zM236.4 305.7C230.3 311.8 225.6 319.3 222.9 327.6L193.3 416.4C190.4 425 192.7 434.5 199.1 441C205.5 447.5 215 449.7 223.7 446.8L312.5 417.2C320.7 414.5 328.2 409.8 334.4 403.7L496 241.9L398.1 144L236.4 305.7zM160 128C107 128 64 171 64 224L64 480C64 533 107 576 160 576L416 576C469 576 512 533 512 480L512 384C512 366.3 497.7 352 480 352C462.3 352 448 366.3 448 384L448 480C448 497.7 433.7 512 416 512L160 512C142.3 512 128 497.7 128 480L128 224C128 206.3 142.3 192 160 192L256 192C273.7 192 288 177.7 288 160C288 142.3 273.7 128 256 128L160 128z"/>
+                                class="flex gap-2 items-center justify-center px-6 py-3 bg-primary hover:bg-primary-hover text-white font-medium rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98]">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 lucide lucide-pencil-icon lucide-pencil">
+                                <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/>
+                                <path d="m15 5 4 4"/>
                             </svg>
-                            {{ __('user_permission.update_button') ?? 'Update permissions' }}
+                            {{ __('substaff_permission.update_button') }}
                         </button>
                     </div>
                 </form>

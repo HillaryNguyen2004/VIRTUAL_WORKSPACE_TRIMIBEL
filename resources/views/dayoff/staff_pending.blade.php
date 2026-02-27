@@ -65,7 +65,7 @@
                         default => 'bg-muted-100 text-muted-600 ring-muted-500/10',
                     };
                 @endphp
-                <div class="bg-white rounded-2xl shadow-sm border border-muted-200 hover:shadow-md hover:border-primary/30 transition-all duration-300 flex flex-col h-full group">
+                <div class="bg-white rounded-2xl border border-muted-300 hover:border-primary/50 transition-all duration-300 flex flex-col h-full group">
                     {{-- Card Header: User & Date --}}
                     <div class="px-6 py-5 border-b border-muted-100 flex justify-between items-start">
                         <div>

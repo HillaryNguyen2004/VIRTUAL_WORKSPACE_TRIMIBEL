@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Models\EmailTemplate;
 use App\Models\Campaign;
 use App\Models\ActivityLog;
+use App\Models\CompanyHour;
+use App\Models\DayOffRequest;
 use Illuminate\Support\Collection;
 
 class DashboardService
@@ -14,6 +16,8 @@ class DashboardService
     {
         $teamLeader = $user->teamLeader;
         $teamMembers = $teamLeader ? $teamLeader->teamMembers : collect();
+
+        $workingHour = CompanyHour::first();
 
         // Scheduled
         $upcomingCampaigns = Campaign::where('scheduled_at', '>', now())
@@ -39,20 +43,43 @@ class DashboardService
 
         $assignedTasks = $user->assignedTasks()->with('readStatuses')->get();
 
-        return compact('teamLeader', 'teamMembers', 'assignedTasks', 'emailTemplates', 'upcomingCampaigns', 'sentCampaigns', 'recentLogs');
+        return compact('teamLeader', 'teamMembers', 'assignedTasks', 'emailTemplates', 'upcomingCampaigns', 'sentCampaigns', 'recentLogs', 'workingHour');
     }
 
     public function getStaffDashboardData(User $user): array
     {
         $tasks = $user->assignedTasks()->with('readStatuses')->get();
         $teamLeader = $user->teamLeader;
-        $teamMembers = $user;
-        // $teamMembers = $teamLeader ? $teamLeader->teamMembers : collect();
+        
+        // FIX: Ensure this is always a Collection!
+        $teamMembers = collect(); 
 
-        return compact('tasks', 'teamLeader', 'teamMembers');
+        $workingHour = CompanyHour::first();
+        $emailTemplates = EmailTemplate::orderBy('id', 'desc')
+            ->take(4)
+            ->get();
+
+        $upcomingCampaigns = Campaign::where('scheduled_at', '>', now())
+            ->orderBy('scheduled_at', 'asc')
+            ->take(2)
+            ->get();
+
+        $sentCampaigns = Campaign::where('sent', true)
+            ->withCount('users as sent_count')
+            ->orderBy('updated_at', 'desc')
+            ->take(1)
+            ->get();
+
+        $recentDayOffRequests = DayOffRequest::with('user')
+            ->where('status', 'PENDING')
+            ->latest()
+            ->take(4)
+            ->get();
+
+        return compact('tasks', 'teamLeader', 'teamMembers', 'workingHour', 'emailTemplates', 'upcomingCampaigns', 'sentCampaigns', 'recentDayOffRequests');
     }
 
-        public function viewAllLogs(Request $request)
+    public function viewAllLogs(Request $request)
     {
         // Replicating the "Combined Logs" logic from your Service
         // 1. Activity Logs
