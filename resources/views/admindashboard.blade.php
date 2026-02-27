@@ -74,7 +74,7 @@
     <div class="flex flex-col gap-6 w-full mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
 
         {{-- Header Section --}}
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-center w-full">
+        <div class="flex flex-col w-full">
             <div class="flex items-center gap-3">
                 <h2 class="font-bold text-3xl text-main tracking-tight">{{ __('admin_dashboard.admin_dashboard') }}</h2>
 
@@ -89,6 +89,7 @@
                     </span>
                 @endif
             </div>
+            <p class="text-muted-500 text-sm mt-1">{{ __('user_dashboard.subheading') }}</p>
         </div>
 
         {{-- GRID ROW 1 --}}
