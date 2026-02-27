@@ -21,6 +21,18 @@
     "dependencies": {
         "@fortawesome/fontawesome-free": "^7.1.0",
         "@popperjs/core": "^2.11.8",
+        "@tiptap/core": "^2.11.4",
+        "@tiptap/extension-color": "^2.11.4",
+        "@tiptap/extension-highlight": "^2.11.4",
+        "@tiptap/extension-image": "^2.11.4",
+        "@tiptap/extension-table": "^2.11.4",
+        "@tiptap/extension-table-cell": "^2.11.4",
+        "@tiptap/extension-table-header": "^2.11.4",
+        "@tiptap/extension-table-row": "^2.11.4",
+        "@tiptap/extension-text-align": "^2.11.4",
+        "@tiptap/extension-text-style": "^2.11.4",
+        "@tiptap/extension-underline": "^2.11.4",
+        "@tiptap/starter-kit": "^2.11.4",
         "bootstrap": "^5.3.8",
         "dompurify": "^3.3.1",
         "face-api.js": "^0.22.2",
@@ -28,6 +40,7 @@
         "jquery.easing": "^1.4.1",
         "laravel-echo": "^2.2.0",
         "marked": "^17.0.1",
+        "mammoth": "^1.6.0",
         "pusher-js": "^8.4.0"
     }
 }
