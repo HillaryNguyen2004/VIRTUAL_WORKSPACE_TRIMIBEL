@@ -413,7 +413,7 @@ Route::get('/subadmin/dashboard', [AdminDashboardController::class, 'index'])
 Route::resource('holidays', HolidayController::class);
 
 Route::get('/substaff/dashboard', [DashboardController::class, 'substaffDashboard'])
-    ->middleware(['auth', 'permission:staff.dashboard.view'])
+    // ->middleware(['auth', 'permission:staff.dashboard.view'])
     ->name('substaff.dashboard');
 
 Route::middleware('auth')->get('/whiteboard/{board}', function (Request $request, string $board) {

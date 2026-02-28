@@ -106,7 +106,7 @@
 
             {{-- TABLE SECTION --}}
             <div class="overflow-x-auto w-full">
-                <table class="w-full table-fixed">
+                <table class="w-full">
                     <thead class="bg-muted-50 border-b border-muted-200">
                         <tr>
                             <th class="w-[20%] py-4 px-3 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('user_management.user_fullname_column') }}</th>
@@ -126,8 +126,14 @@
 
                                 
                                 $isLeader = in_array($role, ['staff', 'substaff']);
-                                $teamLeader = $user->team_leader_id ? $users->firstWhere('id', $user->team_leader_id) : null;
-                                $teamMembers = isset($user) ? $allUsers->filter(fn($u) => (int)$u->team_leader_id === (int)$user->id) : collect();
+                                $teamLeader = $user->team_leader_id ? $allUsers->firstWhere('id', $user->team_leader_id) : null;
+                                
+                                $teamMembers = collect();
+                                if ($role === 'staff') {
+                                    $teamMembers = $allUsers->filter(fn($u) => (int)$u->team_leader_id === (int)$user->id);
+                                } elseif ($role === 'substaff' && $user->team_leader_id) {
+                                    $teamMembers = $allUsers->filter(fn($u) => (int)$u->team_leader_id === (int)$user->team_leader_id && (int)$u->id !== (int)$user->id);
+                                }
 
                                 // Badge Styles to match Index.blade pill styles
                                 $badgeClass = match($role) {
@@ -218,21 +224,60 @@
                             <tr id="taskDetails{{ $user->id }}" class="detail-row hidden bg-canvas">
                                 <td colspan="5" class="p-6 border-b border-muted-100 shadow-inner">
                                     <div class="grid md:grid-cols-2 gap-6">
-                                        @if($isLeader)
-                                            <div>
+                                        @if($role === 'staff')
+                                            <div class="col-span-2">
                                                 <strong class="text-sm font-bold text-main">{{ __('user_row.team_members_label') }}</strong>
-                                                <ul class="mt-2 space-y-2">
+                                                <div class="mt-2 flex flex-wrap gap-x-3 gap-y-2 text-sm text-muted-600">
                                                     @forelse($teamMembers as $member)
-                                                        <li class="flex items-center gap-2 text-sm text-muted-600">
+                                                        <div class="flex items-center gap-2">
                                                             <div class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold ring-1 ring-primary/20">
                                                                 {{ substr($member->name, 0, 1) }}
                                                             </div>
-                                                            <span>{{ $member->name }} <span class="text-muted-400">({{ $member->email }})</span></span>
-                                                        </li>
+                                                            <span>
+                                                                {{ $member->name }}
+                                                                <span class="text-muted-400">({{ $member->email }})</span>
+                                                                @if(!$loop->last)<span>,</span>@endif
+                                                            </span>
+                                                        </div>
                                                     @empty
-                                                        <li class="text-muted-400 italic text-sm">{{ __('user_row.no_team_members') }}</li>
+                                                        <span class="text-muted-400 italic">{{ __('user_row.no_team_members') }}</span>
                                                     @endforelse
-                                                </ul>
+                                                </div>
+                                            </div>
+                                        @elseif($role === 'substaff')
+                                            <div>
+                                                <strong class="text-sm font-bold text-main">{{ __('user_row.team_leader_label') }}</strong>
+                                                <div class="mt-2 text-sm text-muted-600">
+                                                    @if($teamLeader)
+                                                        <div class="flex items-center gap-2">
+                                                            <div class="w-6 h-6 rounded-full bg-secondary/10 flex items-center justify-center text-secondary text-xs font-bold ring-1 ring-secondary/20">
+                                                                {{ substr($teamLeader->name, 0, 1) }}
+                                                            </div>
+                                                            <span>{{ $teamLeader->name }} <span class="text-muted-400">({{ $teamLeader->email }})</span></span>
+                                                        </div>
+                                                    @else
+                                                        <p class="text-muted-400 italic">{{ __('user_row.no_team_leader') }}</p>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <strong class="text-sm font-bold text-main">{{ __('user_row.team_members_label') }}</strong>
+                                                <div class="mt-2 flex gap-1 text-sm text-muted-600">
+                                                    @forelse($teamMembers as $member)
+                                                        <div class="flex items-center gap-2">
+                                                            <div class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold ring-1 ring-primary/20">
+                                                                {{ substr($member->name, 0, 1) }}
+                                                            </div>
+                                                            <span>
+                                                                {{ $member->name }}
+                                                                <span class="text-muted-400">({{ $member->email }})</span>
+                                                                @if(!$loop->last)<span>,</span>@endif
+                                                            </span>
+                                                        </div>
+                                                    @empty
+                                                        <span class="text-muted-400 italic">{{ __('user_row.no_team_members') }}</span>
+                                                    @endforelse
+                                                </div>
                                             </div>
                                         @else
                                             <div>
