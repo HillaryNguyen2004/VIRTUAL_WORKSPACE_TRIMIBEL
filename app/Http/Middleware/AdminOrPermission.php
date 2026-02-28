@@ -21,7 +21,7 @@ class AdminOrPermission
         }
 
         // Subadmin uses direct Spatie permissions
-        if ($user->hasRole('subadmin')) {
+        if ($user->hasRole('subadmin') || $user->hasRole('substaff')) {
             // Check primary ability
             if ($user->can($ability)) {
                 return $next($request);

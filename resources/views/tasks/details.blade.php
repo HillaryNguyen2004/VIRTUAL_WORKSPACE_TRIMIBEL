@@ -8,7 +8,7 @@
         if ($parentId) {
             $dashRoute = 'tasks.details';
             $dashParams = ['task' => $parentId];
-        } else if (auth()->user()->hasRole('user')){
+        } else if (auth()->user()->hasRole('user') || auth()->user()->hasRole('substaff')){
             $dashRoute = 'tasks.index';
         } else if ($projectId) {
             $dashRoute = 'projects.details';
