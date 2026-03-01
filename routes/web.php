@@ -23,6 +23,7 @@ use App\Http\Controllers\FaceRegisterController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\WBOController;
 use App\Http\Controllers\OnlineDocumentController;
+use Illuminate\Http\Request;
 
 // Route::group(['middleware' => ['web', 'core']], function () {
 //     include_once 'admin/user.php';
@@ -69,6 +70,28 @@ Route::middleware(['auth'])->prefix('online-docs')->name('online-docs.')->group(
     Route::post('/docs/{document}/share', [OnlineDocumentController::class, 'share'])->name('docs.share');
     Route::put('/docs/{document}/share', [OnlineDocumentController::class, 'updateShare'])->name('docs.share.update');
     Route::delete('/docs/{document}/share', [OnlineDocumentController::class, 'removeShare'])->name('docs.share.remove');
+});
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/ai', function () {
+        return view('ai.upload');
+    })->name('ai.upload');
+
+    Route::post('/ai', function (Request $request) {
+        $files = $request->file('data_files', []);
+        $fileCount = is_array($files) ? count($files) : 0;
+        $workspaceName = trim((string) $request->input('workspace_name_upload'));
+        $target = $workspaceName !== '' ? $workspaceName : 'Workspace chua dat ten';
+
+        return back()->with('status', "Da nhan $fileCount file cho $target.");
+    })->name('ai.upload.store');
+
+    Route::post('/ai/workspaces', function (Request $request) {
+        $name = trim((string) $request->input('workspace_name'));
+        $safeName = $name !== '' ? $name : 'Workspace moi';
+
+        return back()->with('workspace_status', "Da tao workspace: $safeName.");
+    })->name('ai.workspaces.store');
 });
 
 Route::get('/dayoff/request', [DayOffController::class, 'create'])->name('dayoff.request');
