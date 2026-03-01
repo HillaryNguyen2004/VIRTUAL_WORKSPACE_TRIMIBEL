@@ -34,7 +34,7 @@ $(function () {
 
     // Show/hide the team select area based on role (staff -> show)
     const toggleTeamSelect = ($select) => {
-        const show = $select.val() === "staff" || $select.val() === "substaff";
+        const show = $select.val() === "staff";
         const $section = getTeamSection();
         const $footerBtn = $dialog.find("#footer-btn");
         const $addMemberBtn = $dialog.find("#add-member-btn");
@@ -76,21 +76,18 @@ $(function () {
             $(this).data("has-leader") === true ||
             $(this).data("has-leader") === "true";
         const $staffOption = $roleSelect.find('option[value="staff"]');
-        const $substaffOption = $roleSelect.find('option[value="substaff"]');
 
         if (hasLeader) {
             $staffOption.hide();
-            $substaffOption.show();
         } else {
             $staffOption.show();
-            $substaffOption.hide();
         }
 
         // Populate team members if leadership role
         const $wrapper = getMembersWrapper();
         $wrapper.empty(); // Fix: Clear previous data to prevent leakage
 
-        if (role === "staff" || role === "substaff") {
+        if (role === "staff") {
             const members =
                 (window.teamMembersByStaff &&
                     window.teamMembersByStaff[currentUserId]) ||
@@ -145,7 +142,7 @@ $(function () {
         const role = $(this).val();
         toggleTeamSelect($(this));
 
-        if (role === "staff" || role === "substaff") {
+        if (role === "staff") {
             const $wrapper = getMembersWrapper();
             if ($wrapper.find(".team-member-select").length === 0) {
                 addTeamMemberField(null, true);

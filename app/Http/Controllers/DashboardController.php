@@ -6,6 +6,7 @@ use App\Services\DashboardService;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Project;
+use App\Models\Task;
 
 class DashboardController extends Controller
 {
@@ -39,37 +40,39 @@ class DashboardController extends Controller
             ->get();
 
         $projects = Project::with('tasks')
-            ->where('staff_id', $staff->id) 
+            ->where('staff_id', $staff->id)
             ->latest()
             ->take(3)
             ->get();
 
         return view('staffdashboard', array_merge($data, [
-            'staff'         => $staff,
-            'teamMembers'   => $teamMembers,
-            'projects'      => $projects,
+            'staff' => $staff,
+            'teamMembers' => $teamMembers,
+            'projects' => $projects,
             'dashboardMode' => 'staff',
         ]));
     }
 
     public function substaffDashboard()
     {
-        abort_unless(auth()->user()->can('staff.dashboard.view'), 403);
-
         $staff = Auth::user();
         $data = $this->dashboardService->getStaffDashboardData($staff);
 
-        $projects = Project::with('tasks')
-            ->where('staff_id', $staff->id)
-            ->latest()
-            ->take(3)
-            ->get();
+        $assignedTasks = $data['tasks'];
 
-        $teamMembers = collect();
+        $leaderId = $staff->team_leader_id;
+        $teamMembers = $leaderId
+            ? \App\Models\User::query()
+                ->where('team_leader_id', $leaderId)
+                ->where('id', '!=', $staff->id)
+                ->whereDoesntHave('roles', fn($q) => $q->whereIn('name', ['admin', 'staff']))
+                ->orderBy('name')
+                ->get()
+            : collect();
 
         return view('staffdashboard', array_merge($data, [
-            'projects'      => $projects,
-            'teamMembers'   => $teamMembers,
+            'assignedTasks' => $assignedTasks,
+            'teamMembers' => $teamMembers,
             'dashboardMode' => 'substaff',
         ]));
     }

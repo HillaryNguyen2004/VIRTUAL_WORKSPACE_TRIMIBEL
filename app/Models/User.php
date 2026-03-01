@@ -263,7 +263,7 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         // Subadmin uses Spatie direct/role permissions
-        if ($this->hasRole('subadmin')) {
+        if ($this->hasRole('subadmin') || $this->hasRole('substaff')) {
             return $this->can($permissionName);
         }
 

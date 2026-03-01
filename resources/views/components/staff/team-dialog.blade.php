@@ -33,9 +33,11 @@
                             <th scope="col" class="hidden md:table-cell px-6 py-3 text-xs font-semibold text-muted-500 uppercase tracking-wider">
                                 Role
                             </th>
-                            <th scope="col" class="px-6 py-3 text-xs font-semibold text-muted-500 uppercase tracking-wider">
-                                Actions
-                            </th>
+                            @if(auth()->user()->hasRole('staff'))
+                                <th scope="col" class="px-6 py-3 text-xs font-semibold text-muted-500 uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            @endif
                         </tr>
                     </thead>
 
@@ -77,8 +79,8 @@
                                         {{ $role }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4">
-                                    @if(auth()->user()->hasRole('admin') || auth()->user()->hasDepartmentRolePermission('staff.substaff.create'))
+                                @if(auth()->user()->hasRole('staff'))
+                                    <td class="px-6 py-4">
                                         @if($role == 'substaff')
                                             <form method="POST" action="{{ route('staff.substaff.make', $member) }}" class="flex items-center gap-2">
                                                 @csrf
@@ -109,8 +111,8 @@
                                                 </button>
                                             </form>
                                         @endif
-                                    @endif
-                                </td>
+                                    </td>
+                                @endif
                             </tr>
                         @empty
                             <tr>

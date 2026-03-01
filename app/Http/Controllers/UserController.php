@@ -47,8 +47,8 @@ class UserController extends Controller
         $users = $this->userRepo->filterUsers($request->filters());
         $allUsers = User::all();
 
-        // Group potential members (only 'user' role can be teammates)
-        $potentialMembers = $allUsers->filter(fn($u) => $u->hasRole('user'));
+        // Group potential members (only 'user', 'substaff', 'staff' role can be teammates)
+        $potentialMembers = $allUsers->filter(fn($u) => $u->hasAnyRole(['user', 'substaff', 'staff']));
 
         $availableUsers = [];
         $teamMembersByStaff = [];

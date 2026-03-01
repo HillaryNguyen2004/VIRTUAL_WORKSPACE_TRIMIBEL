@@ -67,21 +67,19 @@
                         $dashRoute = 'substaff.dashboard';
                     }
                 @endphp
-                @if(auth()->user()->hasRole(['admin', 'staff', 'user']) || (auth()->user()->hasRole('substaff') && auth()->user()->hasDepartmentRolePermission('staff.dashboard.view')) || (auth()->user()->hasRole('subadmin') && auth()->user()->can('admin.dashboard.view')))
-                    <li>
-                        <x-nav-link href="{{ route($dashRoute) }}" :active="request()->routeIs(['*.dashboard'])"
-                            class="flex items-center gap-4 px-4 py-3 hover:bg-muted-50 rounded-xl cursor-pointer transition-colors group {{ request()->routeIs(['*.dashboard']) ? 'text-primary bg-primary/5' : 'text-muted-500' }}">
-                            <svg viewBox="0 0 128 128"
-                                class="h-5 w-5 transition-colors {{ request()->routeIs(['*.dashboard']) ? 'text-primary' : 'text-muted-400 group-hover:text-primary' }}"
-                                fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <rect x="8" y="8" width="112" height="112" rx="14" />
-                                <path d="M72 20V108M72 64H108" />
-                            </svg>
-                            <span class="hidden sm:inline font-medium">{{ __('app.dashboard') }}</span>
-                        </x-nav-link>
-                    </li>
-                @endif
+                <li>
+                    <x-nav-link href="{{ route($dashRoute) }}" :active="request()->routeIs(['*.dashboard'])"
+                        class="flex items-center gap-4 px-4 py-3 hover:bg-muted-50 rounded-xl cursor-pointer transition-colors group {{ request()->routeIs(['*.dashboard']) ? 'text-primary bg-primary/5' : 'text-muted-500' }}">
+                        <svg viewBox="0 0 128 128"
+                            class="h-5 w-5 transition-colors {{ request()->routeIs(['*.dashboard']) ? 'text-primary' : 'text-muted-400 group-hover:text-primary' }}"
+                            fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round"
+                            stroke-linejoin="round">
+                            <rect x="8" y="8" width="112" height="112" rx="14" />
+                            <path d="M72 20V108M72 64H108" />
+                        </svg>
+                        <span class="hidden sm:inline font-medium">{{ __('app.dashboard') }}</span>
+                    </x-nav-link>
+                </li>
 
                 <li>
                     <x-nav-link href="{{ route('chat.index') }}" :active="request()->routeIs('chat.index')"
