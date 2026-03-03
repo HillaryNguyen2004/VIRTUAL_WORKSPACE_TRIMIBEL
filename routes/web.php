@@ -81,16 +81,21 @@ Route::middleware(['auth'])->group(function () {
         $files = $request->file('data_files', []);
         $fileCount = is_array($files) ? count($files) : 0;
         $workspaceName = trim((string) $request->input('workspace_name_upload'));
-        $target = $workspaceName !== '' ? $workspaceName : 'Workspace chua dat ten';
+        $target = $workspaceName !== '' ? $workspaceName : __('ai.workspace_unnamed');
 
-        return back()->with('status', "Da nhan $fileCount file cho $target.");
+        return back()->with('status', __('ai.upload_received', [
+            'count' => $fileCount,
+            'workspace' => $target,
+        ]));
     })->name('ai.upload.store');
 
     Route::post('/ai/workspaces', function (Request $request) {
         $name = trim((string) $request->input('workspace_name'));
-        $safeName = $name !== '' ? $name : 'Workspace moi';
+        $safeName = $name !== '' ? $name : __('ai.workspace_new');
 
-        return back()->with('workspace_status', "Da tao workspace: $safeName.");
+        return back()->with('workspace_status', __('ai.workspace_created', [
+            'workspace' => $safeName,
+        ]));
     })->name('ai.workspaces.store');
 });
 
