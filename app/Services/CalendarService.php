@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\Task;
 use App\Models\CalendarEvent;
+use App\Repositories\CalendarRepository;
 use Carbon\Carbon;
 use Google\Client as GoogleClient;
 use Google\Service\Calendar as GoogleServiceCalendar;
@@ -14,6 +15,13 @@ use GuzzleHttp\Client as GuzzleClient;
 
 class CalendarService
 {
+    protected CalendarRepository $repository;
+
+    public function __construct(CalendarRepository $repository)
+    {
+        $this->repository = $repository;
+    }
+
     public function getCombinedEvents(User $user)
     {
         $systemEvents = $this->getSystemTasksFormatted($user);
@@ -242,5 +250,128 @@ class CalendarService
             Log::error('Google Fetch Error: ' . $e->getMessage());
             return [];
         }
+    }
+
+    /**
+     * Business Logic: Create a new calendar event
+     */
+    public function createEvent(User $user, array $data): CalendarEvent
+    {
+        try {
+            $recEndDate = !empty($data['recurrence_end_date']) ? $data['recurrence_end_date'] : null;
+
+            return $this->repository->createEvent([
+                'user_id' => $user->id,
+                'title' => $data['title'],
+                'start_date' => $data['start_date'],
+                'end_date' => $data['end_date'] ?? null,
+                'category' => $data['category'] ?? 'tasks',
+                'meeting_id' => $data['meeting_id'] ?? null,
+                'recurrence_type' => $data['recurrence_type'] ?? 'none',
+                'recurrence_interval' => $data['recurrence_interval'] ?? 1,
+                'recurrence_end_date' => $recEndDate,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Create Event Error: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Business Logic: Update calendar event details
+     */
+    public function updateEvent(User $user, $eventId, array $data): bool
+    {
+        try {
+            // Parse event ID (format: "custom_5" or "local_5")
+            ['type' => $type, 'id' => $id] = $this->parseEventId($eventId);
+
+            if ($type === 'custom') {
+                $recEndDate = !empty($data['recurrence_end_date']) && $data['recurrence_end_date'] !== 'null' 
+                    ? $data['recurrence_end_date'] 
+                    : null;
+
+                return $this->repository->updateEvent($id, $user->id, [
+                    'title' => $data['title'],
+                    'category' => $data['category'],
+                    'start_date' => $data['start_date'],
+                    'end_date' => $data['end_date'] ?? null,
+                    'meeting_id' => $data['meeting_id'] ?? null,
+                    'recurrence_type' => $data['recurrence_type'] ?? 'none',
+                    'recurrence_interval' => $data['recurrence_interval'] ?? 1,
+                    'recurrence_end_date' => $recEndDate,
+                ]);
+            }
+
+            return false;
+        } catch (\Exception $e) {
+            Log::error('Update Event Error: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Business Logic: Update event date (drag-drop)
+     */
+    public function updateEventDate(User $user, $eventId, array $data): bool
+    {
+        try {
+            ['type' => $type, 'id' => $id] = $this->parseEventId($eventId);
+
+            if ($type === 'custom') {
+                return $this->repository->updateEvent($id, $user->id, [
+                    'start_date' => Carbon::parse($data['start'])->format('Y-m-d H:i:s'),
+                    'end_date' => $data['end'] ? Carbon::parse($data['end'])->format('Y-m-d H:i:s') : null,
+                ]);
+            } elseif ($type === 'local') {
+                // Handle Task date update
+                $task = Task::where('id', $id)->firstOrFail();
+                $task->update([
+                    'due_date' => Carbon::parse($data['start'])->format('Y-m-d H:i:s')
+                ]);
+                return true;
+            }
+
+            return false;
+        } catch (\Exception $e) {
+            Log::error('Update Event Date Error: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Business Logic: Delete event
+     */
+    public function deleteEvent(User $user, $eventId): bool
+    {
+        try {
+            ['type' => $type, 'id' => $id] = $this->parseEventId($eventId);
+
+            if ($type === 'custom') {
+                return $this->repository->deleteEvent($id, $user->id);
+            }
+
+            return false;
+        } catch (\Exception $e) {
+            Log::error('Delete Event Error: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Helper: Parse event ID format "custom_5" or "local_5"
+     */
+    private function parseEventId(string $eventId): array
+    {
+        $parts = explode('_', $eventId);
+        
+        if (count($parts) < 2) {
+            throw new \InvalidArgumentException('Invalid event ID format');
+        }
+
+        return [
+            'type' => $parts[0], // 'custom' or 'local'
+            'id' => $parts[1],   // The actual ID
+        ];
     }
 }
