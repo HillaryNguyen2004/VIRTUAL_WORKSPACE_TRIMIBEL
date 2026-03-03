@@ -37,11 +37,6 @@ class Message extends Model
                     ->withPivot('read_at');
     }
 
-    public function whatsappStatus()
-    {
-        return $this->hasOne(WhatsAppMessageStatus::class);
-    }
-
     /**
      * Check if message has a file attachment
      */
