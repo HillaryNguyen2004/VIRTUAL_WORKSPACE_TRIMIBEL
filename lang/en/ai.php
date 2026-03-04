@@ -5,6 +5,7 @@ return [
     'subtitle' => 'Upload data files for AI training and analysis.',
 
     'workspace_section' => 'Workspace',
+    'nav_workspace' => 'AI Workspace',
     'workspace_desc' => 'Create a dedicated workspace to manage AI data.',
     'badge_new' => 'New',
     'workspace_name' => 'Workspace name',
