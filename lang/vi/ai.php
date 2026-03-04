@@ -4,6 +4,7 @@ return [
     'title' => 'Tải lên dữ liệu AI',
 
     'workspace_section' => 'Workspace',
+    'nav_workspace' => 'AI Workspace',
     'workspace_desc' => 'Tạo workspace riêng để quản lý dữ liệu AI.',
     'badge_new' => 'Mới',
     'workspace_name' => 'Tên workspace',
