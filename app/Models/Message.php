@@ -9,7 +9,7 @@ class Message extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['conversation_id', 'user_id', 'content', 'type', 'metadata', 'file_name', 'file_path', 'file_size', 'file_type'];
+    protected $fillable = ['conversation_id', 'user_id', 'content', 'type', 'metadata', 'file_name', 'file_path', 'file_size', 'file_type', 'platform', 'direction', 'sent_by_user_id'];
 
     protected $casts = [
         'metadata' => 'array',
@@ -23,6 +23,11 @@ class Message extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function sentBy()
+    {
+        return $this->belongsTo(User::class, 'sent_by_user_id');
     }
 
     public function readBy()

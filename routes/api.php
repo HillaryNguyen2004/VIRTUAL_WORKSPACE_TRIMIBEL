@@ -73,3 +73,4 @@ Route::middleware(['auth:sanctum'])->prefix('chat')->group(function () {
 
 // Chat bot
 Route::post('/chat-bot', [ChatbotController::class, 'chatBot']);
+

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Services\ProjectService;
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Http\Requests\StoreProjectRequest;
+use App\Http\Requests\UpdateProjectRequest;
 
 class ProjectController extends Controller
 {
@@ -49,18 +51,9 @@ class ProjectController extends Controller
     /**
      * Store new project (Admin)
      */
-    public function store(Request $request)
+    public function store(StoreProjectRequest $request)
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'staff_id' => 'required|exists:users,id',
-            'status' => 'nullable|in:active,inactive',
-            'start_date' => 'required|date',
-            'due_date' => 'required|date'
-        ]);
-
-        $this->projectService->createProject($validated);
+        $this->projectService->createProject($request->validated());
 
         return redirect()
             ->route('projects.create')
@@ -81,18 +74,9 @@ class ProjectController extends Controller
     /**
      * Update project
      */
-    public function update(Request $request, int $id)
+    public function update(UpdateProjectRequest $request, int $id)
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'staff_id' => 'required|exists:users,id',
-            'status' => 'required|in:active,inactive',
-            'start_date' => 'required|date',
-            'due_date' => 'required|date'
-        ]);
-
-        $this->projectService->updateProject($id, $validated);
+        $this->projectService->updateProject($id, $request->validated());
 
         return redirect()
             ->route('projects.edit', $id)

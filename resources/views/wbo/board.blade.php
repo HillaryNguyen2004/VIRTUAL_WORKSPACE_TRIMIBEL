@@ -3,7 +3,7 @@
 @section('title', __('app.whiteboard'))
 
 @section('content')
-<div class="flex flex-col w-full min-h-screen overflow-hidden">
+<div class="flex flex-col w-full h-screen overflow-hidden">
     <!-- Header -->
     <div class="bg-white border-b border-muted-200 px-6 py-4 flex justify-between items-center shrink-0">
         <div>

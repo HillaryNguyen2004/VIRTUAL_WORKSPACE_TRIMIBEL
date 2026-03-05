@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Services\CalendarService;
-use App\Models\CalendarEvent;
+use App\Http\Requests\StoreCalendarEventRequest;
+use App\Http\Requests\UpdateCalendarEventRequest;
+use App\Http\Requests\UpdateCalendarDateRequest;
+use App\Http\Requests\DeleteCalendarEventRequest;
 use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
 
@@ -20,205 +23,129 @@ class CalendarController extends Controller
 
     public function index()
     {
-        $user = auth()->user();
-
         return view('calendar.index');
     }
 
     /**
-     * 2. Fetch Events for FullCalendar (AJAX)
+     * Fetch Events for FullCalendar (AJAX)
      */
     public function getEvents(Request $request)
     {
         $user = auth()->user();
-        
-        // Use the service to get merged events
         $events = $this->calendarService->getCombinedEvents($user);
 
         return response()->json($events);
     }
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'start_date' => 'required|date',
-            'end_date' => 'nullable|date',
-            'category' => 'nullable|string',
-            'meeting_id' => 'nullable|string',
-            'recurrence_type' => 'nullable|string',
-            'recurrence_interval' => 'nullable|integer',
-            'recurrence_end_date' => 'nullable|date',
-        ]);
-
-        $recEndDate = $request->recurrence_end_date;
-        if (empty($recEndDate)) {
-            $recEndDate = null;
-        }
-
-        $event = \App\Models\CalendarEvent::create([
-            'user_id' => auth()->id(),
-            'title' => $request->title,
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
-            'category' => $request->category ?? 'tasks',
-            'meeting_id' => $request->meeting_id,
-            'recurrence_type' => $request->recurrence_type ?? 'none',
-            'recurrence_interval' => $request->recurrence_interval ?? 1,
-            'recurrence_end_date' => $recEndDate,
-        ]);
-
-        return response()->json([
-            'status' => 'success',
-            'event' => $event
-        ]);
-    }
-
     /**
-     * 3. Store a New Event (Create)
+     * Create a new calendar event
      */
-    public function updateDate(Request $request)
+    public function store(StoreCalendarEventRequest $request)
     {
-        // Debug Log: Check storage/logs/laravel.log if this fails
-        Log::info('Calendar Drag Update:', $request->all());
-
-        $request->validate([
-            'id' => 'required|string',
-            'start' => 'required', 
-            'end' => 'nullable', 
-        ]);
-
-        $parts = explode('_', $request->id);
-        if(count($parts) < 2) return response()->json(['status' => 'error', 'message' => 'Invalid ID'], 400);
-
-        $type = $parts[0]; // 'custom' or 'local'
-        $id = $parts[1];
+        $user = auth()->user();
 
         try {
-            if ($type === 'custom') {
-                $event = CalendarEvent::where('user_id', auth()->id())->where('id', $id)->firstOrFail();
-                
-                $event->update([
-                    'start_date' => \Carbon\Carbon::parse($request->start)->format('Y-m-d H:i:s'),
-                    'end_date' => $request->end ? \Carbon\Carbon::parse($request->end)->format('Y-m-d H:i:s') : null,
-                ]);
+            $event = $this->calendarService->createEvent($user, $request->validated());
 
-                return response()->json(['status' => 'success']);
-            } 
-            
-            // Optional: Handle Tasks
-            elseif ($type === 'local') {
-                $task = Task::where('id', $id)->first();
-                if ($task) {
-                    $task->update([
-                        'due_date' => \Carbon\Carbon::parse($request->start)->format('Y-m-d H:i:s')
-                    ]);
-                    return response()->json(['status' => 'success']);
-                }
-            }
+            return response()->json([
+                'status' => 'success',
+                'event' => $event
+            ]);
         } catch (\Exception $e) {
-            Log::error($e->getMessage());
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            Log::error('Store Event Error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
         }
-        
-        return response()->json(['status' => 'error', 'message' => 'Event not found'], 404);
     }
 
     /**
-     * Update details (Title, Category, Time) from the Modal
+     * Update event date (drag-drop)
      */
-    public function updateDetails(Request $request)
+    public function updateDate(UpdateCalendarDateRequest $request)
     {
-        $request->validate([
-            'id' => 'required|string', // "custom_5"
-            'title' => 'required|string|max:255',
-            'category' => 'required|string',
-            'start_date' => 'required|date',
-            'end_date' => 'nullable|date',
-            'meeting_id' => 'nullable|string',
-            'recurrence_type' => 'nullable|string',
-            'recurrence_interval' => 'nullable|integer',
-            'recurrence_end_date' => 'nullable|date',
-        ]);
+        $user = auth()->user();
+        $validated = $request->validated();
 
-        $parts = explode('_', $request->id);
-        $id = $parts[1];
+        try {
+            $this->calendarService->updateEventDate($user, $validated['id'], $validated);
 
-        $event = \App\Models\CalendarEvent::where('user_id', auth()->id())
-            ->where('id', $id)
-            ->firstOrFail();
-
-        $recEndDate = $request->recurrence_end_date;
-        if (empty($recEndDate) || $recEndDate === 'null') {
-            $recEndDate = null;
+            return response()->json(['status' => 'success']);
+        } catch (\Exception $e) {
+            Log::error('Update Date Error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
         }
+    }
 
-        $event->update([
-            'title' => $request->title,
-            'category' => $request->category,
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
-            'meeting_id' => $request->meeting_id,
-            'recurrence_type' => $request->recurrence_type ?? 'none', 
-            'recurrence_interval' => $request->recurrence_interval ?? 1, // Default to 1
-            'recurrence_end_date' => $recEndDate,
-        ]);
+    /**
+     * Update event details (title, category, time, recurrence)
+     */
+    public function updateDetails(UpdateCalendarEventRequest $request)
+    {
+        $user = auth()->user();
+        $validated = $request->validated();
 
-        return response()->json(['status' => 'success']);
+        try {
+            $this->calendarService->updateEvent($user, $validated['id'], $validated);
+
+            return response()->json(['status' => 'success']);
+        } catch (\Exception $e) {
+            Log::error('Update Details Error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
      * Delete an event
      */
-    public function destroy(Request $request)
+    public function destroy(DeleteCalendarEventRequest $request)
     {
-        $request->validate(['id' => 'required|string']);
+        $user = auth()->user();
+        $validated = $request->validated();
 
-        $parts = explode('_', $request->id);
-        $id = $parts[1];
+        try {
+            $this->calendarService->deleteEvent($user, $validated['id']);
 
-        $event = \App\Models\CalendarEvent::where('user_id', auth()->id())
-            ->where('id', $id)
-            ->firstOrFail();
-
-        $event->delete();
-
-        return response()->json(['status' => 'success']);
+            return response()->json(['status' => 'success']);
+        } catch (\Exception $e) {
+            Log::error('Delete Event Error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
-     * START GOOGLE LOGIN
+     * Start Google Calendar connection
      */
     public function connectGoogle()
     {
-        $user = auth()->user();
-
         return Socialite::driver('google')
             ->scopes(['https://www.googleapis.com/auth/calendar.readonly'])
             ->with([
-                'access_type' => 'offline', // Critical for refreshing tokens later
+                'access_type' => 'offline',
                 'prompt' => 'consent',
             ])
             ->redirect();
     }
 
     /**
-     * HANDLE GOOGLE CALLBACK
+     * Handle Google OAuth callback
      */
     public function googleCallback()
     {
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
             $user = auth()->user();
-            
 
-            // Strict Security: Ensure the Google email matches the User email
-            // if ($googleUser->email !== $user->email) {
-            //     return redirect()->route('calendar')
-            //         ->with('error', 'The Google Account email must match your registered email.');
-            // }
-
-            // Save tokens
             $user->update([
                 'google_email' => $googleUser->email,
                 'google_access_token' => $googleUser->token,
