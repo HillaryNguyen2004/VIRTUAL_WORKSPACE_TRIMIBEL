@@ -31,6 +31,13 @@
             </div>
 
             <div class="flex gap-2">
+                <a href="{{ route('projects.kanban', $project->id) }}"
+                    class="flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all shadow-lg text-sm border text-muted-400 hover:bg-primary/10 hover:text-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-4 h-4 fill-current">
+                        <path d="M3 4h6v8H3V4zm8 0h6v8h-6V4zm8 0h6v8h-6V4zM3 14h6v8H3v-8zm8 0h6v8h-6v-8zm8 0h6v8h-6v-8z"/>
+                    </svg>
+                    {{ __('projects.kanban_view') ?? 'Kanban' }}
+                </a>
                 @can('admin.projects.edit')
                     <a href="{{ route('projects.edit', $project->id) }}"
                         class="flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all shadow-lg text-sm border text-muted-400 hover:bg-secondary/10 hover:text-secondary">

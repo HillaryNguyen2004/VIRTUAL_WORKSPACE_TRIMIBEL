@@ -74,3 +74,9 @@ Route::middleware(['auth:sanctum'])->prefix('chat')->group(function () {
 // Chat bot
 Route::post('/chat-bot', [ChatbotController::class, 'chatBot']);
 
+// Task API Routes for Kanban board (support both Sanctum and web auth)
+Route::prefix('tasks')->group(function () {
+    Route::post('/{task}/move', [\App\Http\Controllers\Api\TaskController::class, 'moveToPhase'])->middleware('auth:sanctum');
+    Route::post('/reorder', [\App\Http\Controllers\Api\TaskController::class, 'reorder'])->middleware('auth:sanctum');
+    Route::patch('/{task}/status', [\App\Http\Controllers\Api\TaskController::class, 'updateStatus'])->middleware('auth:sanctum');
+});
