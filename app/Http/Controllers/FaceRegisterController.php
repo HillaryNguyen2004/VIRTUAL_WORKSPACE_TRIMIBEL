@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
+// NOT REFACTORED YET - WE WILL CLEAN THIS UP IN THE FUTURE
+
 class FaceRegisterController extends Controller
 {
     protected $faceService;

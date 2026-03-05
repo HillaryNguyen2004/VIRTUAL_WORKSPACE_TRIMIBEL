@@ -2,41 +2,36 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\StorePhaseRequest;
+use App\Http\Requests\UpdatePhaseRequest;
 use App\Models\Phase;
 use App\Models\Project;
+use App\Services\PhaseService;
 
 class PhaseController extends Controller
 {
-    public function store(Request $request, Project $project)
-    {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'start_date' => 'nullable|date',
-            'due_date' => 'nullable|date',
-        ]);
+    public function __construct(
+        private PhaseService $service
+    ) {
+    }
 
-        $project->phases()->create($validated);
+    public function store(StorePhaseRequest $request, Project $project)
+    {
+        $this->service->createPhase($project, $request->validated());
 
         return back()->with('success', __('messages.phase_created'));
     }
 
-    public function update(Request $request, Phase $phase)
+    public function update(UpdatePhaseRequest $request, Phase $phase)
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'start_date' => 'nullable|date',
-            'due_date' => 'nullable|date',
-        ]);
-
-        $phase->update($validated);
+        $this->service->updatePhase($phase, $request->validated());
 
         return back()->with('success', __('messages.phase_updated'));
     }
 
     public function destroy(Phase $phase)
     {
-        $phase->delete();
+        $this->service->deletePhase($phase);
 
         return back()->with('success', __('messages.phase_deleted'));
     }

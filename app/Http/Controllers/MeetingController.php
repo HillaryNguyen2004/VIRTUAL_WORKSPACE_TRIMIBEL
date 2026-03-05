@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 
 
 
-
+// NOT REFACTORED YET - WE WILL CLEAN THIS UP IN THE FUTURE
 class MeetingController extends Controller
 {
 
