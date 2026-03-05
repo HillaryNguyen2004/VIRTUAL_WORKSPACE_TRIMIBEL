@@ -156,15 +156,18 @@
                                     </div>
 
                                     @if($task->assignedUsers->count() > 0)
-                                        <div class="flex items-center gap-1 flex-wrap">
+                                        <div class="flex items-center gap-2 flex-wrap">
                                             @foreach($task->assignedUsers->take(3) as $user)
-                                                <img src="{{ getUserAvatar($user) }}"
-                                                    alt="{{ $user->name }}"
-                                                    class="w-6 h-6 rounded-full border border-muted-200"
-                                                    title="{{ $user->name }}">
+                                                <div class="flex items-center gap-1.5 px-2 py-1 bg-muted-50 rounded-full">
+                                                    <img src="{{ getUserAvatar($user) }}"
+                                                        alt="{{ $user->name }}"
+                                                        class="w-5 h-5 rounded-full border border-muted-200"
+                                                        title="{{ $user->name }}">
+                                                    <span class="text-xs font-medium text-muted-700 truncate max-w-[80px]">{{ $user->name }}</span>
+                                                </div>
                                             @endforeach
                                             @if($task->assignedUsers->count() > 3)
-                                                <div class="w-6 h-6 rounded-full bg-muted-200 flex items-center justify-center text-xs font-medium text-muted-600">
+                                                <div class="text-xs font-medium text-muted-600 px-2 py-1 bg-muted-50 rounded-full">
                                                     +{{ $task->assignedUsers->count() - 3 }}
                                                 </div>
                                             @endif
