@@ -2,6 +2,7 @@
 @section('title', 'Create Task')
 @php
     $projectId = request('project_id');
+    $phaseId = request('phase_id');
     $parentId = request('parent_id');
 
     // Preserve existing role logic for the back button
@@ -47,10 +48,13 @@
 
     $currentProjectId = $taskData['project_id'] ?? $projectId ?? null;
     $currentPhasesOptions = [];
+    $currentPhaseId = null;
     if ($currentProjectId && isset($phasesByProject[$currentProjectId])) {
         $currentPhasesOptions = collect($phasesByProject[$currentProjectId])
             ->pluck('title', 'id')
             ->toArray();
+        // Pre-select phase if coming from Kanban board
+        $currentPhaseId = $phaseId ?? null;
     }
 
     $tasksOld = old('tasks', [[]]);
@@ -155,7 +159,7 @@
                                         placeholder="task_create.select_phase"
                                         class="col-span-2 md:col-span-1"
                                         :isRequired="true" 
-                                        :value="old('tasks.'.$index.'.phase_id')"
+                                        :value="old('tasks.'.$index.'.phase_id', $currentPhaseId)"
                                         :options="$currentPhasesOptions"
                                     />
 

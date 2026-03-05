@@ -101,6 +101,7 @@ class TaskController extends Controller
         }
 
         $parentId = $request->query('parent_id');
+        $phaseId = $request->query('phase_id');
 
         $parentTask = null;
         $defaultAssigneeId = null;
@@ -137,7 +138,8 @@ class TaskController extends Controller
             'assigneesByLeader',
             'parentTask',
             'defaultAssigneeId',
-            'defaultLeaderId'
+            'defaultLeaderId',
+            'phaseId'
         ));
     }
 

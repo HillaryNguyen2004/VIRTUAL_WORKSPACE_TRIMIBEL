@@ -40,6 +40,20 @@ class ProjectController extends Controller
     }
 
     /**
+     * Show project in Kanban board view
+     */
+    public function kanban(int $id)
+    {
+        $project = $this->projectService->getProject($id);
+        $project->load(['staffUser', 'phases.tasks.assignedUsers']);
+        
+        $phases = $project->phases;
+
+        return view('projects.kanban', compact('project', 'phases'));
+    }
+    
+
+    /**
      * Show create form
      */
     public function create()

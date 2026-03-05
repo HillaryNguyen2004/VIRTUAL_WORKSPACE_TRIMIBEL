@@ -57,14 +57,16 @@
                 @php
                     use Illuminate\Support\Facades\Route;
                     $dashRoute = 'user.dashboard';
-                    if (auth()->user()->hasRole('admin') && Route::has('admin.dashboard')) {
-                        $dashRoute = 'admin.dashboard';
-                    } elseif (auth()->user()->hasRole('subadmin') && Route::has('subadmin.dashboard')) {
-                        $dashRoute = 'subadmin.dashboard';
-                    } elseif (auth()->user()->hasRole('staff') && Route::has('staff.dashboard')) {
-                        $dashRoute = 'staff.dashboard';
-                    } elseif (auth()->user()->hasRole('substaff') && Route::has('substaff.dashboard')) {
-                        $dashRoute = 'substaff.dashboard';
+                    if (auth()->check()) {
+                        if (auth()->user()->hasRole('admin') && Route::has('admin.dashboard')) {
+                            $dashRoute = 'admin.dashboard';
+                        } elseif (auth()->user()->hasRole('subadmin') && Route::has('subadmin.dashboard')) {
+                            $dashRoute = 'subadmin.dashboard';
+                        } elseif (auth()->user()->hasRole('staff') && Route::has('staff.dashboard')) {
+                            $dashRoute = 'staff.dashboard';
+                        } elseif (auth()->user()->hasRole('substaff') && Route::has('substaff.dashboard')) {
+                            $dashRoute = 'substaff.dashboard';
+                        }
                     }
                 @endphp
                 <li>
@@ -273,10 +275,12 @@
                 <li class="relative list-none" id="userMenu">
                     <button id="userButton" type="button" class="inline-flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-muted-50 transition-colors
                             focus:outline-none" aria-haspopup="menu" aria-expanded="false">
+                        @auth
                         <span
                             class="hidden lg:inline text-sm text-muted-600 font-medium">{{ Auth::user()->username }}</span>
                         <img class="h-8 w-8 rounded-full object-cover ring-2 ring-white border border-muted-200 shadow-sm"
                             src="{{ getUserAvatar(Auth::user()) }}" alt="{{ Auth::user()->name }} avatar">
+                        @endauth
                         <svg class="h-4 w-4 text-muted-400" viewBox="0 0 20 20" fill="currentColor">
                             <path
                                 d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" />

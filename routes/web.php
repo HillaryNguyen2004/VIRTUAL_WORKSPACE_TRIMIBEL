@@ -259,6 +259,9 @@ Route::delete('/projects/{id}', [ProjectController::class, 'destroy'])
 Route::get('/projects/{id}/details', [ProjectController::class, 'details'])
     ->name('projects.details');
 
+Route::get('/projects/{id}/kanban', [ProjectController::class, 'kanban'])
+    ->name('projects.kanban');
+
 
 Route::put('/phases/{phase}', [App\Http\Controllers\PhaseController::class, 'update'])->name('phases.update');
 Route::post('/projects/{project}/phases', [App\Http\Controllers\PhaseController::class, 'store'])->name('phases.store');
