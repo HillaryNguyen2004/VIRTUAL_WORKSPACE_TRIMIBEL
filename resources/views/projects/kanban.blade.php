@@ -100,8 +100,8 @@
 
                         {{-- TASKS CONTAINER (DROPPABLE) --}}
                         <div
-                            class="bg-white rounded-b-xl border border-muted-200 p-4 flex-1 min-h-[420px]
-                                   droppable-zone flex flex-col gap-3"
+                            class="bg-white rounded-b-xl border border-muted-200 p-3 flex-1 min-h-[300px]
+                                   droppable-zone flex flex-col gap-2"
                             data-phase-id="{{ $phase->id }}"
                             ondrop="handleDrop(event)"
                             ondragover="handleDragOver(event)"
@@ -116,19 +116,19 @@
                             @endphp
 
                             @forelse($tasks as $task)
-                                <div class="bg-white border border-muted-200 rounded-lg p-3 cursor-move hover:shadow-md transition-shadow drag-item"
+                                <div class="bg-white border border-muted-200 rounded-lg p-2 cursor-move hover:shadow-md transition-shadow drag-item"
                                     draggable="true"
                                     data-task-id="{{ $task->id }}"
                                     ondragstart="handleDragStart(event)"
                                     ondragend="handleDragEnd(event)">
 
                                     <a href="{{ route('tasks.details', $task->id) }}" class="block group">
-                                        <h4 class="font-medium text-sm text-main group-hover:text-primary transition-colors line-clamp-2 mb-2">
+                                        <h4 class="font-medium text-sm text-main group-hover:text-primary transition-colors line-clamp-2 mb-1">
                                             {{ $task->title }}
                                         </h4>
                                     </a>
 
-                                    <div class="flex items-center justify-between text-xs text-muted-500 mb-2">
+                                    <div class="flex items-center justify-between text-xs text-muted-500 mb-1">
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted-50">
                                             @switch($task->status)
                                                 @case('pending')
@@ -147,12 +147,12 @@
                                         </span>
                                     </div>
 
-                                    <div class="mb-3">
+                                    <div class="mb-2">
                                         <div class="h-1.5 bg-muted-100 rounded overflow-hidden">
                                             <div class="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all"
                                                 style="width: {{ $task->percentage ?? 0 }}%"></div>
                                         </div>
-                                        <p class="text-xs text-muted-500 mt-1">{{ $task->percentage ?? 0 }}%</p>
+                                        <p class="text-xs text-muted-500 mt-0.5">{{ $task->percentage ?? 0 }}%</p>
                                     </div>
 
                                     @if($task->assignedUsers->count() > 0)
@@ -179,7 +179,7 @@
                                             $dueDate = \Carbon\Carbon::parse($task->due_date);
                                             $isOverdue = $dueDate->isPast() && $task->status !== 'completed';
                                         @endphp
-                                        <div class="mt-3 text-xs {{ $isOverdue ? 'text-red-500' : 'text-muted-500' }}">
+                                        <div class="mt-1 text-xs {{ $isOverdue ? 'text-red-500' : 'text-muted-500' }}">
                                             {{ $isOverdue ? '⚠️ ' : '📅 ' }} {{ $dueDate->format('M d') }}
                                         </div>
                                     @endif
@@ -219,7 +219,7 @@
                     <div class="bg-muted-50 rounded-t-xl border border-b-0 border-muted-200 px-4 py-3 flex justify-between items-center h-[90px]">
                         <h3 class="font-semibold text-muted-400">Add Phase</h3>
                     </div>
-                    <div class="bg-white rounded-b-xl border border-muted-200 border-dashed p-4 flex-1 min-h-[420px] flex flex-col items-center justify-center">
+                    <div class="bg-white rounded-b-xl border border-muted-200 border-dashed p-3 flex-1 min-h-[300px] flex flex-col items-center justify-center">
                         <button type="button" onclick="createNewPhase()"
                             class="flex flex-col items-center justify-center gap-3 p-6 hover:bg-primary/5 rounded-lg transition-colors group w-full">
                             <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
