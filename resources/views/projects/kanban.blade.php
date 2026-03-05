@@ -52,7 +52,7 @@
                                 <div class="w-3 h-3 rounded-full {{ $phase->color_class ?? 'bg-blue-500' }}"></div>
                                 <div class="flex-1 min-w-0">
                                     <h3 class="font-semibold text-main truncate">{{ $phase->title }}</h3>
-                                    <p class="text-xs text-muted-500">{{ $phase->tasks->count() }} tasks</p>
+                                    <p class="text-xs text-muted-500 phase-task-count" data-phase-id="{{ $phase->id }}">{{ $phase->tasks->count() }} tasks</p>
                                     @if($phase->start_date || $phase->due_date)
                                         <div class="text-xs text-muted-400 mt-1 space-y-0.5">
                                             @if($phase->start_date)
@@ -220,7 +220,7 @@
         </div>
 
         {{-- MODAL BODY --}}
-        <form id="taskCreateForm" action="{{ route('tasks.store') }}" method="POST" class="p-6 space-y-4">
+        <form id="taskCreateForm" action="{{ route('tasks.store') }}" method="POST" onsubmit="handleTaskCreateSubmit(event)" class="p-6 space-y-4">
             @csrf
             
             {{-- Title --}}
@@ -403,6 +403,15 @@ let draggedElement = null;
 let sourcePhaseId = null;
 const projectId = {{ $project->id }};
 
+function updateTaskCount(phaseId, delta) {
+    const countElement = document.querySelector(`.phase-task-count[data-phase-id="${phaseId}"]`);
+    if (!countElement) return;
+    
+    const currentCount = parseInt(countElement.textContent);
+    const newCount = currentCount + delta;
+    countElement.textContent = `${newCount} task${newCount !== 1 ? 's' : ''}`;
+}
+
 function handleDragStart(e) {
     draggedElement = e.target.closest('.drag-item');
     sourcePhaseId = draggedElement?.closest('.droppable-zone')?.dataset.phaseId;
@@ -440,6 +449,10 @@ function handleDrop(e) {
 
     // Optimistic update - move element immediately
     e.currentTarget.appendChild(draggedElement);
+    
+    // Update task counts immediately
+    updateTaskCount(sourcePhaseId, -1);
+    updateTaskCount(targetPhaseId, 1);
 
     // API call to update phase
     fetch(`/api/tasks/${taskId}/move`, {
@@ -458,8 +471,10 @@ function handleDrop(e) {
     })
     .catch(error => {
         console.error('Error:', error);
-        // Rollback - move back to original phase
+        // Rollback - move back to original phase and revert counts
         document.querySelector(`[data-phase-id="${sourcePhaseId}"]`)?.appendChild(draggedElement);
+        updateTaskCount(sourcePhaseId, 1);
+        updateTaskCount(targetPhaseId, -1);
         alert('Failed to move task. Please try again.');
     });
 }
@@ -473,6 +488,34 @@ function closeCreateTaskModal() {
     document.getElementById('createTaskModal').classList.add('hidden');
     document.getElementById('createTaskModal').classList.remove('flex');
     document.getElementById('taskCreateForm').reset();
+}
+
+function handleTaskCreateSubmit(e) {
+    e.preventDefault();
+    
+    const form = document.getElementById('taskCreateForm');
+    const phaseId = new FormData(form).get('phase_id');
+    
+    // Submit form via fetch
+    fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form)
+    })
+    .then(response => {
+        if (response.ok) {
+            // Update task count for the phase
+            updateTaskCount(phaseId, 1);
+            // Close modal and reset form
+            closeCreateTaskModal();
+            showNotification('Task created successfully!', 'success');
+        } else {
+            throw new Error('Failed to create task');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Failed to create task. Please try again.', 'error');
+    });
 }
 
 function openEditPhaseModal(phaseId, title, startDate, dueDate) {
