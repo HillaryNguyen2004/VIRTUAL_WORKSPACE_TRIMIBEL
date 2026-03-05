@@ -190,6 +190,15 @@
                                     <p class="text-sm">No tasks yet</p>
                                 </div>
                             @endforelse
+                            
+                            {{-- CREATE TASK BUTTON FOR THIS PHASE --}}
+                            <a href="{{ route('tasks.create', ['project_id' => $project->id, 'phase_id' => $phase->id]) }}"
+                                class="flex items-center justify-center gap-2 px-3 py-2 border-2 border-dashed border-muted-300 hover:border-primary hover:bg-primary/5 rounded-lg transition-colors text-sm font-medium text-muted-600 hover:text-primary">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-4 h-4 fill-current">
+                                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                                </svg>
+                                <span>Add Task</span>
+                            </a>
                         </div>
                     </div>
                 @empty
