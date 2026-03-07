@@ -45,9 +45,9 @@ def build_rag_prompt(user_q: str, user_role: str, passages: List[Dict[str, Any]]
 
         ANSWERING STYLE:
         <style>
-        - Start your answer (when relevant) with a sentence like:
-        "As a {user_role}, you can do the following in this system:"
-        - After that, explain the relevant features / permissions for this role.
+        - Go directly to the instructions without any opener.
+        - Explain only the features / permissions that are supported by Knowledge AND allowed for the user's role.
+        - If the user's role is not mentioned in Knowledge for this feature, do NOT assume access; say it is not covered.
         - Be clear and concise. Give short explanations where helpful.
         </style>
 
@@ -57,10 +57,11 @@ def build_rag_prompt(user_q: str, user_role: str, passages: List[Dict[str, Any]]
         - Each list item MUST be on its own line.
         - Use line breaks (\\n) between items.
         - Do NOT write bullets inline like: "You can do X: * item1 * item2".
+        - If you list features or steps, use numbered lists or bullet points with line breaks
         - Instead, format like:
-        You can do X in a few ways:
-        1. First way
-        2. Second way
+            You can do X in a few ways:
+            1. First way
+            2. Second way
         - Do NOT mention "source", "sources", "citations", or reference markers like "[1]" or "[2]" in your answer.
         </formatting>
 

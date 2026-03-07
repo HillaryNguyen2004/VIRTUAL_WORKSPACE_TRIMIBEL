@@ -1,9 +1,11 @@
 from __future__ import annotations
+import os
 from pathlib import Path
 from typing import List
 from src.rag.config import settings
 from src.rag.chunking import make_splitter, iter_data_files, chunk_file
-from src.rag.embeddings.gemini import embed_texts
+# from src.rag.embeddings.gemini import embed_texts
+from src.rag.embeddings.ollama import embed_texts
 from src.rag.vectorstores.chroma_store import add_chunks
 
 """
@@ -11,12 +13,13 @@ scans data/raw/
 
 loads + splits docs
 
-embeds chunks with Gemini
+embeds chunks with Ollama
 
 upserts to Chroma
 
 Run before serving queries, or whenever you add/replace docs.
 """
+os.environ["ANONYMIZED_TELEMETRY"] = "False"
 
 # infers locale from filename or path
 def infer_locale_from_path(path: Path, default_locale: str = "en-US") -> str:
