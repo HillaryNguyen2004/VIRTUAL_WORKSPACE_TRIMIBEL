@@ -12,6 +12,7 @@ class Document extends Model
     protected $fillable = [
         'owner_id',
         'title',
+        'type',
         'html_path',
         'docx_path',
         'last_edited_by',

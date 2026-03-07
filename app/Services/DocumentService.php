@@ -19,11 +19,12 @@ class DocumentService
     /**
      * Create a new document
      */
-    public function createDocument(User $user, string $title): Document
+    public function createDocument(User $user, string $title, string $type = 'docs'): Document
     {
         $document = Document::create([
             'owner_id' => $user->id,
             'title' => $title,
+            'type' => $type,
             'html_path' => 'pending',
             'last_edited_by' => $user->id,
         ]);

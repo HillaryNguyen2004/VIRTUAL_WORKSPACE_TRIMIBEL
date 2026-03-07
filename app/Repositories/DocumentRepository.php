@@ -20,11 +20,35 @@ class DocumentRepository
     }
 
     /**
+     * Get owned documents for a user filtered by type
+     */
+    public function getOwnedDocumentsByType(User $user, string $type): Collection
+    {
+        return $user->ownedDocuments()
+            ->where('type', $type)
+            ->with('owner')
+            ->latest()
+            ->get();
+    }
+
+    /**
      * Get all shared documents for a user
      */
     public function getSharedDocuments(User $user): Collection
     {
         return $user->sharedDocuments()
+            ->with('owner')
+            ->latest()
+            ->get();
+    }
+
+    /**
+     * Get shared documents for a user filtered by type
+     */
+    public function getSharedDocumentsByType(User $user, string $type): Collection
+    {
+        return $user->sharedDocuments()
+            ->where('type', $type)
             ->with('owner')
             ->latest()
             ->get();

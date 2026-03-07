@@ -61,8 +61,13 @@ Route::get('/dashboard', function (UserRoleRedirectService $redirectService) {
 Route::get('/user/dashboard', [DashboardController::class, 'user'])->name('user.dashboard')->middleware('auth');
 
 Route::middleware(['auth'])->prefix('online-docs')->name('online-docs.')->group(function () {
-    Route::get('/docs', [OnlineDocumentController::class, 'index'])->name('docs');
+    Route::get('/', [OnlineDocumentController::class, 'landing'])->name('home');
+    Route::get('/docs', [OnlineDocumentController::class, 'docsIndex'])->name('docs');
     Route::post('/docs', [OnlineDocumentController::class, 'store'])->name('docs.store');
+    Route::post('/excel', [OnlineDocumentController::class, 'createExcel'])->name('excel.create');
+    Route::get('/excel', [OnlineDocumentController::class, 'excelIndex'])->name('excel');
+    Route::post('/powerpoint', [OnlineDocumentController::class, 'createPowerpoint'])->name('powerpoint.create');
+    Route::get('/powerpoint', [OnlineDocumentController::class, 'powerpointIndex'])->name('powerpoint');
     Route::get('/docs/{document}', [OnlineDocumentController::class, 'show'])->name('docs.show');
     Route::put('/docs/{document}', [OnlineDocumentController::class, 'update'])->name('docs.update');
     Route::post('/docs/{document}/import', [OnlineDocumentController::class, 'importDocx'])->name('docs.import');

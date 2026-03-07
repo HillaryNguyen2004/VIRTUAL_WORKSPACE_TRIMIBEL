@@ -19,6 +19,7 @@ class DocumentConversionService
             $docxPath,
             $htmlPath,
         ]);
+        $process->setWorkingDirectory(base_path());
         $process->setTimeout(60);
         $process->mustRun();
     }
@@ -31,6 +32,7 @@ class DocumentConversionService
             $htmlPath,
             $docxPath,
         ]);
+        $process->setWorkingDirectory(base_path());
         $process->setTimeout(60);
         $process->mustRun();
     }
