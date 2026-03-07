@@ -21,18 +21,74 @@ class OnlineDocumentController extends Controller
     ) {
     }
 
-    public function index()
+    public function landing()
     {
-        $user = auth()->user();
-        $ownedDocuments = $this->repository->getOwnedDocuments($user);
-        $sharedDocuments = $this->repository->getSharedDocuments($user);
+        return view('online-docs.docs');
+    }
 
-        return view('online-docs.docs', compact('ownedDocuments', 'sharedDocuments'));
+    public function docsIndex()
+    {
+        return $this->renderTypeIndex(
+            'docs',
+            __('online_docs.docs_page_title'),
+            __('online_docs.docs_page_subtitle'),
+            'online-docs.docs.store'
+        );
+    }
+
+    public function excelIndex()
+    {
+        return $this->renderTypeIndex(
+            'excel',
+            __('online_docs.excel_page_title'),
+            __('online_docs.excel_page_subtitle'),
+            'online-docs.excel.create'
+        );
+    }
+
+    public function powerpointIndex()
+    {
+        return $this->renderTypeIndex(
+            'powerpoint',
+            __('online_docs.powerpoint_page_title'),
+            __('online_docs.powerpoint_page_subtitle'),
+            'online-docs.powerpoint.create'
+        );
     }
 
     public function store(StoreDocumentRequest $request)
     {
-        $document = $this->service->createDocument(auth()->user(), $request->validated()['title']);
+        $document = $this->service->createDocument(
+            auth()->user(),
+            $request->validated()['title'],
+            'docs'
+        );
+
+        return redirect()->route('online-docs.docs.show', $document);
+    }
+
+    public function createExcel()
+    {
+        $title = __('online_docs.excel_default_title');
+        $document = $this->service->createDocument(auth()->user(), $title, 'excel');
+
+        $this->service->updateDocument($document, auth()->user(), [
+            'title' => $title,
+            'content' => $this->buildSpreadsheetHtml(),
+        ]);
+
+        return redirect()->route('online-docs.docs.show', $document);
+    }
+
+    public function createPowerpoint()
+    {
+        $title = __('online_docs.powerpoint_default_title');
+        $document = $this->service->createDocument(auth()->user(), $title, 'powerpoint');
+
+        $this->service->updateDocument($document, auth()->user(), [
+            'title' => $title,
+            'content' => $this->buildPowerpointHtml(),
+        ]);
 
         return redirect()->route('online-docs.docs.show', $document);
     }
@@ -107,5 +163,67 @@ class OnlineDocumentController extends Controller
         $this->service->removeShare($document, $request->validated()['user_id']);
 
         return redirect()->back();
+    }
+
+    private function buildSpreadsheetHtml(int $rows = 12, int $cols = 8): string
+    {
+        $safeRows = max(1, min($rows, 40));
+        $safeCols = max(1, min($cols, 20));
+        $colLabels = [];
+
+        for ($i = 0; $i < $safeCols; $i += 1) {
+            $colLabels[] = chr(65 + $i);
+        }
+
+        $thead = '<thead><tr><th></th>';
+        foreach ($colLabels as $label) {
+            $thead .= '<th>' . $label . '</th>';
+        }
+        $thead .= '</tr></thead>';
+
+        $tbody = '<tbody>';
+        for ($row = 1; $row <= $safeRows; $row += 1) {
+            $tbody .= '<tr><th>' . $row . '</th>';
+            for ($col = 0; $col < $safeCols; $col += 1) {
+                $tbody .= '<td></td>';
+            }
+            $tbody .= '</tr>';
+        }
+        $tbody .= '</tbody>';
+
+        return '<table data-table-style="sheet" class="table-sheet">'
+            . $thead
+            . $tbody
+            . '</table><p></p>';
+    }
+
+    private function buildPowerpointHtml(): string
+    {
+        $title = __('online_docs.powerpoint_slide_title');
+        $subtitle = __('online_docs.powerpoint_slide_subtitle');
+
+        return '<h1>' . $title . '</h1>'
+            . '<p>' . $subtitle . '</p>'
+            . '<p></p>';
+    }
+
+    private function renderTypeIndex(
+        string $type,
+        string $pageTitle,
+        string $pageSubtitle,
+        string $createRouteName
+    ) {
+        $user = auth()->user();
+        $ownedDocuments = $this->repository->getOwnedDocumentsByType($user, $type);
+        $sharedDocuments = $this->repository->getSharedDocumentsByType($user, $type);
+
+        return view('online-docs.type', [
+            'type' => $type,
+            'pageTitle' => $pageTitle,
+            'pageSubtitle' => $pageSubtitle,
+            'createRouteName' => $createRouteName,
+            'ownedDocuments' => $ownedDocuments,
+            'sharedDocuments' => $sharedDocuments,
+        ]);
     }
 }

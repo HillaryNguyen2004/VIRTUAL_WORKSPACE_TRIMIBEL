@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -13,7 +14,21 @@ return new class extends Migration
             return;
         }
 
-        Schema::table('tasks', function (Blueprint $table) {
+        $connection = DB::connection();
+        $database = $connection->getDatabaseName();
+
+        $foreignNames = collect($connection->select(
+            'SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND CONSTRAINT_NAME != "PRIMARY"',
+            [$database, 'tasks']
+        ))->pluck('CONSTRAINT_NAME')->all();
+
+        $engineRow = $connection->selectOne(
+            'SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
+            [$database, 'tasks']
+        );
+        $supportsForeignKeys = $engineRow && strtoupper((string) $engineRow->ENGINE) === 'INNODB';
+
+        Schema::table('tasks', function (Blueprint $table) use ($foreignNames, $supportsForeignKeys) {
             // Add missing columns only if they don't exist
             if (!Schema::hasColumn('tasks', 'project_id')) {
                 $table->unsignedBigInteger('project_id')->nullable()->after('description');
@@ -49,29 +64,15 @@ return new class extends Migration
             }
             
             // Add foreign key constraints if columns exist
-            if (Schema::hasColumn('tasks', 'project_id') && !Schema::hasColumn('tasks', 'project_id_foreign')) {
-                try {
-                    $table->foreign('project_id')->references('id')->on('projects')->onDelete('cascade')->onUpdate('cascade');
-                } catch (\Exception $e) {
-                    // Foreign key might already exist
-                }
+            if (Schema::hasColumn('tasks', 'project_id') && !in_array('tasks_project_id_foreign', $foreignNames, true)) {
+                $table->foreign('project_id')->references('id')->on('projects')->onDelete('cascade')->onUpdate('cascade');
             }
             
-            if (Schema::hasColumn('tasks', 'phase_id') && !Schema::hasColumn('tasks', 'phase_id_foreign')) {
-                try {
-                    $table->foreign('phase_id')->references('id')->on('phases')->onDelete('cascade')->onUpdate('cascade');
-                } catch (\Exception $e) {
-                    // Foreign key might already exist
-                }
+            if (Schema::hasColumn('tasks', 'phase_id') && !in_array('tasks_phase_id_foreign', $foreignNames, true)) {
+                $table->foreign('phase_id')->references('id')->on('phases')->onDelete('cascade')->onUpdate('cascade');
             }
             
-            if (Schema::hasColumn('tasks', 'parent_id') && !Schema::hasColumn('tasks', 'parent_id_foreign')) {
-                try {
-                    $table->foreign('parent_id')->references('id')->on('tasks')->onDelete('cascade')->onUpdate('cascade');
-                } catch (\Exception $e) {
-                    // Foreign key might already exist
-                }
-            }
+            // Skip parent_id FK to avoid legacy engine/type mismatches in existing tasks table.
         });
     }
 

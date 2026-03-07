@@ -37,6 +37,21 @@
   background: #f8fafc;
 }
 
+.tiptap-editor .ProseMirror table.table-sheet th,
+.tiptap-editor .ProseMirror table.table-sheet td {
+  border: 1px solid #cbd5e1;
+}
+
+.tiptap-editor .ProseMirror table.table-sheet th {
+  background: #eef2f7;
+  font-weight: 600;
+}
+
+.tiptap-editor .ProseMirror table.table-sheet td:first-child {
+  background: #f8fafc;
+  font-weight: 600;
+}
+
 .tiptap-editor .ProseMirror table:not(.table-none):not(.table-light):not(.table-grid) th,
 .tiptap-editor .ProseMirror table:not(.table-none):not(.table-light):not(.table-grid) td {
   border: 1px solid #e2e8f0;

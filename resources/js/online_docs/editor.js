@@ -408,6 +408,23 @@ const replaceAllMatches = (editor, query, replacement) => {
     editor.view.dispatch(tr);
 };
 
+const clampNumber = (value, min, max) => {
+    const parsed = Number(value);
+    if (Number.isNaN(parsed)) return min;
+    return Math.min(Math.max(parsed, min), max);
+};
+
+const insertSpreadsheet = (editor, rows = 12, cols = 8) => {
+    const safeRows = clampNumber(rows, 1, 40);
+    const safeCols = clampNumber(cols, 1, 20);
+    editor
+        .chain()
+        .focus()
+        .insertTable({ rows: safeRows, cols: safeCols, withHeaderRow: true })
+        .updateAttributes("table", { tableStyle: "sheet" })
+        .run();
+};
+
 if (editorRoot && form && contentField) {
     const titleInput = form.querySelector('input[name="title"]');
     const saveUrl = form.getAttribute("action");
@@ -597,6 +614,12 @@ if (editorRoot && form && contentField) {
 
     if (titleInput && !isReadOnly) {
         titleInput.addEventListener("input", () => editor.commands.focus());
+        titleInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                editor.commands.focus();
+            }
+        });
     }
 
     form.addEventListener("submit", () => {
@@ -679,6 +702,10 @@ if (editorRoot && form && contentField) {
                         .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
                         .updateAttributes("table", { tableStyle: "grid" })
                         .run();
+                    updateToolbarState(editor);
+                    break;
+                case "excel":
+                    insertSpreadsheet(editor, 12, 8);
                     updateToolbarState(editor);
                     break;
                 case "addRow":

@@ -12,6 +12,9 @@
                 <p class="text-muted-500 text-sm mt-1">{{ $document->title }}</p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
+                <a href="{{ route('online-docs.home') }}" class="px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-600 hover:bg-muted-50">
+                    {{ __('online_docs.back_all') }}
+                </a>
                 <a href="{{ route('online-docs.docs.export', $document) }}" class="px-4 py-2 rounded-xl bg-muted-100 text-muted-700 hover:bg-muted-200 text-sm font-medium">
                     {{ __('online_docs.export_docx') }}
                 </a>
@@ -106,9 +109,11 @@
                             <button type="button" data-command="image" class="px-2 py-1 text-xs rounded-md border border-muted-200">Image</button>
                             <input type="file" id="doc-image-input" accept="image/*" class="hidden" />
                             <button type="button" data-command="table" class="px-2 py-1 text-xs rounded-md border border-muted-200">Table</button>
+                            <button type="button" data-command="excel" class="px-2 py-1 text-xs rounded-md border border-muted-200">Excel</button>
                             <select id="doc-table-style" class="rounded-lg border border-muted-200 px-2 py-1 text-xs">
                                 <option value="">Table style</option>
                                 <option value="grid">Grid</option>
+                                <option value="sheet">Sheet</option>
                                 <option value="light">Light</option>
                                 <option value="none">No border</option>
                             </select>

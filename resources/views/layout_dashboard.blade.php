@@ -135,7 +135,7 @@
                 </li>
 
                 <li>
-                    <x-nav-link href="{{ route('online-docs.docs') }}" :active="request()->routeIs('online-docs.*')"
+                    <x-nav-link href="{{ route('online-docs.home') }}" :active="request()->routeIs('online-docs.*')"
                         class="flex items-center gap-4 px-4 py-3 hover:bg-muted-50 rounded-xl cursor-pointer transition-colors group {{ request()->routeIs('online-docs.*') ? 'text-primary bg-primary/5' : 'text-muted-500' }}">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
                             class="w-5 h-5 transition-colors {{ request()->routeIs('online-docs.*') ? 'text-primary' : 'text-muted-400 group-hover:text-primary' }}"
