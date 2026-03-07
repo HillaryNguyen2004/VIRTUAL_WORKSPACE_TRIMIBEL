@@ -1,7 +1,7 @@
 # env & local stuff
 .env
 .venv/
-var/chroma_db/
+# var/chroma_db/
 __pycache__/
 *.pyc
 .mypy_cache/

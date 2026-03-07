@@ -4,10 +4,9 @@ import re
 
 from .retrieval import retrieve
 from .prompting import build_rag_prompt, build_general_prompt
-from .gemini_generator import generate_answer 
+# from .gemini_generator import generate_answer
+from .ollama_generate import generate_answer
 from .lang import detect_lang
-from .sql_agent_gemini import answer_from_db
-# from .sql_agent_ollama import answer_from_db
 
 MIN_DOCS_FOR_CONFIDENT_RAG = 2
 MIN_TOP_SCORE = 0.35
@@ -231,11 +230,11 @@ def answer(
         return text, []
     
     # DB agent here
-    text = answer_from_db(user_q, target_lang=target_lang, user_id=user_id,)
-    return text, []
+    # text = answer_from_db(user_q, target_lang=target_lang, user_id=user_id,)
+    # return text, []
 
     # Retrieve candidate passages from the knowledge base (RAG)
-    # passages = retrieve(user_q, k)
+    passages = retrieve(user_q, k)
 
     # if passages:
     #     top = passages[0]
@@ -247,24 +246,24 @@ def answer(
     #     top_score = 0.0
     #     use_docs = False
 
-    # # If retrieval looks good -> RAG path (prefer guideline/docs)
-    # # if use_docs:
-    # #     prompt = build_rag_prompt(user_q, user_role, passages, target_lang)
-    # #     text = generate_answer(prompt, temperature=0.2)
+    # If retrieval looks good -> RAG path (prefer guideline/docs)
+    # if use_docs:
+    prompt = build_rag_prompt(user_q, user_role, passages, target_lang)
+    text = generate_answer(prompt, temperature=0.2)
 
-    # #     citations: List[Dict[str, Any]] = []
-    # #     for i, p in enumerate(passages):
-    # #         meta = p.get("metadata") or {}
-    # #         citations.append({
-    # #             "rank": i + 1,
-    # #             "id": p.get("id"),
-    # #             "source": meta.get("source"),
-    # #             "score": _score(p),
-    # #         })
+    citations: List[Dict[str, Any]] = []
+    for i, p in enumerate(passages):
+            meta = p.get("metadata") or {}
+            citations.append({
+                "rank": i + 1,
+                "id": p.get("id"),
+                "source": meta.get("source"),
+                # "score": _score(p),
+            })
 
-    # #     return text, citations
+    return text, citations
 
-    # # Fallback: general knowledge (no good docs, not a DB query)
+    # Fallback: general knowledge (no good docs, not a DB query)
     # prompt = build_general_prompt(user_q, target_lang)
     # text = generate_answer(prompt, temperature=0.2)
     # return text, []

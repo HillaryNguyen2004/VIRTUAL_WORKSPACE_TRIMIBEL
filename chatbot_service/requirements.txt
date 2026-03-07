@@ -8,11 +8,24 @@
 # pdfminer.six==20240706
 # lingua-language-detector==2.0.2
 
-langchain>=0.2.0
-langchain-community>=0.2.0
-langchain-google-genai>=0.1.0
-sqlalchemy>=2.0.0
-mysql-connector-python>=9.0.0
+# langchain>=0.2.0
+# langchain-community>=0.2.0
+# langchain-google-genai>=0.1.0
+# sqlalchemy>=2.0.0
+# mysql-connector-python>=9.0.0
 
-langchain-ollama>=0.2.0
-ollama>=0.4.0
+# langchain-ollama>=0.2.0
+# ollama>=0.4.0
+
+# langfuse==3.14.5
+
+# numpy<2
+
+# Pin OpenTelemetry consistently to satisfy Langfuse and avoid mismatches
+# opentelemetry-api==1.33.1
+# opentelemetry-sdk==1.33.1
+# opentelemetry-exporter-otlp-proto-grpc==1.33.1
+# opentelemetry-exporter-otlp-proto-http==1.33.1
+# opentelemetry-proto==1.33.1
+# semantic conventions versioning differs (0.xx beta line)
+# opentelemetry-semantic-conventions==0.54b1
