@@ -90,12 +90,12 @@ python -m cli.ingest
 
 ### 3) Run the API
 ```
-uvicorn api.app:app --host localhost --port 8080 --reload
+uvicorn api.app:app --host 127.0.0.1 --port 8002 --reload
 ```
 
 Health check:
 ```
-curl http://localhost:8080/healthz
+curl http://0.0.0.0:8002/healthz
 ```
 
 ## 🧭 API

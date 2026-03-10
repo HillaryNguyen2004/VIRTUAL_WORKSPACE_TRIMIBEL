@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import List, Dict, Any
-from .embeddings.gemini import embed_query
+# from .embeddings.gemini import embed_query
+from .embeddings.ollama import embed_query
 from .vectorstores.chroma_store import query_by_vector
 from .config import settings
 
