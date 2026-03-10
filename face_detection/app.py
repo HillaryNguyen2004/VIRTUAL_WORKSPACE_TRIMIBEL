@@ -49,7 +49,7 @@ def verify_two(req: Verify2Req):
     sim = cosine_sim(embA, embB)
 
     # Tune threshold. Start around 0.85–0.90 for InsightFace cosine similarity.
-    threshold = 0.88
+    threshold = 0.82
     match = sim >= threshold
     
     print(f"Similarity: {sim}, Match: {match}")
