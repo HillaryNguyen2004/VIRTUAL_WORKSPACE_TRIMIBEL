@@ -94,19 +94,25 @@ class DayOffController extends Controller
 
     public function approve($id)
     {
-        
-        $dayOff = $this->service->approveRequest($id); // assume it returns the updated model
-    if ($dayOff && $dayOff->user) {
-        // Store notification-like message in cache for the user
-        cache()->put('user_'.$dayOff->user->id.'_dayoff_notice', __('dayoff.notice_approved', ['date' => $dayOff->date]), now()->addMinutes(10));
-    }
-
-    return back()->with('success', 'Day-off request approved.');
+        try {
+            $dayOff = $this->service->approveRequest($id); // assume it returns the updated model
+            if ($dayOff && $dayOff->user) {
+                // Store notification-like message in cache for the user
+                cache()->put('user_'.$dayOff->user->id.'_dayoff_notice', __('dayoff.notice_approved', ['date' => $dayOff->date]), now()->addMinutes(10));
+            }
+            return back()->with('success', 'Day-off request approved.');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
     }
 
     public function reject($id)
     {
-        $this->service->rejectRequest($id);
-        return back()->with('success', __('dayoff.success_reject'));
+        try {
+            $this->service->rejectRequest($id);
+            return back()->with('success', __('dayoff.success_reject'));
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
     }
 }
