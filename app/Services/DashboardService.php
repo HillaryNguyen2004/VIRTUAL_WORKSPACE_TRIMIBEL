@@ -72,6 +72,9 @@ class DashboardService
 
         $recentDayOffRequests = DayOffRequest::with('user')
             ->where('status', 'PENDING')
+            ->whereHas('user', function ($query) use ($user) {
+                $query->where('team_leader_id', $user->id);
+            })
             ->latest()
             ->take(4)
             ->get();

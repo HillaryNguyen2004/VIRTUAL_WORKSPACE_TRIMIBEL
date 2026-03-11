@@ -206,14 +206,33 @@ class DayOffService
     /* =====================================================
      | STAFF ACTIONS
      ===================================================== */
-    public function getPendingRequests()
+    public function getPendingRequests($teamLeaderId = null)
     {
-        return $this->repo->getPendingWithUsers();
+        if ($teamLeaderId === null) {
+            $teamLeaderId = Auth::id();
+        }
+
+        return $this->repo->getPendingWithUsersByTeamLeader($teamLeaderId);
+    }
+
+    private function isAuthorizedToApproveRequest($requestId, $staffUserId)
+    {
+        $request = $this->repo->find($requestId);
+        
+        // Check if the request's user is a team member of the staff user
+        return $request && $request->user && $request->user->team_leader_id === $staffUserId;
     }
 
     public function approveRequest($id)
     {
-        $request = $this->repo->updateStatus($id, 'APPROVED', Auth::id());
+        $staffUserId = Auth::id();
+
+        // Check authorization
+        if (!$this->isAuthorizedToApproveRequest($id, $staffUserId)) {
+            throw new \Exception('Unauthorized: You cannot approve this request.');
+        }
+
+        $request = $this->repo->updateStatus($id, 'APPROVED', $staffUserId);
 
         if ($request && $request->user) {
             $request->user->notify(
@@ -226,7 +245,14 @@ class DayOffService
 
     public function rejectRequest($id)
     {
-        $request = $this->repo->updateStatus($id, 'REJECTED', Auth::id());
+        $staffUserId = Auth::id();
+
+        // Check authorization
+        if (!$this->isAuthorizedToApproveRequest($id, $staffUserId)) {
+            throw new \Exception('Unauthorized: You cannot reject this request.');
+        }
+
+        $request = $this->repo->updateStatus($id, 'REJECTED', $staffUserId);
 
         if ($request && $request->user) {
             $request->user->notify(
