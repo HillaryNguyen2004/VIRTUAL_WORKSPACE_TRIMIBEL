@@ -53,6 +53,36 @@
                     {{-- Divider --}}
                     <div class="border-t border-muted-200 "></div>
 
+                    {{-- Working Days Section --}}
+                    <div class="flex flex-col gap-3 w-full">
+                        <label class="text-sm font-medium text-main">{{ __('company_hour.working_days') ?? 'Working Days' }}</label>
+                        <div class="flex flex-wrap gap-2">
+                            @php
+                                $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                                $dayAbbr = ['Monday' => 'Mon', 'Tuesday' => 'Tue', 'Wednesday' => 'Wed', 'Thursday' => 'Thu', 'Friday' => 'Fri', 'Saturday' => 'Sat', 'Sunday' => 'Sun'];
+                                $selectedDays = isset($companyHour) && $companyHour->working_days 
+                                    ? (is_string($companyHour->working_days) ? json_decode($companyHour->working_days, true) : $companyHour->working_days)
+                                    : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+                            @endphp
+                            @foreach($days as $day)
+                                <label class="working-day-toggle cursor-pointer group">
+                                    <input 
+                                        type="checkbox" 
+                                        name="working_days[]" 
+                                        value="{{ $day }}"
+                                        {{ in_array($day, $selectedDays) ? 'checked' : '' }}
+                                        class="hidden peer">
+                                    <span class="inline-block px-3 py-2 rounded-lg font-medium text-sm transition-all border border-muted-300 bg-white text-main peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary hover:border-primary/50">
+                                        {{ $dayAbbr[$day] ?? substr($day, 0, 3) }}
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    {{-- Divider --}}
+                    <div class="border-t border-muted-200 "></div>
+
                     {{-- Option A: Lunch Fields (Hidden by default via JS) --}}
                     <div id="lunch_fields" class="hidden flex-col gap-5 border-muted-100">
                         <div class="flex flex-col gap-1.5 w-full">
