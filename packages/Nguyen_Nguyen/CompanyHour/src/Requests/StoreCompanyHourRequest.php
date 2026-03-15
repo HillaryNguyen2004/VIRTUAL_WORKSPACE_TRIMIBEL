@@ -17,7 +17,11 @@ class StoreCompanyHourRequest extends FormRequest
             'lunch_end'   => 'nullable|required_with:has_lunch_break|date_format:H:i:s|after:lunch_start|before:end_at',
             
             // Mid-day: Required ONLY if checkbox is UNCHECKED
-            'mid_day'  => 'nullable|required_without:has_lunch_break|date_format:H:i:s|after:start_at|before:end_at'
+            'mid_day'  => 'nullable|required_without:has_lunch_break|date_format:H:i:s|after:start_at|before:end_at',
+            
+            // Working days: At least one day must be selected
+            'working_days' => 'nullable|array|min:1',
+            'working_days.*' => 'in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday'
         ];
     }
 
@@ -52,7 +56,24 @@ class StoreCompanyHourRequest extends FormRequest
             $data['mid_day']  = $formatTime($midDayInput); // Use the captured input
         }
 
-        // 4. Merge sanitized data back into request for validation
+        // 4. Handle working_days - convert from checkbox array to validated array
+        // Checkboxes send only selected values, so we get an array directly
+        $workingDays = $this->input('working_days');
+        if (is_array($workingDays)) {
+            // Filter out any empty values and keep only valid days
+            $validDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            $data['working_days'] = array_filter($workingDays, function ($day) use ($validDays) {
+                return in_array($day, $validDays);
+            });
+            // If no days selected, set to null to trigger validation error
+            if (empty($data['working_days'])) {
+                $data['working_days'] = null;
+            }
+        } else {
+            $data['working_days'] = null;
+        }
+
+        // 5. Merge sanitized data back into request for validation
         // This ensures the validator sees 'mid_day' even if the form sent 'mid_day'
         $this->merge($data);
     }
