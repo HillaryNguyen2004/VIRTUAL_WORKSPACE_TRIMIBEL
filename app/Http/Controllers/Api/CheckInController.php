@@ -9,17 +9,24 @@ use App\Models\CompanyHour;
 use App\Services\CheckInService;
 use App\Services\FaceService;
 use App\Services\CheckInExportService;
+use App\Services\AttendanceReportService;
+use App\Http\Requests\AttendanceReportRequest;
 use Illuminate\Support\Facades\Log;
 
 class CheckInController extends Controller
 {
     protected $checkInService;
     protected $faceService;
+    protected $attendanceReportService;
 
-    public function __construct(CheckInService $checkInService, FaceService $faceService)
-    {
+    public function __construct(
+        CheckInService $checkInService,
+        FaceService $faceService,
+        AttendanceReportService $attendanceReportService
+    ) {
         $this->checkInService = $checkInService;
         $this->faceService = $faceService;
+        $this->attendanceReportService = $attendanceReportService;
     }
 
     public function checkIn(Request $request)
@@ -163,7 +170,33 @@ class CheckInController extends Controller
             }
         }
 
-        return view('users.checkin_index', compact('checkIns'));
+        // Get attendance report data for all users for the selected month
+        $month = $request->input('month', Carbon::now()->format('Y-m'));
+        [$year, $monthNum] = explode('-', $month);
+
+        $availableMonths = $this->attendanceReportService->getAvailableMonths();
+        $attendanceReports = [];
+
+        // Get all users with check-ins
+        $usersWithCheckIns = User::whereHas('checkIns', function($q) use ($year, $monthNum) {
+            $q->whereYear('date', $year)
+              ->whereMonth('date', $monthNum);
+        })->get();
+
+        // Generate attendance report for each user
+        foreach ($usersWithCheckIns as $user) {
+            $attendanceReports[] = array_merge(
+                $this->attendanceReportService->getMonthlyAttendanceReport($user, $year, $monthNum),
+                ['user' => $user]
+            );
+        }
+
+        return view('users.checkin_index', compact(
+            'checkIns',
+            'attendanceReports',
+            'availableMonths',
+            'month'
+        ));
     }
 
 
