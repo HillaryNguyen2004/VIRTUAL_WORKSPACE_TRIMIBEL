@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\Task;
 use App\Models\CalendarEvent;
+use App\Models\Holiday;
 use App\Repositories\CalendarRepository;
 use Carbon\Carbon;
 use Google\Client as GoogleClient;
@@ -27,8 +28,9 @@ class CalendarService
         $systemEvents = $this->getSystemTasksFormatted($user);
         $customEvents = $this->getCustomEventsFormatted($user);
         $googleEvents = $user->is_google_connected ? $this->getGoogleEvents($user) : [];
+        $holidays = $this->getHolidaysFormatted();
 
-        return array_merge($systemEvents, $customEvents, $googleEvents);
+        return array_merge($systemEvents, $customEvents, $googleEvents, $holidays);
     }
 
     /**
@@ -250,6 +252,67 @@ class CalendarService
             Log::error('Google Fetch Error: ' . $e->getMessage());
             return [];
         }
+    }
+
+    /**
+     * Source C: Holidays (Global, read-only on calendar)
+     * Expands multi-day holidays to show an event for each day
+     */
+    protected function getHolidaysFormatted()
+    {
+        $holidays = Holiday::all();
+        $formattedHolidays = [];
+
+        foreach ($holidays as $holiday) {
+            $startDate = $holiday->start_date->copy()->startOfDay();
+            $endDate = $holiday->end_date ? $holiday->end_date->copy()->startOfDay() : $startDate->copy();
+
+            // If end date is before start date, swap them
+            if ($endDate->isBefore($startDate)) {
+                [$startDate, $endDate] = [$endDate, $startDate];
+            }
+
+            // Create an event for each day of the holiday
+            $current = $startDate->copy();
+            $dayIndex = 0;
+
+            while ($current->lte($endDate) && $dayIndex < 366) { // Max 366 days to prevent infinite loops
+                // Create unique ID for each day of the holiday
+                $dayId = 'holiday_' . $holiday->id . '_day_' . $dayIndex;
+                
+                // For single-day holidays, show the title normally
+                // For multi-day, show "Day X" or keep the title
+                $dayTitle = $current->isSameDay($endDate) && $current->isSameDay($startDate)
+                    ? '🎉 ' . $holiday->title
+                    : '🎉 ' . $holiday->title . ' (Day ' . ($dayIndex + 1) . ')';
+
+                $formattedHolidays[] = [
+                    'id' => $dayId,
+                    'title' => $dayTitle,
+                    'start' => $current->toIso8601String(),
+                    'end' => $current->copy()->addDay()->toIso8601String(), // End at start of next day for all-day
+                    'allDay' => true,
+                    'category' => 'holiday',
+                    'classNames' => [
+                        'bg-warning',
+                        'border-l-[3px]',
+                        'border-warning',
+                        'text-white',
+                        'shadow-sm'
+                    ],
+                    'extendedProps' => [
+                        'type' => 'holiday',
+                        'holiday_id' => $holiday->id
+                    ],
+                    'editable' => false // Holidays are read-only
+                ];
+
+                $current->addDay();
+                $dayIndex++;
+            }
+        }
+
+        return $formattedHolidays;
     }
 
     /**

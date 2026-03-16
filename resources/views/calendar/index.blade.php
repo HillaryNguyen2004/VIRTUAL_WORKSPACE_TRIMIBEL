@@ -106,6 +106,11 @@
                         <div class="w-2.5 h-2.5 rounded-full bg-secondary ring-2 ring-transparent group-hover:ring-secondary/20 transition-all"></div>
                         <span class="text-sm font-medium text-main">{{ __('calendar.cat_other') }}</span>
                     </li>
+                    <li class="flex items-center gap-3 group cursor-pointer category-filter-item" data-category="holiday">
+                        <input type="checkbox" checked class="category-filter w-4 h-4 rounded border-muted-300 text-warning focus:ring-warning focus:ring-offset-0 cursor-pointer" data-category="holiday">
+                        <div class="w-2.5 h-2.5 rounded-full bg-warning ring-2 ring-transparent group-hover:ring-warning/20 transition-all"></div>
+                        <span class="text-sm font-medium text-main">🎉 {{ __('calendar.cat_holiday') ?? 'Holidays' }}</span>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -352,7 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize Calendar
     // Global filter state
     var activeCalendars = new Set(['tasks', 'google']);
-    var activeCategories = new Set(['other', 'tasks', 'meeting']);
+    var activeCategories = new Set(['other', 'tasks', 'meeting', 'holiday']);
 
     var calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'timeGridWeek',
