@@ -32,6 +32,10 @@ Route::middleware(['auth', 'role:staff|substaff'])->group(function () {
         Route::post('/staff/substaff/{user}/permissions', [UserController::class, 'updateSubstaffPermissions'])
             ->middleware('admin_or_permission:staff.substaff.edit')
             ->name('staff.substaff.permissions.update');
+
+        Route::post('/staff/substaff/{user}/demote', [UserController::class, 'demoteSubstaff'])
+            ->middleware('admin_or_permission:staff.substaff.edit')
+            ->name('staff.substaff.demote');
     });
     // Route::get('/staff/substaff/create', [UserController::class, 'createSubstaff'])
     // ->name('staff.substaff.create');

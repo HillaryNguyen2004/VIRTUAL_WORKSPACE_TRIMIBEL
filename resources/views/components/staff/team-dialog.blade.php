@@ -73,7 +73,7 @@
                                         $role = $member->getRoleNames()->first(); 
                                         $role_color = $role == 'substaff' 
                                             ? 'border-primary/50 bg-primary/10 text-primary' 
-                                            : 'border-muted-200 bg-muted-200 text-muted-500';
+                                            : 'border-muted-400 bg-muted-100 text-muted-500';
                                     @endphp
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $role_color }} capitalize">
                                         {{ $role }}
@@ -82,23 +82,28 @@
                                 @if(auth()->user()->hasRole('staff'))
                                     <td class="px-6 py-4">
                                         @if($role == 'substaff')
-                                            <form method="POST" action="{{ route('staff.substaff.make', $member) }}" class="flex items-center gap-2">
-                                                @csrf
-                                                <button title="{{ __('staff_dashboard.edit_permissions') }}" class="px-2 py-2 rounded-lg text-muted-500 hover:text-secondary hover:bg-secondary/10 transition-all" type="submit">
+                                            <div class="flex items-center gap-2">
+                                                {{-- EDIT BUTTON (Redirects to the edit page without wiping data) --}}
+                                                <a href="{{ route('staff.substaff.permissions.edit', $member) }}" title="{{ __('staff_dashboard.edit_permissions') }}" class="px-2 py-2 rounded-lg text-muted-500 hover:text-secondary hover:bg-secondary/10 transition-all">
                                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 lucide lucide-user-pen-icon lucide-user-pen">
                                                         <path d="M11.5 15H7a4 4 0 0 0-4 4v2"/>
                                                         <path d="M21.378 16.626a1 1 0 0 0-3.004-3.004l-4.01 4.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/>
                                                         <circle cx="10" cy="7" r="4"/>
                                                     </svg>
-                                                </button>
-                                                <button title="{{ __('staff_dashboard.demote') }}" class="px-2 py-2 rounded-lg text-muted-500 hover:text-danger hover:bg-danger/10 transition-all" type="submit">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 lucide lucide-user-minus-icon lucide-user-minus">
-                                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                                                        <circle cx="9" cy="7" r="4"/>
-                                                        <line x1="22" x2="16" y1="11" y2="11"/>
-                                                    </svg>
-                                                </button>
-                                            </form>
+                                                </a>
+
+                                                {{-- DEMOTE BUTTON --}}
+                                                <form method="POST" action="{{ route('staff.substaff.demote', $member) }}" class="m-0" onsubmit="return confirm('Are you sure you want to demote this user?');">
+                                                    @csrf
+                                                    <button title="{{ __('staff_dashboard.demote') }}" class="px-2 py-2 rounded-lg text-muted-500 hover:text-danger hover:bg-danger/10 transition-all" type="submit">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 lucide lucide-user-minus-icon lucide-user-minus">
+                                                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                                            <circle cx="9" cy="7" r="4"/>
+                                                            <line x1="22" x2="16" y1="11" y2="11"/>
+                                                        </svg>
+                                                    </button>
+                                                </form>
+                                            </div>
                                         @else
                                             <form method="POST" action="{{ route('staff.substaff.make', $member) }}">
                                                 @csrf

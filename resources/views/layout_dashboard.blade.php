@@ -49,116 +49,127 @@
         <nav class="flex flex-col gap-[79px] -translate-x-full xl:translate-x-0 bg-white w-fit h-screen border-r border-muted-200 p-5 z-40 pointer-events-auto transition duration-300"
             id="sidebar">
 
-            <div class="w-full text-center sm:text-left font-bold text-2xl text-primary tracking-tight">
-                Logo
-            </div>
+            @php
+                use Illuminate\Support\Facades\Route;
+                $dashRoute = 'user.dashboard';
+                if (auth()->user()->hasRole('admin') && Route::has('admin.dashboard')) {
+                    $dashRoute = 'admin.dashboard';
+                } elseif (auth()->user()->hasRole('subadmin') && Route::has('subadmin.dashboard')) {
+                    $dashRoute = 'subadmin.dashboard';
+                } elseif (auth()->user()->hasRole('staff') && Route::has('staff.dashboard')) {
+                    $dashRoute = 'staff.dashboard';
+                } elseif (auth()->user()->hasRole('substaff') && Route::has('substaff.dashboard')) {
+                    $dashRoute = 'substaff.dashboard';
+                }
+            @endphp
 
-            <ul class="flex flex-col gap-2 justify-start sm:w-[220px]">
-                @php
-                    use Illuminate\Support\Facades\Route;
-                    $dashRoute = 'user.dashboard';
-                    if (auth()->check()) {
-                        if (auth()->user()->hasRole('admin') && Route::has('admin.dashboard')) {
-                            $dashRoute = 'admin.dashboard';
-                        } elseif (auth()->user()->hasRole('subadmin') && Route::has('subadmin.dashboard')) {
-                            $dashRoute = 'subadmin.dashboard';
-                        } elseif (auth()->user()->hasRole('staff') && Route::has('staff.dashboard')) {
-                            $dashRoute = 'staff.dashboard';
-                        } elseif (auth()->user()->hasRole('substaff') && Route::has('substaff.dashboard')) {
-                            $dashRoute = 'substaff.dashboard';
-                        }
-                    }
-                @endphp
+            <a href="{{ route($dashRoute) }}" class="w-full flex items-center justify-center sm:justify-start">
+                {{-- Full logo: visible only on sm and above --}}
+                <img src="{{ asset('img/logo/Tremibel logo-01.png') }}" alt="Tremibel"
+                    class="hidden sm:block h-16 w-auto">
+                {{-- Monogram: visible below sm --}}
+                <img src="{{ asset('img/logo/monogram-07.png') }}" alt="Tremibel"
+                    class="block sm:hidden h-16 w-auto">
+            </a>
+
+            <ul class="flex flex-col gap-1 justify-start sm:w-[220px]">
+                <div class="pb-2 px-4 hidden sm:block border-muted-200 text-xs font-semibold text-muted-400 uppercase tracking-wider">
+                    my space
+                </div>
+                            
                 <li>
                     <x-nav-link href="{{ route($dashRoute) }}" :active="request()->routeIs(['*.dashboard'])"
-                        class="flex items-center gap-4 px-4 py-3 hover:bg-muted-50 rounded-xl cursor-pointer transition-colors group {{ request()->routeIs(['*.dashboard']) ? 'text-primary bg-primary/5' : 'text-muted-500' }}">
-                        <svg viewBox="0 0 128 128"
-                            class="h-5 w-5 transition-colors {{ request()->routeIs(['*.dashboard']) ? 'text-primary' : 'text-muted-400 group-hover:text-primary' }}"
-                            fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round"
-                            stroke-linejoin="round">
-                            <rect x="8" y="8" width="112" height="112" rx="14" />
-                            <path d="M72 20V108M72 64H108" />
+                        class="flex items-center gap-4  rounded-xl cursor-pointer transition-colors group">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 lucide lucide-layout-dashboard-icon lucide-layout-dashboard">
+                            <rect width="7" height="9" x="3" y="3" rx="1"/>
+                            <rect width="7" height="5" x="14" y="3" rx="1"/>
+                            <rect width="7" height="9" x="14" y="12" rx="1"/>
+                            <rect width="7" height="5" x="3" y="16" rx="1"/>
                         </svg>
                         <span class="hidden sm:inline font-medium">{{ __('app.dashboard') }}</span>
                     </x-nav-link>
                 </li>
 
                 <li>
-                    <x-nav-link href="{{ route('chat.index') }}" :active="request()->routeIs('chat.index')"
-                        class="flex items-center gap-4 px-4 py-3 hover:bg-muted-50 rounded-xl cursor-pointer transition-colors group {{ request()->routeIs('chat.index') ? 'text-primary bg-primary/5' : 'text-muted-500' }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
-                            class="w-5 h-5 transition-colors {{ request()->routeIs('chat.index') ? 'fill-primary' : 'fill-muted-400 group-hover:fill-primary' }}">
-                            <path
-                                d="M115.9 448.9C83.3 408.6 64 358.4 64 304C64 171.5 178.6 64 320 64C461.4 64 576 171.5 576 304C576 436.5 461.4 544 320 544C283.5 544 248.8 536.8 217.4 524L101 573.9C97.3 575.5 93.5 576 89.5 576C75.4 576 64 564.6 64 550.5C64 546.2 65.1 542 67.1 538.3L115.9 448.9zM153.2 418.7C165.4 433.8 167.3 454.8 158 471.9L140 505L198.5 479.9C210.3 474.8 223.7 474.7 235.6 479.6C261.3 490.1 289.8 496 319.9 496C437.7 496 527.9 407.2 527.9 304C527.9 200.8 437.8 112 320 112C202.2 112 112 200.8 112 304C112 346.8 127.1 386.4 153.2 418.7z" />
-                        </svg>
-                        <span class="hidden sm:inline font-medium">{{ __('app.chat_box') }}</span>
-                    </x-nav-link>
-                </li>
-
-                <li>
                     <x-nav-link href="{{ route('calendar') }}" :active="request()->routeIs('calendar*')"
-                        class="flex items-center gap-4 px-4 py-3 hover:bg-muted-50 rounded-xl cursor-pointer transition-colors group {{ request()->routeIs('calendar*') ? 'text-primary bg-primary/5' : 'text-muted-500' }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                            class="w-5 h-5 transition-colors {{ request()->routeIs('calendar*') ? 'text-primary' : 'text-muted-400 group-hover:text-primary' }}"
-                            fill="none" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        class="flex items-center gap-4  rounded-xl cursor-pointer transition-colors group">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 lucide lucide-calendar-icon lucide-calendar">
+                            <path d="M8 2v4"/>
+                            <path d="M16 2v4"/>
+                            <rect width="18" height="18" x="3" y="4" rx="2"/>
+                            <path d="M3 10h18"/>
                         </svg>
                         <span class="hidden sm:inline font-medium">{{ __('app.calendar') }}</span>
                     </x-nav-link>
                 </li>
 
+                <div class="my-2 h-px flex w-full bg-muted-200 "></div>
+                <div class="py-2 px-4 hidden sm:block border-muted-200 text-xs font-semibold text-muted-400 uppercase tracking-wider">
+                    Team Hub
+                </div>
+
+                <li>
+                    <x-nav-link href="{{ route('chat.index') }}" :active="request()->routeIs('chat.index')"
+                        class="flex items-center gap-4  rounded-xl cursor-pointer transition-colors group">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 lucide lucide-message-circle-icon lucide-message-circle">
+                            <path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/>
+                        </svg>
+                        <span class="hidden sm:inline font-medium">{{ __('app.chat_box') }}</span>
+                    </x-nav-link>
+                </li>
+
+
                 <li>
                     <x-nav-link href="{{ route('meeting') }}" :active="request()->routeIs('meeting*')"
-                        class="flex items-center gap-4 px-4 py-3 hover:bg-muted-50 rounded-xl cursor-pointer transition-colors group {{ request()->routeIs('meeting*') ? 'text-primary bg-primary/5' : 'text-muted-500' }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                            class="w-6 h-6 transition-colors {{ request()->routeIs('meeting*') ? 'text-primary' : 'text-muted-400 group-hover:text-primary' }}"
-                            fill="none" stroke="currentColor" stroke-width="2">
-                            <path
-                                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14v-4zM5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        class="flex items-center gap-4  rounded-xl cursor-pointer transition-colors group">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 lucide lucide-video-icon lucide-video">
+                            <path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/>
                         </svg>
                         <span class="hidden sm:inline font-medium">{{ __('app.video_chat') }}</span>
                     </x-nav-link>
                 </li>
 
-                <li>
-                    <x-nav-link href="{{ route('wbo.index') }}" :active="request()->routeIs('wbo.*')"
-                        class="flex items-center gap-4 px-4 py-3 hover:bg-muted-50 rounded-xl cursor-pointer transition-colors group {{ request()->routeIs('wbo.*') ? 'text-primary bg-primary/5' : 'text-muted-500' }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                            class="w-5 h-5 transition-colors {{ request()->routeIs('wbo.*') ? 'text-primary' : 'text-muted-400 group-hover:text-primary' }}"
-                            fill="none" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9" />
-                        </svg>
-                        <span class="hidden sm:inline font-medium">{{ __('app.whiteboard') }}</span>
-                    </x-nav-link>
-                </li>
+                <div class="my-2 h-px flex w-full bg-muted-200 "></div>
+                <div class="py-2 px-4 hidden sm:block border-muted-200 text-xs font-semibold text-muted-400 uppercase tracking-wider">
+                    Studio
+                </div>
 
                 <li>
                     <x-nav-link href="{{ route('online-docs.home') }}" :active="request()->routeIs('online-docs.*')"
-                        class="flex items-center gap-4 px-4 py-3 hover:bg-muted-50 rounded-xl cursor-pointer transition-colors group {{ request()->routeIs('online-docs.*') ? 'text-primary bg-primary/5' : 'text-muted-500' }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                            class="w-5 h-5 transition-colors {{ request()->routeIs('online-docs.*') ? 'text-primary' : 'text-muted-400 group-hover:text-primary' }}"
-                            fill="none" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M14 3v5h5" />
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6" />
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17h6" />
+                        class="flex items-center gap-4  rounded-xl cursor-pointer transition-colors group">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 lucide lucide-file-text-icon lucide-file-text">
+                            <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/>
+                            <path d="M14 2v5a1 1 0 0 0 1 1h5"/>
+                            <path d="M10 9H8"/>
+                            <path d="M16 13H8"/>
+                            <path d="M16 17H8"/>
                         </svg>
                         <span class="hidden sm:inline font-medium">{{ __('app.online_documents') }}</span>
                     </x-nav-link>
                 </li>
 
                 <li>
+                    <x-nav-link href="{{ route('wbo.index') }}" :active="request()->routeIs('wbo.*')"
+                        class="flex items-center gap-4  rounded-xl cursor-pointer transition-colors group">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 lucide lucide-line-squiggle-icon lucide-line-squiggle">
+                            <path d="M7 3.5c5-2 7 2.5 3 4C1.5 10 2 15 5 16c5 2 9-10 14-7s.5 13.5-4 12c-5-2.5.5-11 6-2"/>
+                        </svg>
+                        <span class="hidden sm:inline font-medium">{{ __('app.whiteboard') }}</span>
+                    </x-nav-link>
+                </li>
+
+                <div class="my-2 h-px flex w-full bg-muted-200 "></div>
+                <div class="py-2 px-4 hidden sm:block border-muted-200 text-xs font-semibold text-muted-400 uppercase tracking-wider">
+                    Intelligence
+                </div>
+
+                <li>
                     <x-nav-link href="{{ route('ai.upload') }}" :active="request()->routeIs('ai.*')"
-                        class="flex items-center gap-4 px-4 py-3 hover:bg-muted-50 rounded-xl cursor-pointer transition-colors group {{ request()->routeIs('ai.*') ? 'text-primary bg-primary/5' : 'text-muted-500' }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                            class="w-5 h-5 transition-colors {{ request()->routeIs('ai.*') ? 'text-primary' : 'text-muted-400 group-hover:text-primary' }}"
-                            fill="none" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c3 0 5 1 5 3s-2 3-5 3-5-1-5-3 2-3 5-3z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 6v4c0 2 2 3 5 3s5-1 5-3V6" />
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 13v4c0 2 2 3 5 3s5-1 5-3v-4" />
+                        class="flex items-center gap-4  rounded-xl cursor-pointer transition-colors group">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 lucide lucide-layers-icon lucide-layers">
+                            <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/>
+                            <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/>
+                            <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/>
                         </svg>
                         <span class="hidden sm:inline font-medium">{{ __('ai.nav_workspace') }}</span>
                     </x-nav-link>
@@ -182,7 +193,7 @@
 
     <div class="flex flex-col w-full h-full min-h-0">
         
-        <nav class="flex justify-between xl:justify-end pl-10 pr-10 xl:pr-[64px] py-3 bg-white border-muted-200 shadow-[0_4px_40px_0_rgba(206,197,242,0.2)] z-50 shrink-0">
+        <nav class="flex justify-between xl:justify-end pl-10 pr-10 xl:pr-[64px] py-3 bg-white border-muted-200 shadow-[0_4px_40px_0_rgba(206,197,242,0.2)] z-40 shrink-0">
             <button class="flex items-center xl:hidden hover:bg-muted-50 rounded-full p-2 text-primary" id="sidebar-menu-btn">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-6 h-6 fill-current">
                     <path

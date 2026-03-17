@@ -6,7 +6,8 @@
         $canEditDepartments = auth()->user()->can('admin.departments.edit');
     @endphp
     <div class="flex flex-col gap-6 w-full max-w-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center">
+            <x-back-btn></x-back-btn>
             <div>
                 <h2 class="font-bold text-3xl text-main tracking-tight">Quản lý phòng ban</h2>
                 <p class="text-muted-500 text-sm mt-1">Tạo phòng ban và gán nhân viên (staff) vào phòng ban.</p>

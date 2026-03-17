@@ -6,7 +6,8 @@
     <div class="h-full w-full lg:w-1/2">
         <!-- Logo -->
         <div class="flex z-50 w-full justify-between">
-            Logo
+            <img src="{{ asset('img/logo/Tremibel logo-01.png') }}" alt="Tremibel"
+                class="h-16 w-auto">
             <ul>
                 <li>
                     @php $currentLocale = app()->getLocale(); @endphp
@@ -106,10 +107,10 @@
                 </button>
 
                 <!-- Route to signup -->
-                <p class="text-center text-xs md:text-sm text-muted-400">
+                <!-- <p class="text-center text-xs md:text-sm text-muted-400">
                     {{ __('login.dont_have_account') }}
                     <a href="{{ route('register') }}" class="text-primary hover:underline font-medium">{{ __('login.sign_up_here') }}</a>
-                </p>
+                </p> -->
             </form>
         </div>
     </div>
