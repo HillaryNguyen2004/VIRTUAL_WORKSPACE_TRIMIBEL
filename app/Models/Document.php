@@ -15,6 +15,8 @@ class Document extends Model
         'type',
         'html_path',
         'docx_path',
+        'xlsx_path',
+        'pptx_path',
         'last_edited_by',
     ];
 

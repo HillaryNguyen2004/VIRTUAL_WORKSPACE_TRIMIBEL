@@ -13,7 +13,9 @@
             </a>
         </div>
 
-        <div class="bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5">
+        @include('online-docs.partials.home-nav', ['currentType' => $type])
+
+        <div class="bg-white rounded-xl p-5 border border-muted-200">
             @if($type === 'docs')
                 <form method="POST" action="{{ route($createRouteName) }}" class="flex flex-col gap-4">
                     @csrf
@@ -31,17 +33,28 @@
                     </div>
                 </form>
             @else
-                <form method="POST" action="{{ route($createRouteName) }}">
+                <form method="POST" action="{{ route($createRouteName) }}" class="flex flex-col gap-3 sm:flex-row sm:items-center">
                     @csrf
+                    <input
+                        type="text"
+                        name="title"
+                        required
+                        value="{{ old('title') }}"
+                        class="flex-1 rounded-xl border border-muted-200 px-4 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
+                        placeholder="{{ __('online_docs.new_doc_title') }}"
+                    />
                     <button type="submit" class="px-5 py-2 rounded-xl bg-secondary text-white font-medium hover:bg-secondary/90 transition-colors">
                         {{ $type === 'excel' ? __('online_docs.create_excel') : __('online_docs.create_powerpoint') }}
                     </button>
                 </form>
+                @error('title')
+                    <p class="mt-2 text-sm text-danger">{{ $message }}</p>
+                @enderror
             @endif
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5">
+            <div class="bg-white rounded-xl p-5 border border-muted-200">
                 <h3 class="text-lg font-semibold text-main mb-4">{{ __('online_docs.owned_docs') }}</h3>
                 @forelse($ownedDocuments as $document)
                     <div class="flex items-center justify-between py-2 border-b border-muted-100 last:border-b-0">
@@ -49,9 +62,55 @@
                             <p class="text-sm font-medium text-main truncate" title="{{ $document->title }}">{{ $document->title }}</p>
                             <p class="text-xs text-muted-400">{{ __('online_docs.owner') }}: {{ $document->owner->name ?? $document->owner->email ?? '—' }}</p>
                         </div>
-                        <a href="{{ route('online-docs.docs.show', $document) }}" class="text-sm text-primary hover:text-primary-hover font-medium">
-                            {{ __('online_docs.open') }}
-                        </a>
+                        <div class="flex items-center gap-3">
+                            <a href="{{ route('online-docs.docs.show', $document) }}" class="text-sm text-primary hover:text-primary-hover font-medium">
+                                {{ __('online_docs.open') }}
+                            </a>
+                            @if(Gate::check('update', $document) || Gate::check('delete', $document))
+                                <div class="relative" data-menu>
+                                    <button type="button" data-menu-trigger class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-muted-200 text-muted-600 hover:bg-muted-100" aria-label="{{ __('online_docs.more_actions') }}">
+                                        <svg viewBox="0 0 20 20" class="h-4 w-4" fill="currentColor" aria-hidden="true">
+                                            <circle cx="4" cy="10" r="1.5" />
+                                            <circle cx="10" cy="10" r="1.5" />
+                                            <circle cx="16" cy="10" r="1.5" />
+                                        </svg>
+                                    </button>
+                                    <div class="absolute right-0 z-10 mt-2 hidden w-56 rounded-xl border border-muted-200 bg-white p-3 shadow-lg" data-menu-panel>
+                                                <form method="POST" action="{{ route('online-docs.links.store', $document) }}" class="flex">
+                                                    @csrf
+                                                    <button type="submit" class="w-full rounded-lg px-3 py-2 text-left text-xs text-primary hover:bg-muted-50">
+                                                        {{ __('online_docs.add_to_storage') }}
+                                                    </button>
+                                                </form>
+                                        @can('update', $document)
+                                            <form method="POST" action="{{ route('online-docs.docs.rename', $document) }}" class="flex flex-col gap-2">
+                                                @csrf
+                                                @method('PUT')
+                                                <input
+                                                    type="text"
+                                                    name="title"
+                                                    required
+                                                    value="{{ $document->title }}"
+                                                    class="rounded-lg border border-muted-200 px-2 py-1 text-xs"
+                                                />
+                                                <button type="submit" class="px-3 py-1 rounded-lg bg-muted-100 text-muted-700 text-xs hover:bg-muted-200">
+                                                    {{ __('online_docs.rename') }}
+                                                </button>
+                                            </form>
+                                        @endcan
+                                        @can('delete', $document)
+                                            <form method="POST" action="{{ route('online-docs.docs.delete', $document) }}" class="mt-2">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="w-full px-3 py-1 rounded-lg bg-danger/10 text-danger text-xs hover:bg-danger/20">
+                                                    {{ __('online_docs.delete') }}
+                                                </button>
+                                            </form>
+                                        @endcan
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
                     </div>
                 @empty
                     <p class="text-sm text-muted-400">{{ __('online_docs.empty_owned') }}</p>
@@ -66,9 +125,55 @@
                             <p class="text-sm font-medium text-main truncate" title="{{ $document->title }}">{{ $document->title }}</p>
                             <p class="text-xs text-muted-400">{{ __('online_docs.owner') }}: {{ $document->owner->name ?? $document->owner->email ?? '—' }}</p>
                         </div>
-                        <a href="{{ route('online-docs.docs.show', $document) }}" class="text-sm text-primary hover:text-primary-hover font-medium">
-                            {{ __('online_docs.open') }}
-                        </a>
+                        <div class="flex items-center gap-3">
+                            <a href="{{ route('online-docs.docs.show', $document) }}" class="text-sm text-primary hover:text-primary-hover font-medium">
+                                {{ __('online_docs.open') }}
+                            </a>
+                            @if(Gate::check('update', $document) || Gate::check('delete', $document))
+                                <div class="relative" data-menu>
+                                    <button type="button" data-menu-trigger class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-muted-200 text-muted-600 hover:bg-muted-100" aria-label="{{ __('online_docs.more_actions') }}">
+                                        <svg viewBox="0 0 20 20" class="h-4 w-4" fill="currentColor" aria-hidden="true">
+                                            <circle cx="4" cy="10" r="1.5" />
+                                            <circle cx="10" cy="10" r="1.5" />
+                                            <circle cx="16" cy="10" r="1.5" />
+                                        </svg>
+                                    </button>
+                                    <div class="absolute right-0 z-10 mt-2 hidden w-56 rounded-xl border border-muted-200 bg-white p-3 shadow-lg" data-menu-panel>
+                                            <form method="POST" action="{{ route('online-docs.links.store', $document) }}" class="flex">
+                                                @csrf
+                                                <button type="submit" class="w-full rounded-lg px-3 py-2 text-left text-xs text-primary hover:bg-muted-50">
+                                                    {{ __('online_docs.add_to_storage') }}
+                                                </button>
+                                            </form>
+                                        @can('update', $document)
+                                            <form method="POST" action="{{ route('online-docs.docs.rename', $document) }}" class="flex flex-col gap-2">
+                                                @csrf
+                                                @method('PUT')
+                                                <input
+                                                    type="text"
+                                                    name="title"
+                                                    required
+                                                    value="{{ $document->title }}"
+                                                    class="rounded-lg border border-muted-200 px-2 py-1 text-xs"
+                                                />
+                                                <button type="submit" class="px-3 py-1 rounded-lg bg-muted-100 text-muted-700 text-xs hover:bg-muted-200">
+                                                    {{ __('online_docs.rename') }}
+                                                </button>
+                                            </form>
+                                        @endcan
+                                        @can('delete', $document)
+                                            <form method="POST" action="{{ route('online-docs.docs.delete', $document) }}" class="mt-2">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="w-full px-3 py-1 rounded-lg bg-danger/10 text-danger text-xs hover:bg-danger/20">
+                                                    {{ __('online_docs.delete') }}
+                                                </button>
+                                            </form>
+                                        @endcan
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
                     </div>
                 @empty
                     <p class="text-sm text-muted-400">{{ __('online_docs.empty_shared') }}</p>
@@ -77,3 +182,45 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const menus = Array.from(document.querySelectorAll('[data-menu]'));
+
+        const closeAllMenus = () => {
+            menus.forEach((menu) => {
+                const panel = menu.querySelector('[data-menu-panel]');
+                panel?.classList.add('hidden');
+            });
+        };
+
+        menus.forEach((menu) => {
+            const trigger = menu.querySelector('[data-menu-trigger]');
+            const panel = menu.querySelector('[data-menu-panel]');
+            if (!trigger || !panel) {
+                return;
+            }
+
+            trigger.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const isOpen = !panel.classList.contains('hidden');
+                closeAllMenus();
+                panel.classList.toggle('hidden', isOpen);
+            });
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!event.target.closest('[data-menu]')) {
+                closeAllMenus();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeAllMenus();
+            }
+        });
+    });
+</script>
+@endpush

@@ -8,7 +8,11 @@ if (!inputPath || !outputPath) {
     process.exit(1);
 }
 
-const html = fs.readFileSync(inputPath, 'utf8');
+const rawHtml = fs.readFileSync(inputPath, 'utf8');
+const trimmed = (rawHtml || '').trim();
+const html = trimmed
+    ? (trimmed.includes('<html') ? trimmed : `<!doctype html><html><body>${trimmed}</body></html>`)
+    : '<!doctype html><html><body><p></p></body></html>';
 
 htmlToDocx(html)
     .then((buffer) => {

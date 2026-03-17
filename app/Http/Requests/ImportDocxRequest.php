@@ -14,7 +14,7 @@ class ImportDocxRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'docx' => ['required', 'file', 'mimes:doc,docx', 'max:51200'],
+            'docx' => ['required', 'file', 'mimes:docx', 'max:51200'],
         ];
     }
 }

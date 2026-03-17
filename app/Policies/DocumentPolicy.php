@@ -30,4 +30,9 @@ class DocumentPolicy
     {
         return $document->owner_id === $user->id;
     }
+
+    public function delete(User $user, Document $document): bool
+    {
+        return $document->owner_id === $user->id;
+    }
 }
