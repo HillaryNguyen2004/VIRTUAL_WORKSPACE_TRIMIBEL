@@ -62,6 +62,21 @@ Route::get('/user/dashboard', [DashboardController::class, 'user'])->name('user.
 
 Route::middleware(['auth'])->prefix('online-docs')->name('online-docs.')->group(function () {
     Route::get('/', [OnlineDocumentController::class, 'landing'])->name('home');
+    Route::post('/folders', [OnlineDocumentController::class, 'createFolder'])->name('folders.store');
+    Route::put('/folders/{folder}', [OnlineDocumentController::class, 'renameFolder'])->name('folders.update');
+    Route::delete('/folders/{folder}', [OnlineDocumentController::class, 'deleteFolder'])->name('folders.delete');
+    Route::post('/files', [OnlineDocumentController::class, 'uploadPersonalFile'])->name('files.store');
+    Route::put('/files/{file}', [OnlineDocumentController::class, 'renameFile'])->name('files.update');
+    Route::delete('/files/{file}', [OnlineDocumentController::class, 'deleteFile'])->name('files.delete');
+    Route::get('/files/{file}/download', [OnlineDocumentController::class, 'downloadPersonalFile'])->name('files.download');
+    Route::get('/files/{file}/preview', [OnlineDocumentController::class, 'previewPersonalFile'])->name('files.preview');
+    Route::get('/files/{file}/open', [OnlineDocumentController::class, 'openPersonalFile'])->name('files.open');
+    Route::post('/links/{document}', [OnlineDocumentController::class, 'addDocumentLink'])->name('links.store');
+    Route::put('/links/{link}', [OnlineDocumentController::class, 'renameDocumentLink'])->name('links.update');
+    Route::delete('/links/{link}', [OnlineDocumentController::class, 'deleteDocumentLink'])->name('links.delete');
+    Route::post('/storage/move', [OnlineDocumentController::class, 'moveStorageItem'])->name('storage.move');
+    Route::post('/storage/bulk-move', [OnlineDocumentController::class, 'bulkMoveStorageItems'])->name('storage.bulk-move');
+    Route::post('/storage/bulk-delete', [OnlineDocumentController::class, 'bulkDeleteStorageItems'])->name('storage.bulk-delete');
     Route::get('/docs', [OnlineDocumentController::class, 'docsIndex'])->name('docs');
     Route::post('/docs', [OnlineDocumentController::class, 'store'])->name('docs.store');
     Route::post('/excel', [OnlineDocumentController::class, 'createExcel'])->name('excel.create');
@@ -70,11 +85,28 @@ Route::middleware(['auth'])->prefix('online-docs')->name('online-docs.')->group(
     Route::get('/powerpoint', [OnlineDocumentController::class, 'powerpointIndex'])->name('powerpoint');
     Route::get('/docs/{document}', [OnlineDocumentController::class, 'show'])->name('docs.show');
     Route::put('/docs/{document}', [OnlineDocumentController::class, 'update'])->name('docs.update');
+    Route::put('/docs/{document}/rename', [OnlineDocumentController::class, 'rename'])->name('docs.rename');
+    Route::delete('/docs/{document}', [OnlineDocumentController::class, 'destroy'])->name('docs.delete');
+    Route::get('/docs/{document}/xlsx', [OnlineDocumentController::class, 'downloadXlsx'])->name('docs.xlsx');
+    Route::post('/docs/{document}/xlsx', [OnlineDocumentController::class, 'saveXlsx'])->name('docs.xlsx.save');
     Route::post('/docs/{document}/import', [OnlineDocumentController::class, 'importDocx'])->name('docs.import');
+    Route::post('/docs/{document}/import-xlsx', [OnlineDocumentController::class, 'importXlsx'])->name('docs.import.xlsx');
+    Route::post('/docs/{document}/import-pptx', [OnlineDocumentController::class, 'importPptx'])->name('docs.import.pptx');
     Route::get('/docs/{document}/export', [OnlineDocumentController::class, 'exportDocx'])->name('docs.export');
     Route::post('/docs/{document}/share', [OnlineDocumentController::class, 'share'])->name('docs.share');
     Route::put('/docs/{document}/share', [OnlineDocumentController::class, 'updateShare'])->name('docs.share.update');
     Route::delete('/docs/{document}/share', [OnlineDocumentController::class, 'removeShare'])->name('docs.share.remove');
+    Route::get('/docs/{document}/presence', [OnlineDocumentController::class, 'presence'])->name('docs.presence');
+    Route::post('/docs/{document}/presence', [OnlineDocumentController::class, 'touchPresence'])->name('docs.presence.touch');
+});
+
+Route::prefix('onlyoffice')->name('onlyoffice.')->group(function () {
+    Route::get('/files/{document}', [OnlineDocumentController::class, 'onlyofficeFile'])
+        ->middleware('signed')
+        ->name('files');
+    Route::post('/callback/{document}', [OnlineDocumentController::class, 'onlyofficeCallback'])
+        ->middleware('signed')
+        ->name('callback');
 });
 
 Route::middleware(['auth'])->group(function () {
