@@ -29,12 +29,105 @@ class AdminDashboardController extends Controller
             ->get();
 
         // --- 2. RECENT ATTENDANCE ---
-        // Your CheckIn model links to User via 'user_name', 
-        // but we can also just display the user_name string directly.
         $recentCheckIns = CheckIn::orderBy('date', 'desc')
             ->orderBy('check_in_time', 'desc')
             ->take(5)
             ->get();
+
+        $totalUsersForStats = User::count();
+
+        // --- ATTENDANCE STATISTIC: WEEKLY (ROLLING 7 DAYS) ---
+        $startDate = Carbon::today()->subDays(6);
+        $weeklyLabels = [];
+        $weeklyPresent = [];
+        $weeklyAbsent = [];
+        $weeklyLeave = [];
+
+        for ($i = 0; $i < 7; $i++) {
+            $currentDate = $startDate->copy()->addDays($i);
+            $dateStr = $currentDate->format('Y-m-d');
+            
+            $weeklyLabels[] = $currentDate->format('D'); 
+
+            $presentCount = CheckIn::whereDate('date', $dateStr)
+                ->distinct('user_name')
+                ->count('user_name');
+
+            $leaveCount = DayOffRequest::whereDate('date', $dateStr)
+                ->where('status', 'APPROVED')
+                ->count();
+
+            $absentCount = $totalUsersForStats - $presentCount - $leaveCount;
+            if ($absentCount < 0) $absentCount = 0; 
+
+            $weeklyPresent[] = $presentCount;
+            $weeklyLeave[]   = $leaveCount;
+            $weeklyAbsent[]  = $absentCount;
+        }
+
+        // --- ATTENDANCE STATISTIC: YEARLY (PER MONTH) ---
+        $currentYear = Carbon::now()->year;
+        $yearlyLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        $yearlyPresent = [];
+        $yearlyAbsent = [];
+        $yearlyLeave = [];
+
+        // Fetch all check-ins for the year to process in PHP (avoids SQL dialect issues with COUNT DISTINCT)
+        $checkInsThisYear = CheckIn::whereYear('date', $currentYear)->get(['user_name', 'date']);
+        $presentByMonth = [];
+        foreach ($checkInsThisYear as $checkIn) {
+            $month = Carbon::parse($checkIn->date)->month;
+            // Create a unique key for user+date to act as a distinct tracker
+            $key = $checkIn->user_name . '_' . $checkIn->date;
+            $presentByMonth[$month][$key] = true;
+        }
+
+        // Fetch all leaves for the year
+        $leavesThisYear = DayOffRequest::whereYear('date', $currentYear)
+            ->where('status', 'APPROVED')
+            ->get(['date']);
+        $leavesByMonth = [];
+        foreach ($leavesThisYear as $leave) {
+            $month = Carbon::parse($leave->date)->month;
+            $leavesByMonth[$month] = ($leavesByMonth[$month] ?? 0) + 1;
+        }
+
+        for ($month = 1; $month <= 12; $month++) {
+            $presentCount = isset($presentByMonth[$month]) ? count($presentByMonth[$month]) : 0;
+            $leaveCount = $leavesByMonth[$month] ?? 0;
+
+            // Calculate active working days in that month up to the current day
+            $calcDays = 0;
+            if ($month < Carbon::now()->month) {
+                $calcDays = Carbon::create($currentYear, $month)->daysInMonth;
+            } elseif ($month == Carbon::now()->month) {
+                $calcDays = Carbon::now()->day;
+            }
+
+            $possibleAttendances = $totalUsersForStats * $calcDays;
+            $absentCount = $possibleAttendances - $presentCount - $leaveCount;
+            if ($absentCount < 0) $absentCount = 0;
+
+            $yearlyPresent[] = $presentCount;
+            $yearlyLeave[]   = $leaveCount;
+            $yearlyAbsent[]  = $absentCount;
+        }
+
+        // Combine both datasets
+        $attendanceChartData = [
+            'weekly' => [
+                'labels'  => $weeklyLabels,
+                'present' => $weeklyPresent,
+                'absent'  => $weeklyAbsent,
+                'leave'   => $weeklyLeave,
+            ],
+            'yearly' => [
+                'labels'  => $yearlyLabels,
+                'present' => $yearlyPresent,
+                'absent'  => $yearlyAbsent,
+                'leave'   => $yearlyLeave,
+            ],
+        ];
 
         // --- 3. USER STATS ---
         $totalUsersCount = User::count();
@@ -52,7 +145,7 @@ class AdminDashboardController extends Controller
         ];
 
         // --- 4. COMPANY HOURS ---
-        $companyHour = CompanyHour::first();
+        $workingHour = CompanyHour::first();
 
         // Helper: Convert "12:30:00" to 12.5 (Float) for accurate CSS percentages
         // We use a closure to keep the code clean
@@ -62,13 +155,13 @@ class AdminDashboardController extends Controller
             return $c->hour + ($c->minute / 60);
         };
 
-        if ($companyHour) {
+        if ($workingHour) {
             // CASE A: Record exists - Trust the DB values (even if they are NULL)
-            $companyStartHour      = $toDecimal($companyHour->start_at);
-            $companyEndHour        = $toDecimal($companyHour->end_at);
-            $companyMidDayHour     = $toDecimal($companyHour->mid_day);     // Can be null
-            $companyLunchStartHour = $toDecimal($companyHour->lunch_start); // Can be null
-            $companyLunchEndHour   = $toDecimal($companyHour->lunch_end);   // Can be null
+            $companyStartHour      = $toDecimal($workingHour->start_at);
+            $companyEndHour        = $toDecimal($workingHour->end_at);
+            $companyMidDayHour     = $toDecimal($workingHour->mid_day);     // Can be null
+            $companyLunchStartHour = $toDecimal($workingHour->lunch_start); // Can be null
+            $companyLunchEndHour   = $toDecimal($workingHour->lunch_end);   // Can be null
         } else {
             // CASE B: No Record (Fresh Install) - Force Standard Defaults
             $companyStartHour      = 8;
@@ -134,13 +227,35 @@ class AdminDashboardController extends Controller
             ->where('department_id', '!=', 0)
             ->count();
 
+        // --- NEW: FETCH DEPARTMENT DISTRIBUTION ---
+        // 1. Get all department names to avoid N+1 query loops
+        $departmentsMap = Department::pluck('name', 'id');
+        
+        // 2. Group users by department_id
+        $departmentStats = User::select('department_id', \DB::raw('count(*) as count'))
+            ->groupBy('department_id')
+            ->get()
+            ->map(function ($stat) use ($departmentsMap) {
+                // Map the ID to the name, fallback to 'Unassigned'
+                $deptName = $stat->department_id && isset($departmentsMap[$stat->department_id])
+                    ? $departmentsMap[$stat->department_id] 
+                    : 'Unassigned';
+                    
+                return [
+                    'name' => $deptName,
+                    'count' => $stat->count
+                ];
+            })
+            ->sortByDesc('count')
+            ->values();
+
         return view('admindashboard', compact(
             'recentLogs', 
             'recentCheckIns',
             'totalUsersCount',
             'userGrowthPercentage',
             'roleCounts',
-            'companyHour',
+            'workingHour',
             'companyStartHour',
             'companyEndHour',
             'companyLunchStartHour',
@@ -153,6 +268,8 @@ class AdminDashboardController extends Controller
             'upcomingHolidays',
             'departmentCount',
             'staffInDepartmentsCount',
+            'departmentStats',
+            'attendanceChartData',
         ));
     }
 

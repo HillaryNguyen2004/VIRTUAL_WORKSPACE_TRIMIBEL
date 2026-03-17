@@ -47,7 +47,7 @@
                 @endif
             @endcan -->
             @if($user)
-            <div class="flex items-center bg-primary/10 rounded-2xl py-3 px-6 gap-3 border border-primary/50 transition-all duration-300 group">
+            <div class="flex items-center bg-primary/10 rounded-2xl py-2 px-6 gap-3 border border-primary/50 transition-all duration-300 group">
                     <div class="relative my-auto">
                         <div class="absolute inset-0 bg-primary/20 rounded-full blur-lg opacity-50"></div>
                         <img src="{{ $user->user_profile_photo ?? '/img/undraw_profile_2.svg' }}" alt="leader_avatar" class="relative w-10 h-10 rounded-full">
@@ -68,14 +68,14 @@
         @else
 
             {{-- SUCCESS ALERT --}}
-            @if(session('success'))
+            <!-- @if(session('success'))
                 <div class="bg-secondary/10 text-secondary border border-secondary/20 text-sm font-medium px-4 py-3 rounded-xl w-full animate-fade-in-up flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                     </svg>
                     {{ session('success') }}
                 </div>
-            @endif
+            @endif -->
 
             {{-- MAIN CARD --}}
             <div class="grid gap-6 animate-fade-in-up [animation-delay:150ms]">
@@ -138,7 +138,7 @@
                         </div>
                     @endif
 
-                    {{-- Action Footer --}}
+                    {{-- Submit Button --}}
                     <div class="flex items-center justify-end w-full pt-2 border-t border-muted-100">
                         <button type="submit"
                                 class="flex gap-2 items-center justify-center px-6 py-3 bg-primary hover:bg-primary-hover text-white font-medium rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98]">

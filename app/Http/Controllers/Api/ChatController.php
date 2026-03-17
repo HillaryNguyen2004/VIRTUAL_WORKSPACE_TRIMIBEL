@@ -638,10 +638,31 @@ class ChatController extends Controller
             // Get users who have been active in the last 5 minutes
             $onlineUsers = Cache::get('online_users', []);
 
+            // Fetch users with their relationships
             $users = User::whereIn('id', array_keys($onlineUsers))
                 ->where('id', '!=', Auth::id())
-                ->select(['id', 'name'])
-                ->get();
+                ->with(['roles', 'department', 'tasks']) // Eager load relationships
+                ->get()
+                ->map(function ($user) {
+                    
+                    // Safely calculate task completion percentage
+                    $totalTasks = $user->tasks ? $user->tasks->count() : 0;
+                    $completedTasks = $user->tasks ? $user->tasks->where('status', 'completed')->count() : 0;
+                    $taskCompletion = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100) : 0;
+
+                    // Safely grab role and department names
+                    $roleName = $user->roles->first() ? ucfirst($user->roles->first()->name) : 'Staff';
+                    $departmentName = $user->department ? $user->department->name : 'General';
+
+                    return [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'user_profile_photo' => $user->user_profile_photo, // <-- Update this line!
+                        'role_name' => $roleName,
+                        'department_name' => $departmentName,
+                        'task_completion' => $taskCompletion,
+                    ];
+                });
 
             return response()->json([
                 'success' => true,
