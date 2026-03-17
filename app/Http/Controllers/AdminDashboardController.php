@@ -140,6 +140,7 @@ class AdminDashboardController extends Controller
             'totalUsersCount',
             'userGrowthPercentage',
             'roleCounts',
+            'companyHour',
             'companyStartHour',
             'companyEndHour',
             'companyLunchStartHour',

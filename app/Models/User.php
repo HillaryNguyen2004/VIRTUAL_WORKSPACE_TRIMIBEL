@@ -99,6 +99,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(\App\Models\DayOffRequest::class);
     }
 
+    public function checkIns()
+    {
+        return $this->hasMany(CheckIn::class, 'user_name', 'name');
+    }
+
     public function hasHalfDayOffOn($date)
     {
         return $this->dayOffRequests
