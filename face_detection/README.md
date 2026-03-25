@@ -30,7 +30,7 @@ This service uses **InsightFace** (Buffalo_L model) to provide high-accuracy fac
 
 3.  **Install dependencies:**
     ```bash
-    pip install fastapi uvicorn insightface onnxruntime opencv-python numpy pydantic
+    pip install fastapi uvicorn insightface onnxruntime opencv-python pydantic
     ```
     _Note: Use `onnxruntime-gpu` instead of `onnxruntime` if you have a compatible NVIDIA GPU._
 
@@ -72,7 +72,7 @@ Compares two base64-encoded images to determine if they belong to the same perso
 ## ⚙️ Configuration
 
 - **Model**: `buffalo_l` (InsightFace)
-- **Similarity Threshold**: `0.88` (Adjustable in `app.py`)
+- **Similarity Threshold**: `0.82` (Adjustable in `app.py`)
 - **Port**: 8001 (Configurable via `--port` flag)
 
 ## 🛠 Troubleshooting

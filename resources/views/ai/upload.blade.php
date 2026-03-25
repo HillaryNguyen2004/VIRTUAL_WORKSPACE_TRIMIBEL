@@ -20,7 +20,7 @@
         @endif
 
         <form class="bg-white border border-muted-200 rounded-2xl p-6 md:p-8 shadow-sm"
-              method="POST" action="{{ route('ai.workspaces.store') }}">
+              method="POST" action="{{ route('ai-workspaces.store') }}">
             @csrf
 
             <div class="flex items-center justify-between gap-3">
@@ -34,14 +34,14 @@
             <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="flex flex-col gap-2">
                     <label for="workspace_name" class="text-sm font-semibold text-main">{{ __('ai.workspace_name') }}</label>
-                    <input id="workspace_name" name="workspace_name" type="text"
+                    <input id="workspace_name" name="name" type="text"
                            class="w-full rounded-xl border border-muted-300 px-4 py-3 text-sm focus:border-primary focus:ring-primary"
                            placeholder="{{ __('ai.workspace_name_placeholder') }}" required>
                 </div>
 
                 <div class="flex flex-col gap-2">
                     <label for="workspace_visibility" class="text-sm font-semibold text-main">{{ __('ai.visibility') }}</label>
-                    <select id="workspace_visibility" name="workspace_visibility"
+                    <select id="workspace_visibility" name="visibility"
                             class="w-full rounded-xl border border-muted-300 px-4 py-3 text-sm focus:border-primary focus:ring-primary" required>
                         <option value="private">{{ __('ai.visibility_private') }}</option>
                         <option value="team">{{ __('ai.visibility_team') }}</option>

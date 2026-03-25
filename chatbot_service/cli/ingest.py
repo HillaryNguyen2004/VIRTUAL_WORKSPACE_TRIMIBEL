@@ -1,7 +1,14 @@
 from __future__ import annotations
 import os
+import sys
 from pathlib import Path
 from typing import List
+
+# Ensure project root is importable when running this script by file path.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from src.rag.config import settings
 from src.rag.chunking import make_splitter, iter_data_files, chunk_file
 # from src.rag.embeddings.gemini import embed_texts
@@ -19,7 +26,7 @@ upserts to Chroma
 
 Run before serving queries, or whenever you add/replace docs.
 """
-os.environ["ANONYMIZED_TELEMETRY"] = "False"
+os.environ.setdefault("ANONYMIZED_TELEMETRY", "True")
 
 # infers locale from filename or path
 def infer_locale_from_path(path: Path, default_locale: str = "en-US") -> str:
