@@ -11,7 +11,7 @@ window.DOMPurify = DOMPurify;
 // import.meta.glob('../utils/**/*.js', { eager: true });
 
 let meetingJoined = false;
-const meeting = new Metered.Meeting();
+const meeting = window.Metered?.Meeting ? new window.Metered.Meeting() : null;
 let cameraOn = false;
 let micOn = false;
 let screenSharingOn = false;
@@ -448,6 +448,9 @@ async function joinMeetingFromUrl(username) {
 }
 
 async function initializeView() {
+  if (!meeting) {
+    return;
+  }
   /**
    * Populating the cameras
    */
@@ -551,7 +554,9 @@ async function initializeView() {
     await meeting.chooseAudioInputDevice(deviceId);
   });
 }
-initializeView();
+if (meeting) {
+  initializeView();
+}
 
 /**
  * Join Meeting
@@ -579,7 +584,8 @@ if (document.getElementById('meetingView')) {
 /**
  * Handling Meeting Events
  */
-meeting.on("onlineParticipants", function (participants) {
+if (meeting) {
+  meeting.on("onlineParticipants", function (participants) {
   for (let participantInfo of participants) {
     if (
       !jquery(`#participant-${participantInfo._id}`)[0] &&
@@ -599,16 +605,16 @@ meeting.on("onlineParticipants", function (participants) {
     }
 
   }
-});
+  });
 
-meeting.on("participantLeft", function (participantInfo) {
+  meeting.on("participantLeft", function (participantInfo) {
   jquery("#participant-" + participantInfo._id).remove();
   if (participantInfo._id === activeSpeakerId) {
     jquery("#activeSpeakerUsername").text("").addClass("hidden");
   }
-});
+  });
 
-meeting.on("remoteTrackStarted", function (remoteTrackItem) {
+  meeting.on("remoteTrackStarted", function (remoteTrackItem) {
   jquery("#activeSpeakerUsername").removeClass("hidden");
 
   let mediaStream = new MediaStream();
@@ -637,9 +643,9 @@ meeting.on("remoteTrackStarted", function (remoteTrackItem) {
   }
 
   setActiveSpeaker(remoteTrackItem);
-});
+  });
 
-meeting.on("remoteTrackStopped", function (remoteTrackItem) {
+  meeting.on("remoteTrackStopped", function (remoteTrackItem) {
   if (remoteTrackItem.type === "video") {
     if (jquery("#video-" + remoteTrackItem.participantSessionId)[0]) {
       jquery("#video-" + remoteTrackItem.participantSessionId)[0].srcObject =
@@ -664,9 +670,9 @@ meeting.on("remoteTrackStopped", function (remoteTrackItem) {
       jquery("#audio-" + remoteTrackItem.participantSessionId)[0].pause();
     }
   }
-});
+  });
 
-meeting.on("activeSpeaker", function (activeSpeaker) {
+  meeting.on("activeSpeaker", function (activeSpeaker) {
   setActiveSpeaker(activeSpeaker);
 });
 
@@ -835,4 +841,5 @@ jquery("#leaveMeeting").on("click", async function () {
   await meeting.leaveMeeting();
   jquery("#meetingView").addClass("hidden");
   jquery("#leaveMeetingView").removeClass("hidden");
-});
+  });
+}

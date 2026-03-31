@@ -387,6 +387,22 @@ class UserController extends Controller
         return back()->with('success', 'Substaff permissions updated');
     }
 
+    public function demoteSubstaff(User $user)
+    {
+        // Optional: Ensure the user actually has the substaff role before demoting
+        if (!$user->hasRole('substaff')) {
+            return back()->with('error', 'This user is not substaff.');
+        }
+
+        $this->authorize('assignRole', [$user, 'substaff']);
+
+        $user->syncRoles(['user']); 
+        $user->syncPermissions([]);
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+        return back()->with('success', 'User has been demoted to a standard user.');
+    }
+
     public function updateDepartmentRolePermissions(Request $request, Department $department, Role $role)
     {
         abort_unless(auth()->user()->hasRole('admin'), 403);

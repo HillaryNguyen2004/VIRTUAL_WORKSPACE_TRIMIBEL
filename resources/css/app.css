@@ -2,10 +2,290 @@
 @tailwind components;
 @tailwind utilities;
 
+.tiptap-editor {
+  --doc-page-width: 860px;
+  --doc-zoom: 1;
+}
+
 .tiptap-editor .ProseMirror {
-  min-height: 460px;
+  min-height: 1000px;
   outline: none;
   font-family: "Calibri", "Segoe UI", Arial, sans-serif;
+  max-width: 860px;
+  margin: 0 auto;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+  padding: 56px 64px;
+  position: relative;
+  zoom: var(--doc-zoom);
+}
+
+.tiptap-editor #doc-editor {
+  background: #f8fafc;
+  padding: 24px;
+}
+
+.tiptap-editor .ProseMirror::before,
+.tiptap-editor .ProseMirror::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1px dashed rgba(59, 130, 246, 0.35);
+  pointer-events: none;
+}
+
+.tiptap-editor .ProseMirror::before {
+  left: 64px;
+}
+
+.tiptap-editor .ProseMirror::after {
+  right: 64px;
+}
+
+.tiptap-editor.doc-hide-margin-guides .ProseMirror::before,
+.tiptap-editor.doc-hide-margin-guides .ProseMirror::after {
+  display: none;
+}
+
+.doc-ribbon-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #f8fafc;
+}
+
+.doc-ribbon-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid #dbe2ea;
+}
+
+.doc-ribbon-tab {
+  border: 1px solid transparent;
+  border-radius: 8px 8px 0 0;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: #64748b;
+  background: transparent;
+}
+
+.doc-ribbon-tab-active {
+  color: #0f172a;
+  background: #ffffff;
+  border-color: #dbe2ea;
+  border-bottom-color: #ffffff;
+  font-weight: 600;
+}
+
+.doc-ribbon-group-hidden {
+  display: none;
+}
+
+.doc-ribbon-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #ffffff;
+}
+
+.doc-ribbon-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-right: 1px solid #e2e8f0;
+  padding-right: 10px;
+  position: relative;
+}
+
+.doc-ribbon-label {
+  margin-left: 2px;
+  font-size: 10px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.doc-layout-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  border: 1px solid #d6deea;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 11px;
+  color: #475569;
+  background: #f8fafc;
+}
+
+.doc-layout-toggle-active {
+  background: #eaf2ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.doc-ribbon-btn {
+  min-width: 30px;
+  height: 30px;
+  border: 1px solid #d6deea;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #334155;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 7px;
+}
+
+.doc-ribbon-btn:hover {
+  background: #f1f5f9;
+}
+
+.doc-ribbon-select {
+  height: 30px;
+  border: 1px solid #d6deea;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 12px;
+  padding: 0 8px;
+}
+
+.doc-ribbon-select-wide {
+  min-width: 130px;
+}
+
+.doc-ribbon-color {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #d6deea;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 2px;
+}
+
+.doc-find-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 8px 12px;
+}
+
+.doc-find-input {
+  height: 30px;
+  border: 1px solid #d6deea;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 12px;
+  padding: 0 10px;
+}
+
+.doc-ruler-wrap {
+  display: flex;
+  justify-content: center;
+  background: #eef2f7;
+  border-bottom: 1px solid #dce4ee;
+  padding: 4px 0;
+}
+
+.doc-ruler {
+  position: relative;
+  width: calc(var(--doc-page-width) * var(--doc-zoom));
+  max-width: 100%;
+  height: 24px;
+  background:
+    repeating-linear-gradient(
+      to right,
+      rgba(30, 41, 59, 0.35) 0,
+      rgba(30, 41, 59, 0.35) 1px,
+      transparent 1px,
+      transparent 12.5%
+    );
+  border: 1px solid #d6deea;
+  border-radius: 6px;
+}
+
+.doc-ruler-margin {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 2px;
+  background: #ef4444;
+  opacity: 0.85;
+}
+
+.doc-ruler-margin-left {
+  left: calc(64px * var(--doc-zoom));
+}
+
+.doc-ruler-margin-right {
+  right: calc(64px * var(--doc-zoom));
+}
+
+.tiptap-editor.doc-hide-ruler #doc-ruler-wrap {
+  display: none;
+}
+
+.doc-editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 8px 12px;
+}
+
+.doc-zoom-controls {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #d6deea;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.doc-zoom-btn {
+  border: 0;
+  border-right: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 11px;
+  line-height: 1;
+  padding: 7px 8px;
+}
+
+.doc-zoom-btn:last-child {
+  border-right: 0;
+}
+
+.doc-zoom-btn:hover {
+  background: #f1f5f9;
+}
+
+.doc-zoom-active {
+  background: #eaf2ff;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.doc-zoom-value {
+  min-width: 40px;
+  text-align: right;
+  font-size: 12px;
+  color: #475569;
+  font-weight: 600;
 }
 
 .tiptap-editor .ProseMirror table {
@@ -84,9 +364,57 @@
 }
 
 .doc-toolbar-active {
-  background-color: rgba(83, 71, 204, 0.12);
-  border-color: rgba(83, 71, 204, 0.45);
-  color: #3a2dc1;
+  background-color: #eaf2ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+@media (max-width: 1024px) {
+  .tiptap-editor .ProseMirror {
+    min-height: 900px;
+    padding: 40px 44px;
+  }
+
+  .tiptap-editor .ProseMirror::before {
+    left: 44px;
+  }
+
+  .tiptap-editor .ProseMirror::after {
+    right: 44px;
+  }
+}
+
+@media (max-width: 640px) {
+  .tiptap-editor #doc-editor {
+    padding: 12px;
+  }
+
+  .tiptap-editor .ProseMirror {
+    min-height: 760px;
+    width: 100%;
+    max-width: 100%;
+    padding: 28px 20px;
+  }
+
+  .tiptap-editor .ProseMirror::before {
+    left: 20px;
+  }
+
+  .tiptap-editor .ProseMirror::after {
+    right: 20px;
+  }
+
+  .doc-ribbon-toolbar {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .doc-ribbon-btn,
+  .doc-ribbon-select,
+  .doc-find-input {
+    height: 32px;
+    font-size: 11px;
+  }
 }
 
 @layer utilities {

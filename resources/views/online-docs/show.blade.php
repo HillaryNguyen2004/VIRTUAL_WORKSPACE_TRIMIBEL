@@ -2,32 +2,108 @@
 @section('title', __('online_docs.title'))
 
 @section('content')
-    <div class="flex flex-col gap-6 w-full mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
+    <div class="online-docs-editor-page flex flex-col gap-4 w-full mx-auto text-main px-2 md:px-4 lg:px-6 py-4 min-h-[calc(100vh-2rem)]">
         @php
-            $canEdit = auth()->user()->can('update', $document);
+            $canEdit = $editorCanEdit ?? auth()->user()->can('update', $document);
+            $canUpdateDocument = auth()->user()->can('update', $document);
+            $isExcel = $document->type === 'excel';
+            $isDocs = $document->type === 'docs';
+            $isPowerpoint = $document->type === 'powerpoint';
+            $isForcedViewMode = $forcedView ?? (request()->query('mode') === 'view');
+            $importField = $isExcel ? 'xlsx' : ($isPowerpoint ? 'pptx' : 'docx');
+            $importLabel = $isExcel ? __('online_docs.import_xlsx') : ($isPowerpoint ? __('online_docs.import_pptx') : __('online_docs.import_docx'));
+            $importAccept = $isExcel ? '.xls,.xlsx' : ($isPowerpoint ? '.ppt,.pptx' : '.doc,.docx');
+            $importAction = $isExcel
+                ? route('online-docs.docs.import.xlsx', $document)
+                : ($isPowerpoint
+                    ? route('online-docs.docs.import.pptx', $document)
+                    : route('online-docs.docs.import', $document));
+            $xlsxUrl = route('online-docs.docs.xlsx', $document) . '?v=' . ($document->updated_at?->getTimestamp() ?: time());
+            $shouldOpenImportModal = session('docx_error')
+                || session('xlsx_error')
+                || session('pptx_error')
+                || $errors->has('docx')
+                || $errors->has('xlsx')
+                || $errors->has('pptx');
+            $shouldOpenShareModal = $errors->has('email')
+                || $errors->has('permission')
+                || $errors->has('user_id');
+            $presenceUrl = route('online-docs.docs.presence', $document);
+            $presenceTouchUrl = route('online-docs.docs.presence.touch', $document);
         @endphp
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-                <h2 class="font-bold text-3xl text-main tracking-tight">{{ __('online_docs.editor_title') }}</h2>
-                <p class="text-muted-500 text-sm mt-1">{{ $document->title }}</p>
-            </div>
-            <div class="flex flex-wrap items-center gap-3">
-                <a href="{{ route('online-docs.home') }}" class="px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-600 hover:bg-muted-50">
-                    {{ __('online_docs.back_all') }}
+        <div class="online-docs-toolbar relative z-[1200] flex flex-wrap items-center gap-3">
+            <a href="{{ route('online-docs.home') }}" class="online-docs-action-btn px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-700 hover:bg-muted-50">
+                {{ __('online_docs.back_all') }}
+            </a>
+            @if($canEdit && ($isDocs || $isExcel || $isPowerpoint))
+                <button type="button" data-open-modal="import-modal" class="online-docs-action-btn px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-700 hover:bg-muted-50">
+                    {{ $importLabel }}
+                </button>
+            @endif
+            @if($isExcel)
+                <a href="{{ route('online-docs.docs.xlsx', $document) }}" class="online-docs-action-btn px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-700 hover:bg-muted-50">
+                    {{ __('online_docs.export_xlsx') }}
                 </a>
-                <a href="{{ route('online-docs.docs.export', $document) }}" class="px-4 py-2 rounded-xl bg-muted-100 text-muted-700 hover:bg-muted-200 text-sm font-medium">
+            @elseif($isPowerpoint)
+                <a href="{{ route('online-docs.docs.export', $document) }}" class="online-docs-action-btn px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-700 hover:bg-muted-50">
+                    {{ __('online_docs.export_pptx') }}
+                </a>
+            @else
+                <a href="{{ route('online-docs.docs.export', $document) }}" class="online-docs-action-btn px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-700 hover:bg-muted-50">
                     {{ __('online_docs.export_docx') }}
                 </a>
-                @if($canEdit)
-                <button type="submit" form="doc-editor-form" class="px-4 py-2 rounded-xl bg-secondary text-white hover:bg-secondary/90 text-sm font-medium">
-                    {{ __('online_docs.save') }}
-                </button>
+            @endif
+            @if(($isDocs || $isPowerpoint) && $onlyofficeConfig && $canUpdateDocument)
+                @if($isForcedViewMode)
+                    <a href="{{ route('online-docs.docs.show', ['document' => $document, 'mode' => 'edit']) }}" class="online-docs-action-btn online-docs-primary-btn px-4 py-2 rounded-xl bg-secondary text-white text-sm font-medium hover:bg-secondary/90">
+                        {{ __('online_docs.enable_edit') }}
+                    </a>
+                @else
+                    <a href="{{ route('online-docs.docs.show', ['document' => $document, 'mode' => 'view']) }}" class="online-docs-action-btn px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-700 hover:bg-muted-50">
+                        {{ __('online_docs.view_only') }}
+                    </a>
                 @endif
+            @endif
+            @can('share', $document)
+                <button type="button" data-open-modal="share-modal" class="online-docs-action-btn px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-700 hover:bg-muted-50">
+                    Share with others
+                </button>
+            @endcan
+        </div>
+
+        <div
+            id="active-editors"
+            class="online-docs-presence flex flex-wrap items-center gap-2 text-xs text-muted-600"
+            data-presence-url="{{ $presenceUrl }}"
+            data-presence-touch-url="{{ $presenceTouchUrl }}"
+            data-can-edit="{{ $canEdit ? 'true' : 'false' }}"
+            data-csrf="{{ csrf_token() }}"
+        >
+            <span class="font-medium text-muted-700">Editing:</span>
+            <div id="active-editors-list" class="flex flex-wrap items-center gap-2">
+                <span class="text-muted-400">No one else</span>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
-            <div class="xl:col-span-9">
+        <div class="online-docs-editor-stage relative z-10">
+            @if($isExcel)
+                <div class="online-docs-editor-surface rounded-xl border border-muted-200 bg-white">
+                    <div
+                        id="excel-editor"
+                        class="h-[calc(100vh-190px)] min-h-[680px]"
+                        data-xlsx-url="{{ $xlsxUrl }}"
+                        data-save-url="{{ route('online-docs.docs.xlsx.save', $document) }}"
+                        data-read-only="{{ $canEdit ? 'false' : 'true' }}"
+                        data-saving-text="{{ __('online_docs.saving') }}"
+                        data-saved-text="{{ __('online_docs.saved') }}"
+                        data-csrf="{{ csrf_token() }}"
+                    ></div>
+                </div>
+            @elseif(($isDocs || $isPowerpoint) && $onlyofficeConfig)
+                <div class="online-docs-editor-surface rounded-xl border border-muted-200 bg-white">
+                    <div id="onlyoffice-editor" style="height: calc(100vh - 190px); min-height: 680px; width: 100%;"></div>
+                </div>
+            @else
                 <form
                     id="doc-editor-form"
                     method="POST"
@@ -36,123 +112,52 @@
                     data-saved-text="{{ __('online_docs.saved') }}"
                     data-read-only="{{ $canEdit ? 'false' : 'true' }}"
                     data-read-only-text="{{ __('online_docs.read_only') }}"
-                    class="flex flex-col gap-4"
                 >
                     @csrf
                     @method('PUT')
-                    <input
-                        type="text"
-                        name="title"
-                        value="{{ old('title', $document->title) }}"
-                        required
-                        {{ $canEdit ? '' : 'disabled' }}
-                        class="rounded-xl border border-muted-200 px-4 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
-                    />
+                    <input type="hidden" name="title" value="{{ old('title', $document->title) }}" />
                     <textarea id="doc-content" name="content" class="hidden">{{ $html }}</textarea>
-                    <div class="bg-white rounded-2xl border border-muted-200 shadow-lg shadow-main/5 tiptap-editor">
-                        <div class="flex flex-wrap items-center gap-2 border-b border-muted-100 p-3" id="doc-toolbar">
-                            <select id="doc-heading" class="rounded-lg border border-muted-200 px-2 py-1 text-xs">
-                                <option value="paragraph">P</option>
-                                <option value="h1">H1</option>
-                                <option value="h2">H2</option>
-                                <option value="h3">H3</option>
-                            </select>
-                            <select id="doc-font-size" class="rounded-lg border border-muted-200 px-2 py-1 text-xs">
-                                <option value="">Size</option>
-                                <option value="12px">12</option>
-                                <option value="14px">14</option>
-                                <option value="16px">16</option>
-                                <option value="18px">18</option>
-                                <option value="20px">20</option>
-                                <option value="24px">24</option>
-                                <option value="28px">28</option>
-                                <option value="32px">32</option>
-                            </select>
-                            <select id="doc-line-height" class="rounded-lg border border-muted-200 px-2 py-1 text-xs">
-                                <option value="">Line</option>
-                                <option value="1">1.0</option>
-                                <option value="1.15">1.15</option>
-                                <option value="1.5">1.5</option>
-                                <option value="2">2.0</option>
-                            </select>
-                            <select id="doc-font-family" class="rounded-lg border border-muted-200 px-2 py-1 text-xs">
-                                <option value="">Font</option>
-                                <option value="Arial">Arial</option>
-                                <option value="Georgia">Georgia</option>
-                                <option value="Times New Roman">Times New Roman</option>
-                                <option value="Trebuchet MS">Trebuchet MS</option>
-                                <option value="Verdana">Verdana</option>
-                                <option value="Tahoma">Tahoma</option>
-                                <option value="Courier New">Courier New</option>
-                            </select>
-                            <button type="button" data-command="bold" class="px-2 py-1 text-xs font-semibold rounded-md border border-muted-200">B</button>
-                            <button type="button" data-command="italic" class="px-2 py-1 text-xs font-semibold rounded-md border border-muted-200">I</button>
-                            <button type="button" data-command="underline" class="px-2 py-1 text-xs font-semibold rounded-md border border-muted-200">U</button>
-                            <button type="button" data-command="strike" class="px-2 py-1 text-xs font-semibold rounded-md border border-muted-200">S</button>
-                            <button type="button" data-command="blockquote" class="px-2 py-1 text-xs rounded-md border border-muted-200">Quote</button>
-                            <select id="doc-list-style" class="rounded-lg border border-muted-200 px-2 py-1 text-xs">
-                                <option value="">List</option>
-                                <option value="bullet">Bulleted</option>
-                                <option value="ordered">Numbered</option>
-                            </select>
-                            <button type="button" data-command="code" class="px-2 py-1 text-xs rounded-md border border-muted-200">Code</button>
-                            <button type="button" data-command="codeBlock" class="px-2 py-1 text-xs rounded-md border border-muted-200">Code Block</button>
-                            <button type="button" data-command="alignLeft" class="px-2 py-1 text-xs rounded-md border border-muted-200">Left</button>
-                            <button type="button" data-command="alignCenter" class="px-2 py-1 text-xs rounded-md border border-muted-200">Center</button>
-                            <button type="button" data-command="alignRight" class="px-2 py-1 text-xs rounded-md border border-muted-200">Right</button>
-                            <button type="button" data-command="alignJustify" class="px-2 py-1 text-xs rounded-md border border-muted-200">Justify</button>
-                            <button type="button" data-command="highlight" class="px-2 py-1 text-xs rounded-md border border-muted-200">Highlight</button>
-                            <input type="color" id="doc-color" class="h-7 w-8 border border-muted-200 rounded-md" title="Text color" />
-                            <select id="doc-color-recent" class="rounded-lg border border-muted-200 px-2 py-1 text-xs">
-                                <option value="">Recent</option>
-                            </select>
-                            <button type="button" data-command="image" class="px-2 py-1 text-xs rounded-md border border-muted-200">Image</button>
-                            <input type="file" id="doc-image-input" accept="image/*" class="hidden" />
-                            <button type="button" data-command="table" class="px-2 py-1 text-xs rounded-md border border-muted-200">Table</button>
-                            <button type="button" data-command="excel" class="px-2 py-1 text-xs rounded-md border border-muted-200">Excel</button>
-                            <select id="doc-table-style" class="rounded-lg border border-muted-200 px-2 py-1 text-xs">
-                                <option value="">Table style</option>
-                                <option value="grid">Grid</option>
-                                <option value="sheet">Sheet</option>
-                                <option value="light">Light</option>
-                                <option value="none">No border</option>
-                            </select>
-                            <button type="button" data-command="addRow" class="px-2 py-1 text-xs rounded-md border border-muted-200">Row +</button>
-                            <button type="button" data-command="addColumn" class="px-2 py-1 text-xs rounded-md border border-muted-200">Col +</button>
-                            <button type="button" data-command="deleteRow" class="px-2 py-1 text-xs rounded-md border border-muted-200">Row -</button>
-                            <button type="button" data-command="deleteColumn" class="px-2 py-1 text-xs rounded-md border border-muted-200">Col -</button>
-                            <button type="button" data-command="deleteTable" class="px-2 py-1 text-xs rounded-md border border-muted-200">Del Table</button>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-2 border-t border-muted-100 p-3" id="doc-find-toolbar">
-                            <input type="text" id="doc-find" placeholder="Find" class="rounded-lg border border-muted-200 px-2 py-1 text-xs" />
-                            <input type="text" id="doc-replace" placeholder="Replace" class="rounded-lg border border-muted-200 px-2 py-1 text-xs" />
-                            <button type="button" data-command="findNext" class="px-2 py-1 text-xs rounded-md border border-muted-200">Find</button>
-                            <button type="button" data-command="replace" class="px-2 py-1 text-xs rounded-md border border-muted-200">Replace</button>
-                            <button type="button" data-command="replaceAll" class="px-2 py-1 text-xs rounded-md border border-muted-200">Replace All</button>
-                        </div>
-                        <div id="doc-editor" class="min-h-[480px] p-4"></div>
+                    <div class="online-docs-editor-surface bg-white rounded-xl border border-muted-200 overflow-hidden tiptap-editor">
+                        <div id="doc-editor" class="min-h-[calc(100vh-190px)] p-4 sm:p-6"></div>
                     </div>
-                    <div class="text-xs text-muted-400" id="doc-save-status"></div>
                 </form>
-            </div>
+            @endif
+        </div>
 
-            <div class="xl:col-span-3 flex flex-col gap-6">
-                @can('update', $document)
-                <div class="bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5">
-                    <h3 class="text-lg font-semibold text-main mb-4">{{ __('online_docs.import_docx') }}</h3>
-                    <form method="POST" action="{{ route('online-docs.docs.import', $document) }}" enctype="multipart/form-data" class="flex flex-col gap-3">
-                        @csrf
-                        <input type="file" name="docx" accept=".doc,.docx" required class="text-sm" />
-                        <button type="submit" class="px-4 py-2 rounded-xl bg-secondary text-white hover:bg-secondary/90 text-sm font-medium">
-                            {{ __('online_docs.import_docx') }}
-                        </button>
-                    </form>
+        @can('update', $document)
+            @if($isDocs || $isExcel || $isPowerpoint)
+                <div id="import-modal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/40 p-4" data-modal-overlay>
+                    <div class="w-full max-w-lg rounded-xl border border-muted-200 bg-white p-5">
+                        @if(session('docx_error') || session('xlsx_error') || session('pptx_error'))
+                            <div class="mb-3 rounded-lg bg-danger/10 text-danger text-xs px-3 py-2">
+                                {{ session('docx_error') ?: (session('xlsx_error') ?: session('pptx_error')) }}
+                            </div>
+                        @endif
+                        @error($importField)
+                            <div class="mb-3 rounded-lg bg-danger/10 text-danger text-xs px-3 py-2">
+                                {{ $message }}
+                            </div>
+                        @enderror
+                        <form method="POST" action="{{ $importAction }}" enctype="multipart/form-data" class="flex flex-col gap-3">
+                            @csrf
+                            <input type="file" name="{{ $importField }}" accept="{{ $importAccept }}" required class="text-sm" />
+                            <div class="flex items-center justify-end gap-3">
+                                <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-700 hover:bg-muted-50">
+                                    {{ __('online_docs.cancel') }}
+                                </button>
+                                <button type="submit" class="px-4 py-2 rounded-xl bg-secondary text-white hover:bg-secondary/90 text-sm font-medium">
+                                    {{ $importLabel }}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                @endcan
+            @endif
+        @endcan
 
-                @can('share', $document)
-                <div class="bg-white rounded-2xl p-6 border border-muted-200 shadow-lg shadow-main/5">
-                    <h3 class="text-lg font-semibold text-main mb-4">{{ __('online_docs.share') }}</h3>
+        @can('share', $document)
+            <div id="share-modal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/40 p-4" data-modal-overlay>
+                <div class="w-full max-w-2xl rounded-xl border border-muted-200 bg-white p-5 max-h-[85vh] overflow-y-auto">
                     <form method="POST" action="{{ route('online-docs.docs.share', $document) }}" class="flex flex-col gap-3">
                         @csrf
                         <div class="relative" id="doc-share-picker">
@@ -185,20 +190,28 @@
                             <option value="view">{{ __('online_docs.share_view') }}</option>
                             <option value="edit">{{ __('online_docs.share_edit') }}</option>
                         </select>
-                        <button type="submit" class="px-4 py-2 rounded-xl bg-secondary text-white hover:bg-secondary/90 text-sm font-medium">
-                            {{ __('online_docs.share') }}
-                        </button>
+                        <div class="flex items-center justify-end gap-3">
+                            <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-700 hover:bg-muted-50">
+                                {{ __('online_docs.cancel') }}
+                            </button>
+                            <button type="submit" class="px-4 py-2 rounded-xl bg-secondary text-white hover:bg-secondary/90 text-sm font-medium">
+                                Share with others
+                            </button>
+                        </div>
                     </form>
 
-                    <div class="mt-4">
-                        <h4 class="text-sm font-semibold text-main mb-2">{{ __('online_docs.shared_list') }}</h4>
+                    <div class="mt-5 border-t border-muted-200 pt-4">
+                        <h4 class="text-sm font-semibold text-main mb-3">{{ __('online_docs.shared_list') }}</h4>
                         @forelse($sharedUsers as $sharedUser)
-                            <div class="flex flex-col gap-2 py-2 border-b border-muted-100 last:border-b-0">
-                                <div class="flex items-center justify-between text-sm">
-                                    <span class="text-muted-600 truncate">{{ $sharedUser->email }}</span>
-                                    <span class="text-xs text-muted-400">{{ $sharedUser->pivot->permission }}</span>
+                            <div class="rounded-xl border border-muted-200 p-3 mb-3 last:mb-0">
+                                <div class="flex items-center justify-between gap-3 mb-2">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-medium text-main truncate">{{ $sharedUser->name ?: $sharedUser->email }}</p>
+                                        <p class="text-xs text-muted-500 truncate">{{ $sharedUser->email }}</p>
+                                    </div>
+                                    <span class="text-xs text-muted-500">{{ $sharedUser->pivot->permission }}</span>
                                 </div>
-                                <div class="flex items-center gap-2">
+                                <div class="flex flex-wrap items-center gap-2">
                                     <form method="POST" action="{{ route('online-docs.docs.share.update', $document) }}" class="flex items-center gap-2">
                                         @csrf
                                         @method('PUT')
@@ -226,12 +239,258 @@
                         @endforelse
                     </div>
                 </div>
-                @endcan
             </div>
-        </div>
+        @endcan
     </div>
 @endsection
 
+@push('styles')
+    <style>
+        .online-docs-editor-page {
+            background:
+                radial-gradient(circle at 12% 0%, rgba(124, 58, 237, 0.18) 0%, rgba(124, 58, 237, 0) 42%),
+                radial-gradient(circle at 88% 100%, rgba(168, 85, 247, 0.16) 0%, rgba(168, 85, 247, 0) 44%),
+                linear-gradient(180deg, #fbf8ff 0%, #f5efff 100%);
+        }
+
+        .online-docs-toolbar,
+        .online-docs-presence {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid #e7dcff;
+            border-radius: 14px;
+            padding: 10px;
+            backdrop-filter: blur(3px);
+        }
+
+        .online-docs-action-btn {
+            border-color: #d9c6ff !important;
+            color: #5b21b6 !important;
+            background: #f8f3ff !important;
+        }
+
+        .online-docs-action-btn:hover {
+            background: #efe3ff !important;
+        }
+
+        .online-docs-primary-btn {
+            background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%) !important;
+            color: #fff !important;
+            border-color: transparent !important;
+            box-shadow: 0 10px 24px rgba(124, 58, 237, 0.28);
+        }
+
+        .online-docs-editor-surface {
+            border-color: #d8c7ff !important;
+            box-shadow: 0 12px 30px rgba(76, 29, 149, 0.12);
+        }
+    </style>
+@endpush
+
 @push('scripts')
-    @vite(['resources/js/online_docs/editor.js'])
+    @if($isExcel)
+        @vite(['resources/js/online_docs/excel.js'])
+    @elseif(($isDocs || $isPowerpoint) && $onlyofficeConfig)
+        <script src="{{ rtrim(config('onlyoffice.document_server_url'), '/') }}/web-apps/apps/api/documents/api.js"></script>
+        <script>
+            const onlyofficeConfig = @json($onlyofficeConfig);
+            const docEditor = new DocsAPI.DocEditor('onlyoffice-editor', onlyofficeConfig);
+        </script>
+    @else
+        @vite(['resources/js/online_docs/editor.js'])
+    @endif
+
+    <script>
+        const initOnlineDocsModals = () => {
+            if (document.body.dataset.onlineDocsModalsBound === '1') {
+                return;
+            }
+            document.body.dataset.onlineDocsModalsBound = '1';
+
+            const openModal = (modal) => {
+                if (!modal) return;
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                document.body.classList.add('overflow-hidden');
+            };
+
+            const closeModal = (modal) => {
+                if (!modal) return;
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                if (!document.querySelector('[data-modal-overlay]:not(.hidden)')) {
+                    document.body.classList.remove('overflow-hidden');
+                }
+            };
+
+            document.querySelectorAll('[data-open-modal]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const modalId = button.getAttribute('data-open-modal');
+                    const modal = document.getElementById(modalId);
+                    openModal(modal);
+                });
+            });
+
+            document.querySelectorAll('[data-close-modal]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    closeModal(button.closest('[data-modal-overlay]'));
+                });
+            });
+
+            document.querySelectorAll('[data-modal-overlay]').forEach((overlay) => {
+                overlay.addEventListener('click', (event) => {
+                    if (event.target === overlay) {
+                        closeModal(overlay);
+                    }
+                });
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key !== 'Escape') return;
+                document.querySelectorAll('[data-modal-overlay]:not(.hidden)').forEach((modal) => {
+                    closeModal(modal);
+                });
+            });
+
+            const shouldOpenImportModal = @json($shouldOpenImportModal);
+            if (shouldOpenImportModal) {
+                openModal(document.getElementById('import-modal'));
+            }
+
+            const shouldOpenShareModal = @json($shouldOpenShareModal);
+            if (shouldOpenShareModal) {
+                openModal(document.getElementById('share-modal'));
+            }
+
+            const sharePicker = document.getElementById('doc-share-picker');
+            const shareInput = document.getElementById('doc-share-input');
+            const shareToggle = document.getElementById('doc-share-toggle');
+            const shareList = document.getElementById('doc-share-list');
+            const shareEmpty = document.getElementById('doc-share-empty');
+
+            if (sharePicker && shareInput && shareList) {
+                const shareOptions = Array.from(shareList.querySelectorAll('.doc-share-option'));
+
+                const showShareList = () => {
+                    shareList.classList.remove('hidden');
+                };
+
+                const hideShareList = () => {
+                    shareList.classList.add('hidden');
+                };
+
+                const filterShareOptions = (query) => {
+                    const q = (query || '').trim().toLowerCase();
+                    let visible = 0;
+
+                    shareOptions.forEach((option) => {
+                        const label = (option.dataset.label || '').toLowerCase();
+                        const value = (option.dataset.value || '').toLowerCase();
+                        const match = !q || label.includes(q) || value.includes(q);
+                        option.classList.toggle('hidden', !match);
+                        if (match) {
+                            visible += 1;
+                        }
+                    });
+
+                    if (shareEmpty) {
+                        shareEmpty.classList.toggle('hidden', visible > 0);
+                    }
+                };
+
+                shareInput.addEventListener('focus', () => {
+                    filterShareOptions(shareInput.value);
+                    showShareList();
+                });
+
+                shareInput.addEventListener('input', () => {
+                    filterShareOptions(shareInput.value);
+                    showShareList();
+                });
+
+                if (shareToggle) {
+                    shareToggle.addEventListener('click', () => {
+                        if (shareList.classList.contains('hidden')) {
+                            filterShareOptions(shareInput.value);
+                            showShareList();
+                            shareInput.focus();
+                        } else {
+                            hideShareList();
+                        }
+                    });
+                }
+
+                shareOptions.forEach((option) => {
+                    option.addEventListener('click', () => {
+                        shareInput.value = option.dataset.value || option.textContent.trim();
+                        hideShareList();
+                    });
+                });
+
+                document.addEventListener('click', (event) => {
+                    if (!sharePicker.contains(event.target)) {
+                        hideShareList();
+                    }
+                });
+            }
+
+            const activeEditorsRoot = document.getElementById('active-editors');
+            const activeEditorsList = document.getElementById('active-editors-list');
+            if (activeEditorsRoot && activeEditorsList) {
+                const presenceUrl = activeEditorsRoot.dataset.presenceUrl;
+                const presenceTouchUrl = activeEditorsRoot.dataset.presenceTouchUrl;
+                const canEdit = activeEditorsRoot.dataset.canEdit === 'true';
+                const csrf = activeEditorsRoot.dataset.csrf;
+
+                const renderEditors = (editors) => {
+                    if (!Array.isArray(editors) || editors.length === 0) {
+                        activeEditorsList.innerHTML = '<span class="text-muted-400">No one else</span>';
+                        return;
+                    }
+
+                    activeEditorsList.innerHTML = editors.map((editor) => {
+                        const name = (editor.name || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        const initials = (editor.initials || 'U').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        return `<span class="inline-flex items-center gap-1 rounded-full bg-muted-100 px-2 py-1 text-[11px] text-muted-700" title="${name}"><span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold">${initials}</span><span class="max-w-[120px] truncate">${name}</span></span>`;
+                    }).join('');
+                };
+
+                const ping = async () => {
+                    try {
+                        const response = await fetch(canEdit ? presenceTouchUrl : presenceUrl, {
+                            method: canEdit ? 'POST' : 'GET',
+                            headers: canEdit
+                                ? {
+                                    'X-CSRF-TOKEN': csrf,
+                                    'Accept': 'application/json',
+                                }
+                                : {
+                                    'Accept': 'application/json',
+                                },
+                        });
+                        if (!response.ok) {
+                            return;
+                        }
+                        const payload = await response.json();
+                        renderEditors(payload.editors || []);
+                    } catch (error) {
+                        // ignore transient presence errors
+                    }
+                };
+
+                ping();
+                window.setInterval(ping, 8000);
+            }
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initOnlineDocsModals, { once: true });
+        } else {
+            initOnlineDocsModals();
+        }
+
+        document.addEventListener('livewire:navigated', () => {
+            document.body.dataset.onlineDocsModalsBound = '0';
+            initOnlineDocsModals();
+        });
+    </script>
 @endpush

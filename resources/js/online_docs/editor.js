@@ -1,6 +1,5 @@
 import { Editor, Extension } from "@tiptap/core";
 import { StarterKit } from "@tiptap/starter-kit";
-import { Underline } from "@tiptap/extension-underline";
 import { TextAlign } from "@tiptap/extension-text-align";
 import { Highlight } from "@tiptap/extension-highlight";
 import { TextStyle } from "@tiptap/extension-text-style";
@@ -478,7 +477,6 @@ if (editorRoot && form && contentField) {
                     levels: [1, 2, 3],
                 },
             }),
-            Underline,
             TextStyleEx,
             LineHeight,
             Color,
