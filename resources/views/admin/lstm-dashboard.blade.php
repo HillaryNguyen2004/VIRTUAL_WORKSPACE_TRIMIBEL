@@ -264,5 +264,8 @@
 @endsection
 
 @section('scripts')
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<!-- LSTM Dashboard JavaScript -->
 <script src="{{ asset('js/admin/lstm-dashboard.js') }}"></script>
 @endsection

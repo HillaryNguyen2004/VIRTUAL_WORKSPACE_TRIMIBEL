@@ -40,10 +40,13 @@ class LSTMDashboard {
     }
 
     async updateDashboardStats() {
+        console.log('[LSTM] Fetching dashboard stats...');
         try {
-            // Simulate API call - replace with your actual endpoint
             const response = await fetch('/api/lstm/stats');
+            console.log('[LSTM] Stats response status:', response.status);
+
             const data = await response.json();
+            console.log('[LSTM] Stats data received:', data);
 
             // Update stat cards
             document.getElementById('last-run-date').textContent =
@@ -51,8 +54,10 @@ class LSTMDashboard {
             document.getElementById('high-performers').textContent = data.highPerformers;
             document.getElementById('at-risk-employees').textContent = data.atRiskEmployees;
             document.getElementById('model-accuracy').textContent = `${data.accuracy}%`;
+
+            console.log('[LSTM] Stats updated successfully');
         } catch (error) {
-            console.error('Error updating dashboard stats:', error);
+            console.error('[LSTM] Error updating dashboard stats:', error);
             // Set default values
             document.getElementById('last-run-date').textContent = 'Mar 30, 2026';
             document.getElementById('high-performers').textContent = '23';
@@ -96,13 +101,18 @@ class LSTMDashboard {
     }
 
     async loadEmployeePredictions() {
+        console.log('[LSTM] Fetching employee predictions...');
         try {
             const response = await fetch('/api/lstm/employee-predictions');
+            console.log('[LSTM] Predictions response status:', response.status);
+
             const data = await response.json();
+            console.log('[LSTM] Predictions data received:', data.length, 'employees');
 
             this.updatePredictionsTable(data);
+            console.log('[LSTM] Predictions table updated successfully');
         } catch (error) {
-            console.error('Error loading employee predictions:', error);
+            console.error('[LSTM] Error loading employee predictions:', error);
             // Use sample data
             this.updatePredictionsTable(this.getSampleEmployeeData());
         }
