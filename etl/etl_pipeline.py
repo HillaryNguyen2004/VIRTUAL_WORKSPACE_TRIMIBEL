@@ -114,22 +114,62 @@ def load_dim_employee():
 def load_dim_project():
     print("Loading dim_project...")
     df = pd.read_sql(
-        "SELECT id, title, status, percentage, start_date, due_date FROM projects",
+        "SELECT id, title, description, staff_id, status, percentage, start_date, due_date FROM projects",
         mysql_engine
     )
     for _, row in df.iterrows():
         pg_cur.execute("""
-            INSERT INTO dim_project (project_id, title, status, percentage, start_date, due_date)
-            VALUES (%s,%s,%s,%s,%s,%s)
+            INSERT INTO dim_project (project_id, title, description, staff_id, status, percentage, start_date, due_date)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT (project_id) DO UPDATE
-                SET status=EXCLUDED.status, percentage=EXCLUDED.percentage
+                SET title=EXCLUDED.title,
+                    description=EXCLUDED.description,
+                    staff_id=EXCLUDED.staff_id,
+                    status=EXCLUDED.status,
+                    percentage=EXCLUDED.percentage,
+                    start_date=EXCLUDED.start_date,
+                    due_date=EXCLUDED.due_date
         """, (
-            int(row['id']), row['title'], row['status'],
+            int(row['id']),
+            row['title'],
+            row['description'],
+            int(row['staff_id']) if pd.notna(row['staff_id']) else None,
+            row['status'],
             int(row['percentage']) if row['percentage'] else 0,
-            row['start_date'], row['due_date']
+            row['start_date'],
+            row['due_date']
         ))
     pg_conn.commit()
     print("dim_project done.")
+
+# ════════════════════════════════════════════════════════════
+# 4a. LOAD dim_phase  (from phases)
+# ════════════════════════════════════════════════════════════
+
+def load_dim_phase():
+    print("Loading dim_phase...")
+    df = pd.read_sql(
+        "SELECT id, project_id, title, start_date, due_date FROM phases",
+        mysql_engine
+    )
+    for _, row in df.iterrows():
+        pg_cur.execute("""
+            INSERT INTO dim_phase (phase_id, project_id, title, start_date, due_date)
+            VALUES (%s,%s,%s,%s,%s)
+            ON CONFLICT (phase_id) DO UPDATE
+                SET project_id=EXCLUDED.project_id,
+                    title=EXCLUDED.title,
+                    start_date=EXCLUDED.start_date,
+                    due_date=EXCLUDED.due_date
+        """, (
+            int(row['id']),
+            int(row['project_id']) if pd.notna(row['project_id']) else None,
+            row['title'],
+            row['start_date'],
+            row['due_date']
+        ))
+    pg_conn.commit()
+    print("dim_phase done.")
 
 # ════════════════════════════════════════════════════════════
 # 5. LOAD dim_task  (from tasks)
@@ -138,19 +178,44 @@ def load_dim_project():
 def load_dim_task():
     print("Loading dim_task...")
     df = pd.read_sql(
-        "SELECT id, title, priority, estimated_time, project_id FROM tasks",
+        """SELECT id, title, assigned_user_id, status, priority,
+                  start_date, due_date, active, estimated_time,
+                  project_id, phase_id, parent_id
+           FROM tasks""",
         mysql_engine
     )
     for _, row in df.iterrows():
         pg_cur.execute("""
-            INSERT INTO dim_task (task_id, title, priority, estimated_time, project_id)
-            VALUES (%s,%s,%s,%s,%s)
+            INSERT INTO dim_task
+                (task_id, title, assigned_user_id, status, priority,
+                 start_date, due_date, active, estimated_time,
+                 project_id, phase_id, parent_id)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT (task_id) DO UPDATE
-                SET title=EXCLUDED.title, priority=EXCLUDED.priority
+                SET title=EXCLUDED.title,
+                    assigned_user_id=EXCLUDED.assigned_user_id,
+                    status=EXCLUDED.status,
+                    priority=EXCLUDED.priority,
+                    start_date=EXCLUDED.start_date,
+                    due_date=EXCLUDED.due_date,
+                    active=EXCLUDED.active,
+                    estimated_time=EXCLUDED.estimated_time,
+                    project_id=EXCLUDED.project_id,
+                    phase_id=EXCLUDED.phase_id,
+                    parent_id=EXCLUDED.parent_id
         """, (
-            int(row['id']), row['title'], row['priority'],
-            float(row['estimated_time']) if row['estimated_time'] else None,
-            int(row['project_id']) if row['project_id'] else None
+            int(row['id']),
+            row['title'],
+            int(row['assigned_user_id']) if pd.notna(row['assigned_user_id']) else None,
+            row['status'],
+            row['priority'],
+            row['start_date'],
+            row['due_date'],
+            bool(row['active']) if pd.notna(row['active']) else True,
+            float(row['estimated_time']) if pd.notna(row['estimated_time']) else None,
+            int(row['project_id']) if pd.notna(row['project_id']) else None,
+            int(row['phase_id']) if pd.notna(row['phase_id']) else None,
+            int(row['parent_id']) if pd.notna(row['parent_id']) else None
         ))
     pg_conn.commit()
     print("dim_task done.")
@@ -165,6 +230,7 @@ SK_COL_MAP = {
     "dim_employee":   "employee_sk",
     "dim_task":       "task_sk",
     "dim_project":    "project_sk",
+    "dim_phase":      "phase_sk",
     "dim_date":       "date_sk",
 }
 
@@ -228,18 +294,19 @@ def compute_productivity(hours_worked, is_late, checked_in,
 def load_fact():
     print("Loading fact table...")
 
-    users_df = pd.read_sql("SELECT id, username FROM users", mysql_engine)
+    # Use 'name' field to match check_ins.user_name (display name, not login username)
+    users_df = pd.read_sql("SELECT id, name, username FROM users", mysql_engine)
 
     checkins_df = pd.read_sql("""
         SELECT user_name, date,
                CAST(working_hours AS CHAR) AS working_hours,
-               is_late, check_in_time
+               is_late, check_in_time, check_out_time
         FROM check_ins
     """, mysql_engine)
 
     tasks_df = pd.read_sql("""
         SELECT assigned_user_id, DATE(updated_at) AS task_date,
-               status, score, percentage, project_id, id AS task_id
+               status, score, percentage, project_id, phase_id, id AS task_id
         FROM tasks
         WHERE assigned_user_id IS NOT NULL
     """, mysql_engine)
@@ -250,16 +317,20 @@ def load_fact():
         WHERE status = 'APPROVED'
     """, mysql_engine)
 
+    # Map both name (display) and username (login) to user ID for flexibility
+    name_map = {}
     username_map = {}
     for _, u in users_df.iterrows():
+        name_map[u['name'].lower().replace(" ", "")] = int(u['id'])
         username_map[u['username'].lower()] = int(u['id'])
 
     date_user_pairs = set()
 
     for _, row in checkins_df.iterrows():
+        # Match check_ins.user_name (display name) to users.name
         uname = str(row['user_name']).lower().replace(" ", "")
-        if uname in username_map:
-            date_user_pairs.add((username_map[uname], row['date']))
+        if uname in name_map:
+            date_user_pairs.add((name_map[uname], row['date']))
 
     for _, row in tasks_df.iterrows():
         if row['assigned_user_id']:
@@ -280,7 +351,8 @@ def load_fact():
         uname_key = None
         for _, u in users_df.iterrows():
             if int(u['id']) == user_id:
-                uname_key = u['username'].lower()
+                # Use 'name' (display name) to match check_ins.user_name
+                uname_key = u['name'].lower().replace(" ", "")
                 break
 
         ci = checkins_df[
@@ -288,6 +360,8 @@ def load_fact():
             (checkins_df['date'] == record_date)
         ]
 
+        check_in_time = None
+        check_out_time = None
         if not ci.empty:
             ci = ci.iloc[0]
             try:
@@ -297,6 +371,8 @@ def load_fact():
                 hours_worked = 0.0
             is_late = bool(ci['is_late'])
             checked_in = True
+            check_in_time = ci['check_in_time'] if pd.notna(ci['check_in_time']) else None
+            check_out_time = ci['check_out_time'] if pd.notna(ci['check_out_time']) else None
         else:
             hours_worked = 0.0
             is_late = False
@@ -320,10 +396,12 @@ def load_fact():
 
         task_sk = None
         project_sk = None
+        phase_sk = None
         if not t.empty:
             latest_task = t.iloc[-1]
             task_sk = get_sk("dim_task", "task_id", int(latest_task['task_id']))
-            project_sk = get_sk("dim_project", "project_id", int(latest_task['project_id'])) if latest_task['project_id'] else None
+            project_sk = get_sk("dim_project", "project_id", int(latest_task['project_id'])) if pd.notna(latest_task['project_id']) else None
+            phase_sk = get_sk("dim_phase", "phase_id", int(latest_task['phase_id'])) if pd.notna(latest_task['phase_id']) else None
 
         pg_cur.execute(
             "SELECT department_id FROM dim_employee WHERE employee_sk = %s", (emp_sk,)
@@ -339,20 +417,20 @@ def load_fact():
 
         pg_cur.execute("""
             INSERT INTO fact_employee_productivity
-                (employee_sk, date_sk, dept_sk, task_sk, project_sk,
+                (employee_sk, date_sk, dept_sk, task_sk, project_sk, phase_sk,
                  hours_worked, is_late, checked_in,
                  had_day_off, leave_type,
                  tasks_completed, tasks_in_progress,
                  avg_task_score, avg_task_percentage,
-                 productivity_score)
-            VALUES (%s,%s,%s,%s,%s, %s,%s,%s, %s,%s, %s,%s, %s,%s, %s)
+                 productivity_score, check_in_time, check_out_time)
+            VALUES (%s,%s,%s,%s,%s,%s, %s,%s,%s, %s,%s, %s,%s, %s,%s, %s, %s,%s)
         """, (
-            emp_sk, date_sk, dept_sk, task_sk, project_sk,
+            emp_sk, date_sk, dept_sk, task_sk, project_sk, phase_sk,
             hours_worked, is_late, checked_in,
             had_day_off, leave_type,
             tasks_completed, tasks_in_progress,
             avg_task_score, avg_task_percentage,
-            prod_score
+            prod_score, check_in_time, check_out_time
         ))
         inserted += 1
 
@@ -367,6 +445,7 @@ def run_full_etl():
     load_dim_department()
     load_dim_employee()
     load_dim_project()
+    load_dim_phase()
     load_dim_task()
     load_fact()
     print("✅ Full ETL complete.")
