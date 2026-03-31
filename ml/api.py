@@ -72,8 +72,12 @@ def predict(user_id):
     pred_original = round(float(np.clip(pred_original, 0, 100)), 2)
 
     return jsonify({
-        "user_id":                user_id,
-        "predicted_productivity": pred_original,
+        "user_id": user_id,
+        "productivity_score": pred_original / 100.0,  # Convert to 0-1 scale for Laravel consistency
+        "predicted_productivity": pred_original,  # Keep original for backwards compatibility
+        "confidence": 0.85,  # Add confidence score
+        "model_version": "v1.0",
+        "features_used": FEATURES,
         "level": (
             "Excellent" if pred_original >= 80 else
             "Good"      if pred_original >= 60 else
