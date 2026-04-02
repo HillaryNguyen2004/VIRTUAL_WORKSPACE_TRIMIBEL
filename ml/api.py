@@ -86,6 +86,89 @@ def predict(user_id):
         )
     })
 
+@app.route("/predict/all", methods=["POST"])
+def predict_all():
+    """Generate predictions for all employees"""
+    try:
+        pg_conn = psycopg2.connect(**PG_CONFIG)
+        cursor = pg_conn.cursor()
+
+        # Get all active employees from fact table
+        cursor.execute("""
+            SELECT DISTINCT user_id
+            FROM dim_employee
+            ORDER BY user_id
+        """)
+        employees = cursor.fetchall()
+        cursor.close()
+        pg_conn.close()
+
+        results = []
+        errors = []
+
+        for (user_id,) in employees:
+            try:
+                df = get_last_n_days(user_id, LOOKBACK)
+
+                if len(df) < LOOKBACK:
+                    errors.append({
+                        "user_id": user_id,
+                        "error": f"Insufficient data: {len(df)}/{LOOKBACK}"
+                    })
+                    continue
+
+                # Convert booleans
+                df['is_late'] = df['is_late'].astype(int)
+                df['checked_in'] = df['checked_in'].astype(int)
+                df['had_day_off'] = df['had_day_off'].astype(int)
+                df.fillna(0, inplace=True)
+
+                # Scale using saved scaler
+                all_cols = FEATURES + ['productivity_score']
+                df[all_cols] = scaler.transform(df[all_cols])
+
+                # Reverse to chronological order, take features only
+                X = df[FEATURES].values[::-1]
+                X = np.expand_dims(X, axis=0)
+
+                # Predict
+                pred_scaled = model.predict(X, verbose=0)[0][0]
+
+                # Inverse transform
+                dummy = np.zeros((1, len(all_cols)))
+                dummy[0, -1] = pred_scaled
+                pred_original = scaler.inverse_transform(dummy)[0, -1]
+                pred_original = round(float(np.clip(pred_original, 0, 100)), 2)
+
+                results.append({
+                    "user_id": user_id,
+                    "productivity_score": pred_original / 100.0,
+                    "predicted_productivity": pred_original,
+                    "confidence": 0.85,
+                    "level": (
+                        "Excellent" if pred_original >= 80 else
+                        "Good" if pred_original >= 60 else
+                        "Average" if pred_original >= 40 else
+                        "Low"
+                    )
+                })
+            except Exception as e:
+                errors.append({
+                    "user_id": user_id,
+                    "error": str(e)
+                })
+
+        return jsonify({
+            "total_employees": len(employees),
+            "successful": len(results),
+            "failed": len(errors),
+            "predictions": results,
+            "errors": errors if errors else None
+        })
+
+    except Exception as e:
+        return jsonify({"error": f"Failed to generate predictions: {str(e)}"}), 500
+
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"})
