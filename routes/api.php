@@ -4,7 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\CheckInController;
 use App\Http\Controllers\Api\ChatController;
-use App\Http\Controllers\Api\ChatbotController;
+use App\Http\Controllers\Api\ChatbotController; // DISABLED - controller missing
 use App\Http\Controllers\Api\ChannelController;
 use App\Http\Controllers\MeetingController;
 
@@ -71,8 +71,8 @@ Route::middleware(['auth:sanctum'])->prefix('chat')->group(function () {
     Route::post('/channels/{channel}/messages', [ChannelController::class, 'postMessage']);
 });
 
-// Chat bot
-Route::post('/chat-bot', [ChatbotController::class, 'chatBot']);
+// Chat bot - DISABLED (controller missing)
+// Route::post('/chat-bot', [ChatbotController::class, 'chatBot']);
 
 // Task API Routes for Kanban board (support both Sanctum and web auth)
 Route::prefix('tasks')->group(function () {

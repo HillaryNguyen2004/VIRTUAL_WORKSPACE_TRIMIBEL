@@ -135,6 +135,8 @@ class LSTMDashboardController extends Controller
     public function getEmployeePredictions(): JsonResponse
     {
         try {
+            Log::info('Fetching employee predictions...');
+
             // Get all active employees with their latest productivity data
             $employees = DB::table('users')
                 ->leftJoin('departments', 'users.department_id', '=', 'departments.id')
@@ -147,6 +149,8 @@ class LSTMDashboardController extends Controller
                 ->where('users.blocked', false)
                 ->get();
 
+            Log::debug("Found " . count($employees) . " active employees");
+
             $predictions = [];
 
             foreach ($employees as $employee) {
@@ -157,7 +161,7 @@ class LSTMDashboardController extends Controller
                     // Get current productivity score from data warehouse
                     $currentScore = $this->getCurrentProductivityScore($employee->id);
 
-                    $predictions[] = [
+                    $row = [
                         'id' => $employee->id,
                         'name' => $employee->name,
                         'department' => $employee->department ?? 'Not Assigned',
@@ -169,6 +173,9 @@ class LSTMDashboardController extends Controller
                         'lastUpdated' => Carbon::now()->toISOString(),
                         'confidence' => $prediction['confidence'] ?? 0
                     ];
+
+                    $predictions[] = $row;
+                    Log::debug("Prediction for {$employee->name}: " . json_encode($row));
 
                 } catch (\Exception $e) {
                     Log::warning("Failed to get prediction for employee {$employee->id}: " . $e->getMessage());
@@ -194,6 +201,8 @@ class LSTMDashboardController extends Controller
                 return $b['predictedScore'] <=> $a['predictedScore'];
             });
 
+            Log::info('Returning ' . count($predictions) . ' predictions');
+
             return response()->json($predictions);
 
         } catch (\Exception $e) {
@@ -208,10 +217,14 @@ class LSTMDashboardController extends Controller
     public function refreshPredictions(): JsonResponse
     {
         try {
+            Log::info('Starting LSTM predictions refresh...');
+
             // Get all active employee IDs
             $employeeIds = DB::table('users')
                 ->where('blocked', false)
                 ->pluck('id');
+
+            Log::info("Found " . count($employeeIds) . " employees to update");
 
             $successCount = 0;
             $errorCount = 0;
@@ -221,8 +234,11 @@ class LSTMDashboardController extends Controller
                     // Call LSTM API to generate fresh prediction
                     $response = Http::timeout(30)->get("{$this->lstmApiUrl}/predict/{$employeeId}");
 
+                    Log::debug("LSTM API response for employee {$employeeId}: " . $response->status());
+
                     if ($response->successful()) {
                         $prediction = $response->json();
+                        Log::debug("Received prediction for {$employeeId}: " . json_encode($prediction));
 
                         // Store prediction in database for caching
                         $this->storePrediction($employeeId, $prediction);
@@ -238,15 +254,22 @@ class LSTMDashboardController extends Controller
                 }
             }
 
+            Log::info("LSTM refresh completed. Success: {$successCount}, Errors: {$errorCount}");
+
+            // Verify data was stored
+            $storedCount = DB::table('lstm_predictions')->count();
+            Log::info("Total predictions in database: {$storedCount}");
+
             return response()->json([
                 'message' => "Predictions refreshed: {$successCount} successful, {$errorCount} failed",
                 'success' => $successCount,
-                'errors' => $errorCount
+                'errors' => $errorCount,
+                'totalStored' => $storedCount
             ]);
 
         } catch (\Exception $e) {
             Log::error('LSTM Refresh Error: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to refresh predictions'], 500);
+            return response()->json(['error' => 'Failed to refresh predictions: ' . $e->getMessage()], 500);
         }
     }
 
@@ -338,22 +361,34 @@ class LSTMDashboardController extends Controller
                 ->first();
 
             if ($cached) {
+                Log::debug("Using cached prediction for employee {$employeeId}: score={$cached->predicted_score}");
                 return [
                     'score' => round($cached->predicted_score, 1),
                     'confidence' => round($cached->confidence, 2)
                 ];
             }
 
+            Log::debug("No cache found for employee {$employeeId}, calling LSTM API...");
+
             // Fallback: Call LSTM API
             $response = Http::timeout(10)->get("{$this->lstmApiUrl}/predict/{$employeeId}");
 
+            Log::debug("LSTM API response status: " . $response->status());
+
             if ($response->successful()) {
                 $data = $response->json();
+                Log::debug("LSTM API data for {$employeeId}: " . json_encode($data));
+                
+                // Convert Flask 0-1 scale to 0-100 percentage scale
+                $predictedScore = ($data['productivity_score'] ?? 0) * 100;
+
                 return [
-                    'score' => round($data['predicted_productivity'] ?? 0, 1),
+                    'score' => round($predictedScore, 1),
                     'confidence' => round($data['confidence'] ?? 0.85, 2)
                 ];
             }
+
+            Log::warning("LSTM API returned non-successful status: " . $response->status());
 
         } catch (\Exception $e) {
             Log::error("LSTM API Error for employee {$employeeId}: " . $e->getMessage());
@@ -383,16 +418,28 @@ class LSTMDashboardController extends Controller
 
     private function storePrediction(int $employeeId, array $prediction): void
     {
-        // Store prediction in cache table for future reference
-        DB::table('lstm_predictions')->updateOrInsert(
-            ['employee_id' => $employeeId],
-            [
-                'predicted_score' => $prediction['productivity_score'] ?? 0,
-                'confidence' => $prediction['confidence'] ?? 0,
-                'predicted_at' => Carbon::now(),
-                'created_at' => Carbon::now(),
-                'updated_at' => Carbon::now()
-            ]
-        );
+        try {
+            // Store prediction in cache table for future reference
+            // Convert Flask 0-1 scale to 0-100 percentage scale
+            $predictedScore = ($prediction['productivity_score'] ?? 0) * 100;
+
+            Log::debug("Storing prediction for employee {$employeeId}: score={$predictedScore}, confidence={$prediction['confidence']}");
+
+            DB::table('lstm_predictions')->updateOrInsert(
+                ['employee_id' => $employeeId],
+                [
+                    'predicted_score' => round($predictedScore, 2),
+                    'confidence' => $prediction['confidence'] ?? 0,
+                    'predicted_at' => Carbon::now(),
+                    'created_at' => Carbon::now(),
+                    'updated_at' => Carbon::now()
+                ]
+            );
+
+            Log::debug("Successfully stored prediction for employee {$employeeId}");
+
+        } catch (\Exception $e) {
+            Log::error("Error storing prediction for employee {$employeeId}: " . $e->getMessage());
+        }
     }
 }

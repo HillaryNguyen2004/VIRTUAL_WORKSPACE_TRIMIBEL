@@ -29,8 +29,8 @@ use Illuminate\Http\Request;
 //     include_once 'admin/user.php';
 // });
 
-include_once 'admin/user.php';
-include_once 'staff/user.php';
+require_once __DIR__ . '/admin/user.php';
+require_once __DIR__ . '/staff/user.php';
 
 // Redirect root to login
 Route::get('/', [AuthController::class, 'redirectToLogin']);

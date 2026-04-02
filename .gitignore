@@ -53,5 +53,6 @@ yarn-error.log
 .vercel
 
 .venv/
+venv/
 face_detection/__pycache__/
-face_detection/*.pyc
+face_detection/*.pyc 
