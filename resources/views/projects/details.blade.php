@@ -34,16 +34,17 @@
                 <a href="{{ route('projects.kanban', $project->id) }}"
                     class="flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all shadow-lg text-sm border text-muted-400 hover:bg-primary/10 hover:text-primary">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-4 h-4 fill-current">
-                        <path d="M3 4h6v8H3V4zm8 0h6v8h-6V4zm8 0h6v8h-6V4zM3 14h6v8H3v-8zm8 0h6v8h-6v-8zm8 0h6v8h-6v-8z"/>
+                        <path d="M3 4h6v8H3V4zm8 0h6v8h-6V4zm8 0h6v8h-6V4zM3 14h6v8H3v-8zm8 0h6v8h-6v-8zm8 0h6v8h-6v-8z" />
                     </svg>
                     {{ __('projects.kanban_view') ?? 'Kanban' }}
                 </a>
                 @can('admin.projects.edit')
                     <a href="{{ route('projects.edit', $project->id) }}"
-                        class="flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all shadow-lg text-sm border text-muted-400 hover:bg-secondary/10 hover:text-secondary">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 fill-current">
-                            <path
-                                d="M535.6 85.7C513.7 63.8 478.3 63.8 456.4 85.7L432 110.1L529.9 208L554.3 183.6C576.2 161.7 576.2 126.3 554.3 104.4L535.6 85.7zM236.4 305.7C230.3 311.8 225.6 319.3 222.9 327.6L193.3 416.4C190.4 425 192.7 434.5 199.1 441C205.5 447.5 215 449.7 223.7 446.8L312.5 417.2C320.7 414.5 328.2 409.8 334.4 403.7L496 241.9L398.1 144L236.4 305.7z" />
+                        class="inline-flex items-center justify-center gap-2 bg-white border border-blue-600/30 px-4 py-2 rounded-xl text-sm font-medium text-blue-600 hover:bg-blue-50 transition-all shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                            </path>
                         </svg>
                         {{ __('projects.edit') }}
                     </a>
@@ -55,10 +56,11 @@
                             @csrf
                             @method('DELETE')
                             <button type="submit"
-                                class="flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all shadow-lg text-sm bg-danger hover:bg-danger/80 text-white">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 fill-current">
-                                    <path
-                                        d="M232.7 69.9L224 96L128 96C110.3 96 96 110.3 96 128C96 145.7 110.3 160 128 160L512 160C529.7 160 544 145.7 544 128C544 110.3 529.7 96 512 96L416 96L407.3 69.9C402.9 56.8 390.7 48 376.9 48L263.1 48C249.3 48 237.1 56.8 232.7 69.9zM512 208L128 208L149.1 531.1C150.7 556.4 171.7 576 197 576L443 576C468.3 576 489.3 556.4 490.9 531.1L512 208z" />
+                                class="inline-flex items-center justify-center gap-2 bg-white border border-danger/30 px-4 py-2 rounded-xl text-sm font-medium text-danger hover:bg-danger/5 transition-all shadow-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                    </path>
                                 </svg>
                                 {{ __('projects.delete') }}
                             </button>
@@ -474,8 +476,10 @@
                                             {{-- title --}}
                                             <td class="w-[33%] py-3 pl-6 text-sm font-medium text-main">
                                                 <div class="flex items-center gap-2 pl-2">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-3.5 h-3.5 fill-current rotate-90">
-                                                        <path d="M297.4 201.4C309.9 188.9 330.2 188.9 342.7 201.4L502.7 361.4C515.2 373.9 515.2 394.2 502.7 406.7C490.2 419.2 469.9 419.2 457.4 406.7L320 269.3L182.6 406.6C170.1 419.1 149.8 419.1 137.3 406.6C124.8 394.1 124.8 373.8 137.3 361.3L297.3 201.3z" />
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
+                                                        class="w-3.5 h-3.5 fill-current rotate-90">
+                                                        <path
+                                                            d="M297.4 201.4C309.9 188.9 330.2 188.9 342.7 201.4L502.7 361.4C515.2 373.9 515.2 394.2 502.7 406.7C490.2 419.2 469.9 419.2 457.4 406.7L320 269.3L182.6 406.6C170.1 419.1 149.8 419.1 137.3 406.6C124.8 394.1 124.8 373.8 137.3 361.3L297.3 201.3z" />
                                                     </svg>
                                                     @if($subtask->isUnread())
                                                         <span

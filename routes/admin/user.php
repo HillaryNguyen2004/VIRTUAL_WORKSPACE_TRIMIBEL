@@ -7,6 +7,7 @@ use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\UserExportController;
 use App\Http\Controllers\Api\CheckInController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\Admin\LSTMDashboardController;
 
 
 Route::middleware(['auth'])->group(function () {
@@ -14,6 +15,41 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])
         ->middleware('admin_or_permission:admin.dashboard.view')
         ->name('admin.dashboard');
+
+    // ===== LSTM PRODUCTIVITY ANALYTICS MODULE =====
+    // Temporary debug route (remove after testing)
+    Route::get('/admin/lstm-test', function() {
+        return 'LSTM Route is working! Controller exists.';
+    });
+
+    Route::get('/admin/lstm-dashboard', [LSTMDashboardController::class, 'index'])
+        ->middleware('admin_or_permission:admin.dashboard.view')
+        ->name('admin.lstm.dashboard');
+
+    // LSTM API endpoints for dashboard data
+    Route::get('/api/lstm/stats', [LSTMDashboardController::class, 'getStats'])
+        ->middleware('admin_or_permission:admin.dashboard.view')
+        ->name('api.lstm.stats');
+
+    Route::get('/api/lstm/trends', [LSTMDashboardController::class, 'getTrends'])
+        ->middleware('admin_or_permission:admin.dashboard.view')
+        ->name('api.lstm.trends');
+
+    Route::get('/api/lstm/distribution', [LSTMDashboardController::class, 'getDistribution'])
+        ->middleware('admin_or_permission:admin.dashboard.view')
+        ->name('api.lstm.distribution');
+
+    Route::get('/api/lstm/employee-predictions', [LSTMDashboardController::class, 'getEmployeePredictions'])
+        ->middleware('admin_or_permission:admin.dashboard.view')
+        ->name('api.lstm.predictions');
+
+    Route::post('/api/lstm/refresh-predictions', [LSTMDashboardController::class, 'refreshPredictions'])
+        ->middleware('admin_or_permission:admin.dashboard.edit')
+        ->name('api.lstm.refresh');
+
+    Route::post('/api/alerts/productivity-concern', [LSTMDashboardController::class, 'sendProductivityAlert'])
+        ->middleware('admin_or_permission:admin.dashboard.edit')
+        ->name('api.alerts.productivity');
 
     // ===== USERS MODULE =====
     Route::get('/management/users', [UserController::class, 'index'])

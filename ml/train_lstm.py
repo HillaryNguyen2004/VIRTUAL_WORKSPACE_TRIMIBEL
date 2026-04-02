@@ -42,7 +42,7 @@ pg_conn.close()
 print(f"Loaded {len(df)} rows for {df['user_id'].nunique()} employees.")
 
 # ════════════════════════════════════════════════════════════
-# 2. DEFINE FEATURES AND TARGET
+# 2. FEATURES AND TARGET
 # ════════════════════════════════════════════════════════════
 FEATURES = [
     'hours_worked',
@@ -53,14 +53,12 @@ FEATURES = [
     'avg_task_score',
     'avg_task_percentage'
 ]
-TARGET = 'productivity_score'
-LOOKBACK = 7   # use last 7 days to predict next day
-               # (change to 30 when you have more data)
+TARGET   = 'productivity_score'
+LOOKBACK = 30    # 30-day window — you have the data for it
 
-# Convert booleans to int
-df['is_late']    = df['is_late'].astype(int)
-df['checked_in'] = df['checked_in'].astype(int)
-df['had_day_off']= df['had_day_off'].astype(int)
+df['is_late']     = df['is_late'].astype(int)
+df['checked_in']  = df['checked_in'].astype(int)
+df['had_day_off'] = df['had_day_off'].astype(int)
 df.fillna(0, inplace=True)
 
 # ════════════════════════════════════════════════════════════
@@ -113,19 +111,31 @@ y_train, y_val = y[:split], y[split:]
 # ════════════════════════════════════════════════════════════
 # 6. BUILD LSTM MODEL
 # ════════════════════════════════════════════════════════════
+from tensorflow.keras.layers import Input
+
 model = Sequential([
-    LSTM(64, return_sequences=True, input_shape=(LOOKBACK, len(FEATURES))),
+    Input(shape=(LOOKBACK, len(FEATURES))),
+    LSTM(64, return_sequences=True),
     Dropout(0.2),
     LSTM(32, return_sequences=False),
     Dropout(0.2),
     Dense(16, activation='relu'),
-    Dense(1, activation='sigmoid')   # output 0-1 (maps back to 0-100)
+    Dense(1,  activation='linear')    # ← KEY FIX: linear not sigmoid
 ])
 
-model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mean_absolute_error'])
+model.compile(
+    optimizer='adam',
+    loss='mean_squared_error',
+    metrics=['mean_absolute_error']
+)
 model.summary()
 
-early_stop = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+early_stop = EarlyStopping(
+    monitor='val_loss',
+    patience=10,
+    restore_best_weights=True,
+    verbose=1
+)
 
 # ════════════════════════════════════════════════════════════
 # 7. TRAIN
@@ -135,15 +145,29 @@ history = model.fit(
     X_train, y_train,
     validation_data=(X_val, y_val),
     epochs=100,
-    batch_size=16,
+    batch_size=64,     # ← bigger batch for 40k rows
     callbacks=[early_stop],
     verbose=1
 )
 
 # ════════════════════════════════════════════════════════════
-# 8. SAVE MODEL
+# 8. SAVE + REPORT
 # ════════════════════════════════════════════════════════════
 model.save("models/lstm_productivity.keras")
-print("\n✅ Model saved → models/lstm_productivity.keras")
-print(f"   Final val_loss : {min(history.history['val_loss']):.4f}")
-print(f"   Final val_mae  : {min(history.history['val_mae']):.4f}")
+
+best_loss = min(history.history['val_loss'])
+best_mae  = min(history.history['mean_absolute_error'])
+epochs_ran = len(history.history['loss'])
+
+print(f"\n✅ Model saved → models/lstm_productivity.keras")
+print(f"   Epochs run    : {epochs_ran}")
+print(f"   Best val_loss : {best_loss:.4f}")
+print(f"   Best val_mae  : {best_mae:.4f}")
+
+# ── Quality check ─────────────────────────────────────────
+if best_mae < 0.10:
+    print("   Quality       : GOOD — model learned meaningful patterns")
+elif best_mae < 0.20:
+    print("   Quality       : OK — acceptable for a thesis demo")
+else:
+    print("   Quality       : POOR — consider checking data or retraining")

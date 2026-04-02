@@ -23,14 +23,15 @@ use App\Http\Controllers\FaceRegisterController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\WBOController;
 use App\Http\Controllers\OnlineDocumentController;
+use App\Http\Controllers\AIWorkspaceController;
 use Illuminate\Http\Request;
 
 // Route::group(['middleware' => ['web', 'core']], function () {
 //     include_once 'admin/user.php';
 // });
 
-include_once 'admin/user.php';
-include_once 'staff/user.php';
+require_once __DIR__ . '/admin/user.php';
+require_once __DIR__ . '/staff/user.php';
 
 // Redirect root to login
 Route::get('/', [AuthController::class, 'redirectToLogin']);
@@ -110,6 +111,15 @@ Route::prefix('onlyoffice')->name('onlyoffice.')->group(function () {
 });
 
 Route::middleware(['auth'])->group(function () {
+    // Route model binding for workspaces
+    Route::bind('ai_workspace', function ($value) {
+        return \App\Models\AIWorkspace::findOrFail($value);
+    });
+    Route::bind('ai_workspace_file', function ($value) {
+        return \App\Models\AIWorkspaceFile::findOrFail($value);
+    });
+
+    // Legacy AI upload endpoint
     Route::get('/ai', function () {
         return view('ai.upload');
     })->name('ai.upload');
@@ -126,14 +136,18 @@ Route::middleware(['auth'])->group(function () {
         ]));
     })->name('ai.upload.store');
 
-    Route::post('/ai/workspaces', function (Request $request) {
-        $name = trim((string) $request->input('workspace_name'));
-        $safeName = $name !== '' ? $name : __('ai.workspace_new');
+    // AI Workspace CRUD routes
+    Route::resource('ai-workspaces', AIWorkspaceController::class);
 
-        return back()->with('workspace_status', __('ai.workspace_created', [
-            'workspace' => $safeName,
-        ]));
-    })->name('ai.workspaces.store');
+    // Additional workspace-specific routes
+    Route::post('ai-workspaces/{ai_workspace}/upload-files', [AIWorkspaceController::class, 'uploadFiles'])
+        ->name('ai-workspaces.upload-files');
+    Route::post('ai-workspaces/{ai_workspace}/ingest', [AIWorkspaceController::class, 'ingestFiles'])
+        ->name('ai-workspaces.ingest');
+    Route::delete('workspace-files/{ai_workspace_file}', [AIWorkspaceController::class, 'deleteFile'])
+        ->name('workspace-files.delete');
+    Route::get('ai-workspaces/{ai_workspace}/export', [AIWorkspaceController::class, 'export'])
+        ->name('ai-workspaces.export');
 });
 
 Route::get('/dayoff/request', [DayOffController::class, 'create'])->name('dayoff.request');

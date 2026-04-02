@@ -46,5 +46,9 @@ return [
         'url' => env('FACE_SERVICE_URL'),
     ],
 
+    'rag' => [
+        'python_binary' => env('RAG_PYTHON_BIN'),
+    ],
+
     'node_binary' => env('NODE_BINARY', 'node'),
 ];

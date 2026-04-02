@@ -27,7 +27,6 @@ services:
             - mailpit
             - selenium
             - soketi
-            - mailpit
     mysql:
         image: 'mysql/mysql-server:8.0'
         ports:
@@ -89,6 +88,17 @@ services:
             - '${PUSHER_METRICS_PORT:-9601}:9601'
         networks:
             - sail
+    onlyoffice:
+        image: 'onlyoffice/documentserver:latest'
+        ports:
+            - '8081:80'
+        volumes:
+            - 'onlyoffice_data:/var/www/onlyoffice/Data'
+            - 'onlyoffice_logs:/var/log/onlyoffice'
+        environment:
+            JWT_SECRET: '${ONLYOFFICE_JWT_SECRET:-YourStrongSecret}'
+        networks:
+            - sail
     mailpit:
         image: 'axllent/mailpit:latest'
         ports:
@@ -103,4 +113,8 @@ volumes:
     sail-mysql:
         driver: local
     sail-redis:
+        driver: local
+    onlyoffice_data:
+        driver: local
+    onlyoffice_logs:
         driver: local
