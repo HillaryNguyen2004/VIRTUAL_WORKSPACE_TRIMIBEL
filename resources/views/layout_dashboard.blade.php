@@ -175,6 +175,21 @@
                     </x-nav-link>
                 </li>
 
+                @can('admin.dashboard.view')
+                    @if (Route::has('admin.lstm.dashboard'))
+                        <li>
+                            <x-nav-link href="{{ route('admin.lstm.dashboard') }}" :active="request()->routeIs('admin.lstm.dashboard')"
+                                class="flex items-center gap-4  rounded-xl cursor-pointer transition-colors group">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 lucide lucide-chart-line-icon lucide-chart-line">
+                                    <path d="M3 3v18h18"/>
+                                    <path d="m19 9-5 5-4-4-3 3"/>
+                                </svg>
+                                <span class="hidden sm:inline font-medium">Productivity Insights</span>
+                            </x-nav-link>
+                        </li>
+                    @endif
+                @endcan
+
                 <!-- @if (auth()->user()->hasRole('user'))
                 <li>
                     <x-nav-link href="{{ route('team-progress') }}" :active="request()->routeIs('team-progress')"

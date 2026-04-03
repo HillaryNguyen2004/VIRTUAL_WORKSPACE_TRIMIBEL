@@ -5,7 +5,6 @@ from datetime import date, timedelta
 from sqlalchemy import create_engine
 from config import MYSQL_CONFIG, PG_CONFIG
 
-# ── Connections ──────────────────────────────────────────────
 mysql_engine = create_engine(
     f"mysql+pymysql://{MYSQL_CONFIG['user']}:{MYSQL_CONFIG['password']}"
     f"@{MYSQL_CONFIG['host']}/{MYSQL_CONFIG['database']}"
@@ -24,7 +23,7 @@ pg_cur  = pg_conn.cursor()
 # ════════════════════════════════════════════════════════════
 def load_dim_date():
     print("Loading dim_date...")
-    start = date(2020, 1, 1)
+    start = date(2018, 1, 1)
     end   = date(2030, 12, 31)
     d     = start
     while d <= end:
@@ -71,7 +70,6 @@ def load_dim_employee():
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
     """, mysql_engine)
-
     for _, row in df.iterrows():
         pg_cur.execute("""
             SELECT employee_sk FROM dim_employee
@@ -148,40 +146,48 @@ def load_dim_phase():
 
 # ════════════════════════════════════════════════════════════
 # 5. dim_task
+# FIX 1: now includes score and percentage
 # ════════════════════════════════════════════════════════════
 def load_dim_task():
     print("Loading dim_task...")
     df = pd.read_sql("""
         SELECT id, title, assigned_user_id, status, priority,
                start_date, due_date, active, estimated_time,
+               score, percentage,
                project_id, phase_id, parent_id
         FROM tasks
     """, mysql_engine)
+
     for _, row in df.iterrows():
         pg_cur.execute("""
             INSERT INTO dim_task
                 (task_id, title, assigned_user_id, status, priority,
                  start_date, due_date, active, estimated_time,
+                 score, percentage,
                  project_id, phase_id, parent_id)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT (task_id) DO UPDATE
                 SET title=EXCLUDED.title,
                     assigned_user_id=EXCLUDED.assigned_user_id,
                     status=EXCLUDED.status, priority=EXCLUDED.priority,
                     start_date=EXCLUDED.start_date, due_date=EXCLUDED.due_date,
                     active=EXCLUDED.active, estimated_time=EXCLUDED.estimated_time,
+                    score=EXCLUDED.score, percentage=EXCLUDED.percentage,
                     project_id=EXCLUDED.project_id, phase_id=EXCLUDED.phase_id,
                     parent_id=EXCLUDED.parent_id
         """, (
             int(row['id']), row['title'],
             int(row['assigned_user_id']) if pd.notna(row['assigned_user_id']) else None,
             row['status'], row['priority'],
-            row['start_date'], row['due_date'],
+            row['start_date'] if pd.notna(row['start_date']) else None,
+            row['due_date']   if pd.notna(row['due_date'])   else None,
             bool(row['active']) if pd.notna(row['active']) else True,
             float(row['estimated_time']) if pd.notna(row['estimated_time']) else None,
-            int(row['project_id']) if pd.notna(row['project_id']) else None,
-            int(row['phase_id'])   if pd.notna(row['phase_id'])   else None,
-            int(row['parent_id'])  if pd.notna(row['parent_id'])  else None,
+            float(row['score'])      if pd.notna(row['score'])      else 0.0,
+            int(row['percentage'])   if pd.notna(row['percentage'])  else 0,
+            int(row['project_id'])   if pd.notna(row['project_id'])  else None,
+            int(row['phase_id'])     if pd.notna(row['phase_id'])    else None,
+            int(row['parent_id'])    if pd.notna(row['parent_id'])   else None,
         ))
     pg_conn.commit()
     print("dim_task done.")
@@ -219,10 +225,6 @@ def get_date_sk(d):
 
 # ════════════════════════════════════════════════════════════
 # 6. PRODUCTIVITY FORMULA
-#    Two modes:
-#    - has_tasks  → attendance(35%) + hours(25%) + task_pct(25%) + task_score(15%)
-#    - no tasks   → attendance(60%) + hours(40%)
-#    task_score is 0–10 in your DB so we divide by 10 not 100
 # ════════════════════════════════════════════════════════════
 def compute_productivity(hours_worked, is_late, checked_in,
                           had_day_off, tasks_completed,
@@ -232,17 +234,17 @@ def compute_productivity(hours_worked, is_late, checked_in,
 
     hours_score     = min(hours_worked / 8.0, 1.0)
     attendance      = 1.0 if (checked_in and not is_late) else (0.5 if checked_in else 0.0)
-    task_score_norm = min(avg_task_score / 10.0,  1.0)   # score is 0-10 in your DB
+    task_score_norm = min(avg_task_score / 10.0,  1.0)   # score is 0-10
     task_pct_norm   = min(avg_task_pct   / 100.0, 1.0)
 
     has_tasks = tasks_completed > 0 or avg_task_score > 0 or avg_task_pct > 0
 
     if has_tasks:
         score = (
-            0.35 * attendance     +
+            0.25 * attendance     +
             0.25 * hours_score    +
-            0.25 * task_pct_norm  +
-            0.15 * task_score_norm
+            0.30 * task_pct_norm  +
+            0.20 * task_score_norm
         ) * 100
     else:
         score = (
@@ -255,15 +257,18 @@ def compute_productivity(hours_worked, is_late, checked_in,
 # ════════════════════════════════════════════════════════════
 # 7. LOAD FACT TABLE
 #
-#    KEY FIX: tasks are matched by DATE RANGE (start_date..due_date)
-#    not by updated_at.  A task assigned to user X is "active" on
-#    every day between its start_date and due_date, so we count it
-#    toward that employee's productivity on each of those days.
+# FIX 2: removed WHERE start_date IS NOT NULL filter.
+#         Tasks with NULL dates get a wide fallback range
+#         so they still contribute to productivity scores.
+# FIX 3: score is only counted for completed tasks.
 # ════════════════════════════════════════════════════════════
 def load_fact():
     print("Loading fact table...")
 
-    # ── Pull source tables ───────────────────────────────────
+    # Fallback range for tasks with NULL start/due dates
+    FALLBACK_START = date(2018, 1, 1)
+    FALLBACK_END   = date(2030, 12, 31)
+
     users_df = pd.read_sql(
         "SELECT id, name, username FROM users", mysql_engine
     )
@@ -275,10 +280,10 @@ def load_fact():
         FROM check_ins
     """, mysql_engine)
 
-    # ── FIXED: load task date RANGE, not updated_at ─────────
+    # FIX 2: no longer filtering NULL start/due dates
     tasks_df = pd.read_sql("""
         SELECT
-            id          AS task_id,
+            id            AS task_id,
             assigned_user_id,
             project_id,
             phase_id,
@@ -286,18 +291,26 @@ def load_fact():
             score,
             percentage,
             start_date,
-            due_date
+            due_date,
+            estimated_time
         FROM tasks
         WHERE assigned_user_id IS NOT NULL
-          AND start_date IS NOT NULL
-          AND due_date   IS NOT NULL
     """, mysql_engine)
 
-    # Convert to Python dates for fast comparison
-    tasks_df['start_date'] = pd.to_datetime(tasks_df['start_date']).dt.date
-    tasks_df['due_date']   = pd.to_datetime(tasks_df['due_date']).dt.date
     tasks_df['score']      = tasks_df['score'].fillna(0).astype(float)
     tasks_df['percentage'] = tasks_df['percentage'].fillna(0).astype(float)
+
+    # Safe date conversion — NULL becomes the fallback range
+    def to_date(val, fallback: date) -> date:
+        if pd.isna(val):
+            return fallback
+        try:
+            return pd.Timestamp(val).date()
+        except Exception:
+            return fallback
+
+    tasks_df['start_py'] = tasks_df['start_date'].apply(lambda v: to_date(v, FALLBACK_START))
+    tasks_df['end_py']   = tasks_df['due_date'].apply(lambda v: to_date(v, FALLBACK_END))
 
     dayoff_df = pd.read_sql("""
         SELECT user_id, date, leave_type, status
@@ -305,13 +318,13 @@ def load_fact():
         WHERE status = 'APPROVED'
     """, mysql_engine)
 
-    # ── Build name → user_id map (check_ins uses display name) ──
-    name_map = {}
-    for _, u in users_df.iterrows():
-        name_map[u['name'].lower().replace(" ", "")] = int(u['id'])
+    # ── Name → user_id map ─────────────────────────────────
+    name_map: dict[str, int] = {
+        u['name'].lower().replace(" ", ""): int(u['id'])
+        for _, u in users_df.iterrows()
+    }
 
-    # ── Pre-build task lookup: user_id → [list of task dicts] ──
-    # This avoids re-scanning the whole tasks_df for every (user, date) pair
+    # ── Task lookup: user_id → list of task dicts ──────────
     print("  Building task lookup by user...")
     task_lookup: dict[int, list] = {}
     for _, t in tasks_df.iterrows():
@@ -323,41 +336,35 @@ def load_fact():
             'status':     str(t['status']),
             'score':      float(t['score']),
             'percentage': float(t['percentage']),
-            'start_date': t['start_date'],
-            'due_date':   t['due_date'],
+            'start_date': t['start_py'],
+            'due_date':   t['end_py'],
+            'est':        float(t['estimated_time']) if pd.notna(t['estimated_time']) else 1.0,
         })
 
-    # ── Collect (user_id, date) pairs from check-ins ─────────
-    # These are the dates we actually want to score
+    # ── (user_id, date) pairs ──────────────────────────────
     date_user_pairs: set = set()
-
     for _, row in checkins_df.iterrows():
         uname = str(row['user_name']).lower().replace(" ", "")
         if uname in name_map:
             date_user_pairs.add((name_map[uname], row['date']))
-
     for _, row in dayoff_df.iterrows():
         date_user_pairs.add((int(row['user_id']), row['date']))
 
     print(f"  Processing {len(date_user_pairs)} (user, date) pairs...")
 
-    # ── Pre-build a normalised check-in index for fast lookup ──
-    # Key: (normalised_name, date) → row dict
+    # ── Fast indexes ───────────────────────────────────────
     checkin_index: dict = {}
     for _, row in checkins_df.iterrows():
-        key = (str(row['user_name']).lower().replace(" ", ""), row['date'])
-        checkin_index[key] = row
+        checkin_index[(str(row['user_name']).lower().replace(" ", ""), row['date'])] = row
 
-    # ── Pre-build day-off index ───────────────────────────────
     dayoff_index: dict = {}
     for _, row in dayoff_df.iterrows():
-        key = (int(row['user_id']), row['date'])
-        dayoff_index.setdefault(key, []).append(row)
+        dayoff_index.setdefault((int(row['user_id']), row['date']), []).append(row)
 
-    # ── Build user_id → normalised name map for check-in lookup
-    uid_to_name: dict[int, str] = {}
-    for _, u in users_df.iterrows():
-        uid_to_name[int(u['id'])] = u['name'].lower().replace(" ", "")
+    uid_to_name: dict[int, str] = {
+        int(u['id']): u['name'].lower().replace(" ", "")
+        for _, u in users_df.iterrows()
+    }
 
     inserted = 0
 
@@ -367,9 +374,8 @@ def load_fact():
         if not emp_sk or not date_sk:
             continue
 
-        # ── Check-in ─────────────────────────────────────────
-        uname_key = uid_to_name.get(user_id, "")
-        ci_row    = checkin_index.get((uname_key, record_date))
+        # ── Check-in ───────────────────────────────────────
+        ci_row = checkin_index.get((uid_to_name.get(user_id, ""), record_date))
 
         check_in_time = check_out_time = None
         if ci_row is not None:
@@ -387,42 +393,45 @@ def load_fact():
             is_late      = False
             checked_in   = False
 
-        # ── Day-off ───────────────────────────────────────────
-        do_rows    = dayoff_index.get((user_id, record_date), [])
+        # ── Day-off ────────────────────────────────────────
+        do_rows     = dayoff_index.get((user_id, record_date), [])
         had_day_off = len(do_rows) > 0
         leave_type  = do_rows[0]['leave_type'] if had_day_off else None
 
-        # ── Active tasks — matched by DATE RANGE ──────────────
-        #    A task is active on record_date if:
-        #       task.start_date <= record_date <= task.due_date
+        # ── Active tasks ───────────────────────────────────
         r_date = pd.Timestamp(record_date).date()
-
-        active_tasks = []
-        for t in task_lookup.get(user_id, []):
-            if t['start_date'] <= r_date <= t['due_date']:
-                active_tasks.append(t)
+        active_tasks = [
+            t for t in task_lookup.get(user_id, [])
+            if t['start_date'] <= r_date <= t['due_date']
+        ]
 
         tasks_completed   = sum(1 for t in active_tasks if t['status'] == 'completed')
         tasks_in_progress = sum(1 for t in active_tasks if t['status'] == 'in_progress')
-        avg_task_score    = float(np.mean([t['score']      for t in active_tasks])) if active_tasks else 0.0
-        avg_task_pct      = float(np.mean([t['percentage'] for t in active_tasks])) if active_tasks else 0.0
+
+        # FIX 3: score only from completed tasks
+        completed = [t for t in active_tasks if t['status'] == 'completed']
+        avg_task_score = float(np.mean([t['score'] for t in completed])) \
+                         if completed else 0.0
+        avg_task_pct   = float(np.mean([t['percentage'] for t in active_tasks])) \
+                         if active_tasks else 0.0
 
         # Dimension keys from latest active task
         task_sk = project_sk = phase_sk = None
         if active_tasks:
             latest     = active_tasks[-1]
             task_sk    = get_sk("dim_task",    "task_id",    latest['task_id'])
-            project_sk = get_sk("dim_project", "project_id", latest['project_id']) if latest['project_id'] else None
-            phase_sk   = get_sk("dim_phase",   "phase_id",   latest['phase_id'])   if latest['phase_id']   else None
+            project_sk = get_sk("dim_project", "project_id", latest['project_id']) \
+                         if latest['project_id'] else None
+            phase_sk   = get_sk("dim_phase",   "phase_id",   latest['phase_id']) \
+                         if latest['phase_id'] else None
 
-        # Department SK
         pg_cur.execute(
             "SELECT department_id FROM dim_employee WHERE employee_sk = %s", (emp_sk,)
         )
         dept_row = pg_cur.fetchone()
-        dept_sk  = get_sk("dim_department", "dept_id", dept_row[0]) if dept_row and dept_row[0] else None
+        dept_sk  = get_sk("dim_department", "dept_id", dept_row[0]) \
+                   if dept_row and dept_row[0] else None
 
-        # Productivity score
         prod_score = compute_productivity(
             hours_worked, is_late, checked_in,
             had_day_off, tasks_completed,
