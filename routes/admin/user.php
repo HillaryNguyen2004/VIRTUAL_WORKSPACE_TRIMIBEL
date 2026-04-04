@@ -43,6 +43,10 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('admin_or_permission:admin.dashboard.view')
         ->name('api.lstm.predictions');
 
+    Route::get('/api/lstm/employee-history/{id}', [LSTMDashboardController::class, 'getEmployeeHistory'])
+        ->middleware('admin_or_permission:admin.dashboard.view')
+        ->name('api.lstm.employee.history');
+
     Route::post('/api/lstm/refresh-predictions', [LSTMDashboardController::class, 'refreshPredictions'])
         ->middleware('admin_or_permission:admin.dashboard.edit')
         ->name('api.lstm.refresh');

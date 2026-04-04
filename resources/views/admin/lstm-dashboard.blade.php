@@ -468,8 +468,34 @@
     white-space: nowrap;
 }
 </style>
+
+{{-- MODAL FOR CHART --}}
+<div class="modal fade" id="chartModal" tabindex="-1" aria-labelledby="chartModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title" id="chartModalLabel">
+                    <i class="fas fa-chart-line text-primary"></i> Productivity History: <span id="chart-employee-name" class="fw-bold"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div style="position: relative; height: 350px; width: 100%;">
+                    <canvas id="productivityChart"></canvas>
+                </div>
+            </div>
+            <div class="modal-footer border-top">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle"></i> Blue line = Historical Performance | Green dashed line = LSTM Prediction
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script src="{{ asset('js/admin/lstm-dashboard.js') }}"></script>
 @endpush
