@@ -78,6 +78,21 @@ return [
             'sslmode' => 'prefer',
         ],
 
+        'pgsql_dw' => [
+            'driver' => 'pgsql',
+            'url' => env('DW_DATABASE_URL'),
+            'host' => env('DW_DB_HOST', 'localhost'),
+            'port' => env('DW_DB_PORT', '5432'),
+            'database' => env('DW_DB_DATABASE', 'dw_productivity'),
+            'username' => env('DW_DB_USERNAME', 'postgres'),
+            'password' => env('DW_DB_PASSWORD', '123456'),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'schema' => 'public',
+            'sslmode' => 'prefer',
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DATABASE_URL'),

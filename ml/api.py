@@ -19,7 +19,7 @@ FEATURES = [
     'had_day_off', 'tasks_completed',
     'avg_task_score', 'avg_task_percentage'
 ]
-LOOKBACK = 7
+LOOKBACK = 30  # Match training configuration (train_lstm.py line 57)
 
 def get_last_n_days(user_id, n=LOOKBACK):
     pg_conn = psycopg2.connect(**PG_CONFIG)
@@ -39,6 +39,29 @@ def get_last_n_days(user_id, n=LOOKBACK):
     pg_conn.close()
     return df
 
+def get_trend(current_score: float, predicted_score: float, scores: list) -> str:
+    """
+    Use LSTM prediction vs current to determine real trend direction.
+    Also check 7-day slope for sustained patterns.
+    """
+    pred_diff = predicted_score - current_score
+
+    # If LSTM predicts significantly lower → declining
+    if pred_diff < -5:
+        return "declining"
+    if pred_diff > 5:
+        return "improving"
+
+    # Flat LSTM prediction → check recent slope
+    if len(scores) >= 7:
+        recent = scores[-7:]
+        x      = np.arange(len(recent))
+        slope  = float(np.polyfit(x, recent, 1)[0])
+        if slope < -1.0: return "declining"
+        if slope > 1.0:  return "improving"
+
+    return "stable"
+
 @app.route("/predict/<int:user_id>", methods=["GET"])
 def predict(user_id):
     df = get_last_n_days(user_id, LOOKBACK)
@@ -53,6 +76,12 @@ def predict(user_id):
     df['checked_in']  = df['checked_in'].astype(int)
     df['had_day_off'] = df['had_day_off'].astype(int)
     df.fillna(0, inplace=True)
+
+    # Current score (most recent)
+    current_score = df['productivity_score'].iloc[0]
+    
+    # Get last 7 days of scores for trend analysis
+    recent_scores = df['productivity_score'].iloc[:7].tolist()
 
     # Scale using saved scaler
     all_cols = FEATURES + ['productivity_score']
@@ -71,11 +100,16 @@ def predict(user_id):
     pred_original = scaler.inverse_transform(dummy)[0, -1]
     pred_original = round(float(np.clip(pred_original, 0, 100)), 2)
 
+    # Determine trend using LSTM prediction vs current score
+    trend = get_trend(current_score, pred_original, recent_scores)
+
     return jsonify({
         "user_id": user_id,
         "productivity_score": pred_original / 100.0,  # Convert to 0-1 scale for Laravel consistency
         "predicted_productivity": pred_original,  # Keep original for backwards compatibility
+        "current_productivity": round(float(current_score), 2),
         "confidence": 0.85,  # Add confidence score
+        "trend": trend,
         "model_version": "v1.0",
         "features_used": FEATURES,
         "level": (
@@ -117,6 +151,12 @@ def predict_all():
                     })
                     continue
 
+                # Current score (most recent)
+                current_score = df['productivity_score'].iloc[0]
+                
+                # Get last 7 days of scores for trend analysis
+                recent_scores = df['productivity_score'].iloc[:7].tolist()
+
                 # Convert booleans
                 df['is_late'] = df['is_late'].astype(int)
                 df['checked_in'] = df['checked_in'].astype(int)
@@ -140,11 +180,16 @@ def predict_all():
                 pred_original = scaler.inverse_transform(dummy)[0, -1]
                 pred_original = round(float(np.clip(pred_original, 0, 100)), 2)
 
+                # Determine trend using LSTM prediction vs current score
+                trend = get_trend(current_score, pred_original, recent_scores)
+
                 results.append({
                     "user_id": user_id,
                     "productivity_score": pred_original / 100.0,
                     "predicted_productivity": pred_original,
+                    "current_productivity": round(float(current_score), 2),
                     "confidence": 0.85,
+                    "trend": trend,
                     "level": (
                         "Excellent" if pred_original >= 80 else
                         "Good" if pred_original >= 60 else

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\ProductivityCalculatorService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -399,13 +400,58 @@ class LSTMDashboardController extends Controller
 
     private function getCurrentProductivityScore(int $employeeId): float
     {
-        // Use cached prediction as current score
-        // This avoids PostgreSQL connection issues
-        $cached = DB::table('lstm_predictions')
-            ->where('employee_id', $employeeId)
-            ->value('predicted_score');
+        try {
+            // Use real-time calculation for current productivity score
+            $productivityService = app(ProductivityCalculatorService::class);
+            $currentScore = $productivityService->calculateCurrentProductivityScore($employeeId, 7);
 
-        return round($cached ?? 0, 1);
+            Log::info("Real-time productivity calculated for employee {$employeeId}: {$currentScore}");
+            return $currentScore;
+
+        } catch (\Exception $e) {
+            Log::error("Real-time productivity calculation failed for employee {$employeeId}: " . $e->getMessage());
+
+            // Fallback to PostgreSQL data warehouse if available
+            try {
+                return $this->getProductivityFromDataWarehouse($employeeId);
+            } catch (\Exception $e2) {
+                Log::error("Data warehouse fallback failed for employee {$employeeId}: " . $e2->getMessage());
+
+                // Final fallback: use cached predictions but log the issue
+                Log::warning("Using cached predictions as final fallback for employee {$employeeId}");
+                $cached = DB::table('lstm_predictions')
+                    ->where('employee_id', $employeeId)
+                    ->value('predicted_score');
+
+                return round($cached ?? 0, 1);
+            }
+        }
+    }
+
+    /**
+     * Fallback method to get productivity from PostgreSQL data warehouse
+     */
+    private function getProductivityFromDataWarehouse(int $employeeId): float
+    {
+        try {
+            // Use the dedicated data warehouse PostgreSQL connection
+            $avgScore = DB::connection('pgsql_dw')
+                ->table('fact_employee_productivity as f')
+                ->join('dim_employee as e', 'f.employee_sk', '=', 'e.employee_sk')
+                ->join('dim_date as d', 'f.date_sk', '=', 'd.date_sk')
+                ->where('e.user_id', $employeeId)
+                ->where('d.full_date', '>=', DB::raw('CURRENT_DATE - INTERVAL \'7 days\''))
+                ->avg('f.productivity_score');
+
+            $result = round($avgScore ?? 0, 1);
+            Log::info("Data warehouse productivity retrieved for employee {$employeeId}: {$result}");
+
+            return $result;
+
+        } catch (\Exception $e) {
+            Log::error("PostgreSQL data warehouse query failed: " . $e->getMessage());
+            throw $e; // Re-throw to trigger final fallback
+        }
     }
 
     private function calculateTrend(float $current, float $predicted): string
