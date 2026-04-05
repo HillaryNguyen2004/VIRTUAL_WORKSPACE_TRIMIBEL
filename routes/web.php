@@ -453,6 +453,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/whiteboard/{boardId}', [WBOController::class, 'board'])->name('wbo.board');
 });
 
+Route::post('/wbo/save', [WBOController::class, 'save'])->name('wbo.save');
+
 Route::get('/team-progress', [TeamProgressController::class, 'index'])->name('team-progress');
 Route::get('/user-tasks/{userId}', [TaskController::class, 'getUserTasks'])->name('user.tasks');
 

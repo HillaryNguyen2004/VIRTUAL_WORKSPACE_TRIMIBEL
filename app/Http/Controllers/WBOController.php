@@ -60,4 +60,19 @@ class WBOController extends Controller
 
         return view('wbo.board', $data);
     }
+
+    /**
+     * Save the whiteboard data
+     */
+    public function save(Request $request)
+    {
+        $validated = $request->validate([
+            'board_id' => 'required|string',
+            'board_data' => 'required|string',
+        ]);
+
+        $this->service->saveBoard($validated['board_id'], $validated['board_data']);
+
+        return response()->json(['message' => 'Board saved successfully']);
+    }
 }
