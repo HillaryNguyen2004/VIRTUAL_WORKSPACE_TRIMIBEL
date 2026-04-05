@@ -177,7 +177,7 @@
                     </x-nav-link>
                 </li>
 
-                @can('admin.dashboard.view')
+                @if (auth()->user()->hasRole('admin'))
                     @if (Route::has('admin.lstm.dashboard'))
                         <li>
                             <x-nav-link href="{{ route('admin.lstm.dashboard') }}" :active="request()->routeIs('admin.lstm.dashboard')"
@@ -190,7 +190,7 @@
                             </x-nav-link>
                         </li>
                     @endif
-                @endcan
+                @endif
 
                 <!-- @if (auth()->user()->hasRole('user'))
                 <li>
