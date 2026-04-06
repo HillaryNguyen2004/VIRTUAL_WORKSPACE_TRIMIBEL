@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\OpenBoardRequest;
 use App\Services\WBOBoardService;
+use Illuminate\Http\Request;
 
 class WBOController extends Controller
 {
