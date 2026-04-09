@@ -21,10 +21,10 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/css/dashboard.css'])
 
-    @vite(['public/vendor/jquery/jquery.min.js'])
-    @vite(['public/vendor/bootstrap/js/bootstrap.bundle.min.js'])
-    @vite(['public/vendor/jquery-easing/jquery.easing.min.js'])
-    @vite(['public/js/sb-admin-2.min.js'])
+    <script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
+    <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ asset('vendor/jquery-easing/jquery.easing.min.js') }}"></script>
+    <script src="{{ asset('js/sb-admin-2.min.js') }}"></script>
 
     @vite([
         'resources/js/dashboard_layout/switch_lang.js',

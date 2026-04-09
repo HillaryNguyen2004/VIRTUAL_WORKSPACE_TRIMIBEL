@@ -1,0 +1,365 @@
+
+> build
+> vite build
+
+vite v4.5.14 building for production...
+transforming...
+DEPRECATION WARNING [legacy-js-api]: The legacy JS API is deprecated and will be removed in Dart Sass 2.0.0.
+
+More info: https://sass-lang.com/d/legacy-js-api
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+5 │ @import 'variables';
+  │         ^^^^^^^^^^^
+  ╵
+    resources/sass/app.scss 5:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+8 │ @import 'bootstrap/scss/bootstrap';
+  │         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ╵
+    resources/sass/app.scss 8:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+   ╷
+11 │ @import 'tailwindcss/base';
+   │         ^^^^^^^^^^^^^^^^^^
+   ╵
+    resources/sass/app.scss 11:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+   ╷
+12 │ @import 'tailwindcss/components';
+   │         ^^^^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    resources/sass/app.scss 12:9  root stylesheet
+
+DEPRECATION WARNING [import]: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+   ╷
+13 │ @import 'tailwindcss/utilities';
+   │         ^^^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    resources/sass/app.scss 13:9  root stylesheet
+
+DEPRECATION WARNING [if-function]: The Sass if() syntax is deprecated in favor of the modern CSS syntax.
+
+Suggestion: if(sass($arg == "$value"): $value; else: $arg)
+
+More info: https://sass-lang.com/d/if-function
+
+   ╷
+58 │       $_args: append($_args, if($arg == "$key", $key, if($arg == "$value", $value, $arg)));
+   │                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    node_modules/bootstrap/scss/_functions.scss 58:55  @import
+    node_modules/bootstrap/scss/bootstrap.scss 7:9     @import
+    resources/sass/app.scss 8:9                        root stylesheet
+
+DEPRECATION WARNING [if-function]: The Sass if() syntax is deprecated in favor of the modern CSS syntax.
+
+Suggestion: if(sass($arg == "$key"): $key; else: if($arg == "$value", $value, $arg))
+
+More info: https://sass-lang.com/d/if-function
+
+   ╷
+58 │       $_args: append($_args, if($arg == "$key", $key, if($arg == "$value", $value, $arg)));
+   │                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    node_modules/bootstrap/scss/_functions.scss 58:30  @import
+    node_modules/bootstrap/scss/bootstrap.scss 7:9     @import
+    resources/sass/app.scss 8:9                        root stylesheet
+
+DEPRECATION WARNING [if-function]: The Sass if() syntax is deprecated in favor of the modern CSS syntax.
+
+Suggestion: if(sass($l1 > $l2): divide($l1 + 0.05, $l2 + 0.05); else: divide($l2 + 0.05, $l1 + 0.05))
+
+More info: https://sass-lang.com/d/if-function
+
+    ╷
+177 │   @return if($l1 > $l2, divide($l1 + .05, $l2 + .05), divide($l2 + .05, $l1 + .05));
+    │           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ╵
+    node_modules/bootstrap/scss/_functions.scss 177:11  @import
+    node_modules/bootstrap/scss/bootstrap.scss 7:9      @import
+    resources/sass/app.scss 8:9                         root stylesheet
+
+DEPRECATION WARNING [if-function]: The Sass if() syntax is deprecated in favor of the modern CSS syntax.
+
+Suggestion: if(sass(divide($value, 255) < 0.04045): divide(divide($value, 255), 12.92); else: nth($_luminance-list, $value + 1))
+
+More info: https://sass-lang.com/d/if-function
+
+    ╷
+191 │     $value: if(divide($value, 255) < .04045, divide(divide($value, 255), 12.92), nth($_luminance-list, $value + 1));
+    │             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ╵
+    node_modules/bootstrap/scss/_functions.scss 191:13  @import
+    node_modules/bootstrap/scss/bootstrap.scss 7:9      @import
+    resources/sass/app.scss 8:9                         root stylesheet
+
+DEPRECATION WARNING [if-function]: The Sass if() syntax is deprecated in favor of the modern CSS syntax.
+
+Suggestion: if(sass($weight > 0): shade-color($color, $weight); else: tint-color($color, -$weight))
+
+More info: https://sass-lang.com/d/if-function
+
+    ╷
+217 │   @return if($weight > 0, shade-color($color, $weight), tint-color($color, -$weight));
+    │           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ╵
+    node_modules/bootstrap/scss/_functions.scss 217:11  @import
+    node_modules/bootstrap/scss/bootstrap.scss 7:9      @import
+    resources/sass/app.scss 8:9                         root stylesheet
+
+DEPRECATION WARNING [global-builtin]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.mix instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+    ╷
+207 │   @return mix(white, $color, $weight);
+    │           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ╵
+    node_modules/bootstrap/scss/_functions.scss 207:11  tint-color()
+    node_modules/bootstrap/scss/_variables.scss 79:12   @import
+    node_modules/bootstrap/scss/bootstrap.scss 8:9      @import
+    resources/sass/app.scss 8:9                         root stylesheet
+
+DEPRECATION WARNING [global-builtin]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.mix instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+    ╷
+212 │   @return mix(black, $color, $weight);
+    │           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ╵
+    node_modules/bootstrap/scss/_functions.scss 212:11  shade-color()
+    node_modules/bootstrap/scss/_variables.scss 84:12   @import
+    node_modules/bootstrap/scss/bootstrap.scss 8:9      @import
+    resources/sass/app.scss 8:9                         root stylesheet
+
+DEPRECATION WARNING [global-builtin]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.mix instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+    ╷
+342 │ $light-bg-subtle:         mix($gray-100, $white) !default;
+    │                           ^^^^^^^^^^^^^^^^^^^^^^
+    ╵
+    node_modules/bootstrap/scss/_variables.scss 342:27  @import
+    node_modules/bootstrap/scss/bootstrap.scss 8:9      @import
+    resources/sass/app.scss 8:9                         root stylesheet
+
+DEPRECATION WARNING [global-builtin]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use math.unit instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+   ╷
+11 │     @if $prev-num == null or unit($num) == "%" or unit($prev-num) == "%" {
+   │                              ^^^^^^^^^^
+   ╵
+    node_modules/bootstrap/scss/_functions.scss 11:30  -assert-ascending()
+    node_modules/bootstrap/scss/_variables.scss 494:1  @import
+    node_modules/bootstrap/scss/bootstrap.scss 8:9     @import
+    resources/sass/app.scss 8:9                        root stylesheet
+
+DEPRECATION WARNING [global-builtin]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use math.unit instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+   ╷
+11 │     @if $prev-num == null or unit($num) == "%" or unit($prev-num) == "%" {
+   │                                                   ^^^^^^^^^^^^^^^
+   ╵
+    node_modules/bootstrap/scss/_functions.scss 11:51  -assert-ascending()
+    node_modules/bootstrap/scss/_variables.scss 494:1  @import
+    node_modules/bootstrap/scss/bootstrap.scss 8:9     @import
+    resources/sass/app.scss 8:9                        root stylesheet
+
+DEPRECATION WARNING [color-functions]: red() is deprecated. Suggestion:
+
+color.channel($color, "red", $space: rgb)
+
+More info: https://sass-lang.com/d/color-functions
+
+    ╷
+185 │     "r": red($color),
+    │          ^^^^^^^^^^^
+    ╵
+    node_modules/bootstrap/scss/_functions.scss 185:10  luminance()
+    node_modules/bootstrap/scss/_functions.scss 174:8   contrast-ratio()
+    node_modules/bootstrap/scss/_functions.scss 159:22  color-contrast()
+    node_modules/bootstrap/scss/_variables.scss 846:42  @import
+    node_modules/bootstrap/scss/bootstrap.scss 8:9      @import
+    resources/sass/app.scss 8:9                         root stylesheet
+
+DEPRECATION WARNING [color-functions]: green() is deprecated. Suggestion:
+
+color.channel($color, "green", $space: rgb)
+
+More info: https://sass-lang.com/d/color-functions
+
+    ╷
+186 │     "g": green($color),
+    │          ^^^^^^^^^^^^^
+    ╵
+    node_modules/bootstrap/scss/_functions.scss 186:10  luminance()
+    node_modules/bootstrap/scss/_functions.scss 174:8   contrast-ratio()
+    node_modules/bootstrap/scss/_functions.scss 159:22  color-contrast()
+    node_modules/bootstrap/scss/_variables.scss 846:42  @import
+    node_modules/bootstrap/scss/bootstrap.scss 8:9      @import
+    resources/sass/app.scss 8:9                         root stylesheet
+
+DEPRECATION WARNING [color-functions]: blue() is deprecated. Suggestion:
+
+color.channel($color, "blue", $space: rgb)
+
+More info: https://sass-lang.com/d/color-functions
+
+    ╷
+187 │     "b": blue($color)
+    │          ^^^^^^^^^^^^
+    ╵
+    node_modules/bootstrap/scss/_functions.scss 187:10  luminance()
+    node_modules/bootstrap/scss/_functions.scss 174:8   contrast-ratio()
+    node_modules/bootstrap/scss/_functions.scss 159:22  color-contrast()
+    node_modules/bootstrap/scss/_variables.scss 846:42  @import
+    node_modules/bootstrap/scss/bootstrap.scss 8:9      @import
+    resources/sass/app.scss 8:9                         root stylesheet
+
+DEPRECATION WARNING [color-functions]: red() is deprecated. Suggestion:
+
+color.channel($color, "red", $space: rgb)
+
+More info: https://sass-lang.com/d/color-functions
+
+   ╷
+37 │   @return red($value), green($value), blue($value);
+   │           ^^^^^^^^^^^
+   ╵
+    node_modules/bootstrap/scss/_functions.scss 37:11   to-rgb()
+    node_modules/bootstrap/scss/_variables.scss 846:31  @import
+    node_modules/bootstrap/scss/bootstrap.scss 8:9      @import
+    resources/sass/app.scss 8:9                         root stylesheet
+
+DEPRECATION WARNING [color-functions]: green() is deprecated. Suggestion:
+
+color.channel($color, "green", $space: rgb)
+
+More info: https://sass-lang.com/d/color-functions
+
+   ╷
+37 │   @return red($value), green($value), blue($value);
+   │                        ^^^^^^^^^^^^^
+   ╵
+    node_modules/bootstrap/scss/_functions.scss 37:24   to-rgb()
+    node_modules/bootstrap/scss/_variables.scss 846:31  @import
+    node_modules/bootstrap/scss/bootstrap.scss 8:9      @import
+    resources/sass/app.scss 8:9                         root stylesheet
+
+WARNING: 315 repetitive deprecation warnings omitted.
+
+✓ 168 modules transformed.
+rendering chunks...
+computing gzip size...
+public/build/assets/arrow-down-7336b307.png                    0.09 kB
+public/build/assets/icon_dropCell-9cf5ca1d.png                 0.23 kB
+public/build/assets/js-d3769ae7.png                            0.31 kB
+public/build/assets/EwaAntV-6330009d.gif                       1.27 kB
+public/build/assets/EwaAntH-c9387123.gif                       1.27 kB
+public/build/assets/paint_24px-198d193e.ico                    2.17 kB
+public/build/assets/CFcolorGradation-49a75cec.png              2.38 kB
+public/build/assets/CFdataBar-32286782.png                     3.46 kB
+public/build/assets/fa-v4compatibility-4bad0278.woff2          4.03 kB
+public/build/assets/ui-icons_777620_256x240-71052fdd.png       4.55 kB
+public/build/assets/ui-icons_cc0000_256x240-d8cb1553.png       4.55 kB
+public/build/assets/ui-icons_ffffff_256x240-59a94208.png       6.30 kB
+public/build/assets/ui-icons_555555_256x240-09b69231.png       6.99 kB
+public/build/assets/ui-icons_444444_256x240-97eeaa84.png       6.99 kB
+public/build/assets/ui-icons_777777_256x240-0b67a099.png       7.00 kB
+public/build/assets/waffle_sprite-5b2f8581.png                 8.12 kB
+public/build/assets/iconfont-33ac3971.woff                    10.79 kB
+public/build/manifest.json                                    15.41 kB │ gzip:   2.15 kB
+public/build/assets/fa-regular-400-81aaa834.woff2             18.92 kB
+public/build/assets/iconfont-193da0ee.ttf                     21.67 kB
+public/build/assets/iconfont-fab6fe8c.eot                     21.84 kB
+public/build/assets/CFicons-3e33f3c1.png                      31.53 kB
+public/build/assets/loading-12a61ac8.gif                      69.01 kB
+public/build/assets/fontawesome-webfont-2adefcbc.woff2        77.16 kB
+public/build/assets/iconfont-f09c1428.svg                     86.96 kB │ gzip:  17.77 kB
+public/build/assets/fontawesome-webfont-ba0c59de.woff         98.02 kB
+public/build/assets/fa-brands-400-70c632ba.woff2             110.09 kB
+public/build/assets/fa-solid-900-ff58a6b0.woff2              114.74 kB
+public/build/assets/fontawesome-webfont-aa58f33f.ttf         165.55 kB
+public/build/assets/fontawesome-webfont-7bfcab6d.eot         165.74 kB
+public/build/assets/fontawesome-webfont-fc378232.svg         447.05 kB │ gzip: 134.79 kB
+public/build/assets/dashboard-734889b7.css                     0.35 kB │ gzip:   0.22 kB
+public/build/assets/app-2fd9a269.css                          68.12 kB │ gzip:  21.44 kB
+public/build/assets/app-cca0ada9.css                          92.32 kB │ gzip:  15.26 kB
+public/build/assets/excel-2b6ba27c.css                       209.65 kB │ gzip:  49.10 kB
+public/build/assets/app-86f07ec5.css                         316.64 kB │ gzip:  45.12 kB
+public/build/assets/close_info_alert-0164b849.js               0.10 kB │ gzip:   0.11 kB
+public/build/assets/scroll_to_top-46039ac3.js                  0.34 kB │ gzip:   0.22 kB
+public/build/assets/submit-form-35e9bfc3.js                    0.37 kB │ gzip:   0.26 kB
+public/build/assets/show_task_description-5d6555d0.js          0.43 kB │ gzip:   0.26 kB
+public/build/assets/toggle_pwd-6d8b2229.js                     0.48 kB │ gzip:   0.28 kB
+public/build/assets/team_dialog-0846c856.js                    0.49 kB │ gzip:   0.23 kB
+public/build/assets/toggle_update_phase-eba26c89.js            0.50 kB │ gzip:   0.27 kB
+public/build/assets/toggle_confirm_pwd-1c5a30bb.js             0.50 kB │ gzip:   0.29 kB
+public/build/assets/team_member_dialog-2fe124de.js             0.51 kB │ gzip:   0.23 kB
+public/build/assets/update_detail-ce524957.js                  0.61 kB │ gzip:   0.41 kB
+public/build/assets/dropdown_profile-40b259bf.js               0.70 kB │ gzip:   0.34 kB
+public/build/assets/switch_lang-3f2c7008.js                    0.72 kB │ gzip:   0.36 kB
+public/build/assets/toggle_view-de31a820.js                    0.72 kB │ gzip:   0.22 kB
+public/build/assets/toggle_sidebar-a5653251.js                 0.89 kB │ gzip:   0.34 kB
+public/build/assets/validate_pwd_reset-8e6d9a15.js             0.99 kB │ gzip:   0.46 kB
+public/build/assets/validate_pwd-d7c8c675.js                   1.05 kB │ gzip:   0.47 kB
+public/build/assets/upload_image-116d5fe1.js                   1.17 kB │ gzip:   0.68 kB
+public/build/assets/task_assignee_filter-d8898a55.js           1.27 kB │ gzip:   0.59 kB
+public/build/assets/show-toast-59ca017c.js                     1.29 kB │ gzip:   0.69 kB
+public/build/assets/edit_company_hours-12a38480.js             1.31 kB │ gzip:   0.68 kB
+public/build/assets/update_status-9fcf0629.js                  1.96 kB │ gzip:   0.94 kB
+public/build/assets/task_dialog-3f21b633.js                    2.43 kB │ gzip:   0.83 kB
+public/build/assets/request_dayoff_dialog-0151a204.js          2.66 kB │ gzip:   1.29 kB
+public/build/assets/excel-410d2bb4.js                          2.76 kB │ gzip:   1.39 kB
+public/build/assets/chat_bot-f901ead6.js                       2.81 kB │ gzip:   1.11 kB
+public/build/assets/jquery.mousewheel-a8dad0de.js              3.15 kB │ gzip:   1.43 kB
+public/build/assets/edit_holiday-ca5c2b70.js                   3.39 kB │ gzip:   1.23 kB
+public/build/assets/dropdown_notification-960ad617.js          4.07 kB │ gzip:   1.62 kB
+public/build/assets/toggle_update_user-ef2e3cef.js             5.06 kB │ gzip:   2.01 kB
+public/build/assets/face-checkin-4ab1796d.js                   6.82 kB │ gzip:   2.67 kB
+public/build/assets/storage-89257748.js                        6.85 kB │ gzip:   2.01 kB
+public/build/assets/purify.es-c4bec0ee.js                     59.46 kB │ gzip:  23.32 kB
+public/build/assets/jquery-7f72e7f7.js                        87.84 kB │ gzip:  31.52 kB
+public/build/assets/luckyexcel.esm-c6b85fd9.js               159.38 kB │ gzip:  52.45 kB
+public/build/assets/app-da546a13.js                          204.15 kB │ gzip:  65.63 kB
+public/build/assets/monthly_attendance_charts-bdbfdbdb.js    208.53 kB │ gzip:  71.63 kB
+public/build/assets/editor-4e2f781a.js                       423.97 kB │ gzip: 133.31 kB
+public/build/assets/luckysheet.esm-96b54e78.js             2,824.85 kB │ gzip: 629.90 kB
+
+(!) Some chunks are larger than 500 kBs after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 46.84s

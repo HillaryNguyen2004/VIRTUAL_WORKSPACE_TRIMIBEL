@@ -20,12 +20,12 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @vite(['resources/js/submit-form.js'])
     <!-- Bootstrap core JavaScript-->
-    @vite(['public/vendor/jquery/jquery.min.js'])
-    @vite(['public/vendor/bootstrap/js/bootstrap.bundle.min.js'])
+    <script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
+    <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <!-- Core plugin JavaScript-->
-    @vite(['public/vendor/jquery-easing/jquery.easing.min.js'])
+    <script src="{{ asset('vendor/jquery-easing/jquery.easing.min.js') }}"></script>
     <!-- Custom scripts for all pages-->
-    @vite(['public/js/sb-admin-2.min.js'])
+    <script src="{{ asset('js/sb-admin-2.min.js') }}"></script>
 
     <!-- Dashboard layout -->
     @vite(['resources/js/dashboard_layout/switch_lang.js'])
