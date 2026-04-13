@@ -101,7 +101,10 @@ class LSTMDashboardController extends Controller
 
             if ($total == 0) {
                 return response()->json([
-                    'high' => 0, 'medium' => 0, 'low' => 0, 'critical' => 0
+                    'high' => 0,
+                    'medium' => 0,
+                    'low' => 0,
+                    'critical' => 0
                 ]);
             }
 
@@ -125,7 +128,10 @@ class LSTMDashboardController extends Controller
         } catch (\Exception $e) {
             Log::error('LSTM Distribution Error: ' . $e->getMessage());
             return response()->json([
-                'high' => 0, 'medium' => 0, 'low' => 0, 'critical' => 100
+                'high' => 0,
+                'medium' => 0,
+                'low' => 0,
+                'critical' => 100
             ]);
         }
     }
@@ -198,7 +204,7 @@ class LSTMDashboardController extends Controller
             }
 
             // Sort by predicted score (descending)
-            usort($predictions, function($a, $b) {
+            usort($predictions, function ($a, $b) {
                 return $b['predictedScore'] <=> $a['predictedScore'];
             });
 
@@ -220,6 +226,19 @@ class LSTMDashboardController extends Controller
         try {
             Log::info('Starting LSTM predictions refresh...');
 
+            // Batch refresh can exceed the default PHP execution window.
+            @set_time_limit(300);
+
+            if (!$this->isLSTMApiHealthy()) {
+                Log::warning('LSTM API is unavailable, aborting refresh early.');
+                return response()->json([
+                    'message' => 'LSTM API is unavailable. Start ml/api.py service on port 5001 and retry.',
+                    'success' => 0,
+                    'errors' => 0,
+                    'totalStored' => DB::table('lstm_predictions')->count()
+                ], 503);
+            }
+
             // Get all active employee IDs
             $employeeIds = DB::table('users')
                 ->where('blocked', false)
@@ -233,7 +252,9 @@ class LSTMDashboardController extends Controller
             foreach ($employeeIds as $employeeId) {
                 try {
                     // Call LSTM API to generate fresh prediction
-                    $response = Http::timeout(30)->get("{$this->lstmApiUrl}/predict/{$employeeId}");
+                    $response = Http::connectTimeout(2)
+                        ->timeout(5)
+                        ->get("{$this->lstmApiUrl}/predict/{$employeeId}");
 
                     Log::debug("LSTM API response for employee {$employeeId}: " . $response->status());
 
@@ -249,7 +270,7 @@ class LSTMDashboardController extends Controller
                         Log::warning("Failed to get prediction for employee {$employeeId}: " . $response->body());
                     }
 
-                } catch (\Exception $e) {
+                } catch (\Throwable $e) {
                     $errorCount++;
                     Log::error("Error getting prediction for employee {$employeeId}: " . $e->getMessage());
                 }
@@ -371,15 +392,22 @@ class LSTMDashboardController extends Controller
 
             Log::debug("No cache found for employee {$employeeId}, calling LSTM API...");
 
+            if (!$this->isLSTMApiHealthy()) {
+                Log::warning("LSTM API unavailable while fetching employee {$employeeId} prediction.");
+                return ['score' => 0, 'confidence' => 0];
+            }
+
             // Fallback: Call LSTM API
-            $response = Http::timeout(10)->get("{$this->lstmApiUrl}/predict/{$employeeId}");
+            $response = Http::connectTimeout(2)
+                ->timeout(5)
+                ->get("{$this->lstmApiUrl}/predict/{$employeeId}");
 
             Log::debug("LSTM API response status: " . $response->status());
 
             if ($response->successful()) {
                 $data = $response->json();
                 Log::debug("LSTM API data for {$employeeId}: " . json_encode($data));
-                
+
                 // Convert Flask 0-1 scale to 0-100 percentage scale
                 $predictedScore = ($data['productivity_score'] ?? 0) * 100;
 
@@ -396,6 +424,19 @@ class LSTMDashboardController extends Controller
         }
 
         return ['score' => 0, 'confidence' => 0];
+    }
+
+    private function isLSTMApiHealthy(): bool
+    {
+        try {
+            return Http::connectTimeout(2)
+                ->timeout(3)
+                ->get("{$this->lstmApiUrl}/health")
+                ->successful();
+        } catch (\Throwable $e) {
+            Log::warning('LSTM API health check failed: ' . $e->getMessage());
+            return false;
+        }
     }
 
     private function getCurrentProductivityScore(int $employeeId): float
@@ -458,7 +499,8 @@ class LSTMDashboardController extends Controller
     {
         $difference = $predicted - $current;
 
-        if (abs($difference) < 2) return 'stable';
+        if (abs($difference) < 2)
+            return 'stable';
         return $difference > 0 ? 'up' : 'down';
     }
 
@@ -512,15 +554,15 @@ class LSTMDashboardController extends Controller
             // We query the last 12 *full* weeks (Mon–Sun), excluding the current week.
             try {
                 $startOfThisWeek = Carbon::now()->startOfWeek();          // Monday 00:00
-                $startOfWindow   = $startOfThisWeek->copy()->subWeeks(12); // 12 weeks back
+                $startOfWindow = $startOfThisWeek->copy()->subWeeks(12); // 12 weeks back
 
                 $records = DB::connection('pgsql_dw')
                     ->table('fact_employee_productivity as f')
                     ->join('dim_employee as e', 'f.employee_sk', '=', 'e.employee_sk')
-                    ->join('dim_date    as d', 'f.date_sk',     '=', 'd.date_sk')
-                    ->where('e.user_id',   $id)
+                    ->join('dim_date    as d', 'f.date_sk', '=', 'd.date_sk')
+                    ->where('e.user_id', $id)
                     ->where('d.full_date', '>=', $startOfWindow)
-                    ->where('d.full_date', '<',  $startOfThisWeek)
+                    ->where('d.full_date', '<', $startOfThisWeek)
                     ->where('f.productivity_score', '>', 0)   // exclude zero/absent days
                     ->selectRaw("DATE_TRUNC('week', d.full_date) AS week_start,
                                  AVG(f.productivity_score)       AS weekly_avg")
@@ -531,7 +573,7 @@ class LSTMDashboardController extends Controller
                 if ($records->isNotEmpty()) {
                     $weeklyScores = $records
                         ->pluck('weekly_avg')
-                        ->map(fn ($s) => round((float) $s, 1))  // already 0-100, NO × 100
+                        ->map(fn($s) => round((float) $s, 1))  // already 0-100, NO × 100
                         ->values()
                         ->toArray();
                 }
@@ -548,30 +590,43 @@ class LSTMDashboardController extends Controller
             }
 
             // ── 2. Pad to exactly 12 historical slots (null = no data that week) ──
-            $padCount     = 12 - count($weeklyScores);
+            $padCount = 12 - count($weeklyScores);
             $weeklyScores = array_merge(array_fill(0, $padCount, null), $weeklyScores);
 
             // ── 3. Current score — from ProductivityCalculatorService (7-day avg) ─
             //    This is the SAME value shown on the dashboard card.
-            $currentScore    = $this->getCurrentProductivityScore((int) $id);
-            $predictedScore  = $this->getLSTMPredictionForEmployee((int) $id)['score'] ?? 0;
+            $currentScore = $this->getCurrentProductivityScore((int) $id);
+            $predictedScore = $this->getLSTMPredictionForEmployee((int) $id)['score'] ?? 0;
 
             // ── 4. Build Chart.js datasets ────────────────────────────────────────
             // Labels:  W-12 … W-1  |  Current  |  Predicted
             // history: [weekly…, currentScore, null]
             // predicted:[nulls…,  currentScore, predictedScore]  ← bridge at Current point
 
-            $labels = ['W-12','W-11','W-10','W-9','W-8','W-7',
-                       'W-6', 'W-5', 'W-4', 'W-3','W-2','W-1',
-                       'Current','Predicted'];
+            $labels = [
+                'W-12',
+                'W-11',
+                'W-10',
+                'W-9',
+                'W-8',
+                'W-7',
+                'W-6',
+                'W-5',
+                'W-4',
+                'W-3',
+                'W-2',
+                'W-1',
+                'Current',
+                'Predicted'
+            ];
 
-            $historyData   = array_merge($weeklyScores, [$currentScore, null]);
+            $historyData = array_merge($weeklyScores, [$currentScore, null]);
             $predictedData = array_merge(array_fill(0, 12, null), [$currentScore, $predictedScore]);
 
             return response()->json([
-                'labels'       => $labels,
-                'history'      => $historyData,
-                'predicted'    => $predictedData,
+                'labels' => $labels,
+                'history' => $historyData,
+                'predicted' => $predictedData,
                 'currentScore' => $currentScore,
                 'predicted_score' => $predictedScore,
             ]);
