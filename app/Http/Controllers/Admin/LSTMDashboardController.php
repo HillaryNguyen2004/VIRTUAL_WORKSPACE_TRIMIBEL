@@ -492,74 +492,93 @@ class LSTMDashboardController extends Controller
     /**
      * Get historical and predicted productivity data for employee chart
      */
+    /**
+     * Get historical and predicted productivity data for employee chart.
+     *
+     * Returns 12 weekly averages from the data warehouse (already 0-100 scale)
+     * + the current 7-day real-time score (from ProductivityCalculatorService,
+     *   matching exactly what the dashboard card shows)
+     * + the LSTM predicted score.
+     *
+     * FIX: removed the * 100 multiplication — fact_employee_productivity.productivity_score
+     *      is already stored on a 0-100 scale, so multiplying again gave values like 8500.
+     */
     public function getEmployeeHistory($id): JsonResponse
     {
         try {
-            $pastScores = [];
-            
-            // 1. Fetch historical data from data warehouse for the last 6 weeks
+            $weeklyScores = [];
+
+            // ── 1. Historical weekly averages from the data warehouse ────────────
+            // We query the last 12 *full* weeks (Mon–Sun), excluding the current week.
             try {
+                $startOfThisWeek = Carbon::now()->startOfWeek();          // Monday 00:00
+                $startOfWindow   = $startOfThisWeek->copy()->subWeeks(12); // 12 weeks back
+
                 $records = DB::connection('pgsql_dw')
                     ->table('fact_employee_productivity as f')
                     ->join('dim_employee as e', 'f.employee_sk', '=', 'e.employee_sk')
-                    ->join('dim_date as d', 'f.date_sk', '=', 'd.date_sk')
-                    ->where('e.user_id', $id)
-                    ->where('d.full_date', '>=', Carbon::now()->subWeeks(6))
-                    ->orderBy('d.full_date', 'asc')
-                    ->selectRaw("DATE_TRUNC('week', d.full_date) as week_start, AVG(f.productivity_score) as weekly_avg")
+                    ->join('dim_date    as d', 'f.date_sk',     '=', 'd.date_sk')
+                    ->where('e.user_id',   $id)
+                    ->where('d.full_date', '>=', $startOfWindow)
+                    ->where('d.full_date', '<',  $startOfThisWeek)
+                    ->where('f.productivity_score', '>', 0)   // exclude zero/absent days
+                    ->selectRaw("DATE_TRUNC('week', d.full_date) AS week_start,
+                                 AVG(f.productivity_score)       AS weekly_avg")
                     ->groupBy('week_start')
+                    ->orderBy('week_start', 'asc')
                     ->get();
 
                 if ($records->isNotEmpty()) {
-                    $pastScores = $records->pluck('weekly_avg')->map(function($score) {
-                        return round($score * 100, 1);
-                    })->values()->toArray();
+                    $weeklyScores = $records
+                        ->pluck('weekly_avg')
+                        ->map(fn ($s) => round((float) $s, 1))  // already 0-100, NO × 100
+                        ->values()
+                        ->toArray();
                 }
-                Log::info("Found " . count($pastScores) . " weekly aggregates for employee {$id}");
+
+                // Keep only the most recent 12 weeks
+                if (count($weeklyScores) > 12) {
+                    $weeklyScores = array_slice($weeklyScores, -12);
+                }
+
+                Log::info("History: found " . count($weeklyScores) . " weekly scores for employee {$id}");
 
             } catch (\Exception $e) {
-                Log::error("Data warehouse query for history failed for employee {$id}: " . $e->getMessage());
+                Log::error("DW history query failed for employee {$id}: " . $e->getMessage());
             }
 
-            // 2. If DB fails or returns no data, use mock data as a fallback
-            if (empty($pastScores)) {
-                Log::warning("Using mock data for employee {$id} due to empty DB result.");
-                $pastScores = [rand(40, 80), rand(45, 85), rand(50, 90), rand(40, 80), rand(30, 70), rand(45, 75)];
-            }
-            
-            // 3. Pad data if there are fewer than 6 weeks of history
-            $weeksToPad = 6 - count($pastScores);
-            if ($weeksToPad > 0) {
-                $padding = array_fill(0, $weeksToPad, 0); // Pad with 0 for missing weeks
-                $pastScores = array_merge($padding, $pastScores);
-            }
-            
-            // Ensure we only have the last 6 weeks
-            if(count($pastScores) > 6) {
-                $pastScores = array_slice($pastScores, -6);
-            }
+            // ── 2. Pad to exactly 12 historical slots (null = no data that week) ──
+            $padCount     = 12 - count($weeklyScores);
+            $weeklyScores = array_merge(array_fill(0, $padCount, null), $weeklyScores);
 
-            // 4. Get current and predicted scores
-            $currentScore = end($pastScores) ?: 0;
-            $prediction = $this->getLSTMPredictionForEmployee($id)['score'] ?? rand(60, 95);
+            // ── 3. Current score — from ProductivityCalculatorService (7-day avg) ─
+            //    This is the SAME value shown on the dashboard card.
+            $currentScore    = $this->getCurrentProductivityScore((int) $id);
+            $predictedScore  = $this->getLSTMPredictionForEmployee((int) $id)['score'] ?? 0;
 
-            // 5. Format data for Chart.js
-            $labels = ['Week -5', 'Week -4', 'Week -3', 'Week -2', 'Week -1', 'Current', 'Predicted'];
-            $historyData = array_merge($pastScores, [null]);
-            $predictedData = array_merge(array_fill(0, 5, null), [$currentScore, $prediction]);
+            // ── 4. Build Chart.js datasets ────────────────────────────────────────
+            // Labels:  W-12 … W-1  |  Current  |  Predicted
+            // history: [weekly…, currentScore, null]
+            // predicted:[nulls…,  currentScore, predictedScore]  ← bridge at Current point
+
+            $labels = ['W-12','W-11','W-10','W-9','W-8','W-7',
+                       'W-6', 'W-5', 'W-4', 'W-3','W-2','W-1',
+                       'Current','Predicted'];
+
+            $historyData   = array_merge($weeklyScores, [$currentScore, null]);
+            $predictedData = array_merge(array_fill(0, 12, null), [$currentScore, $predictedScore]);
 
             return response()->json([
-                'labels' => $labels,
-                'history' => $historyData,
-                'predicted' => $predictedData
-            ], 200);
+                'labels'       => $labels,
+                'history'      => $historyData,
+                'predicted'    => $predictedData,
+                'currentScore' => $currentScore,
+                'predicted_score' => $predictedScore,
+            ]);
 
         } catch (\Exception $e) {
-            Log::error("Failed to load chart data for employee {$id}: " . $e->getMessage());
-            return response()->json([
-                'error' => 'Failed to load chart data',
-                'message' => $e->getMessage()
-            ], 500);
+            Log::error("getEmployeeHistory failed for employee {$id}: " . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 }
