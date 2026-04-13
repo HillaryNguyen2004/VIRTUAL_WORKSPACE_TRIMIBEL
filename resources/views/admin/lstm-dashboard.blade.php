@@ -140,22 +140,6 @@
     </div>
 </div>
 
-{{-- HISTORY CHART MODAL --}}
-<div id="chart-modal" class="modal-overlay" style="display:none">
-    <div class="modal-box">
-        <div class="modal-header">
-            <span class="modal-title">Productivity history: <strong id="modal-name"></strong></span>
-            <button class="modal-close" id="btn-close-modal">✕</button>
-        </div>
-        <div class="modal-body">
-            <div style="position:relative;height:280px"><canvas id="history-chart"></canvas></div>
-        </div>
-        <div class="modal-footer">
-            Blue = 6-week historical &nbsp;·&nbsp; Green dashed = LSTM next-day prediction
-        </div>
-    </div>
-</div>
-
 <style>
 .lstm-dash{padding:1.5rem 0 3rem;font-family:'DM Sans',sans-serif}
 .dash-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem}
@@ -279,19 +263,8 @@
   border-radius:50%;animation:spin .7s linear infinite}
 .loading-overlay p{font-size:.8rem;color:#777}
 
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.42);
-  display:flex;align-items:center;justify-content:center;z-index:9998}
-.modal-box{background:#fff;border-radius:16px;width:min(680px,95vw);box-shadow:0 20px 60px rgba(0,0,0,.15)}
-.modal-header{display:flex;align-items:center;justify-content:space-between;
-  padding:.9rem 1.2rem;border-bottom:1px solid #f0f0f0}
-.modal-title{font-size:.85rem;color:#555;font-family:'DM Sans',sans-serif}
-.modal-title strong{color:#111}
-.modal-close{background:none;border:none;font-size:.95rem;cursor:pointer;color:#aaa;
-  padding:4px 8px;border-radius:6px;line-height:1}
-.modal-close:hover{background:#f5f5f5;color:#333}
-.modal-body{padding:1.2rem}
-.modal-footer{padding:.65rem 1.2rem;border-top:1px solid #f0f0f0;
-  font-size:.7rem;color:#bbb;text-align:center}
+/* History modal is built dynamically in lstm-dashboard.js using Tailwind utility classes.
+   No custom CSS needed here — all modal styling is inline Tailwind. */
 
 .empty-state{font-size:.78rem;color:#ccc;text-align:center;padding:2rem 0}
 
@@ -307,6 +280,7 @@
   .bottom-grid{grid-template-columns:1fr}
 }
 </style>
+
 @endsection
 
 @push('scripts')
