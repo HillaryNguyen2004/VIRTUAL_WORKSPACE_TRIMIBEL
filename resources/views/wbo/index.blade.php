@@ -76,27 +76,16 @@
     </div>
     <div class="grid grid-cols-1 @2xl:grid-cols-2 @5xl:grid-cols-3 gap-4 animate-fade-in-up [animation-delay:200ms]">
         @foreach ($recentBoards as $board)
-        <a href="{{ route('wbo.board', $board['id']) }}"
+        <a href="{{ route('wbo.board', $board['board_id']) }}"
            class="bg-white rounded-2xl border border-muted-300 hover:border-primary/30 transition-all duration-300 flex flex-col h-full group p-4">
             <div class="flex items-start justify-between gap-3">
                 <div class="flex-1 min-w-0">
-                    <div class="mb-2">
-                        @if ($board['action'] === 'created')
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                                {{ __('app.created') }}
-                            </span>
-                        @else
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted-100 text-muted-600">
-                                {{ __('app.opened') }}
-                            </span>
-                        @endif
-                    </div>
-                    <p class="text-xs text-muted-500 truncate"><code>{{ substr($board['id'], 0, 13) }}...</code></p>
-                    <p class="text-xs text-muted-400 mt-1">{{ \Carbon\Carbon::parse($board['accessed_at'])->diffForHumans() }}</p>
+                    <p class="text-xs text-muted-500 truncate"><code>{{ substr($board['board_id'], 0, 13) }}...</code></p>
+                    <p class="text-xs text-muted-400 mt-1">{{ \Carbon\Carbon::parse($board['last_accessed_at'])->diffForHumans() }}</p>
                 </div>
                 <svg class="w-5 h-5 text-muted-400 group-hover:text-primary transition-colors flex-shrink-0"
-                     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
             </div>
         </a>

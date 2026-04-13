@@ -16,13 +16,15 @@
     <link href="{{ asset('vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet" type="text/css">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/css/dashboard.css'])
 
-    @vite(['public/vendor/jquery/jquery.min.js'])
-    @vite(['public/vendor/bootstrap/js/bootstrap.bundle.min.js'])
-    @vite(['public/vendor/jquery-easing/jquery.easing.min.js'])
-    @vite(['public/js/sb-admin-2.min.js'])
+    <script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
+    <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ asset('vendor/jquery-easing/jquery.easing.min.js') }}"></script>
+    <script src="{{ asset('js/sb-admin-2.min.js') }}"></script>
 
     @vite([
         'resources/js/dashboard_layout/switch_lang.js',
@@ -174,6 +176,21 @@
                         <span class="hidden sm:inline font-medium">{{ __('ai.nav_workspace') }}</span>
                     </x-nav-link>
                 </li>
+
+                @if (auth()->user()->hasRole('admin'))
+                    @if (Route::has('admin.lstm.dashboard'))
+                        <li>
+                            <x-nav-link href="{{ route('admin.lstm.dashboard') }}" :active="request()->routeIs('admin.lstm.dashboard')"
+                                class="flex items-center gap-4  rounded-xl cursor-pointer transition-colors group">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 lucide lucide-chart-line-icon lucide-chart-line">
+                                    <path d="M3 3v18h18"/>
+                                    <path d="m19 9-5 5-4-4-3 3"/>
+                                </svg>
+                                <span class="hidden sm:inline font-medium">Productivity Insights</span>
+                            </x-nav-link>
+                        </li>
+                    @endif
+                @endif
 
                 <!-- @if (auth()->user()->hasRole('user'))
                 <li>

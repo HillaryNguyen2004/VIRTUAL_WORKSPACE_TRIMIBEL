@@ -2,51 +2,54 @@
 
 namespace App\Repositories;
 
+use App\Models\WBOBoard;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class WBOBoardRepository
 {
-    private const HISTORY_SESSION_KEY = 'wbo_board_history';
-    private const MAX_HISTORY_ITEMS = 10;
+    public function __construct(private WBOBoard $model)
+    {
+    }
 
     /**
      * Get board history for current user
      */
     public function getBoardHistory(): array
     {
-        $userId = Auth::id();
-        $sessionKey = $this->getSessionKey($userId);
-        
-        return session()->get($sessionKey, []);
+        return $this->model
+            ->where('user_id', Auth::id())
+            ->orderBy('last_accessed_at', 'desc')
+            ->get()
+            ->toArray();
     }
 
     /**
-     * Add a board to user's history
+     * Add a board to user's history, or create it if it doesn't exist.
      */
     public function addToHistory(string $boardId, string $action = 'opened'): void
     {
-        $userId = Auth::id();
-        $sessionKey = $this->getSessionKey($userId);
-        
-        $history = session()->get($sessionKey, []);
-        
-        // Remove if already exists to avoid duplicates
-        $history = array_filter($history, function($item) use ($boardId) {
-            return $item['id'] !== $boardId;
-        });
-        
-        // Add to beginning
-        array_unshift($history, [
-            'id' => $boardId,
-            'action' => $action,
-            'accessed_at' => now()->toDateTimeString()
-        ]);
-        
-        // Keep only last N items
-        $history = array_slice($history, 0, self::MAX_HISTORY_ITEMS);
-        
-        session()->put($sessionKey, $history);
+        $this->model->updateOrCreate(
+            ['board_id' => $boardId, 'user_id' => Auth::id()],
+            ['last_accessed_at' => now()]
+        );
+    }
+
+    /**
+     * Get board data from the database.
+     */
+    public function getBoardData(string $boardId): ?string
+    {
+        $board = $this->model->where('board_id', $boardId)->first();
+        return $board ? $board->board_data : null;
+    }
+
+    /**
+     * Update board data in the database.
+     */
+    public function updateBoardData(string $boardId, string $data): void
+    {
+        $this->model->where('board_id', $boardId)->update(['board_data' => $data]);
     }
 
     /**
@@ -64,12 +67,5 @@ class WBOBoardRepository
     {
         return Str::uuid();
     }
-
-    /**
-     * Get session key for user
-     */
-    private function getSessionKey(string $userId): string
-    {
-        return self::HISTORY_SESSION_KEY . "_{$userId}";
-    }
 }
+

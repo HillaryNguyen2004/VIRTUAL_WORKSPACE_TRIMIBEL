@@ -17,39 +17,41 @@ Route::middleware(['auth'])->group(function () {
         ->name('admin.dashboard');
 
     // ===== LSTM PRODUCTIVITY ANALYTICS MODULE =====
-    // Temporary debug route (remove after testing)
-    Route::get('/admin/lstm-test', function() {
-        return 'LSTM Route is working! Controller exists.';
-    });
-
+    // Dashboard view route
     Route::get('/admin/lstm-dashboard', [LSTMDashboardController::class, 'index'])
         ->middleware('admin_or_permission:admin.dashboard.view')
         ->name('admin.lstm.dashboard');
 
-    // LSTM API endpoints for dashboard data
-    Route::get('/api/lstm/stats', [LSTMDashboardController::class, 'getStats'])
-        ->middleware('admin_or_permission:admin.dashboard.view')
-        ->name('api.lstm.stats');
+    // LSTM API endpoints - all under /api/lstm prefix for consistency
+    Route::prefix('api/lstm')->group(function () {
+        Route::get('stats', [LSTMDashboardController::class, 'getStats'])
+            ->middleware('admin_or_permission:admin.dashboard.view')
+            ->name('api.lstm.stats');
 
-    Route::get('/api/lstm/trends', [LSTMDashboardController::class, 'getTrends'])
-        ->middleware('admin_or_permission:admin.dashboard.view')
-        ->name('api.lstm.trends');
+        Route::get('trends', [LSTMDashboardController::class, 'getTrends'])
+            ->middleware('admin_or_permission:admin.dashboard.view')
+            ->name('api.lstm.trends');
 
-    Route::get('/api/lstm/distribution', [LSTMDashboardController::class, 'getDistribution'])
-        ->middleware('admin_or_permission:admin.dashboard.view')
-        ->name('api.lstm.distribution');
+        Route::get('distribution', [LSTMDashboardController::class, 'getDistribution'])
+            ->middleware('admin_or_permission:admin.dashboard.view')
+            ->name('api.lstm.distribution');
 
-    Route::get('/api/lstm/employee-predictions', [LSTMDashboardController::class, 'getEmployeePredictions'])
-        ->middleware('admin_or_permission:admin.dashboard.view')
-        ->name('api.lstm.predictions');
+        Route::get('employee-predictions', [LSTMDashboardController::class, 'getEmployeePredictions'])
+            ->middleware('admin_or_permission:admin.dashboard.view')
+            ->name('api.lstm.predictions');
 
-    Route::post('/api/lstm/refresh-predictions', [LSTMDashboardController::class, 'refreshPredictions'])
-        ->middleware('admin_or_permission:admin.dashboard.edit')
-        ->name('api.lstm.refresh');
+        Route::get('employee-history/{id}', [LSTMDashboardController::class, 'getEmployeeHistory'])
+            ->middleware('admin_or_permission:admin.dashboard.view')
+            ->name('api.lstm.employee.history');
 
-    Route::post('/api/alerts/productivity-concern', [LSTMDashboardController::class, 'sendProductivityAlert'])
-        ->middleware('admin_or_permission:admin.dashboard.edit')
-        ->name('api.alerts.productivity');
+        Route::post('refresh-predictions', [LSTMDashboardController::class, 'refreshPredictions'])
+            ->middleware('admin_or_permission:admin.dashboard.edit')
+            ->name('api.lstm.refresh');
+
+        Route::post('alerts/productivity-concern', [LSTMDashboardController::class, 'sendProductivityAlert'])
+            ->middleware('admin_or_permission:admin.dashboard.edit')
+            ->name('api.alerts.productivity');
+    });
 
     // ===== USERS MODULE =====
     Route::get('/management/users', [UserController::class, 'index'])

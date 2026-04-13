@@ -1,0 +1,10 @@
+{
+  "max_department_id": 6,
+  "max_user_id": 30,
+  "max_project_id": 20,
+  "max_phase_id": 60,
+  "max_task_id": 1167,
+  "max_checkin_id": 0,
+  "max_dayoff_id": 0,
+  "last_fact_date": "2026-04-03"
+}

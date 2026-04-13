@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\OpenBoardRequest;
 use App\Services\WBOBoardService;
+use Illuminate\Http\Request;
 
 class WBOController extends Controller
 {
@@ -59,5 +60,20 @@ class WBOController extends Controller
         $data = $this->service->getBoardData($boardId);
 
         return view('wbo.board', $data);
+    }
+
+    /**
+     * Save the whiteboard data
+     */
+    public function save(Request $request)
+    {
+        $validated = $request->validate([
+            'board_id' => 'required|string',
+            'board_data' => 'required|string',
+        ]);
+
+        $this->service->saveBoard($validated['board_id'], $validated['board_data']);
+
+        return response()->json(['message' => 'Board saved successfully']);
     }
 }

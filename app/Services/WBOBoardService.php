@@ -41,10 +41,21 @@ class WBOBoardService
      */
     public function getBoardData(string $boardId): array
     {
+        $boardData = $this->repository->getBoardData($boardId);
+
         return [
             'boardId' => $boardId,
-            'wboUrl' => $this->generateWBOUrl($boardId)
+            'wboUrl' => $this->generateWBOUrl($boardId),
+            'boardData' => $boardData,
         ];
+    }
+
+    /**
+     * Save board data
+     */
+    public function saveBoard(string $boardId, string $boardData): void
+    {
+        $this->repository->updateBoardData($boardId, $boardData);
     }
 
     /**
