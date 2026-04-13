@@ -3,6 +3,9 @@ import numpy as np
 import pandas as pd
 import psycopg2
 import joblib
+import threading
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import URL
 from tensorflow.keras.models import load_model
 import sys
 sys.path.append('../etl')
@@ -10,9 +13,20 @@ from config import PG_CONFIG
 
 app = Flask(__name__)
 
+pg_url = URL.create(
+    drivername="postgresql+psycopg2",
+    username=PG_CONFIG["user"],
+    password=PG_CONFIG["password"],
+    host=PG_CONFIG["host"],
+    port=PG_CONFIG["port"],
+    database=PG_CONFIG["dbname"],
+)
+pg_engine = create_engine(pg_url, pool_pre_ping=True)
+
 # Load once at startup
 model  = load_model("models/lstm_productivity.keras")
 scaler = joblib.load("models/scaler.pkl")
+model_lock = threading.Lock()
 
 FEATURES = [
     'hours_worked', 'is_late', 'checked_in',
@@ -21,9 +35,15 @@ FEATURES = [
 ]
 LOOKBACK = 30  # Match training configuration (train_lstm.py line 57)
 
+def predict_scaled(X: np.ndarray) -> float:
+    # Keras/TensorFlow inference can fail under concurrent Flask requests.
+    # Serialize access to the model to keep runtime stable.
+    with model_lock:
+        pred = model(X, training=False).numpy()
+    return float(pred[0][0])
+
 def get_last_n_days(user_id, n=LOOKBACK):
-    pg_conn = psycopg2.connect(**PG_CONFIG)
-    df = pd.read_sql(f"""
+    query = text("""
         SELECT
             f.hours_worked, f.is_late, f.checked_in,
             f.had_day_off, f.tasks_completed,
@@ -32,11 +52,12 @@ def get_last_n_days(user_id, n=LOOKBACK):
         FROM fact_employee_productivity f
         JOIN dim_employee e ON f.employee_sk = e.employee_sk
         JOIN dim_date     d ON f.date_sk     = d.date_sk
-        WHERE e.user_id = {user_id}
+        WHERE e.user_id = :user_id
         ORDER BY d.full_date DESC
-        LIMIT {n}
-    """, pg_conn)
-    pg_conn.close()
+        LIMIT :limit_n
+    """)
+    with pg_engine.connect() as conn:
+        df = pd.read_sql(query, conn, params={"user_id": user_id, "limit_n": int(n)})
     return df
 
 def get_trend(current_score: float, predicted_score: float, scores: list) -> str:
@@ -92,7 +113,7 @@ def predict(user_id):
     X = np.expand_dims(X, axis=0)            # (1, LOOKBACK, n_features)
 
     # Predict (returns scaled 0-1)
-    pred_scaled = model.predict(X)[0][0]
+    pred_scaled = predict_scaled(X)
 
     # Inverse transform → back to 0-100
     dummy = np.zeros((1, len(all_cols)))
@@ -172,7 +193,7 @@ def predict_all():
                 X = np.expand_dims(X, axis=0)
 
                 # Predict
-                pred_scaled = model.predict(X, verbose=0)[0][0]
+                pred_scaled = predict_scaled(X)
 
                 # Inverse transform
                 dummy = np.zeros((1, len(all_cols)))
@@ -219,4 +240,5 @@ def health():
     return jsonify({"status": "ok"})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001, debug=True)
+    # Disable debug reloader for TensorFlow model stability.
+    app.run(host="0.0.0.0", port=5001, debug=False, threaded=False)

@@ -7,7 +7,7 @@ from config import MYSQL_CONFIG, PG_CONFIG
 
 mysql_engine = create_engine(
     f"mysql+pymysql://{MYSQL_CONFIG['user']}:{MYSQL_CONFIG['password']}"
-    f"@{MYSQL_CONFIG['host']}/{MYSQL_CONFIG['database']}"
+    f"@{MYSQL_CONFIG['host']}:{MYSQL_CONFIG['port']}/{MYSQL_CONFIG['database']}"
 )
 
 def get_pg():
