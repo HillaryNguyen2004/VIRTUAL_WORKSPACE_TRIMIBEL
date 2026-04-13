@@ -756,8 +756,7 @@ function createChannel() {
     })
     .then(data => {
         const modalEl = document.getElementById('newChannelModal');
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        if (modal) modal.hide();
+        closeModalElement(modalEl);
         document.getElementById('channelName').value = '';
         document.getElementById('channelDescription').value = '';
         document.getElementById('channelPrivate').checked = false;
@@ -846,10 +845,27 @@ function showChannelDetails(id) {
         }
 
         const modalEl = document.getElementById('channelDetailsModal');
-        const modal = new bootstrap.Modal(modalEl);
-        modal.show();
+        openModalElement(modalEl);
     })
     .catch(err => console.error(err));
+}
+
+function openModalElement(modalEl) {
+    if (!modalEl) return;
+
+    modalEl.classList.add('show');
+    modalEl.style.display = 'block';
+    modalEl.removeAttribute('aria-hidden');
+    modalEl.setAttribute('aria-modal', 'true');
+}
+
+function closeModalElement(modalEl) {
+    if (!modalEl) return;
+
+    modalEl.classList.remove('show');
+    modalEl.style.display = 'none';
+    modalEl.setAttribute('aria-hidden', 'true');
+    modalEl.removeAttribute('aria-modal');
 }
 
 function escapeHtml(unsafe) {
