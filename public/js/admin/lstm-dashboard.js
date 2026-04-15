@@ -37,24 +37,21 @@
     }
 
     function barColor(s) {
-        if (s >= 80) return '#22c55e';
-        if (s >= 60) return '#3b82f6';
-        if (s >= 40) return '#f59e0b';
-        return '#ef4444';
+        if (s >= 80) return '#16a34a';  // green — High performer
+        if (s >= 60) return '#3b82f6';  // blue — Medium
+        return '#ef4444';               // red — Low (needs attention)
     }
 
     function riskInfo(s) {
-        if (s >= 80) return { label: 'Low',      cls: 'bg-green-100 text-green-800'  };
-        if (s >= 60) return { label: 'Medium',   cls: 'bg-blue-100 text-blue-800'   };
-        if (s >= 40) return { label: 'High',     cls: 'bg-yellow-100 text-yellow-800'};
-        return              { label: 'Critical', cls: 'bg-red-100 text-red-800'     };
+        if (s >= 80) return { label: 'High',   cls: 'bg-green-100 text-green-800'   };  // High performer
+        if (s >= 60) return { label: 'Medium', cls: 'bg-blue-100 text-blue-800'     };  // Medium
+        return              { label: 'Low',    cls: 'bg-red-100 text-red-800'       };  // Low — needs attention
     }
 
     function riskKey(s) {
-        if (s >= 80) return 'low';
+        if (s >= 80) return 'high';
         if (s >= 60) return 'medium';
-        if (s >= 40) return 'high';
-        return 'critical';
+        return 'low';
     }
 
     function trendHtml(trend) {
@@ -101,7 +98,7 @@
     // RENDER: needs-attention table
     // ═════════════════════════════════════════════════════════════════════════
     function renderAttention(emps) {
-        const atRisk = emps.filter(e => e.predictedScore < 75)
+        const atRisk = emps.filter(e => e.predictedScore < 60)
             .sort((a, b) => a.predictedScore - b.predictedScore);
 
         document.getElementById('badge-atrisk').textContent =

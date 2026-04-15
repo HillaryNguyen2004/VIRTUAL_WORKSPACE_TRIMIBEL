@@ -109,10 +109,9 @@
             </select>
             <select id="risk-filter" class="tbl-select">
                 <option value="">All risk levels</option>
-                <option value="critical">Critical (&lt;40%)</option>
-                <option value="high">High (40–60%)</option>
-                <option value="medium">Medium (60–80%)</option>
-                <option value="low">Low (&gt;80%)</option>
+                <option value="high">High performers (≥80%)</option>
+                <option value="medium">Medium (60–79%)</option>
+                <option value="low">Needs attention (<60%)</option>
             </select>
         </div>
         <div class="tbl-wrap">

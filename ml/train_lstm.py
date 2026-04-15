@@ -51,14 +51,32 @@ FEATURES = [
     'had_day_off',
     'tasks_completed',
     'avg_task_score',
-    'avg_task_percentage'
+    'avg_task_percentage',
+    'has_task_signal',
+    'avg_score_7d',
+    'avg_score_30d',
+    'score_trend'
 ]
 TARGET   = 'productivity_score'
-LOOKBACK = 30    # 30-day window — you have the data for it
+LOOKBACK = 7    # 7-day window — more meaningful for behavioral patterns
 
 df['is_late']     = df['is_late'].astype(int)
 df['checked_in']  = df['checked_in'].astype(int)
 df['had_day_off'] = df['had_day_off'].astype(int)
+
+# Add has_task_signal feature to help model understand formula branch switching
+df['has_task_signal'] = ((df['avg_task_score'] > 0) | 
+                          (df['avg_task_percentage'] > 0) | 
+                          (df['tasks_completed'] > 0)).astype(int)
+
+# Add lag features (rolling averages) to capture temporal trends
+df['avg_score_7d']  = df.groupby('user_id')['productivity_score'].transform(lambda x: x.rolling(7, min_periods=1).mean())
+df['avg_score_30d'] = df.groupby('user_id')['productivity_score'].transform(lambda x: x.rolling(30, min_periods=1).mean())
+df['score_trend']   = df['avg_score_7d'] - df['avg_score_30d']
+
+# Smooth the target to remove deterministic formula noise
+df['productivity_score'] = df.groupby('user_id')['productivity_score'].transform(lambda x: x.rolling(3, min_periods=1).mean())
+
 df.fillna(0, inplace=True)
 
 # ════════════════════════════════════════════════════════════
