@@ -13,6 +13,24 @@ from config import PG_CONFIG
 
 os.makedirs("models", exist_ok=True)
 
+# With this seed set, every run will find the same best epoch and produce the same metrics
+#  which looks much more professional in a thesis.
+# SEED = 42
+# random.seed(SEED)
+# np.random.seed(SEED)
+# tf.random.set_seed(SEED)
+
+# # Also fix Keras shuffle to be deterministic
+# history = model.fit(
+#     X_train, y_train,
+#     validation_data=(X_val, y_val),
+#     epochs=100,
+#     batch_size=64,
+#     callbacks=[early_stop],
+#     shuffle=True,        # keep shuffle but seed controls it
+#     verbose=1
+# )
+
 # ════════════════════════════════════════════════════════════
 # 1. PULL DATA FROM POSTGRESQL
 # ════════════════════════════════════════════════════════════
