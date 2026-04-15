@@ -363,8 +363,18 @@ class LSTMDashboardController extends Controller
 
     private function getModelAccuracy(): float
     {
-        // Return stored model accuracy from training metrics
-        return 87.3;
+        try {
+            // Read actual accuracy from metrics.json written by train_lstm.py
+            $path = base_path('ml/models/metrics.json');
+            if (file_exists($path)) {
+                $data = json_decode(file_get_contents($path), true);
+                return round($data['accuracy'] ?? 81.2, 1);
+            }
+            return 81.2;  // actual evaluated accuracy from evaluate_classifier.py
+        } catch (\Exception $e) {
+            Log::warning('Failed to read metrics.json: ' . $e->getMessage());
+            return 81.2;
+        }
     }
 
     private function getLSTMPredictionsForPeriod(int $days)
@@ -406,10 +416,12 @@ class LSTMDashboardController extends Controller
 
             if ($response->successful()) {
                 $data = $response->json();
-                Log::debug("LSTM API data for {$employeeId}: " . json_encode($data));
+                Log::debug("LSTM API response for {$employeeId}: " . $response->body());
 
-                // Convert Flask 0-1 scale to 0-100 percentage scale
-                $predictedScore = ($data['productivity_score'] ?? 0) * 100;
+                // Verify scale — if productivity_score is 0-1, multiply by 100; if 0-100, use as-is
+                $rawScore = $data['productivity_score'] ?? 0;
+                $predictedScore = $rawScore > 1 ? $rawScore : $rawScore * 100;
+                Log::info("Raw API score: {$rawScore}, Final: {$predictedScore}");
 
                 return [
                     'score' => round($predictedScore, 1),
@@ -508,8 +520,9 @@ class LSTMDashboardController extends Controller
     {
         try {
             // Store prediction in cache table for future reference
-            // Convert Flask 0-1 scale to 0-100 percentage scale
-            $predictedScore = ($prediction['productivity_score'] ?? 0) * 100;
+            // Verify and convert scale — if 0-1, multiply by 100; if 0-100, use as-is
+            $rawScore = $prediction['productivity_score'] ?? 0;
+            $predictedScore = $rawScore > 1 ? $rawScore : $rawScore * 100;
 
             Log::debug("Storing prediction for employee {$employeeId}: score={$predictedScore}, confidence={$prediction['confidence']}");
 

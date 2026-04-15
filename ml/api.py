@@ -29,11 +29,20 @@ scaler = joblib.load("models/scaler.pkl")
 model_lock = threading.Lock()
 
 FEATURES = [
-    'hours_worked', 'is_late', 'checked_in',
-    'had_day_off', 'tasks_completed',
-    'avg_task_score', 'avg_task_percentage'
+    'hours_worked',
+    'is_late',
+    'checked_in',
+    'had_day_off',
+    'tasks_completed',
+    'avg_task_score',
+    'avg_task_percentage',
+    'has_task_signal',
+    'avg_score_7d',
+    'avg_score_30d',
+    'score_trend'
 ]
-LOOKBACK = 30  # Match training configuration (train_lstm.py line 57)
+TARGET   = 'productivity_score'
+LOOKBACK = 7  # Match training configuration (train_lstm.py line 57)
 
 def predict_scaled(X: np.ndarray) -> float:
     # Keras/TensorFlow inference can fail under concurrent Flask requests.
@@ -45,6 +54,7 @@ def predict_scaled(X: np.ndarray) -> float:
 def get_last_n_days(user_id, n=LOOKBACK):
     query = text("""
         SELECT
+            d.full_date,
             f.hours_worked, f.is_late, f.checked_in,
             f.had_day_off, f.tasks_completed,
             f.avg_task_score, f.avg_task_percentage,
@@ -58,6 +68,34 @@ def get_last_n_days(user_id, n=LOOKBACK):
     """)
     with pg_engine.connect() as conn:
         df = pd.read_sql(query, conn, params={"user_id": user_id, "limit_n": int(n)})
+    # Sort by date ascending for feature engineering (oldest to newest)
+    df = df.sort_values('full_date').reset_index(drop=True)
+    return df
+
+def engineer_features(df):
+    """
+    Add engineered features to match train_lstm.py exactly.
+    Must be called BEFORE scaling and AFTER sorting by date.
+    """
+    # Convert booleans to int
+    df['is_late']     = df['is_late'].astype(int)
+    df['checked_in']  = df['checked_in'].astype(int)
+    df['had_day_off'] = df['had_day_off'].astype(int)
+
+    # Add has_task_signal feature
+    df['has_task_signal'] = ((df['avg_task_score'] > 0) | 
+                              (df['avg_task_percentage'] > 0) | 
+                              (df['tasks_completed'] > 0)).astype(int)
+
+    # Add lag features (rolling averages) to capture temporal trends
+    df['avg_score_7d']  = df['productivity_score'].rolling(7, min_periods=1).mean()
+    df['avg_score_30d'] = df['productivity_score'].rolling(30, min_periods=1).mean()
+    df['score_trend']   = df['avg_score_7d'] - df['avg_score_30d']
+
+    # Smooth the target to remove deterministic formula noise
+    df['productivity_score'] = df['productivity_score'].rolling(3, min_periods=1).mean()
+
+    df.fillna(0, inplace=True)
     return df
 
 def get_trend(current_score: float, predicted_score: float, scores: list) -> str:
@@ -92,24 +130,21 @@ def predict(user_id):
             "error": f"Not enough data. Need {LOOKBACK} days, have {len(df)}."
         }), 400
 
-    # Convert booleans
-    df['is_late']     = df['is_late'].astype(int)
-    df['checked_in']  = df['checked_in'].astype(int)
-    df['had_day_off'] = df['had_day_off'].astype(int)
-    df.fillna(0, inplace=True)
+    # Apply feature engineering (must match train_lstm.py exactly)
+    df = engineer_features(df)
 
-    # Current score (most recent)
-    current_score = df['productivity_score'].iloc[0]
+    # Current score (most recent, after smoothing)
+    current_score = df['productivity_score'].iloc[-1]
     
     # Get last 7 days of scores for trend analysis
-    recent_scores = df['productivity_score'].iloc[:7].tolist()
+    recent_scores = df['productivity_score'].iloc[-7:].tolist()
 
     # Scale using saved scaler
-    all_cols = FEATURES + ['productivity_score']
+    all_cols = FEATURES + [TARGET]
     df[all_cols] = scaler.transform(df[all_cols])
 
-    # Reverse to chronological order, take features only
-    X = df[FEATURES].values[::-1]            # (LOOKBACK, n_features)
+    # Take last LOOKBACK records, features only, in chronological order
+    X = df[FEATURES].values[-LOOKBACK:, :]  # (LOOKBACK, n_features)
     X = np.expand_dims(X, axis=0)            # (1, LOOKBACK, n_features)
 
     # Predict (returns scaled 0-1)
@@ -172,24 +207,21 @@ def predict_all():
                     })
                     continue
 
-                # Current score (most recent)
-                current_score = df['productivity_score'].iloc[0]
+                # Apply feature engineering (must match train_lstm.py exactly)
+                df = engineer_features(df)
+
+                # Current score (most recent, after smoothing)
+                current_score = df['productivity_score'].iloc[-1]
                 
                 # Get last 7 days of scores for trend analysis
-                recent_scores = df['productivity_score'].iloc[:7].tolist()
-
-                # Convert booleans
-                df['is_late'] = df['is_late'].astype(int)
-                df['checked_in'] = df['checked_in'].astype(int)
-                df['had_day_off'] = df['had_day_off'].astype(int)
-                df.fillna(0, inplace=True)
+                recent_scores = df['productivity_score'].iloc[-7:].tolist()
 
                 # Scale using saved scaler
-                all_cols = FEATURES + ['productivity_score']
+                all_cols = FEATURES + [TARGET]
                 df[all_cols] = scaler.transform(df[all_cols])
 
-                # Reverse to chronological order, take features only
-                X = df[FEATURES].values[::-1]
+                # Take last LOOKBACK records, features only, in chronological order
+                X = df[FEATURES].values[-LOOKBACK:, :]
                 X = np.expand_dims(X, axis=0)
 
                 # Predict
