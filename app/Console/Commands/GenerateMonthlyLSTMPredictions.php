@@ -37,35 +37,35 @@ class GenerateMonthlyLSTMPredictions extends Command
     {
         $startTime = microtime(true);
 
-        $this->info("🤖 Starting LSTM Prediction Generation at " . now()->format('Y-m-d H:i:s'));
+        $this->info("Starting LSTM Prediction Generation at " . now()->format('Y-m-d H:i:s'));
 
         try {
             // Check if LSTM API is available
             if (!$this->checkLSTMAPIHealth()) {
-                $this->error("❌ LSTM API is not available at {$this->lstmApiUrl}");
+                $this->error("LSTM API is not available at {$this->lstmApiUrl}");
                 return Command::FAILURE;
             }
 
             // Optionally retrain model if requested
             if ($this->option('retrain')) {
-                $this->info("🧠 Retraining LSTM model...");
+                $this->info("Retraining LSTM model...");
                 $this->retrainModel();
             }
 
             // Generate predictions
             $specificEmployeeId = $this->option('employee-id');
             if ($specificEmployeeId) {
-                $this->info("🎯 Generating prediction for employee ID: {$specificEmployeeId}");
+                $this->info("Generating prediction for employee ID: {$specificEmployeeId}");
                 $result = $this->generatePredictionForEmployee($specificEmployeeId);
             } else {
-                $this->info("👥 Generating predictions for all active employees...");
+                $this->info("Generating predictions for all active employees...");
                 $result = $this->generatePredictionsForAllEmployees();
             }
 
             $executionTime = round(microtime(true) - $startTime, 2);
 
-            $this->info("✅ Prediction generation completed in {$executionTime} seconds");
-            $this->info("📊 Results: {$result['success']} successful, {$result['errors']} failed");
+            $this->info("Prediction generation completed in {$executionTime} seconds");
+            $this->info("Results: {$result['success']} successful, {$result['errors']} failed");
 
             // Log completion
             Log::info('LSTM predictions generated', [
@@ -78,7 +78,7 @@ class GenerateMonthlyLSTMPredictions extends Command
             return Command::SUCCESS;
 
         } catch (\Exception $e) {
-            $this->error("💥 Fatal error during prediction generation: " . $e->getMessage());
+            $this->error("Fatal error during prediction generation: " . $e->getMessage());
             Log::error('LSTM prediction generation failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -102,27 +102,27 @@ class GenerateMonthlyLSTMPredictions extends Command
     private function retrainModel(): void
     {
         try {
-            $this->line("📚 Fetching latest training data from data warehouse...");
+            $this->line("Fetching latest training data from data warehouse...");
 
             // Call your ETL process to ensure latest data
             $this->call('etl:sync-productivity-data');
 
-            $this->line("🔄 Starting model retraining...");
+            $this->line("Starting model retraining...");
 
             // Call LSTM training endpoint (you'll need to add this to your Flask API)
             $response = Http::timeout(300)->post("{$this->lstmApiUrl}/retrain");
 
             if ($response->successful()) {
                 $metrics = $response->json();
-                $this->info("✅ Model retrained successfully");
-                $this->line("   📈 New accuracy: " . ($metrics['accuracy'] ?? 'N/A'));
-                $this->line("   📉 MSE: " . ($metrics['mse'] ?? 'N/A'));
+                $this->info("Model retrained successfully");
+                $this->line("New accuracy: " . ($metrics['accuracy'] ?? 'N/A'));
+                $this->line("MSE: " . ($metrics['mse'] ?? 'N/A'));
             } else {
-                $this->warn("⚠️  Model retraining failed: " . $response->body());
+                $this->warn("Model retraining failed: " . $response->body());
             }
 
         } catch (\Exception $e) {
-            $this->warn("⚠️  Model retraining encountered an error: " . $e->getMessage());
+            $this->warn("Model retraining encountered an error: " . $e->getMessage());
         }
     }
 
@@ -178,7 +178,7 @@ class GenerateMonthlyLSTMPredictions extends Command
                 ->first();
 
             if (!$employee) {
-                $this->error("❌ Employee with ID {$employeeId} not found or inactive");
+                $this->error("Employee with ID {$employeeId} not found or inactive");
                 return ['success' => 0, 'errors' => 1];
             }
 
@@ -186,15 +186,15 @@ class GenerateMonthlyLSTMPredictions extends Command
 
             if ($prediction) {
                 $this->storePrediction($employeeId, $prediction);
-                $this->info("✅ Prediction generated for {$employee->name}");
-                $this->line("   📊 Predicted Score: " . round($prediction['productivity_score'] * 100, 1) . "%");
+                $this->info("Prediction generated for {$employee->name}");
+                $this->line(" Predicted Score: " . round($prediction['productivity_score'] * 100, 1) . "%");
                 return ['success' => 1, 'errors' => 0];
             } else {
                 return ['success' => 0, 'errors' => 1];
             }
 
         } catch (\Exception $e) {
-            $this->error("❌ Failed to generate prediction: " . $e->getMessage());
+            $this->error("Failed to generate prediction: " . $e->getMessage());
             return ['success' => 0, 'errors' => 1];
         }
     }
