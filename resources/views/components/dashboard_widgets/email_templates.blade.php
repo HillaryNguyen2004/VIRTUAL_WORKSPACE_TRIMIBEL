@@ -13,7 +13,7 @@
     {{-- Template List --}}
     <div class="flex flex-col gap-4 flex-1">
         @foreach($emailTemplates->take(4) as $template)
-            <x-white-card-container color="primary/50" class="items-center gap-4 group">
+            <x-white-card-container color="primary/50" class="p-4 items-center gap-4 group">
                 {{-- Circular ID Ring --}}
                 <div class="relative w-12 h-12 flex-none">
                     <svg class="w-full h-full -rotate-90" viewBox="0 0 36 36">

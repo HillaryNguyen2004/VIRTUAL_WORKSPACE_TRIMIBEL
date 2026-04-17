@@ -5,65 +5,127 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!payload) return;
 
+    // ---------------------------------------------------------
+    // CHART 1: Workforce Health (Scatter Plot)
+    // Replaces the "Top 10 variance" horizontal bar chart
+    // ---------------------------------------------------------
     const hoursCanvas = document.getElementById('monthlyHoursChart');
     if (hoursCanvas) {
+        // Zip the separated arrays into {x, y} coordinates for the scatter plot
+        const scatterData = payload.labels.map((label, index) => ({
+            x: payload.expected[index],
+            y: payload.actual[index],
+            name: label 
+        }));
+
+        // Calculate the maximum axis value to draw a perfect 45-degree target line
+        const maxExpected = Math.max(...payload.expected, 0);
+        const maxActual = Math.max(...payload.actual, 0);
+        const maxAxis = Math.max(maxExpected, maxActual) + 20; // Added padding
+
         new Chart(hoursCanvas, {
-            type: 'bar',
+            type: 'scatter',
             data: {
-                labels: payload.labels,
                 datasets: [
                     {
-                        label: 'Expected Hours',
-                        data: payload.expected,
-                        borderRadius: 8,
-                        maxBarThickness: 18,
+                        label: 'Employees',
+                        data: scatterData,
+                        backgroundColor: '#5347CC',
+                        borderColor: '#766CD6',
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
                     },
                     {
-                        label: 'Actual Hours',
-                        data: payload.actual,
-                        borderRadius: 8,
-                        maxBarThickness: 18,
-                    },
+                        type: 'line',
+                        label: 'Target (100% On Track)',
+                        // Draws a diagonal line from 0,0 to the top right
+                        data: [{x: 0, y: 0}, {x: maxAxis, y: maxAxis}],
+                        borderColor: 'rgba(200, 200, 200, 0.5)', // Subtle gray
+                        borderWidth: 2,
+                        borderDash: [5, 5], // Dashed line for the target
+                        pointRadius: 0, // Hides the dots on the line itself
+                        fill: false
+                    }
                 ],
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                indexAxis: 'y',
                 plugins: {
                     legend: {
                         position: 'bottom',
                     },
+                    tooltip: {
+                        callbacks: {
+                            // Custom tooltip to show the employee name and exact hours
+                            label: (context) => {
+                                const emp = context.raw;
+                                return `${emp.name}: ${emp.y}h actual vs ${emp.x}h expected`;
+                            }
+                        }
+                    }
                 },
                 scales: {
                     x: {
-                        beginAtZero: true,
+                        title: { display: true, text: 'Expected Hours' },
+                        grid: { display: false },
+                        min: 0,
+                        max: maxAxis
                     },
                     y: {
-                        grid: {
-                            display: false,
-                        },
+                        title: { display: true, text: 'Actual Hours' },
+                        min: 0,
+                        max: maxAxis
                     },
                 },
             },
         });
     }
 
+    // ---------------------------------------------------------
+    // CHART 2: Variance Histogram (Intensity Bucket Chart)
+    // Replaces the "Monthly status distribution" giant single bar
+    // ---------------------------------------------------------
     const statusCanvas = document.getElementById('monthlyStatusChart');
     if (statusCanvas) {
+        
+        // Calculate the variance buckets directly on the client side
+        let buckets = { 
+            'Behind': 0, 
+            'On Track': 0, 
+            '1-20h Extra': 0, 
+            '20h+ Extra': 0 
+        };
+
+        payload.labels.forEach((_, i) => {
+            let variance = payload.actual[i] - payload.expected[i];
+            
+            if (variance < -2) {
+                buckets['Behind']++;
+            } else if (variance <= 2) {
+                buckets['On Track']++;
+            } else if (variance <= 20) {
+                buckets['1-20h Extra']++;
+            } else {
+                buckets['20h+ Extra']++;
+            }
+        });
+
         new Chart(statusCanvas, {
             type: 'bar',
             data: {
-                labels: ['Ahead', 'On Track', 'Behind'],
+                labels: Object.keys(buckets),
                 datasets: [
                     {
                         label: 'Employees',
-                        data: [
-                            payload.statusCounts.ahead,
-                            payload.statusCounts.on_track,
-                            payload.statusCounts.behind,
+                        data: Object.values(buckets),
+                        backgroundColor: [
+                            '#34D399',
+                            '#17C8C6',
+                            '#4896FE',
+                            '#5347CC'
                         ],
-                        borderRadius: 10,
+                        borderRadius: 8,
                         maxBarThickness: 56,
                     },
                 ],
@@ -75,12 +137,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     legend: {
                         display: false,
                     },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => `${context.raw} Employees`
+                        }
+                    }
                 },
                 scales: {
+                    x: {
+                        grid: { display: false }
+                    },
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            precision: 0,
+                            precision: 0, // Prevents decimals like 1.5 employees
                         },
                     },
                 },

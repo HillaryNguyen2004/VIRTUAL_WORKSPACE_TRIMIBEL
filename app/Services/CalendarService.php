@@ -323,8 +323,8 @@ class CalendarService
         try {
             $recEndDate = !empty($data['recurrence_end_date']) ? $data['recurrence_end_date'] : null;
 
-            return $this->repository->createEvent([
-                'user_id' => $user->id,
+            // FIX: Pass $user->id as the first argument, and the data array as the second
+            return $this->repository->createEvent($user->id, [
                 'title' => $data['title'],
                 'start_date' => $data['start_date'],
                 'end_date' => $data['end_date'] ?? null,
@@ -350,11 +350,15 @@ class CalendarService
             ['type' => $type, 'id' => $id] = $this->parseEventId($eventId);
 
             if ($type === 'custom') {
+                // 1. Fetch the actual CalendarEvent model
+                $calendarEvent = CalendarEvent::findOrFail($id);
+
                 $recEndDate = !empty($data['recurrence_end_date']) && $data['recurrence_end_date'] !== 'null' 
                     ? $data['recurrence_end_date'] 
                     : null;
 
-                return $this->repository->updateEvent($id, $user->id, [
+                // 2. Pass the model ($calendarEvent) instead of the string ($id)
+                return $this->repository->updateEvent($calendarEvent, [
                     'title' => $data['title'],
                     'category' => $data['category'],
                     'start_date' => $data['start_date'],
@@ -382,15 +386,17 @@ class CalendarService
             ['type' => $type, 'id' => $id] = $this->parseEventId($eventId);
 
             if ($type === 'custom') {
-                return $this->repository->updateEvent($id, $user->id, [
-                    'start_date' => Carbon::parse($data['start'])->format('Y-m-d H:i:s'),
-                    'end_date' => $data['end'] ? Carbon::parse($data['end'])->format('Y-m-d H:i:s') : null,
+                $calendarEvent = CalendarEvent::findOrFail($id);
+
+                // FIX: Removed $user->id, only passing the model and the data array
+                return $this->repository->updateEvent($calendarEvent, [
+                    'start_date' => \Carbon\Carbon::parse($data['start'])->format('Y-m-d H:i:s'),
+                    'end_date' => $data['end'] ? \Carbon\Carbon::parse($data['end'])->format('Y-m-d H:i:s') : null,
                 ]);
             } elseif ($type === 'local') {
-                // Handle Task date update
                 $task = Task::where('id', $id)->firstOrFail();
                 $task->update([
-                    'due_date' => Carbon::parse($data['start'])->format('Y-m-d H:i:s')
+                    'due_date' => \Carbon\Carbon::parse($data['start'])->format('Y-m-d H:i:s')
                 ]);
                 return true;
             }
@@ -411,7 +417,11 @@ class CalendarService
             ['type' => $type, 'id' => $id] = $this->parseEventId($eventId);
 
             if ($type === 'custom') {
-                return $this->repository->deleteEvent($id, $user->id);
+                // 1. Fetch the actual CalendarEvent model first!
+                $calendarEvent = CalendarEvent::findOrFail($id);
+
+                // 2. Pass the model ($calendarEvent) instead of the string ($id)
+                return $this->repository->deleteEvent($calendarEvent);
             }
 
             return false;
@@ -436,5 +446,109 @@ class CalendarService
             'type' => $parts[0], // 'custom' or 'local'
             'id' => $parts[1],   // The actual ID
         ];
+    }
+
+    /**
+     * Smart Scheduling Algorithm: Finds available slots among multiple users.
+     */
+    public function findAvailableSlots(array $userIds, int $durationMinutes = 30, int $daysOut = 7): array
+    {
+        // 1. Setup Time Window (Round to next 30 minutes, look forward 7 days)
+        $now = Carbon::now()->ceilMinute(30);
+        $endDate = $now->copy()->addDays($daysOut)->endOfDay();
+        
+        // Define working hours (could be pulled from user settings later)
+        $workStart = '08:00';
+        $workEnd = '18:00';
+
+        $allBusyPeriods = [];
+
+        // 2. Fetch and Normalize All Events for All Users
+        foreach ($userIds as $userId) {
+            $user = User::find($userId);
+            if (!$user) continue;
+
+            // We can directly call the existing method here!
+            $events = $this->getCombinedEvents($user);
+
+            foreach ($events as $event) {
+                // If allDay event, block out 00:00 to 23:59
+                if (!empty($event['allDay']) && $event['allDay']) {
+                    $start = Carbon::parse($event['start'])->startOfDay();
+                    $end = isset($event['end']) ? Carbon::parse($event['end'])->endOfDay() : $start->copy()->endOfDay();
+                } else {
+                    $start = Carbon::parse($event['start']);
+                    $end = isset($event['end']) ? Carbon::parse($event['end']) : $start->copy()->addMinutes(60);
+                }
+
+                // Only care about events in our 7-day window
+                if ($end->gt($now) && $start->lt($endDate)) {
+                    $allBusyPeriods[] = ['start' => $start, 'end' => $end];
+                }
+            }
+        }
+
+        // 3. Sort intervals by start time
+        usort($allBusyPeriods, fn($a, $b) => $a['start']->eq($b['start']) ? 0 : ($a['start']->lt($b['start']) ? -1 : 1));
+
+        // 4. Merge Overlapping Busy Periods
+        $mergedBusy = [];
+        foreach ($allBusyPeriods as $period) {
+            if (empty($mergedBusy)) {
+                $mergedBusy[] = $period;
+                continue;
+            }
+            $last = &$mergedBusy[count($mergedBusy) - 1];
+            if ($period['start']->lte($last['end'])) {
+                // They overlap, extend the end time if necessary
+                if ($period['end']->gt($last['end'])) {
+                    $last['end'] = $period['end'];
+                }
+            } else {
+                $mergedBusy[] = $period;
+            }
+        }
+
+        // 5. Scan for Gaps (Available Slots)
+        $freeSlots = [];
+        for ($i = 0; $i < $daysOut; $i++) {
+            $dayStart = $now->copy()->addDays($i)->setTimeFromTimeString($workStart);
+            $dayEnd = $now->copy()->addDays($i)->setTimeFromTimeString($workEnd);
+            
+            // Don't look in the past for today
+            if ($dayStart->lt($now)) $dayStart = $now->copy();
+
+            $currentTime = $dayStart->copy();
+
+            while ($currentTime->copy()->addMinutes($durationMinutes)->lte($dayEnd)) {
+                $potentialEnd = $currentTime->copy()->addMinutes($durationMinutes);
+                $isFree = true;
+
+                foreach ($mergedBusy as $busy) {
+                    // Check intersection
+                    if ($currentTime->lt($busy['end']) && $potentialEnd->gt($busy['start'])) {
+                        $isFree = false;
+                        // Fast-forward to the end of the busy period
+                        $currentTime = $busy['end']->copy()->ceilMinute(30); 
+                        break;
+                    }
+                }
+
+                if ($isFree) {
+                    $freeSlots[] = [
+                        'start' => $currentTime->format('Y-m-d H:i:00'),
+                        'end' => $potentialEnd->format('Y-m-d H:i:00'),
+                        'display' => $currentTime->format('D, M d') . ' · ' . $currentTime->format('H:i') . ' - ' . $potentialEnd->format('H:i')
+                    ];
+                    // Advance by 30 minutes to look for the next possible slot
+                    $currentTime->addMinutes(30);
+                }
+            }
+            
+            // Limit to top 15 slots so we don't overwhelm the user
+            if (count($freeSlots) >= 15) break; 
+        }
+
+        return array_slice($freeSlots, 0, 15);
     }
 }

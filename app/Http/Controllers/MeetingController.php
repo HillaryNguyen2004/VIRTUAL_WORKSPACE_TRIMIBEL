@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\MeetingAttendee;
 use App\Models\MeetingHistory;
 use App\Events\MeetingChatMessage;
+use App\Services\CalendarService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -125,6 +126,31 @@ class MeetingController extends Controller
         } else {
             return redirect("/?error=Invalid Meeting ID");
         }
+    }
+
+    // API: Generate a Metered Room for scheduled meetings
+    public function generateRoomApi(Request $request)
+    {
+        $METERED_DOMAIN = config('services.metered.domain');
+        $METERED_SECRET_KEY = config('services.metered.secret_key');
+
+        $response = Http::post("https://{$METERED_DOMAIN}/api/v1/room?secretKey={$METERED_SECRET_KEY}", [
+            'autoJoin' => true
+        ]);
+
+        if ($response->successful()) {
+            $roomName = $response->json("roomName");
+            
+            // Log it in history right away so the user "owns" it
+            $this->ensureMeetingHistory($roomName);
+
+            return response()->json([
+                'success' => true,
+                'roomName' => $roomName
+            ]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Failed to create room via Metered API'], 500);
     }
 
     public function showLobby(Request $request, $meetingId)
@@ -369,5 +395,53 @@ class MeetingController extends Controller
         broadcast(new MeetingChatMessage($meetingId, $payload))->toOthers();
 
         return response()->json(['success' => true, 'data' => $payload]);
+    }
+
+    // API to Find Slots
+    public function findSmartSlots(Request $request, CalendarService $calendarService)
+    {
+        $request->validate([
+            'attendees' => 'required|array',
+            'duration' => 'required|integer',
+        ]);
+
+        // Ensure the current user is included in the check
+        $userIds = array_merge([auth()->id()], $request->attendees);
+
+        $slots = $calendarService->findAvailableSlots($userIds, $request->duration, 7);
+
+        return response()->json(['status' => 'success', 'slots' => $slots]);
+    }
+
+    // API to Book the Meeting for multiple people
+    public function bookSmartMeeting(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date',
+            'attendees' => 'required|array',
+            'meeting_id' => 'required|string'
+        ]);
+
+        $userIds = array_merge([auth()->id()], $request->attendees);
+
+        // Create a calendar event for EVERY attendee
+        foreach ($userIds as $userId) {
+            \App\Models\CalendarEvent::create([
+                'user_id' => $userId,
+                'title' => $request->title,
+                'start_date' => $request->start_date,
+                'end_date' => $request->end_date,
+                'category' => 'meeting',
+                'meeting_id' => $request->meeting_id,
+                'recurrence_type' => 'none'
+            ]);
+        }
+
+        // Ensure the room exists in history for the host
+        $this->ensureMeetingHistory($request->meeting_id);
+
+        return response()->json(['status' => 'success']);
     }
 }

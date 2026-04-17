@@ -12,7 +12,8 @@ return [
     // Create Section
     'create_section_title' => 'Start a new meeting',
     'create_section_desc' => 'Create a room and invite others to join.',
-    'new_button' => 'New Meeting',
+    'instant_button' => 'Instant Meeting',
+    'scheduled_button' => 'Schedule Meeting',
 
     'lobby_title' => 'Meeting Lobby',
     'lobby_subtitle' => 'Before joining, please check your settings.',
@@ -32,4 +33,26 @@ return [
     'no_notes' => 'No notes were recorded for this session.',
     'view_details' => 'View Details',
     'empty_history' => 'No meeting history found',
+
+    'schedule_meeting_title' => 'Meeting Title',
+    'schedule_meeting_title_placeholder' => 'e.g., Project Sync',
+    'schedule_meeting_date' => 'Date',
+    'schedule_meeting_start_time' => 'Start Time',
+    'schedule_meeting_end_time' => 'End Time',
+
+    'smart_meeting_heading' => 'Smart Meeting Scheduler',
+    'smart_meeting_desc' => 'Select your team, set the duration, and let the algorithm instantly pinpoint your team\'s shared free time.',
+    'smart_meeting_cta' => 'Scan Calendar',
+    'smart_meeting_subheading' => 'Find the perfect time for everyone',
+
+    'smart_meeting_title' => 'Meeting Title',
+    'smart_meeting_title_placeholder' => 'e.g., Project Sync',
+    'smart_meeting_duration' => 'Duration (minutes)',
+    'smart_meeting_duration_placeholder' => 'e.g., 30',
+    'smart_meeting_attendees' => 'Attendees',
+    'smart_meeting_attendees_placeholder' => 'Search users by name or email...',
+    'smart_meeting_attendees_tooltip' => 'You are automatically included in the meeting.',
+    'smart_meeting_find_slots' => 'Find Time Slots',
+    'smart_meeting_slots' => 'Available Time Slots (next 7 days)',
+    'smart_meeting_book' => 'Book Meeting',
 ];

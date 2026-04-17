@@ -1,4 +1,4 @@
-<div class="@4xl:col-span-5 flex flex-col justify-between h-full min-h-[280px] bg-primary-gradient border-muted-200 shadow-xl shadow-primary/20 rounded-2xl p-6 relative overflow-hidden group">
+<div class="@4xl:col-span-5 flex flex-col justify-between h-full min-h-[280px] bg-primary-gradient shadow-xl shadow-primary/20 rounded-2xl p-6 relative overflow-hidden group">
     {{-- Header: Title + Live Status --}}
     <div class="relative z-10 flex justify-between items-start">
         <div class="flex justify-between w-full">

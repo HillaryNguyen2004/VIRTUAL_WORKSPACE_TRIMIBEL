@@ -168,7 +168,7 @@
 
                     {{-- Title Input --}}
                     <div>
-                        <input type="text" id="eventTitle" placeholder="{{ __('calendar.event_title_placeholder') }}" class="w-full px-0 py-2 border-0 border-b border-muted-200 focus:ring-0 focus:border-primary text-lg font-medium placeholder-muted-300 text-main">
+                        <input type="text" id="eventTitle" placeholder="{{ __('calendar.event_title_placeholder') }}" class="w-full px-0 py-2 border-0 border-b border-muted-200 outline-none focus:ring-0 focus:border-primary text-lg font-medium placeholder-muted-300 text-main">
                     </div>
 
                     <div class="flex flex-col gap-3">
@@ -177,23 +177,23 @@
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <svg class="w-5 h-5 text-muted-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> 
                             </div>
-                            <input type="date" id="eventDate" class="pl-10 w-full p-3 bg-muted-50 rounded-xl border border-muted-200 text-sm text-main focus:ring-primary focus:border-primary" required>
+                            <input type="date" id="eventDate" class="pl-10 w-full p-3 bg-muted-50 rounded-xl border border-muted-200 text-sm text-main outline-none focus:ring-primary/20 focus:ring-1 focus:border-primary transition-all" required>
                         </div>
 
                         {{-- Time Pickers --}}
                         <div class="flex items-center gap-3">
                             <div class="flex-1 relative">
-                                <input type="time" id="eventStartTime" class="w-full p-3 bg-muted-50 rounded-xl border border-muted-200 text-sm text-main focus:ring-primary focus:border-primary" required>
+                                <input type="time" id="eventStartTime" class="w-full p-3 bg-muted-50 rounded-xl border border-muted-200 text-sm text-main outline-none focus:ring-primary/20 focus:ring-1 focus:border-primary transition-all" required>
                             </div>
                             <span class="text-muted-400">→</span>
                             <div class="flex-1 relative">
-                                <input type="time" id="eventEndTime" class="w-full p-3 bg-muted-50 rounded-xl border border-muted-200 text-sm text-main focus:ring-primary focus:border-primary" required>
+                                <input type="time" id="eventEndTime" class="w-full p-3 bg-muted-50 rounded-xl border border-muted-200 text-sm text-main outline-none focus:ring-primary/20 focus:ring-1 focus:border-primary transition-all" required>
                             </div>
                         </div>
 
                         {{-- Category --}}
                         <div class="relative">
-                            <select id="eventCategory" class="w-full p-3 bg-white rounded-xl border border-muted-200 text-sm text-muted-500 focus:ring-primary focus:border-primary appearance-none">
+                            <select id="eventCategory" class="w-full p-3 bg-white rounded-xl border border-muted-200 text-sm text-muted-500 focus:ring-primary/20 focus:ring-1 focus:border-primary appearance-none transition-all">
                                 <option value="tasks">{{ __('calendar.cat_tasks') }}</option>
                                 <option value="meeting">{{ __('calendar.cat_meeting') }}</option>
                                 <option value="other">{{ __('calendar.cat_other') }}</option>
@@ -206,7 +206,7 @@
                         {{-- Meeting Link Input --}}
                         <div class="relative mt-3 group">
                             {{-- Left Icon / Button --}}
-                            <button type="button" id="copyMeetingBtn" class="absolute inset-y-0 left-0 pl-3 flex items-center text-muted-400 hover:text-primary transition-colors focus:outline-none z-10 cursor-pointer" title="{{ __('calendar.copy_meeting_link') }}">
+                            <button type="button" id="copyMeetingBtn" class="absolute inset-y-0 left-0 pl-3 flex items-center text-muted-400 hover:text-primary transition-colors outline-none z-10 cursor-pointer" title="{{ __('calendar.copy_meeting_link') }}">
                                 
                                 {{-- Default Link Icon --}}
                                 <svg id="iconLink" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,7 +219,7 @@
                                 </svg>
                             </button>
 
-                            <input type="url" id="meetingId" placeholder="{{ __('calendar.meeting_url_placeholder') }}" class="pl-10 w-full p-3 bg-muted-50 rounded-xl border border-muted-200 text-sm text-main focus:ring-primary focus:border-primary">
+                            <input type="url" id="meetingId" placeholder="{{ __('calendar.meeting_url_placeholder') }}" class="pl-10 w-full p-3 bg-muted-50 rounded-xl border border-muted-200 text-sm text-main outline-none focus:ring-primary/20 focus:ring-1 focus:border-primary transition-all">
                         </div>
 
                         {{-- Recurrence Options --}}
@@ -623,43 +623,61 @@ document.addEventListener('DOMContentLoaded', function() {
         const recurTypeVal = document.getElementById('recurrenceType').value;
         const recurIntervalVal = document.getElementById('recurrenceInterval').value;
         
-        // Handle Date: if radio is 'never', send empty string or null
         let recurEndDateVal = null;
-        const endDateRadio = document.getElementById('endDateRadio'); // Ensure ID matches your HTML
-        const recurrenceEndDateInput = document.getElementById('recurrenceEndDate'); // Ensure ID matches
+        const endDateRadio = document.getElementById('endDateRadio'); 
+        const recurrenceEndDateInput = document.getElementById('recurrenceEndDate'); 
 
         if (recurTypeVal !== 'none' && endDateRadio && endDateRadio.checked) {
             recurEndDateVal = recurrenceEndDateInput.value;
         }
 
-        // Add to payload in fetch()
+        // Base payload without ID
         const payload = {
-            id: eventIdInput.value,
-            title: document.getElementById('eventTitle').value,
+            title: title,
             start_date: fullStart, 
             end_date: fullEnd,
-            category: document.getElementById('eventCategory').value,
-            
-            // NEW FIELDS
+            category: category,
             meeting_id: meetingId,
             recurrence_type: recurTypeVal,
             recurrence_interval: recurIntervalVal,
             recurrence_end_date: recurEndDateVal,
         };
 
+        // Only append ID if it actually exists (prevents validation errors on new events)
+        if (id) {
+            payload.id = id;
+        }
+
         fetch(url, {
             method: method,
-            headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": "{{ csrf_token() }}" },
-            body: JSON.stringify(payload) // <--- FIX: Use the payload object containing all fields
+            headers: { 
+                "Content-Type": "application/json", 
+                "Accept": "application/json", // <-- Crucial: Tells Laravel to send JSON validation errors
+                "X-CSRF-TOKEN": "{{ csrf_token() }}" 
+            },
+            body: JSON.stringify(payload) 
         })
-        .then(r => r.json())
+        .then(async r => {
+            if (!r.ok) {
+                // If validation fails (422) or server errors (500), parse the error
+                const errData = await r.json();
+                console.error("Server Error:", errData);
+                throw new Error(errData.message || 'Server rejected the request');
+            }
+            return r.json();
+        })
         .then(data => {
             if(data.status === 'success') {
                 modal.classList.add('hidden');
                 calendar.refetchEvents();
             } else {
-                alert(_calendarI18n.error_saving);
+                alert(_calendarI18n.error_saving + "\n" + (data.message || ''));
             }
+        })
+        .catch(err => {
+            // This catches the fetch crash and alerts you properly
+            console.error('Fetch Exception:', err);
+            alert(_calendarI18n.error_saving + "\n" + err.message);
         });
     });
 
@@ -670,15 +688,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
         fetch("{{ route('calendar.destroy') }}", {
             method: "DELETE",
-            headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": "{{ csrf_token() }}" },
+            headers: { 
+                "Content-Type": "application/json", 
+                "Accept": "application/json", // <-- Crucial: Forces Laravel to send JSON errors
+                "X-CSRF-TOKEN": "{{ csrf_token() }}" 
+            },
             body: JSON.stringify({ id: id })
         })
-        .then(r => r.json())
+        .then(async r => {
+            if (!r.ok) {
+                // If validation fails (422) or server errors (500), parse the error
+                const errData = await r.json();
+                console.error("Server Error:", errData);
+                throw new Error(errData.message || 'Server rejected the request');
+            }
+            return r.json();
+        })
         .then(data => {
             if(data.status === 'success') {
                 modal.classList.add('hidden');
                 calendar.refetchEvents();
+            } else {
+                alert(_calendarI18n.error_saving + "\n" + (data.message || 'Error deleting event'));
             }
+        })
+        .catch(err => {
+            // Catches the exception and alerts you properly
+            console.error('Delete Exception:', err);
+            alert("Error deleting event: \n" + err.message);
         });
     });
 
@@ -687,7 +724,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let payload = {
             id: info.event.id,
             start: info.event.startStr,
-            end: info.event.endStr
+            end: info.event.endStr || null 
         };
 
         if (info.event.allDay) {
@@ -719,11 +756,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
         fetch("{{ route('calendar.update') }}", {
             method: "PATCH",
-            headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": "{{ csrf_token() }}" },
+            headers: { 
+                "Content-Type": "application/json", 
+                "Accept": "application/json", // <--- THE FIX: Force JSON response
+                "X-CSRF-TOKEN": "{{ csrf_token() }}" 
+            },
             body: JSON.stringify(payload)
-        }).then(r => r.json()).then(data => {
-            if(data.status !== 'success') info.revert();
-        }).catch(() => info.revert());
+        })
+        .then(async r => {
+            if (!r.ok) {
+                const errData = await r.json();
+                console.error("Drag Update Error:", errData);
+                throw new Error(errData.message || 'Server rejected the drag update');
+            }
+            return r.json();
+        })
+        .then(data => {
+            if(data.status !== 'success') {
+                console.error("Update failed:", data);
+                info.revert();
+            }
+        })
+        .catch(err => {
+            console.error("Fetch Exception:", err);
+            alert("Error updating event: " + err.message);
+            info.revert();
+        });
     }
 
     // Render Mini Calendar

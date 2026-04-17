@@ -410,6 +410,9 @@ Route::post('/tasks/{task}/status', [TaskController::class, 'updateStatus'])->na
 // })->name('meet');
 
 Route::get('/meeting', [MeetingController::class, 'index'])->name('meeting');
+Route::post('/meetings/api/generate-room', [MeetingController::class, 'generateRoomApi'])->name('meetings.api.generate');
+Route::post('/meetings/api/find-slots', [MeetingController::class, 'findSmartSlots'])->name('meetings.smart.slots');
+Route::post('/meetings/api/book-meeting', [MeetingController::class, 'bookSmartMeeting'])->name('meetings.smart.book');
 
 Route::get('/meetings/history', [MeetingController::class, 'history'])->name('meetings.history');
 
@@ -424,14 +427,6 @@ Route::post('/meetings/history/leave', [MeetingController::class, 'recordLeave']
 Route::post("/createMeeting", [MeetingController::class, 'createMeeting'])->name("createMeeting");
 Route::post("/validateMeeting", [MeetingController::class, 'validateMeeting'])->name("validateMeeting");
 
-// Route::get("/meeting/{meetingId}", function($meetingId) {
-
-//     $METERED_DOMAIN = env('METERED_DOMAIN');
-//     return view('video-chat.meeting', [
-//         'METERED_DOMAIN' => $METERED_DOMAIN,
-//         'MEETING_ID' => $meetingId
-//     ]);
-// });
 
 // Route 1: The Lobby Page
 Route::get('/meeting/{meetingId}', [MeetingController::class, 'showLobby'])

@@ -465,46 +465,44 @@
 
                 {{-- 2. Upcoming Holidays --}}
                 @can('admin.holidays.view')
-                    <div class="grid grid-cols-1 gap-6 w-full animate-fade-in-up [animation-delay:200ms]">
-                        <div class=" flex flex-col h-full">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-lg font-semibold text-main">Upcoming Holidays</h3>
-                                @can('admin.holidays.create')
-                                    <button id="openHolidayModal" title="Add Holiday" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-primary/5">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 lucide lucide-plus-icon lucide-plus">
-                                            <path d="M5 12h14"/>
-                                            <path d="M12 5v14"/>
-                                        </svg>
-                                    </button>
-                                @endcan
-                            </div>
+                    <div class="flex flex-col gap-4 w-full animate-fade-in-up [animation-delay:200ms] @container">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-main">Upcoming Holidays</h3>
+                            @can('admin.holidays.create')
+                                <button id="openHolidayModal" title="Add Holiday" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-primary/5">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 lucide lucide-plus-icon lucide-plus">
+                                        <path d="M5 12h14"/>
+                                        <path d="M12 5v14"/>
+                                    </svg>
+                                </button>
+                            @endcan
+                        </div>
 
-                            {{-- Holidays Grid --}}
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                @forelse($upcomingHolidays ?? [] as $holiday)
-                                    <div onclick="openHolidayModal('edit', {{ json_encode($holiday) }})"
-                                        class="group flex items-center gap-4 p-4 rounded-2xl bg-white border border-muted-200 shadow-lg shadow-main/5 hover:border-accent/30 hover:shadow-accent/10 transition-all duration-300 cursor-pointer">
+                        {{-- Holidays Grid --}}
+                        <div class="grid grid-cols-1 @sm:grid-cols-2 gap-4">
+                            @forelse($upcomingHolidays ?? [] as $holiday)
+                                <div onclick="openHolidayModal('edit', {{ json_encode($holiday) }})"
+                                    class="group flex items-center gap-4 p-4 rounded-2xl bg-white border border-muted-300 hover:border-accent/30 transition-all duration-300 cursor-pointer">
 
-                                        {{-- Calendar Icon --}}
-                                        <div class="relative w-12 h-12 flex-none bg-accent/5 rounded-xl flex flex-col items-center justify-center border border-accent/10 group-hover:bg-accent/10 transition-colors">
-                                            <span class="text-[10px] font-bold text-accent uppercase tracking-wider">{{ $holiday->start_date->format('M') }}</span>
-                                            <span class="text-lg font-bold text-main leading-none">{{ $holiday->start_date->format('d') }}</span>
-                                        </div>
-
-                                        {{-- Info --}}
-                                        <div class="flex-1 min-w-0">
-                                            <h4 class="text-sm font-bold text-main group-hover:text-accent transition-colors truncate">{{ $holiday->title }}</h4>
-                                            <p class="text-xs text-muted-500 mt-0.5 truncate">
-                                                {{ $holiday->start_date->format('l, H:i') }}
-                                            </p>
-                                        </div>
+                                    {{-- Calendar Icon --}}
+                                    <div class="relative w-12 h-12 flex-none bg-accent/5 rounded-xl flex flex-col items-center justify-center border border-accent/10 group-hover:bg-accent/10 transition-colors">
+                                        <span class="text-[10px] font-bold text-accent uppercase tracking-wider">{{ $holiday->start_date->format('M') }}</span>
+                                        <span class="text-lg font-bold text-main leading-none">{{ $holiday->start_date->format('d') }}</span>
                                     </div>
-                                @empty
-                                    <div class="col-span-full text-center py-6 text-muted-400 text-sm border border-dashed border-muted-200 rounded-2xl">
-                                        No upcoming holidays found.
+
+                                    {{-- Info --}}
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="text-sm font-bold text-main group-hover:text-accent transition-colors truncate">{{ $holiday->title }}</h4>
+                                        <p class="text-xs text-muted-500 mt-0.5 truncate">
+                                            {{ $holiday->start_date->format('l, H:i') }}
+                                        </p>
                                     </div>
-                                @endforelse
-                            </div>
+                                </div>
+                            @empty
+                                <div class="col-span-full text-center py-6 text-muted-400 text-sm border border-dashed border-muted-200 rounded-2xl">
+                                    No upcoming holidays found.
+                                </div>
+                            @endforelse
                         </div>
                     </div>
                 @endcan
