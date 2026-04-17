@@ -39,7 +39,6 @@
 
         $chartReports = $reportCollection
             ->sortByDesc(fn ($r) => abs($r['variance']))
-            ->take(10)
             ->values();
 
         $chartPayload = [
@@ -54,7 +53,7 @@
         ];
     @endphp
 
-    <div class="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-8 md:px-8 xl:px-10 text-main">
+    <div class="flex flex-col gap-4 w-full mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
 
         {{-- HEADER --}}
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -62,16 +61,16 @@
                 @include('components.back-btn', ['route' => $dashRoute])
 
                 <div>
-                    <h2 class="text-3xl font-bold tracking-tight text-main">
+                    <h1 class="font-semibold text-2xl md:text-3xl text-main tracking-tight">
                         {{ __('checkin_logs.title') }}
-                    </h2>
-                    <p class="mt-2 text-sm text-muted-500">
+                    </h1>
+                    <p class="text-muted-500 text-sm md:text-base mt-1">
                         Monthly-first view for employee attendance and working hours.
                     </p>
                 </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-3">
                 <form method="GET" action="{{ route('users.checkin_index') }}" class="flex items-center gap-3">
                     <input type="hidden" name="username" value="{{ request('username') }}">
                     <input type="hidden" name="status" value="{{ request('status') }}">
@@ -79,17 +78,26 @@
                     <input type="hidden" name="date_to" value="{{ request('date_to') }}">
                     <input type="hidden" name="per_page" value="{{ request('per_page') }}">
 
-                    <select
-                        name="month"
-                        onchange="this.form.submit()"
-                        class="rounded-xl border border-muted-300 bg-white px-4 py-2.5 text-sm text-main transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    >
-                        @foreach($availableMonths as $monthKey => $monthLabel)
-                            <option value="{{ $monthKey }}" {{ $monthKey === $month ? 'selected' : '' }}>
-                                {{ $monthLabel }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <div class="relative">
+                        <select
+                            name="month"
+                            onchange="this.form.submit()"
+                            class="appearance-none w-48 bg-canvas border border-muted-300 rounded-xl px-5 py-2.5"
+                        >
+                            @foreach($availableMonths as $monthKey => $monthLabel)
+                                <option value="{{ $monthKey }}" {{ $monthKey === $month ? 'selected' : '' }}>
+                                    {{ $monthLabel }}
+                                </option>
+                            @endforeach
+                        </select>
+
+                        <!-- Custom Chevron Icon -->
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-500">
+                            <svg class="h-5 w-5 fill-current" viewBox="0 0 20 20">
+                            <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
+                            </svg>
+                        </div>
+                    </div>
                 </form>
 
                 <form method="GET" action="{{ route('checkins.export') }}">
@@ -102,7 +110,7 @@
 
                     <button
                         type="submit"
-                        class="flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover"
+                        class="flex w-48 items-center justify-center gap-2 rounded-xl bg-primary py-3 text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -114,21 +122,35 @@
         </div>
 
         {{-- MONTH HERO --}}
-        <div class="rounded-3xl border border-primary/10 bg-gradient-to-br from-primary/5 via-white to-white p-6 shadow-lg shadow-main/5">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div class="relative overflow-hidden p-6 bg-primary-gradient shadow-xl shadow-primary/20 hover:shadow-primary/25 transition-all duration-300 rounded-3xl">
+            
+            {{-- Decorative Background Icons --}}
+            {{-- Large Calendar Watermark --}}
+            <svg xmlns="http://www.w3.org/2000/svg" class="absolute -bottom-12 -right-8 h-56 w-56 text-white/10 -rotate-12 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            
+            {{-- Small Clock Watermark --}}
+            <svg xmlns="http://www.w3.org/2000/svg" class="absolute top-4 right-1/4 h-24 w-24 text-white/5 rotate-12 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+
+            {{-- Main Content --}}
+            <div class="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                    <p class="text-sm font-semibold uppercase tracking-[0.18em] text-primary/70">Monthly Attendance Overview</p>
-                    <h3 class="mt-2 text-2xl font-bold text-main">
+                    <p class="font-medium text-canvas/50 uppercase tracking-widest text-sm">Monthly Attendance Overview</p>
+                    <h3 class="mt-2 text-2xl md:text-3xl font-semibold text-canvas override">
                         {{ $availableMonths[$month] ?? $month }}
                     </h3>
-                    <p class="mt-2 max-w-2xl text-sm text-muted-500">
+                    <p class="font-medium text-canvas/50 text-xs mt-1">
                         Focus on expected hours, actual worked hours, and who is ahead, on track, or behind this month.
                     </p>
                 </div>
 
                 <a
                     href="#daily-attendance-section"
-                    class="inline-flex items-center justify-center rounded-xl border border-muted-200 bg-white px-4 py-2.5 text-sm font-medium text-main transition hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+                    onclick="document.getElementById('daily-attendance-section').open = true"
+                    class="inline-flex items-center justify-center rounded-xl bg-white text-primary transition-all duration-300 hover:scale-105 px-4 py-2.5 text-sm font-semibold shadow-sm"
                 >
                     Jump to daily logs
                 </a>
@@ -136,47 +158,76 @@
         </div>
 
         {{-- MONTHLY KPI CARDS --}}
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <div class="rounded-2xl border border-muted-200 bg-white p-5 shadow-lg shadow-main/5">
-                <p class="text-sm font-medium text-muted-500">Employees</p>
-                <p class="mt-3 text-3xl font-bold text-main">{{ $totalEmployees }}</p>
-                <p class="mt-2 text-xs text-muted-400">Included in monthly summary</p>
-            </div>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            
+            <x-white-card-container color="primary/50" class="p-3 items-center gap-4">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-muted-400">Tracked Employees</p>
+                    <p class="text-lg font-bold text-main leading-tight">{{ $totalEmployees }}</p>
+                </div>
+            </x-white-card-container>
 
-            <div class="rounded-2xl border border-muted-200 bg-white p-5 shadow-lg shadow-main/5">
-                <p class="text-sm font-medium text-muted-500">Expected Hours</p>
-                <p class="mt-3 text-3xl font-bold text-main">{{ number_format($totalExpectedHours, 2) }}</p>
-                <p class="mt-2 text-xs text-muted-400">Total scheduled hours this month</p>
-            </div>
+            <x-white-card-container class="hover:border-secondary/80 p-3 items-center gap-4">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/10 text-secondary">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-muted-400">Expected Hours</p>
+                    <p class="text-lg font-bold text-main leading-tight">{{ number_format($totalExpectedHours, 2) }}</p>
+                </div>
+            </x-white-card-container>
 
-            <div class="rounded-2xl border border-muted-200 bg-white p-5 shadow-lg shadow-main/5">
-                <p class="text-sm font-medium text-muted-500">Actual Hours</p>
-                <p class="mt-3 text-3xl font-bold text-main">{{ number_format($totalActualHours, 2) }}</p>
-                <p class="mt-2 text-xs text-muted-400">Total worked hours from attendance</p>
-            </div>
+            <x-white-card-container color="accent/50" class="p-3 items-center gap-4">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-muted-400">Actual Hours</p>
+                    <p class="text-lg font-bold text-main leading-tight">{{ number_format($totalActualHours, 2) }}</p>
+                </div>
+            </x-white-card-container>
 
-            <div class="rounded-2xl border border-muted-200 bg-white p-5 shadow-lg shadow-main/5">
-                <p class="text-sm font-medium text-muted-500">Completion Rate</p>
-                <p class="mt-3 text-3xl font-bold text-main">{{ number_format($avgCompletionRate, 1) }}%</p>
-                <p class="mt-2 text-xs {{ $totalVarianceHours >= 0 ? 'text-emerald-600' : 'text-danger' }}">
-                    {{ $totalVarianceHours >= 0 ? '+' : '' }}{{ number_format($totalVarianceHours, 2) }} hrs overall variance
-                </p>
-            </div>
+            <x-white-card-container class="hover:border-success/80 p-3 items-center gap-4">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-success/10 text-success">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-muted-400">Completion Rate</p>
+                    <div class="flex items-baseline gap-2">
+                        <p class="text-lg font-bold text-main leading-tight">{{ number_format($avgCompletionRate, 1) }}%</p>
+                        <span class="text-[10px] font-bold {{ $totalVarianceHours >= 0 ? 'text-success' : 'text-danger' }}">
+                            ({{ $totalVarianceHours >= 0 ? '+' : '' }}{{ number_format($totalVarianceHours, 1) }})
+                        </span>
+                    </div>
+                </div>
+            </x-white-card-container>
+
         </div>
 
         {{-- CHARTS --}}
         <div class="grid grid-cols-1 gap-6 xl:grid-cols-[2fr_1fr]">
-            <div class="rounded-2xl border border-muted-200 bg-white p-5 shadow-lg shadow-main/5">
+            <x-white-card-container color="primary/50" class="p-6 flex flex-col">
                 <div class="mb-4">
-                    <h4 class="text-lg font-semibold text-main">Top 10 employees by variance</h4>
+                    <h4 class="text-lg font-semibold text-main">Workforce Health</h4>
                     <p class="text-sm text-muted-500">Expected hours vs actual hours for the biggest gaps.</p>
                 </div>
                 <div class="relative h-[420px]">
                     <canvas id="monthlyHoursChart"></canvas>
                 </div>
-            </div>
+            </x-white-card-container>
 
-            <div class="rounded-2xl border border-muted-200 bg-white p-5 shadow-lg shadow-main/5">
+            <x-white-card-container color="primary/50" class="p-6 flex flex-col">
                 <div class="mb-4">
                     <h4 class="text-lg font-semibold text-main">Monthly status distribution</h4>
                     <p class="text-sm text-muted-500">How many employees are ahead, on track, or behind.</p>
@@ -184,11 +235,11 @@
                 <div class="relative h-[420px]">
                     <canvas id="monthlyStatusChart"></canvas>
                 </div>
-            </div>
+            </x-white-card-container>
         </div>
 
         {{-- MONTHLY TABLE --}}
-        <div class="overflow-hidden rounded-2xl border border-muted-200 bg-white shadow-lg shadow-main/5">
+        <x-white-card-container color="secondary/50" class="overflow-hidden flex-col">
             <div class="flex items-center justify-between border-b border-muted-200 px-5 py-4">
                 <div>
                     <h4 class="text-lg font-semibold text-main">Individual Monthly Attendance</h4>
@@ -217,8 +268,8 @@
                                 $completion = $expected > 0 ? min(100, round(($actual / $expected) * 100, 1)) : 0;
 
                                 $barClass = $completion >= 100
-                                    ? 'bg-emerald-500'
-                                    : ($completion >= 85 ? 'bg-blue-500' : 'bg-amber-500');
+                                    ? 'bg-success'
+                                    : 'bg-accent';
                             @endphp
 
                             <tr class="hover:bg-muted-50 transition-colors">
@@ -253,18 +304,18 @@
                                 </td>
 
                                 <td class="px-4 py-4 text-center">
-                                    <span class="inline-flex rounded-lg px-3 py-2 text-sm font-semibold {{ $variance >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-danger/10 text-danger' }}">
+                                    <span class="inline-flex rounded-lg px-3 py-2 text-sm font-semibold {{ $variance >= 0 ? 'bg-success/5 text-success' : 'bg-danger/10 text-danger' }}">
                                         {{ $variance >= 0 ? '+' : '' }}{{ number_format($variance, 2) }}h
                                     </span>
                                 </td>
 
                                 <td class="px-5 py-4 text-center">
                                     @if($variance >= 2)
-                                        <span class="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                        <span class="inline-flex items-center rounded-full bg-success/5 px-3 py-1 text-xs font-semibold text-success">
                                             Ahead
                                         </span>
                                     @elseif($variance > -2 && $variance < 2)
-                                        <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                                        <span class="inline-flex items-center rounded-full bg-secondary/10 px-3 py-1 text-xs font-semibold text-secondary">
                                             On Track
                                         </span>
                                     @else
@@ -284,20 +335,20 @@
                     </tbody>
                 </table>
             </div>
-        </div>
+        </x-white-card-container>
 
         {{-- DAILY ATTENDANCE - DE-EMPHASIZED --}}
-        <div id="daily-attendance-section" class="overflow-hidden rounded-2xl border border-muted-200 bg-white shadow-lg shadow-main/5">
-            <details class="group" @if(request()->hasAny(['username', 'status', 'date_from', 'date_to'])) open @endif>
+        <x-white-card-container color="secondary/50" class="overflow-hidden flex-col">
+            <details id="daily-attendance-section" class="group" @if(request()->hasAny(['username', 'status', 'date_from', 'date_to'])) open @endif>
                 <summary class="flex cursor-pointer list-none items-center justify-between px-5 py-4">
                     <div>
                         <h4 class="text-lg font-semibold text-main">Daily Attendance Logs</h4>
                         <p class="text-sm text-muted-500">Secondary section for daily inspection and auditing.</p>
                     </div>
 
-                    <div class="flex items-center gap-2 text-sm font-medium text-primary">
+                    <div class="flex items-center gap-1 text-sm font-medium text-primary">
                         <span>Show details</span>
-                        <svg class="h-5 w-5 transition-transform duration-200 group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="h-4 w-4 transition-transform duration-200 -rotate-90 group-open:rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                         </svg>
                     </div>
@@ -512,7 +563,7 @@
                     @endif
                 </div>
             </details>
-        </div>
+        </x-white-card-container>
     </div>
 
     <script>

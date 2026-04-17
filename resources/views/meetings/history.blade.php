@@ -3,7 +3,8 @@
 
 @section('content')
 <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
-    <div class="flex items-center justify-between">
+    <div class="flex items-center gap-4">
+        <x-back-btn :route="'meeting'" />
         <div>
             <h2 class="text-2xl font-bold leading-7 text-main sm:text-3xl sm:truncate tracking-tight">
                 {{ __('video_chat.recent_meetings_title') }}
@@ -12,12 +13,6 @@
                 {{ __('video_chat.view_all_history') }}
             </p>
         </div>
-        <a href="{{ route('meeting') }}" class="text-sm font-medium text-primary hover:text-primary-hover flex items-center gap-1 group transition-colors">
-            {{ __('video_chat.title') }}
-            <svg class="h-4 w-4 transform group-hover:translate-x-1 transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-            </svg>
-        </a>
     </div>
 
     <div class="grid grid-cols-1 @2xl:grid-cols-2 @5xl:grid-cols-3 gap-6">
