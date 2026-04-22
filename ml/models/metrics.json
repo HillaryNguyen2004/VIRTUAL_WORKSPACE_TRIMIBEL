@@ -1,0 +1,10 @@
+{
+  "accuracy": 0.9566,
+  "val_loss": 0.004702140111476183,
+  "best_mae": 0.04340061545372009,
+  "epochs": 15,
+  "confidence": 0.96,
+  "trained_at": "2026-04-18T11:25:22.502996",
+  "lookback_window": 7,
+  "num_samples": 56879
+}
