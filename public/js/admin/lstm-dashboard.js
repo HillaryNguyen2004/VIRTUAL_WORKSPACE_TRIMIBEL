@@ -513,24 +513,52 @@
     }
 
     // ═════════════════════════════════════════════════════════════════════════
-    // RENDER: model transparency section
+    // RENDER: model transparency section (dynamic from API)
     // ═════════════════════════════════════════════════════════════════════════
     function renderModelTransparency(stats) {
-        // Model health indicators
-        document.getElementById('ms-loss').textContent = '0.0285';  // from training logs
-        document.getElementById('ms-mae').textContent = '0.0412';   // from training logs
-        document.getElementById('ms-epochs').textContent = '120';   // from training logs
-        document.getElementById('ms-conf').textContent = '0.85';    // from api.py
+        // Model health indicators - now dynamic from API
+        document.getElementById('ms-loss').textContent = 
+            stats.valLoss != null ? stats.valLoss.toFixed(4) : '—';
+        document.getElementById('ms-mae').textContent = 
+            stats.bestMAE != null ? stats.bestMAE.toFixed(4) : '—';
+        document.getElementById('ms-epochs').textContent = 
+            stats.epochsRan != null ? stats.epochsRan : '—';
+        document.getElementById('ms-conf').textContent = 
+            stats.confidence != null ? stats.confidence.toFixed(2) : '—';
         
-        // Feature importance is already in HTML static, but you could update dynamically if needed
-        // The bars are pre-rendered in the Blade template with these weights:
-        // - avg_score_7d: 0.92
-        // - score_trend: 0.78
-        // - avg_score_30d: 0.71
-        // - tasks_completed: 0.65
-        // - hours_worked: 0.53
-        // - has_task_signal: 0.44
-        // - is_late / checked_in: 0.38
+        // Feature importance - now dynamic from API
+        if (stats.featureImportance && Array.isArray(stats.featureImportance)) {
+            renderFeatureImportance(stats.featureImportance);
+        } else {
+            console.warn('No feature importance data available from API');
+            document.getElementById('feature-importance-list').innerHTML = 
+                '<div class="empty-state">No feature importance data available.</div>';
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // RENDER: feature importance bars (dynamic)
+    // ═════════════════════════════════════════════════════════════════════════
+    function renderFeatureImportance(features) {
+        const container = document.getElementById('feature-importance-list');
+        if (!features || !features.length) {
+            container.innerHTML = '<div class="empty-state">No feature importance data available.</div>';
+            return;
+        }
+        
+        // Sort by importance (descending)
+        const sorted = [...features].sort((a, b) => b.importance - a.importance);
+        
+        container.innerHTML = sorted.map(f => {
+            const widthPercent = Math.round(f.importance * 100);
+            return `
+                <div class="fi-row">
+                    <span class="fi-label">${f.name}</span>
+                    <div class="fi-track"><div class="fi-fill" style="width:${widthPercent}%"></div></div>
+                    <span class="fi-val">${f.importance.toFixed(2)}</span>
+                </div>
+            `;
+        }).join('');
     }
 
     // ═════════════════════════════════════════════════════════════════════════

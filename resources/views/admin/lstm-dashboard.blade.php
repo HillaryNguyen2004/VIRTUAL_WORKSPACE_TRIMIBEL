@@ -175,19 +175,13 @@
                         <div class="model-stat"><div class="ms-val" id="ms-loss">—</div><div class="ms-lbl">Val loss</div></div>
                         <div class="model-stat"><div class="ms-val" id="ms-mae">—</div><div class="ms-lbl">Best MAE</div></div>
                         <div class="model-stat"><div class="ms-val" id="ms-epochs">—</div><div class="ms-lbl">Epochs ran</div></div>
-                        <div class="model-stat"><div class="ms-val" id="ms-conf">0.85</div><div class="ms-lbl">Confidence</div></div>
+                        <div class="model-stat"><div class="ms-val" id="ms-conf">—</div><div class="ms-lbl">Confidence</div></div>
                     </div>
                 </div>
                 <div>
                     <div class="model-section-lbl">Feature importance (inferred from LSTM weights)</div>
                     <div id="feature-importance-list" class="fi-list">
-                        <div class="fi-row"><span class="fi-label">avg_score_7d</span><div class="fi-track"><div class="fi-fill" style="width:92%"></div></div><span class="fi-val">0.92</span></div>
-                        <div class="fi-row"><span class="fi-label">score_trend</span><div class="fi-track"><div class="fi-fill" style="width:78%"></div></div><span class="fi-val">0.78</span></div>
-                        <div class="fi-row"><span class="fi-label">avg_score_30d</span><div class="fi-track"><div class="fi-fill" style="width:71%"></div></div><span class="fi-val">0.71</span></div>
-                        <div class="fi-row"><span class="fi-label">tasks_completed</span><div class="fi-track"><div class="fi-fill" style="width:65%"></div></div><span class="fi-val">0.65</span></div>
-                        <div class="fi-row"><span class="fi-label">hours_worked</span><div class="fi-track"><div class="fi-fill" style="width:53%"></div></div><span class="fi-val">0.53</span></div>
-                        <div class="fi-row"><span class="fi-label">has_task_signal</span><div class="fi-track"><div class="fi-fill" style="width:44%"></div></div><span class="fi-val">0.44</span></div>
-                        <div class="fi-row"><span class="fi-label">is_late / checked_in</span><div class="fi-track"><div class="fi-fill" style="width:38%"></div></div><span class="fi-val">0.38</span></div>
+                        <div class="empty-state">Loading…</div>
                     </div>
                 </div>
             </div>
