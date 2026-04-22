@@ -417,31 +417,42 @@ class MeetingController extends Controller
     public function bookSmartMeeting(Request $request)
     {
         $request->validate([
-            'title' => 'required|string',
+            'title'      => 'required|string',
             'start_date' => 'required|date',
-            'end_date' => 'required|date',
-            'attendees' => 'required|array',
+            'end_date'   => 'required|date',
+            'attendees'  => 'required|array',
             'meeting_id' => 'required|string'
         ]);
 
-        $userIds = array_merge([auth()->id()], $request->attendees);
+        // Cast everything to int to avoid type mismatches
+        $attendeeIds = array_map('intval', $request->attendees);
+        $userIds = array_unique(array_merge([(int) auth()->id()], $attendeeIds));
 
-        // Create a calendar event for EVERY attendee
-        foreach ($userIds as $userId) {
-            \App\Models\CalendarEvent::create([
-                'user_id' => $userId,
-                'title' => $request->title,
-                'start_date' => $request->start_date,
-                'end_date' => $request->end_date,
-                'category' => 'meeting',
-                'meeting_id' => $request->meeting_id,
-                'recurrence_type' => 'none'
-            ]);
+        try {
+            foreach ($userIds as $userId) {
+                \App\Models\CalendarEvent::create([
+                    'user_id'        => $userId,
+                    'title'          => $request->title,
+                    'start_date'     => $request->start_date,
+                    'end_date'       => $request->end_date,
+                    'category'       => 'meeting',
+                    'meeting_id'     => $request->meeting_id,
+                    'recurrence_type'=> 'none'
+                ]);
+            }
+
+            $this->ensureMeetingHistory($request->meeting_id);
+
+            return response()->json(['status' => 'success']);
+
+        } catch (\Exception $e) {
+            Log::error('bookSmartMeeting failed: ' . $e->getMessage());
+
+            // Always return JSON, never let Laravel return an HTML error page
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        // Ensure the room exists in history for the host
-        $this->ensureMeetingHistory($request->meeting_id);
-
-        return response()->json(['status' => 'success']);
     }
 }

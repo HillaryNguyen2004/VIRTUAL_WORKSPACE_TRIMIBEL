@@ -410,9 +410,9 @@ Route::post('/tasks/{task}/status', [TaskController::class, 'updateStatus'])->na
 // })->name('meet');
 
 Route::get('/meeting', [MeetingController::class, 'index'])->name('meeting');
-Route::post('/meetings/api/generate-room', [MeetingController::class, 'generateRoomApi'])->name('meetings.api.generate');
-Route::post('/meetings/api/find-slots', [MeetingController::class, 'findSmartSlots'])->name('meetings.smart.slots');
-Route::post('/meetings/api/book-meeting', [MeetingController::class, 'bookSmartMeeting'])->name('meetings.smart.book');
+Route::post('/api/meetings/generate', [MeetingController::class, 'generateRoomApi'])->middleware('auth')->name('api.meetings.generate');
+Route::post('/meetings/smart/slots', [MeetingController::class, 'findSmartSlots'])->middleware(['auth', 'web'])->name('meetings.smart.slots');
+Route::post('/meetings/smart/book', [MeetingController::class, 'bookSmartMeeting'])->middleware(['auth', 'web'])->name('meetings.smart.book');
 
 Route::get('/meetings/history', [MeetingController::class, 'history'])->name('meetings.history');
 
