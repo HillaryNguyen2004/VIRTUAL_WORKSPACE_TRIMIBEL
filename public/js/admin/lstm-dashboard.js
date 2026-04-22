@@ -897,6 +897,41 @@
             hideLoading();
         });
 
+        // Export to Excel
+        document.getElementById('btn-export').addEventListener('click', async () => {
+            const btn = document.getElementById('btn-export');
+            btn.disabled = true;
+            showLoading();
+            try {
+                const response = await fetch('/api/lstm/export-excel', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrf(), 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Export failed');
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `LSTM_Detailed_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+
+                alert('✓ Export completed successfully!');
+            } catch (err) {
+                alert('Export failed: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                hideLoading();
+            }
+        });
+
         // Toggle all-employees table
         document.getElementById('btn-toggle-all').addEventListener('click', () => {
             tableOpen = !tableOpen;

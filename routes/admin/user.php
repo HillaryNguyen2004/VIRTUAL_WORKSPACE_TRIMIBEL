@@ -51,6 +51,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('alerts/productivity-concern', [LSTMDashboardController::class, 'sendProductivityAlert'])
             ->middleware('admin_or_permission:admin.dashboard.edit')
             ->name('api.alerts.productivity');
+
+        Route::post('export-excel', [LSTMDashboardController::class, 'exportExcel'])
+            ->middleware('admin_or_permission:admin.dashboard.view')
+            ->name('api.lstm.export');
     });
 
     // ===== USERS MODULE =====
