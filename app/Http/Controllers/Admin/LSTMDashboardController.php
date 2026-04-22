@@ -866,76 +866,103 @@ class LSTMDashboardController extends Controller
 
     /**
      * Get employee metrics from PostgreSQL data warehouse (fact_employee_productivity)
-     * Same source as dashboard real-time scores
+     * Uses actual ETL columns: checked_in, is_late, hours_worked, tasks_completed
      */
     private function getEmployeeMetricsFromDataWarehouse(int $employeeId): array
     {
         try {
             $now = Carbon::now();
-            $sevenDaysAgo = $now->copy()->subDays(7);
-            $thirtyDaysAgo = $now->copy()->subDays(30);
+            $sevenDaysAgo  = $now->copy()->subDays(7)->format('Y-m-d');
+            $thirtyDaysAgo = $now->copy()->subDays(30)->format('Y-m-d');
 
-            // Query fact table for current and 30-day averages
+            // ── 7-day records ────────────────────────────────────────────────────
             $records7d = DB::connection('pgsql_dw')
                 ->table('fact_employee_productivity as f')
                 ->join('dim_employee as e', 'f.employee_sk', '=', 'e.employee_sk')
-                ->join('dim_date as d', 'f.date_sk', '=', 'd.date_sk')
-                ->where('e.user_id', $employeeId)
-                ->where('d.full_date', '>=', $sevenDaysAgo->format('Y-m-d'))
-                ->select('f.productivity_score', 'f.tasks_completed', 'f.hours_worked', 'f.attendance_rate')
+                ->join('dim_date    as d', 'f.date_sk',     '=', 'd.date_sk')
+                ->where('e.user_id',    $employeeId)
+                ->where('d.full_date', '>=', $sevenDaysAgo)
+                ->select([
+                    'f.productivity_score',
+                    'f.tasks_completed',
+                    'f.hours_worked',
+                    'f.checked_in',   // ← real column name from ETL
+                    'f.is_late',      // ← real column name from ETL
+                    'd.full_date',
+                ])
                 ->get();
 
+            // ── 30-day records ───────────────────────────────────────────────────
             $records30d = DB::connection('pgsql_dw')
                 ->table('fact_employee_productivity as f')
                 ->join('dim_employee as e', 'f.employee_sk', '=', 'e.employee_sk')
-                ->join('dim_date as d', 'f.date_sk', '=', 'd.date_sk')
-                ->where('e.user_id', $employeeId)
-                ->where('d.full_date', '>=', $thirtyDaysAgo->format('Y-m-d'))
-                ->select('f.productivity_score', 'f.tasks_completed', 'f.hours_worked', 'f.attendance_rate')
+                ->join('dim_date    as d', 'f.date_sk',     '=', 'd.date_sk')
+                ->where('e.user_id',    $employeeId)
+                ->where('d.full_date', '>=', $thirtyDaysAgo)
+                ->select([
+                    'f.productivity_score',
+                    'f.tasks_completed',
+                    'f.hours_worked',
+                    'f.checked_in',
+                    'f.is_late',
+                    'd.full_date',
+                ])
                 ->get();
 
-            // Extract scores for volatility calculation
-            $scores7d = $records7d->pluck('productivity_score')->toArray();
-            $scores30d = $records30d->pluck('productivity_score')->toArray();
+            // ── Scores ───────────────────────────────────────────────────────────
+            $scores7d  = $records7d->pluck('productivity_score')->filter()->values()->toArray();
+            $scores30d = $records30d->pluck('productivity_score')->filter()->values()->toArray();
 
-            $score7d = !empty($scores7d) ? array_sum($scores7d) / count($scores7d) : 0;
-            $score30d = !empty($scores30d) ? array_sum($scores30d) / count($scores30d) : 0;
-            $volatility = $this->calculateStdDev($scores7d);
+            $score7d  = !empty($scores7d)  ? round(array_sum($scores7d)  / count($scores7d),  1) : 0;
+            $score30d = !empty($scores30d) ? round(array_sum($scores30d) / count($scores30d), 1) : 0;
 
-            // Task metrics
-            $tasks7d = $records7d->sum('tasks_completed') ?? 0;
-            $tasks30d = $records30d->sum('tasks_completed') ?? 0;
+            // ── Tasks ────────────────────────────────────────────────────────────
+            $tasks7d  = (int) $records7d->sum('tasks_completed');
+            $tasks30d = (int) $records30d->sum('tasks_completed');
 
-            // Hours metrics
-            $avgHours7d = !empty($records7d) ? $records7d->avg('hours_worked') : 0;
-            $avgHours30d = !empty($records30d) ? $records30d->avg('hours_worked') : 0;
+            // ── Hours ────────────────────────────────────────────────────────────
+            $allHours7d  = $records7d->pluck('hours_worked')->filter()->values()->toArray();
+            $allHours30d = $records30d->pluck('hours_worked')->filter()->values()->toArray();
+            $avgHours7d  = !empty($allHours7d)  ? array_sum($allHours7d)  / count($allHours7d)  : 0;
+            $avgHours30d = !empty($allHours30d) ? array_sum($allHours30d) / count($allHours30d) : 0;
 
-            // Attendance metrics
-            $attendanceRate = !empty($records30d) ? $records30d->avg('attendance_rate') : 0;
-            $lateCheckins = 0; // Not directly available in fact table, estimate from attendance
+            // ── Attendance = days checked_in / total days in window ──────────────
+            // Uses the actual ETL columns (checked_in boolean, is_late boolean)
+            $totalDays30d   = $records30d->count();
+            $checkedInDays  = $records30d->where('checked_in', true)->count();
+            $attendanceRate = $totalDays30d > 0
+                ? round(($checkedInDays / $totalDays30d) * 100, 1)
+                : 0;
 
-            // Risk calculations
-            $burnoutRisk = $this->calculateBurnoutRisk($avgHours7d, $score30d, $score7d);
+            // ── Late check-ins ───────────────────────────────────────────────────
+            $lateCheckins = $records30d->where('is_late', true)->count();
+
+            // ── Derived risk / engagement ────────────────────────────────────────
+            $burnoutRisk     = $this->calculateBurnoutRisk($avgHours7d, $score30d, $score7d);
             $engagementScore = $this->calculateEngagementScore($tasks7d, $attendanceRate, $score7d);
 
-            Log::debug("Data warehouse metrics for employee {$employeeId}: score7d={$score7d}, tasks7d={$tasks7d}");
+            // ── Last activity date ───────────────────────────────────────────────
+            $lastActivityDate = $records30d->sortByDesc('full_date')->first()?->full_date ?? 'N/A';
+
+            Log::debug("DW metrics for employee {$employeeId}: score7d={$score7d}, tasks7d={$tasks7d}, attendance={$attendanceRate}%");
 
             return [
-                'daysOfData' => count($scores7d),
-                'score30d' => $score30d,
-                'volatility' => $volatility,
-                'tasks7d' => $tasks7d,
-                'tasks30d' => $tasks30d,
-                'avgHours7d' => $avgHours7d,
-                'avgHours30d' => $avgHours30d,
-                'attendanceRate' => $attendanceRate,
-                'lateCheckins' => $lateCheckins,
-                'burnoutRisk' => $burnoutRisk,
-                'engagementScore' => $engagementScore,
-                'lastActivityDate' => $now->format('Y-m-d'),
+                'daysOfData'       => count($scores7d),
+                'score30d'         => $score30d,
+                'volatility'       => $this->calculateStdDev($scores7d),
+                'tasks7d'          => $tasks7d,
+                'tasks30d'         => $tasks30d,
+                'avgHours7d'       => round($avgHours7d, 1),
+                'avgHours30d'      => round($avgHours30d, 1),
+                'attendanceRate'   => $attendanceRate,
+                'lateCheckins'     => $lateCheckins,
+                'burnoutRisk'      => $burnoutRisk,
+                'engagementScore'  => $engagementScore,
+                'lastActivityDate' => $lastActivityDate,
             ];
+
         } catch (\Exception $e) {
-            Log::error("Failed to get metrics from data warehouse for employee {$employeeId}: " . $e->getMessage());
+            Log::error("DW metrics failed for employee {$employeeId}: " . $e->getMessage());
             return [];
         }
     }
