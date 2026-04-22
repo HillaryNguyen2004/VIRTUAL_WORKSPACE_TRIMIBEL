@@ -54,6 +54,7 @@ def predict_scaled(X: np.ndarray) -> float:
 def get_last_n_days(user_id, n=LOOKBACK):
     query = text("""
         SELECT
+            e.name AS employee_name,
             d.full_date,
             f.hours_worked, f.is_late, f.checked_in,
             f.had_day_off, f.tasks_completed,
@@ -71,6 +72,17 @@ def get_last_n_days(user_id, n=LOOKBACK):
     # Sort by date ascending for feature engineering (oldest to newest)
     df = df.sort_values('full_date').reset_index(drop=True)
     return df
+
+def get_employee_name(user_id):
+    query = text("""
+        SELECT name
+        FROM dim_employee
+        WHERE user_id = :user_id
+        LIMIT 1
+    """)
+    with pg_engine.connect() as conn:
+        row = conn.execute(query, {"user_id": user_id}).fetchone()
+    return row[0] if row and row[0] else None
 
 def engineer_features(df):
     """
@@ -124,10 +136,14 @@ def get_trend(current_score: float, predicted_score: float, scores: list) -> str
 @app.route("/predict/<int:user_id>", methods=["GET"])
 def predict(user_id):
     df = get_last_n_days(user_id, LOOKBACK)
+    employee_name = df['employee_name'].iloc[0] if 'employee_name' in df.columns and len(df) > 0 else get_employee_name(user_id)
 
     if len(df) < LOOKBACK:
         return jsonify({
-            "error": f"Not enough data. Need {LOOKBACK} days, have {len(df)}."
+            "error": f"Not enough data. Need {LOOKBACK} days, have {len(df)}.",
+            "user_id": user_id,
+            "name": employee_name,
+            "employee_name": employee_name,
         }), 400
 
     # Apply feature engineering (must match train_lstm.py exactly)
@@ -161,6 +177,8 @@ def predict(user_id):
 
     return jsonify({
         "user_id": user_id,
+        "name": employee_name,
+        "employee_name": employee_name,
         "productivity_score": pred_original / 100.0,  # Convert to 0-1 scale for Laravel consistency
         "predicted_productivity": pred_original,  # Keep original for backwards compatibility
         "current_productivity": round(float(current_score), 2),
@@ -185,7 +203,7 @@ def predict_all():
 
         # Get all active employees from fact table
         cursor.execute("""
-            SELECT DISTINCT user_id
+            SELECT DISTINCT user_id, name
             FROM dim_employee
             ORDER BY user_id
         """)
@@ -196,13 +214,16 @@ def predict_all():
         results = []
         errors = []
 
-        for (user_id,) in employees:
+        for user_id, employee_name in employees:
             try:
                 df = get_last_n_days(user_id, LOOKBACK)
+                if 'employee_name' in df.columns and len(df) > 0:
+                    employee_name = df['employee_name'].iloc[0] or employee_name
 
                 if len(df) < LOOKBACK:
                     errors.append({
                         "user_id": user_id,
+                        "name": employee_name,
                         "error": f"Insufficient data: {len(df)}/{LOOKBACK}"
                     })
                     continue
@@ -238,6 +259,8 @@ def predict_all():
 
                 results.append({
                     "user_id": user_id,
+                    "name": employee_name,
+                    "employee_name": employee_name,
                     "productivity_score": pred_original / 100.0,
                     "predicted_productivity": pred_original,
                     "current_productivity": round(float(current_score), 2),
@@ -253,6 +276,7 @@ def predict_all():
             except Exception as e:
                 errors.append({
                     "user_id": user_id,
+                    "name": employee_name,
                     "error": str(e)
                 })
 
