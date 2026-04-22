@@ -1,15 +1,22 @@
 from flask import Flask, jsonify
 import numpy as np
 import pandas as pd
-import psycopg2
 import joblib
 import threading
+import logging
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
 from tensorflow.keras.models import load_model
 import sys
 sys.path.append('../etl')
 from config import PG_CONFIG
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -133,153 +140,139 @@ def get_trend(current_score: float, predicted_score: float, scores: list) -> str
 
     return "stable"
 
-@app.route("/predict/<int:user_id>", methods=["GET"])
-def predict(user_id):
+def generate_prediction_for_user(user_id, employee_name=None):
+    """
+    Shared prediction logic used by both single and batch endpoints.
+    Ensures consistency across all prediction requests.
+    Returns a dict with prediction results or raises an exception.
+    """
+    logger.debug(f"[PREDICT] User {user_id}: Starting prediction")
+    
     df = get_last_n_days(user_id, LOOKBACK)
-    employee_name = df['employee_name'].iloc[0] if 'employee_name' in df.columns and len(df) > 0 else get_employee_name(user_id)
+    logger.debug(f"[PREDICT] User {user_id}: Retrieved {len(df)} rows")
+    
+    if 'employee_name' in df.columns and len(df) > 0:
+        retrieved_name = df['employee_name'].iloc[0]
+        if retrieved_name:
+            employee_name = retrieved_name
+    
+    if not employee_name:
+        employee_name = get_employee_name(user_id)
+    
+    logger.debug(f"[PREDICT] User {user_id}: Employee name = {employee_name}")
 
     if len(df) < LOOKBACK:
-        return jsonify({
-            "error": f"Not enough data. Need {LOOKBACK} days, have {len(df)}.",
-            "user_id": user_id,
-            "name": employee_name,
-            "employee_name": employee_name,
-        }), 400
+        raise ValueError(f"Insufficient data: {len(df)}/{LOOKBACK} days")
 
-    # Apply feature engineering (must match train_lstm.py exactly)
+    # Apply feature engineering
     df = engineer_features(df)
+    logger.debug(f"[PREDICT] User {user_id}: Raw scores = {df['productivity_score'].tolist()}")
 
     # Current score (most recent, after smoothing)
     current_score = df['productivity_score'].iloc[-1]
     
     # Get last 7 days of scores for trend analysis
     recent_scores = df['productivity_score'].iloc[-7:].tolist()
+    logger.debug(f"[PREDICT] User {user_id}: Current score = {current_score}")
 
     # Scale using saved scaler
     all_cols = FEATURES + [TARGET]
     df[all_cols] = scaler.transform(df[all_cols])
 
-    # Take last LOOKBACK records, features only, in chronological order
-    X = df[FEATURES].values[-LOOKBACK:, :]  # (LOOKBACK, n_features)
-    X = np.expand_dims(X, axis=0)            # (1, LOOKBACK, n_features)
+    # Take last LOOKBACK records, features only
+    X = df[FEATURES].values[-LOOKBACK:, :]
+    X = np.expand_dims(X, axis=0)
 
-    # Predict (returns scaled 0-1)
+    # Predict (using thread-safe model)
     pred_scaled = predict_scaled(X)
 
-    # Inverse transform → back to 0-100
+    # Inverse transform
     dummy = np.zeros((1, len(all_cols)))
     dummy[0, -1] = pred_scaled
     pred_original = scaler.inverse_transform(dummy)[0, -1]
     pred_original = round(float(np.clip(pred_original, 0, 100)), 2)
+    
+    logger.debug(f"[PREDICT] User {user_id}: Final prediction = {pred_original}")
 
-    # Determine trend using LSTM prediction vs current score
+    # Determine trend
     trend = get_trend(current_score, pred_original, recent_scores)
 
-    return jsonify({
+    return {
         "user_id": user_id,
         "name": employee_name,
         "employee_name": employee_name,
-        "productivity_score": pred_original / 100.0,  # Convert to 0-1 scale for Laravel consistency
-        "predicted_productivity": pred_original,  # Keep original for backwards compatibility
+        "productivity_score": pred_original / 100.0,
+        "predicted_productivity": pred_original,
         "current_productivity": round(float(current_score), 2),
-        "confidence": 0.85,  # Add confidence score
+        "confidence": 0.85,
         "trend": trend,
         "model_version": "v1.0",
         "features_used": FEATURES,
         "level": (
             "Excellent" if pred_original >= 80 else
-            "Good"      if pred_original >= 60 else
-            "Average"   if pred_original >= 40 else
+            "Good" if pred_original >= 60 else
+            "Average" if pred_original >= 40 else
             "Low"
         )
-    })
+    }
+
+@app.route("/predict/<int:user_id>", methods=["GET"])
+def predict(user_id):
+    try:
+        result = generate_prediction_for_user(user_id)
+        return jsonify(result)
+    except ValueError as e:
+        logger.warning(f"[PREDICT] User {user_id}: Validation error - {str(e)}")
+        return jsonify({
+            "error": str(e),
+            "user_id": user_id
+        }), 400
+    except Exception as e:
+        logger.error(f"[PREDICT] User {user_id}: Prediction failed - {str(e)}")
+        return jsonify({
+            "error": f"Prediction failed: {str(e)}",
+            "user_id": user_id
+        }), 500
 
 @app.route("/predict/all", methods=["POST"])
 def predict_all():
-    """Generate predictions for all employees"""
+    """Generate predictions for all employees using consistent SQLAlchemy connection"""
     try:
-        pg_conn = psycopg2.connect(**PG_CONFIG)
-        cursor = pg_conn.cursor()
-
-        # Get all active employees from fact table
-        cursor.execute("""
-            SELECT DISTINCT user_id, name
-            FROM dim_employee
-            ORDER BY user_id
-        """)
-        employees = cursor.fetchall()
-        cursor.close()
-        pg_conn.close()
-
+        # Use SQLAlchemy for consistency (same as /predict/<user_id>)
+        query = text("SELECT DISTINCT user_id, name FROM dim_employee ORDER BY user_id")
+        
+        logger.info("[PREDICT_ALL] Fetching all employees...")
+        with pg_engine.connect() as conn:
+            employees_df = pd.read_sql(query, conn)
+        
+        employees = list(employees_df.itertuples(index=False, name=None))
+        logger.info(f"[PREDICT_ALL] Found {len(employees)} employees")
+        
         results = []
         errors = []
 
-        for user_id, employee_name in employees:
+        for idx, (user_id, employee_name) in enumerate(employees):
             try:
-                df = get_last_n_days(user_id, LOOKBACK)
-                if 'employee_name' in df.columns and len(df) > 0:
-                    employee_name = df['employee_name'].iloc[0] or employee_name
-
-                if len(df) < LOOKBACK:
-                    errors.append({
-                        "user_id": user_id,
-                        "name": employee_name,
-                        "error": f"Insufficient data: {len(df)}/{LOOKBACK}"
-                    })
-                    continue
-
-                # Apply feature engineering (must match train_lstm.py exactly)
-                df = engineer_features(df)
-
-                # Current score (most recent, after smoothing)
-                current_score = df['productivity_score'].iloc[-1]
-                
-                # Get last 7 days of scores for trend analysis
-                recent_scores = df['productivity_score'].iloc[-7:].tolist()
-
-                # Scale using saved scaler
-                all_cols = FEATURES + [TARGET]
-                df[all_cols] = scaler.transform(df[all_cols])
-
-                # Take last LOOKBACK records, features only, in chronological order
-                X = df[FEATURES].values[-LOOKBACK:, :]
-                X = np.expand_dims(X, axis=0)
-
-                # Predict
-                pred_scaled = predict_scaled(X)
-
-                # Inverse transform
-                dummy = np.zeros((1, len(all_cols)))
-                dummy[0, -1] = pred_scaled
-                pred_original = scaler.inverse_transform(dummy)[0, -1]
-                pred_original = round(float(np.clip(pred_original, 0, 100)), 2)
-
-                # Determine trend using LSTM prediction vs current score
-                trend = get_trend(current_score, pred_original, recent_scores)
-
-                results.append({
-                    "user_id": user_id,
-                    "name": employee_name,
-                    "employee_name": employee_name,
-                    "productivity_score": pred_original / 100.0,
-                    "predicted_productivity": pred_original,
-                    "current_productivity": round(float(current_score), 2),
-                    "confidence": 0.85,
-                    "trend": trend,
-                    "level": (
-                        "Excellent" if pred_original >= 80 else
-                        "Good" if pred_original >= 60 else
-                        "Average" if pred_original >= 40 else
-                        "Low"
-                    )
-                })
-            except Exception as e:
+                logger.debug(f"[PREDICT_ALL] Processing {idx+1}/{len(employees)}: user_id={user_id}")
+                result = generate_prediction_for_user(user_id, employee_name)
+                results.append(result)
+            except ValueError as e:
+                logger.warning(f"[PREDICT_ALL] User {user_id}: Validation error - {str(e)}")
                 errors.append({
                     "user_id": user_id,
                     "name": employee_name,
                     "error": str(e)
                 })
+            except Exception as e:
+                logger.error(f"[PREDICT_ALL] User {user_id}: Prediction error - {str(e)}")
+                errors.append({
+                    "user_id": user_id,
+                    "name": employee_name,
+                    "error": f"Prediction error: {str(e)}"
+                })
 
+        logger.info(f"[PREDICT_ALL] Completed: {len(results)} successful, {len(errors)} failed")
+        
         return jsonify({
             "total_employees": len(employees),
             "successful": len(results),
@@ -289,6 +282,7 @@ def predict_all():
         })
 
     except Exception as e:
+        logger.error(f"[PREDICT_ALL] Fatal error: {str(e)}")
         return jsonify({"error": f"Failed to generate predictions: {str(e)}"}), 500
 
 @app.route("/health", methods=["GET"])
