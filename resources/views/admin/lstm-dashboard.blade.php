@@ -10,7 +10,7 @@
             <p class="dash-subtitle">LSTM-powered predictions &middot; Last run <span id="last-run">—</span></p>
         </div>
         <div style="display:flex;gap:8px">
-            <button id="btn-export" class="btn-secondary">Export CSV</button>
+            <button id="btn-export" class="btn-secondary">Export Excel</button>
             <button id="btn-refresh" class="btn-primary">
                 <svg id="refresh-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                     <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/>
