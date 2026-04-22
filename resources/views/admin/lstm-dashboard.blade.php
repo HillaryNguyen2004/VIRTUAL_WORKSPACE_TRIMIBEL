@@ -211,6 +211,7 @@
                 <thead>
                     <tr>
                         <th>Employee</th>
+                        <th>User ID</th>
                         <th>Department</th>
                         <th>Current</th>
                         <th>Predicted</th>

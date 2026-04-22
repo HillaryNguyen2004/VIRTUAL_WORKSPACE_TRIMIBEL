@@ -127,7 +127,7 @@
             <div class="emp-grid">
                 <div>
                     <div class="emp-name">${e.name}</div>
-                    <div class="emp-dept">${e.department}</div>
+                    <div class="emp-dept">ID: ${e.id} · ${e.department}</div>
                     <button type="button" class="btn-chart mt-1"
                         data-id="${e.id}" data-name="${e.name}"
                         data-current="${e.currentScore}" data-predicted="${e.predictedScore}"
@@ -585,7 +585,7 @@
 
         const tbody = document.getElementById('all-tbody');
         if (!rows.length) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-400 py-8 text-sm">No employees match these filters.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-gray-400 py-8 text-sm">No employees match these filters.</td></tr>';
             return;
         }
         tbody.innerHTML = rows.map(e => {
@@ -599,6 +599,7 @@
                         <span class="font-semibold text-gray-900 text-sm">${e.name}</span>
                     </div>
                 </td>
+                <td class="px-3 py-2 text-gray-500 text-sm font-mono">${e.id}</td>
                 <td class="px-3 py-2 text-gray-500 text-sm">${e.department}</td>
                 <td class="px-3 py-2">
                     <div class="flex items-center gap-2">
