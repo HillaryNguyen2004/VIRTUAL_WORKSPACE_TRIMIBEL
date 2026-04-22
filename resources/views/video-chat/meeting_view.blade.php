@@ -58,7 +58,11 @@
                 </div>
 
                 <video id="activeSpeakerVideo" src="" autoplay class="relative z-10 object-contain w-full h-full"></video>
-                
+                <div id="caption-box" class="absolute bottom-10 left-1/2 -translate-x-1/2 
+                bg-white/10 backdrop-blur-md border border-white/20 
+                px-6 py-3 rounded-2xl shadow-xl text-white text-lg font-medium 
+                transition-all duration-300 opacity-0">
+                </div>
                 <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 transition-all duration-300 opacity-0 group-hover:opacity-100 focus-within:opacity-100">
                     <div class="flex items-center justify-center gap-4 bg-gray-900/60 backdrop-blur-md border border-white/10 shadow-xl rounded-2xl p-3">
                         <button id='toggleMicrophone' class="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 shadow-lg bg-gray-700 text-white hover:bg-gray-600 border border-white/5">

@@ -69,7 +69,7 @@
             <div>
                 <div class="flex justify-between items-center mb-3 cursor-pointer group" onclick="toggleCalendarsList()">
                     <h4 class="text-md md:text-lg font-semibold text-main">{{ __('calendar.calendars') }}</h4>
-                    <svg id="calendars-toggle-icon" class="w-4 h-4 text-muted-400 group-hover:text-primary transition-colors transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    <svg id="calendars-toggle-icon" class="w-4 h-4 text-muted-400 group-hover:text-primary transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
                 <ul id="calendars-list" class="space-y-3">
                     <li class="flex items-center gap-3">
@@ -88,7 +88,7 @@
             <div>
                 <div class="flex justify-between items-center mb-3 cursor-pointer group" onclick="toggleCategoriesList()">
                     <h4 class="text-md md:text-lg font-semibold text-main">{{ __('calendar.categories') }}</h4>
-                    <svg id="categories-toggle-icon" class="w-4 h-4 text-muted-400 group-hover:text-primary transition-colors transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    <svg id="categories-toggle-icon" class="w-4 h-4 text-muted-400 group-hover:text-primary transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
                 <ul id="categories-list" class="space-y-3">
                     <li class="flex items-center gap-3 group cursor-pointer category-filter-item" data-category="tasks">

@@ -373,7 +373,7 @@
             w-0 h-full flex flex-col shrink-0 
             bg-white border-l border-muted-200 shadow-2xl shadow-primary/15
             transition-[width] duration-300 ease-in-out overflow-hidden
-            absolute right-0 top-0 z-40
+            absolute right-0 top-0 z-30
             xl:static xl:z-auto
         ">
 

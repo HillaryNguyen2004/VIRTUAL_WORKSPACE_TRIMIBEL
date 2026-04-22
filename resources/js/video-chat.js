@@ -175,9 +175,11 @@ document.getElementById('btnFindSlots').addEventListener('click', async function
 
 // 2. Book the Meeting
 document.getElementById('btnBookSmartMeeting').addEventListener('click', async function() {
-    if(!selectedSlot) return alert('Please select a time slot.');
+    const selectedRadio = document.querySelector('input[name="smartSlot"]:checked');
+    
+    if(!selectedRadio) return alert('Please select a time slot.');
 
-    const slotData = JSON.parse(selectedSlot);
+    const slotData = JSON.parse(selectedRadio.value);
     const attendees = smartSelectedAttendees.map(user => user.id);        
     const title = document.getElementById('smartTitle').value;
     const btn = this;
@@ -202,6 +204,7 @@ document.getElementById('btnBookSmartMeeting').addEventListener('click', async f
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json', 
+                'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
             },
             body: JSON.stringify({
@@ -213,14 +216,30 @@ document.getElementById('btnBookSmartMeeting').addEventListener('click', async f
             })
         });
 
-        let bookData = await bookResponse.json();
+        // Get response text first to debug
+        const responseText = await bookResponse.text();
+        console.log('Book response status:', bookResponse.status);
+        console.log('Book response text:', responseText);
+
+        if (!bookResponse.ok) {
+            try {
+                const errData = JSON.parse(responseText);
+                throw new Error(errData.message || `Server error: ${bookResponse.status}`);
+            } catch (parseErr) {
+                throw new Error(`Server rejected the booking (${bookResponse.status}): ${responseText}`);
+            }
+        }
+
+        let bookData = JSON.parse(responseText);
         if(bookData.status === 'success') {
             alert('Meeting booked successfully and added to all calendars!');
             window.location.reload();
+        } else {
+            throw new Error(bookData.message || 'Booking failed - unexpected response');
         }
     } catch (e) {
         console.error(e);
-        alert('Error booking meeting.');
+        alert('Error: ' + e.message);
     } finally {
         btn.innerHTML = 'Book Selected Slot';
         btn.disabled = false;
