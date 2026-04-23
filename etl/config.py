@@ -16,5 +16,5 @@ PG_CONFIG = {
     "dbname": os.getenv("PG_DB_NAME", "dw_productivity"),
     "port": int(os.getenv("PG_DB_PORT", 5432)),
     "user": os.getenv("PG_DB_USER", "postgres"),
-    "password": os.getenv("PG_DB_PASSWORD", "mkhoa6868")
+    "password": os.getenv("PG_DB_PASSWORD", "123456")
 }
