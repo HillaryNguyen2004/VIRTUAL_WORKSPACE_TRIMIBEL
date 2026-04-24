@@ -469,43 +469,24 @@ class LSTMDashboardController extends Controller
                 ->first();
 
             if ($cached) {
-                Log::debug("Using cached prediction for employee {$employeeId}: score={$cached->predicted_score}");
                 return [
-                    'score' => round($cached->predicted_score, 1),
-                    'confidence' => round($cached->confidence, 2)
+                    'score'      => round($cached->predicted_score, 1),
+                    'confidence' => round($cached->confidence,      2),
                 ];
             }
 
-            Log::debug("No cache found for employee {$employeeId}, calling LSTM API...");
-
-            if (!$this->isLSTMApiHealthy()) {
-                Log::warning("LSTM API unavailable while fetching employee {$employeeId} prediction.");
-                return ['score' => 0, 'confidence' => 0];
-            }
-
-            // Fallback: Call LSTM API
-            $response = Http::connectTimeout(2)
-                ->timeout(5)
+            // No cache — call API directly
+            $response = Http::connectTimeout(2)->timeout(5)
                 ->get("{$this->lstmApiUrl}/predict/{$employeeId}");
-
-            Log::debug("LSTM API response status: " . $response->status());
 
             if ($response->successful()) {
                 $data = $response->json();
-                Log::debug("LSTM API response for {$employeeId}: " . $response->body());
-
-                // Verify scale — if productivity_score is 0-1, multiply by 100; if 0-100, use as-is
-                $rawScore = $data['productivity_score'] ?? 0;
-                $predictedScore = $rawScore > 1 ? $rawScore : $rawScore * 100;
-                Log::info("Raw API score: {$rawScore}, Final: {$predictedScore}");
-
+                $this->storePrediction($employeeId, $data); // save to cache
                 return [
-                    'score' => round($predictedScore, 1),
-                    'confidence' => round($data['confidence'] ?? 0.85, 2)
+                    'score'      => round($data['predicted_productivity'] ?? 0, 1),
+                    'confidence' => round($data['confidence']             ?? 0.85, 2),
                 ];
             }
-
-            Log::warning("LSTM API returned non-successful status: " . $response->status());
 
         } catch (\Exception $e) {
             Log::error("LSTM API Error for employee {$employeeId}: " . $e->getMessage());
@@ -530,31 +511,30 @@ class LSTMDashboardController extends Controller
     private function getCurrentProductivityScore(int $employeeId): float
     {
         try {
-            // Use real-time calculation for current productivity score
-            $productivityService = app(ProductivityCalculatorService::class);
-            $currentScore = $productivityService->calculateCurrentProductivityScore($employeeId, 7);
+            // Always read from cache — populated during refresh
+            $cached = DB::table('lstm_predictions')
+                ->where('employee_id', $employeeId)
+                ->first();
 
-            Log::info("Real-time productivity calculated for employee {$employeeId}: {$currentScore}");
-            return $currentScore;
+            if ($cached && $cached->current_productivity > 0) {
+                return round($cached->current_productivity, 1);
+            }
+
+            // No cache — call API directly and store
+            $response = Http::connectTimeout(2)->timeout(5)
+                ->get("{$this->lstmApiUrl}/predict/{$employeeId}");
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $this->storePrediction($employeeId, $data);
+                return round($data['current_productivity'] ?? 0, 1);
+            }
 
         } catch (\Exception $e) {
-            Log::error("Real-time productivity calculation failed for employee {$employeeId}: " . $e->getMessage());
-
-            // Fallback to PostgreSQL data warehouse if available
-            try {
-                return $this->getProductivityFromDataWarehouse($employeeId);
-            } catch (\Exception $e2) {
-                Log::error("Data warehouse fallback failed for employee {$employeeId}: " . $e2->getMessage());
-
-                // Final fallback: use cached predictions but log the issue
-                Log::warning("Using cached predictions as final fallback for employee {$employeeId}");
-                $cached = DB::table('lstm_predictions')
-                    ->where('employee_id', $employeeId)
-                    ->value('predicted_score');
-
-                return round($cached ?? 0, 1);
-            }
+            Log::error("getCurrentProductivityScore failed for employee {$employeeId}: " . $e->getMessage());
         }
+
+        return 0;
     }
 
     /**
@@ -595,25 +575,23 @@ class LSTMDashboardController extends Controller
     private function storePrediction(int $employeeId, array $prediction): void
     {
         try {
-            // Store prediction in cache table for future reference
-            // Verify and convert scale — if 0-1, multiply by 100; if 0-100, use as-is
-            $rawScore = $prediction['productivity_score'] ?? 0;
-            $predictedScore = $rawScore > 1 ? $rawScore : $rawScore * 100;
-
-            Log::debug("Storing prediction for employee {$employeeId}: score={$predictedScore}, confidence={$prediction['confidence']}");
+            // Use predicted_productivity directly — already 0-100 scale
+            $predictedScore  = $prediction['predicted_productivity'] ?? 0;
+            $currentScore    = $prediction['current_productivity']   ?? 0;
 
             DB::table('lstm_predictions')->updateOrInsert(
                 ['employee_id' => $employeeId],
                 [
-                    'predicted_score' => round($predictedScore, 2),
-                    'confidence' => $prediction['confidence'] ?? 0,
-                    'predicted_at' => Carbon::now(),
-                    'created_at' => Carbon::now(),
-                    'updated_at' => Carbon::now()
+                    'predicted_score'      => round($predictedScore, 2),
+                    'current_productivity' => round($currentScore,   2),
+                    'confidence'           => $prediction['confidence'] ?? 0.85,
+                    'predicted_at'         => Carbon::now(),
+                    'updated_at'           => Carbon::now(),
+                    'created_at'           => Carbon::now(),
                 ]
             );
 
-            Log::debug("Successfully stored prediction for employee {$employeeId}");
+            Log::debug("Stored prediction for employee {$employeeId}: current={$currentScore}, predicted={$predictedScore}");
 
         } catch (\Exception $e) {
             Log::error("Error storing prediction for employee {$employeeId}: " . $e->getMessage());
