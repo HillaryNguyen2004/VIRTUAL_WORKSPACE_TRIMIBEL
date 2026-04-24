@@ -59,9 +59,9 @@ from pathlib import Path
 # DEFAULTS
 # ─────────────────────────────────────────────────────────
 DEFAULT_NUM_USERS    = 30
-DEFAULT_NUM_PROJECTS = 300
+DEFAULT_NUM_PROJECTS = 350
 DEFAULT_START_DATE   = datetime(2018, 1, 1)
-DEFAULT_END_DATE     = datetime(2026, 4, 30)
+DEFAULT_END_DATE     = datetime(2026, 9, 30)
 
 PASSWORD_HASH = "$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi"
 
@@ -270,9 +270,14 @@ def generate_sql(*, num_users: int, num_projects: int,
     dept_staff:  dict[int, int]  = {}
     user_records: list[dict]      = []
     uid = 1
+    used_names: set = set()  # Track used names to prevent duplicates
 
     # Admin
-    name    = f"{random.choice(LAST_NAMES)} {random.choice(FIRST_NAMES)}"
+    while True:
+        name = f"{random.choice(LAST_NAMES)} {random.choice(FIRST_NAMES)}"
+        if name not in used_names:
+            used_names.add(name)
+            break
     created = rand_date_dt(start_date, start_date + timedelta(days=30))
     sql.append(
         f"INSERT INTO users (id,department_id,name,email,username,password,"
@@ -287,7 +292,11 @@ def generate_sql(*, num_users: int, num_projects: int,
 
     # 1 staff per dept
     for dept_id in sorted(DEPARTMENTS.keys()):
-        name    = f"{random.choice(LAST_NAMES)} {random.choice(FIRST_NAMES)}"
+        while True:
+            name = f"{random.choice(LAST_NAMES)} {random.choice(FIRST_NAMES)}"
+            if name not in used_names:
+                used_names.add(name)
+                break
         uname   = f"user{uid}"
         created = rand_date_dt(start_date, start_date + timedelta(days=60))
         sql.append(
@@ -308,7 +317,11 @@ def generate_sql(*, num_users: int, num_projects: int,
     while uid <= num_users:
         dept_id     = random.choice(dept_list)
         team_leader = dept_staff[dept_id]
-        name        = f"{random.choice(LAST_NAMES)} {random.choice(FIRST_NAMES)}"
+        while True:
+            name = f"{random.choice(LAST_NAMES)} {random.choice(FIRST_NAMES)}"
+            if name not in used_names:
+                used_names.add(name)
+                break
         uname       = f"user{uid}"
         created     = rand_date_dt(start_date + timedelta(days=30),
                                    end_date - timedelta(days=90))
@@ -420,9 +433,9 @@ def generate_sql(*, num_users: int, num_projects: int,
             if random.random() < params["absent_rate"]:
                 sql.append(
                     f"INSERT INTO check_ins "
-                    f"(id,user_name,date,check_in_time,check_out_time,"
+                    f"(id,user_id,user_name,date,check_in_time,check_out_time,"
                     f"working_hours,is_late,created_at,updated_at) VALUES "
-                    f"({checkin_id},'{esc(u['name'])}','{d}',"
+                    f"({checkin_id},{u['id']},'{esc(u['name'])}','{d}',"
                     f"NULL,NULL,NULL,0,NOW(),NOW());"
                 )
                 checkin_id += 1
@@ -452,9 +465,9 @@ def generate_sql(*, num_users: int, num_projects: int,
             hours = calc_hours(check_in, check_out)
             sql.append(
                 f"INSERT INTO check_ins "
-                f"(id,user_name,date,check_in_time,check_out_time,"
+                f"(id,user_id,user_name,date,check_in_time,check_out_time,"
                 f"working_hours,is_late,created_at,updated_at) VALUES "
-                f"({checkin_id},'{esc(u['name'])}','{d}',"
+                f"({checkin_id},{u['id']},'{esc(u['name'])}','{d}',"
                 f"'{check_in}','{check_out}',{hours},{int(is_late)},NOW(),NOW());"
             )
             checkin_id += 1

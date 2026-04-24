@@ -36,20 +36,28 @@ scaler = joblib.load("models/scaler.pkl")
 model_lock = threading.Lock()
 
 FEATURES = [
+    # Core attendance
     'hours_worked',
     'is_late',
     'checked_in',
     'had_day_off',
+    # Task signals
     'tasks_completed',
     'avg_task_score',
     'avg_task_percentage',
     'has_task_signal',
-    'avg_score_7d',
-    'avg_score_30d',
-    'score_trend'
+    'task_workload',
+    # Temporal lag features
+    'score_yesterday',
+    'score_3d_ago',
+    'score_7d_ago',
+    'score_delta_1d',
+    'score_delta_7d',
+    # Behavioral patterns
+    'checkin_streak',
 ]
 TARGET   = 'productivity_score'
-LOOKBACK = 7  # Match training configuration (train_lstm.py line 57)
+LOOKBACK = 14  # Match training configuration (train_lstm.py)
 
 def predict_scaled(X: np.ndarray) -> float:
     # Keras/TensorFlow inference can fail under concurrent Flask requests.
@@ -101,18 +109,31 @@ def engineer_features(df):
     df['checked_in']  = df['checked_in'].astype(int)
     df['had_day_off'] = df['had_day_off'].astype(int)
 
-    # Add has_task_signal feature
-    df['has_task_signal'] = ((df['avg_task_score'] > 0) | 
-                              (df['avg_task_percentage'] > 0) | 
-                              (df['tasks_completed'] > 0)).astype(int)
+    # Task signal
+    df['has_task_signal'] = (
+        (df['avg_task_score'] > 0) |
+        (df['avg_task_percentage'] > 0) |
+        (df['tasks_completed'] > 0)
+    ).astype(int)
 
-    # Add lag features (rolling averages) to capture temporal trends
-    df['avg_score_7d']  = df['productivity_score'].rolling(7, min_periods=1).mean()
-    df['avg_score_30d'] = df['productivity_score'].rolling(30, min_periods=1).mean()
-    df['score_trend']   = df['avg_score_7d'] - df['avg_score_30d']
+    # Task workload
+    df['task_workload'] = (
+        df['tasks_completed'] + df['avg_task_percentage'] / 100.0
+    )
 
-    # Smooth the target to remove deterministic formula noise
-    df['productivity_score'] = df['productivity_score'].rolling(3, min_periods=1).mean()
+    # Lag features — must match train_lstm.py exactly
+    df['score_yesterday'] = df['productivity_score'].shift(1)
+    df['score_3d_ago']    = df['productivity_score'].shift(3)
+    df['score_7d_ago']    = df['productivity_score'].shift(7)
+    df['score_delta_1d']  = df['score_yesterday'] - df['score_3d_ago']
+    df['score_delta_7d']  = df['score_3d_ago']    - df['score_7d_ago']
+
+    # Checkin streak
+    df['checkin_streak'] = (
+        df['checked_in']
+        .groupby((df['checked_in'] != df['checked_in'].shift()).cumsum())
+        .cumcount() + 1
+    ) * df['checked_in']
 
     df.fillna(0, inplace=True)
     return df

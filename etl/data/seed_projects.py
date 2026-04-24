@@ -17,9 +17,9 @@ engine = create_engine(
     f"mysql+pymysql://{MYSQL_CONFIG['user']}:{MYSQL_CONFIG['password']}@{MYSQL_CONFIG['host']}/{MYSQL_CONFIG['database']}"
 )
 
-DEFAULT_NUM_PROJECTS = 300
+DEFAULT_NUM_PROJECTS = 350
 START_DATE = datetime(2018, 1, 1)
-END_DATE = datetime(2026, 4, 30)
+END_DATE = datetime(2026, 9, 30)
 
 TASK_VERBS = [
     "Implement", "Design", "Review", "Test", "Refactor",
@@ -149,7 +149,7 @@ def generate_projects_sql(*, num_projects: int, teams: dict[int, list[int]]) -> 
 
         pct = random.choice(perf_pcts[eff_prof])
 
-        score = 0
+        score = 0 # fix diem trung binh cho subtask
         if pct == 100:
             if eff_prof == "high_performer":
                 score = random.randint(80, 100)
@@ -234,7 +234,9 @@ def generate_projects_sql(*, num_projects: int, teams: dict[int, list[int]]) -> 
 
                         if sub_pcts:
                             t_pct = pct_avg(sub_pcts)
-                            _, t_score = get_task_outcome(t_user, curr_task_start.date()) if t_pct == 100 else (0, 0)
+                            # Parent task score = average of all subtask scores
+                            sub_scores = [s['score'] for s in sub_rows if s['score'] > 0]
+                            t_score = round(sum(sub_scores) / len(sub_scores)) if sub_scores else 0
                         else:
                             t_pct, t_score = get_task_outcome(t_user, curr_task_start.date())
 
