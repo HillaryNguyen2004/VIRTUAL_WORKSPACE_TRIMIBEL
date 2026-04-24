@@ -166,7 +166,7 @@
         <div class="panel" style="grid-column: span 2">
             <div class="panel-head">
                 <span class="panel-title">Model transparency</span>
-                <span class="panel-badge neutral" id="model-version-badge">LSTM v1.0 · LOOKBACK=7</span>
+                <span class="panel-badge neutral" id="model-version-badge">LSTM v1.0 · LOOKBACK=14</span>
             </div>
             <div class="model-inner">
                 <div>

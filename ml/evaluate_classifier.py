@@ -1,8 +1,9 @@
 import numpy as np
 import pandas as pd
-import psycopg2
 import joblib
 import sys
+from datetime import date
+from sqlalchemy import create_engine
 sys.path.append('../etl')
 from config import PG_CONFIG
 from tensorflow.keras.models import load_model
@@ -14,17 +15,36 @@ model  = load_model("models/lstm_productivity.keras")
 scaler = joblib.load("models/scaler.pkl")
 
 FEATURES = [
-    'hours_worked', 'is_late', 'checked_in', 'had_day_off',
-    'tasks_completed', 'avg_task_score', 'avg_task_percentage',
-    'has_task_signal', 'avg_score_7d', 'avg_score_30d', 'score_trend'
+    # Must match train_lstm.py EXACTLY
+    'hours_worked',
+    'is_late',
+    'checked_in',
+    'had_day_off',
+    'tasks_completed',
+    'avg_task_score',
+    'avg_task_percentage',
+    'has_task_signal',
+    'task_workload',
+    'score_yesterday',
+    'score_3d_ago',
+    'score_7d_ago',
+    'score_delta_1d',
+    'score_delta_7d',
+    'checkin_streak',
 ]
 TARGET   = 'productivity_score'
-LOOKBACK = 7
+LOOKBACK = 14  # must match train_lstm.py
 
 # ─────────────────────────────────────────────────────────
 # 2. Pull data from PostgreSQL
 # ─────────────────────────────────────────────────────────
-pg = psycopg2.connect(**PG_CONFIG)
+TRAINING_CUTOFF = date.today()
+
+engine = create_engine(
+    f"postgresql://{PG_CONFIG['user']}:{PG_CONFIG['password']}"
+    f"@{PG_CONFIG['host']}:{PG_CONFIG['port']}/{PG_CONFIG['dbname']}"
+)
+
 df = pd.read_sql("""
     SELECT e.user_id, d.full_date,
            f.hours_worked, f.is_late, f.checked_in, f.had_day_off,
@@ -34,29 +54,38 @@ df = pd.read_sql("""
     JOIN dim_employee e ON f.employee_sk = e.employee_sk
     JOIN dim_date     d ON f.date_sk     = d.date_sk
     ORDER BY e.user_id, d.full_date
-""", pg)
-pg.close()
+""", engine)
+
+df['full_date'] = pd.to_datetime(df['full_date'])
+df = df[df['full_date'] <= pd.Timestamp(TRAINING_CUTOFF)]
 
 df['is_late']     = df['is_late'].astype(int)
 df['checked_in']  = df['checked_in'].astype(int)
 df['had_day_off'] = df['had_day_off'].astype(int)
 
-# Must match train_lstm.py exactly ──────────────────────────
-# Add has_task_signal feature to help model understand formula branch switching
-df['has_task_signal'] = ((df['avg_task_score'] > 0) | 
-                          (df['avg_task_percentage'] > 0) | 
-                          (df['tasks_completed'] > 0)).astype(int)
+# ── Must match train_lstm.py exactly ──────────────────────
+df['has_task_signal'] = (
+    (df['avg_task_score'] > 0) |
+    (df['avg_task_percentage'] > 0) |
+    (df['tasks_completed'] > 0)
+).astype(int)
 
-# Add lag features (rolling averages) to capture temporal trends
-df = df.sort_values(['user_id', 'full_date'])
-df['avg_score_7d']  = df.groupby('user_id')['productivity_score'].transform(lambda x: x.rolling(7, min_periods=1).mean())
-df['avg_score_30d'] = df.groupby('user_id')['productivity_score'].transform(lambda x: x.rolling(30, min_periods=1).mean())
-df['score_trend']   = df['avg_score_7d'] - df['avg_score_30d']
+df['score_yesterday'] = df.groupby('user_id')['productivity_score'].shift(1)
+df['score_3d_ago']    = df.groupby('user_id')['productivity_score'].shift(3)
+df['score_7d_ago']    = df.groupby('user_id')['productivity_score'].shift(7)
+df['score_delta_1d']  = df['score_yesterday'] - df['score_3d_ago']
+df['score_delta_7d']  = df['score_3d_ago']    - df['score_7d_ago']
 
-# Smooth the target to remove deterministic formula noise
-df['productivity_score'] = df.groupby('user_id')['productivity_score'].transform(lambda x: x.rolling(3, min_periods=1).mean())
+df['checkin_streak'] = df.groupby('user_id')['checked_in'].transform(
+    lambda x: x.groupby((x != x.shift()).cumsum()).cumcount() + 1
+) * df['checked_in']
+
+df['task_workload'] = (
+    df['tasks_completed'] + df['avg_task_percentage'] / 100.0
+)
 
 df.fillna(0, inplace=True)
+# ──────────────────────────────────────────────────────────
 
 # ─────────────────────────────────────────────────────────
 # 3. Scale and build sequences
@@ -64,18 +93,32 @@ df.fillna(0, inplace=True)
 all_cols = FEATURES + [TARGET]
 df[all_cols] = scaler.transform(df[all_cols])
 
-X_list, y_list = [], []
+# ── Build sequences WITH date tracking ────────────────────
+X_list, y_list, date_list = [], [], []
+
 for uid, grp in df.groupby('user_id'):
-    grp    = grp.sort_values('full_date').reset_index(drop=True)
-    vals   = grp[all_cols].values
+    grp   = grp.sort_values('full_date').reset_index(drop=True)
+    vals  = grp[all_cols].values
+    dates = grp['full_date'].values
     if len(vals) < LOOKBACK + 1:
         continue
     for i in range(LOOKBACK, len(vals)):
         X_list.append(vals[i - LOOKBACK:i, :-1])
         y_list.append(vals[i, -1])
+        date_list.append(dates[i])
 
 X = np.array(X_list)
 y = np.array(y_list)
+date_idx = pd.Series([pd.Timestamp(d) for d in date_list])
+
+# ── Use ONLY the test set — same split as train_lstm.py ───
+val_end   = pd.Timestamp('2026-01-31')
+test_mask = date_idx > val_end
+
+X = X[test_mask]
+y = y[test_mask]
+
+print(f"Evaluating on {len(X)} test sequences (after {val_end.date()})")
 
 # ─────────────────────────────────────────────────────────
 # 4. Predict and inverse-scale back to 0-100
@@ -188,6 +231,17 @@ else:
     print(f"  R² = {r2:.4f}  →  Low variance explained — check data quality")
 
 if accuracy >= 0.80:
-    print(f"  Accuracy = {accuracy*100:.1f}%  →  Correctly classifies most employees ✓")
+    verdict_acc = "EXCELLENT — highly trustworthy for thesis"
+elif accuracy >= 0.70:
+    verdict_acc = "GOOD — trustworthy, suitable for thesis"
+elif accuracy >= 0.60:
+    verdict_acc = "ACCEPTABLE — usable with caveats in thesis"
 else:
-    print(f"  Accuracy = {accuracy*100:.1f}%  →  Misclassifies too many — check class thresholds")
+    verdict_acc = "POOR — retrain or review data before using"
+
+print(f"  Accuracy = {accuracy*100:.1f}%  →  {verdict_acc}")
+
+# Note: MAE context for regression-to-classification
+print(f"\n  Note: MAE of {mae:.1f} pts on a 0-100 scale.")
+print(f"  Classification accuracy limited by {mae:.1f}pt error near class boundaries.")
+print(f"  Regression performance (MAE/R²) is the primary metric for this model.")

@@ -1,0 +1,8 @@
+{
+  "val_loss": 0.0358,
+  "best_mae": 0.1329,
+  "epochs": 33,
+  "confidence": 0.85,
+  "accuracy": 86.7,
+  "lookback": 14
+}
