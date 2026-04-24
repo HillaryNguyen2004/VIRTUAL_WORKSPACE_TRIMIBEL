@@ -5,6 +5,7 @@ import joblib
 import os
 from datetime import date
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.utils.class_weight import compute_class_weight
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout, Input
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
@@ -105,6 +106,9 @@ df['task_workload'] = (
     df['tasks_completed'] + df['avg_task_percentage'] / 100.0
 )
 
+# ── Day of week feature ─────────────────────────────────────
+df['day_of_week'] = pd.to_datetime(df['full_date']).dt.dayofweek  # 0=Mon, 6=Sun
+
 df.fillna(0, inplace=True)
 
 # ════════════════════════════════════════════════════════════
@@ -130,6 +134,7 @@ FEATURES = [
     'score_delta_7d',
     # Behavioral patterns
     'checkin_streak',
+    'day_of_week',
 ]
 
 print(f"Features: {len(FEATURES)} → {FEATURES}")
@@ -173,9 +178,28 @@ if len(X_list) == 0:
     exit()
 
 X = np.array(X_list)
-y = np.array(y_list)
+y = np.array(y_list)  # currently scaled scores
 date_idx = pd.Series([pd.Timestamp(d) for d in date_list])
 print(f"Training shape → X: {X.shape}, y: {y.shape}")
+
+# ════════════════════════════════════════════════════════════
+# 5.5 CONVERT y TO CLASS INDICES (Step 3)
+#      Switch from regression (scaled scores) to classification
+#      (integer class indices: 0=Low, 1=Medium, 2=High)
+# ════════════════════════════════════════════════════════════
+def to_class_idx(score):
+    """Convert productivity score (0-100) to class index."""
+    if score >= 75: return 2     # High
+    if score >= 55: return 1     # Medium
+    return 0                     # Low
+
+# Inverse-scale y_list back to scores, then convert to class indices
+y_raw = np.array([scaler.inverse_transform(
+    np.concatenate([np.zeros((1, len(FEATURES))),
+    [[v]]], axis=1))[:, -1][0] for v in y_list])
+y = np.array([to_class_idx(s) for s in y_raw])
+print(f"Converted to class indices: {np.bincount(y)}  (Low, Med, High)")
+print(f"Training shape (updated) → X: {X.shape}, y: {y.shape}")
 
 # ════════════════════════════════════════════════════════════
 # 6. TIME-BASED TRAIN / VALIDATION / TEST SPLIT
@@ -200,6 +224,17 @@ print(f"Val:   {len(X_val)} sequences ({train_end.date()} to {val_end.date()})")
 print(f"Test:  {len(X_test)} sequences (after {val_end.date()})")
 
 # ════════════════════════════════════════════════════════════
+# 6.5 COMPUTE CLASS WEIGHTS (Step 2)
+#     Handle class imbalance by weighting rare classes higher
+# ════════════════════════════════════════════════════════════
+# y_train is already class indices (0, 1, 2), so compute directly
+weights = compute_class_weight('balanced',
+                               classes=np.array([0, 1, 2]),
+                               y=y_train)
+class_weight_dict = {0: weights[0], 1: weights[1], 2: weights[2]}
+print(f"Class weights: Low={weights[0]:.2f}, Med={weights[1]:.2f}, High={weights[2]:.2f}")
+
+# ════════════════════════════════════════════════════════════
 # 7. BUILD LSTM MODEL
 #
 # FIX 4: Smaller model (32→16 units) — large models overfit
@@ -216,13 +251,13 @@ model = Sequential([
     LSTM(16, return_sequences=False),
     Dropout(0.3),                        # FIX 5: was 0.2
     Dense(8, activation='relu'),
-    Dense(1, activation='linear')
+    Dense(3, activation='softmax')       # Step 3: 3 classes, was Dense(1, linear)
 ])
 
 model.compile(
     optimizer='adam',
-    loss='mean_squared_error',
-    metrics=['mean_absolute_error']
+    loss='sparse_categorical_crossentropy',   # Step 3: 3-class classifier, was MSE
+    metrics=['accuracy']                      # Step 3: was MAE
 )
 model.summary()
 
@@ -253,15 +288,16 @@ history = model.fit(
     epochs=200,
     batch_size=16,                       # FIX 6: was 64
     callbacks=[early_stop, reduce_lr],
+    class_weight=class_weight_dict,      # Step 2: balance class imbalance
     verbose=1
 )
 
 # Evaluate on held-out test set
 if len(X_test) > 0:
-    test_loss, test_mae = model.evaluate(X_test, y_test, verbose=0)
+    test_loss, test_acc = model.evaluate(X_test, y_test, verbose=0)
     print(f"\n📊 Test set performance (Feb 2026 onwards):")
     print(f"   Test loss: {test_loss:.4f}")
-    print(f"   Test MAE:  {test_mae:.4f}")
+    print(f"   Test accuracy:  {test_acc:.4f}  ({test_acc*100:.1f}%)")
 
 # ════════════════════════════════════════════════════════════
 # 9. SAVE + REPORT
@@ -269,30 +305,30 @@ if len(X_test) > 0:
 model.save("models/lstm_productivity.keras")
 
 best_val_loss = min(history.history['val_loss'])
-best_val_mae  = min(history.history['val_mean_absolute_error'])
-train_mae     = min(history.history['mean_absolute_error'])
+best_val_acc  = max(history.history['val_accuracy'])
+train_acc     = max(history.history['accuracy'])
 epochs_ran    = len(history.history['loss'])
 
 print(f"\n✅ Model saved → models/lstm_productivity.keras")
 print(f"   Epochs run     : {epochs_ran}")
 print(f"   Best val_loss  : {best_val_loss:.4f}")
-print(f"   Best train_mae : {train_mae:.4f}")
-print(f"   Best val_mae   : {best_val_mae:.4f}")
+print(f"   Best train_acc : {train_acc:.4f}  ({train_acc*100:.1f}%)")
+print(f"   Best val_acc   : {best_val_acc:.4f}  ({best_val_acc*100:.1f}%)")
 
 # ── Overfit check ──────────────────────────────────────────
-overfit_gap = best_val_mae - train_mae
-print(f"   Overfit gap    : {overfit_gap:.4f} (train_mae vs val_mae)")
-if overfit_gap > 0.05:
+overfit_gap = train_acc - best_val_acc
+print(f"   Overfit gap    : {overfit_gap:.4f} (train vs val accuracy)")
+if overfit_gap > 0.10:
     print("   ⚠️  Overfit detected — gap too large. Consider more dropout.")
 else:
     print("   ✅ No significant overfit detected.")
 
 # ── Quality check ──────────────────────────────────────────
-if best_val_mae < 0.05:
-    print("   Quality        : EXCELLENT — strong generalization")
-elif best_val_mae < 0.10:
+if best_val_acc >= 0.85:
+    print("   Quality        : EXCELLENT — strong classification")
+elif best_val_acc >= 0.75:
     print("   Quality        : GOOD — model learned meaningful patterns")
-elif best_val_mae < 0.20:
+elif best_val_acc >= 0.65:
     print("   Quality        : OK — acceptable for a thesis demo")
 else:
     print("   Quality        : POOR — consider checking data or retraining")

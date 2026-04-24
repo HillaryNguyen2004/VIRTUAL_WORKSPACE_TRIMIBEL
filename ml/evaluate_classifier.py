@@ -31,6 +31,7 @@ FEATURES = [
     'score_delta_1d',
     'score_delta_7d',
     'checkin_streak',
+    'day_of_week',
 ]
 TARGET   = 'productivity_score'
 LOOKBACK = 14  # must match train_lstm.py
@@ -84,6 +85,8 @@ df['task_workload'] = (
     df['tasks_completed'] + df['avg_task_percentage'] / 100.0
 )
 
+df['day_of_week'] = pd.to_datetime(df['full_date']).dt.dayofweek  # 0=Mon, 6=Sun
+
 df.fillna(0, inplace=True)
 # ──────────────────────────────────────────────────────────
 
@@ -121,29 +124,31 @@ y = y[test_mask]
 print(f"Evaluating on {len(X)} test sequences (after {val_end.date()})")
 
 # ─────────────────────────────────────────────────────────
-# 4. Predict and inverse-scale back to 0-100
+# 4. Predict and process classification output
 # ─────────────────────────────────────────────────────────
-y_pred_scaled = model.predict(X, verbose=0).flatten()
+# 1. Get predicted probabilities (Shape: 1800, 3) and find the highest probability
+y_pred_probs = model.predict(X, verbose=0)
+y_pred_idx   = np.argmax(y_pred_probs, axis=1)  # This returns 0, 1, or 2
 
-# Inverse scale — reconstruct dummy array for scaler
+# 2. Inverse scale the ACTUAL target values (y) to get real scores
 dummy_actual = np.zeros((len(y), len(all_cols)))
-dummy_pred   = np.zeros((len(y_pred_scaled), len(all_cols)))
 dummy_actual[:, -1] = y
-dummy_pred[:, -1]   = y_pred_scaled
-
-actual_scores    = scaler.inverse_transform(dummy_actual)[:, -1]
-predicted_scores = scaler.inverse_transform(dummy_pred)[:, -1]
+actual_scores = scaler.inverse_transform(dummy_actual)[:, -1]
 
 # ─────────────────────────────────────────────────────────
-# 5. Convert scores → class labels
+# 5. Convert scores/indices → class labels
 # ─────────────────────────────────────────────────────────
-def to_class(score):
-    if score >= 80: return 'High'
-    if score >= 60: return 'Medium'
+# MUST MATCH train_lstm.py thresholds exactly!
+def to_class_label(score):
+    if score >= 75: return 'High'
+    if score >= 55: return 'Medium'
     return 'Low'
 
-actual_classes    = np.array([to_class(s) for s in actual_scores])
-predicted_classes = np.array([to_class(s) for s in predicted_scores])
+actual_classes = np.array([to_class_label(s) for s in actual_scores])
+
+# Map predicted indices (0, 1, 2) back to text labels
+idx_to_class = {0: 'Low', 1: 'Medium', 2: 'High'}
+predicted_classes = np.array([idx_to_class[idx] for idx in y_pred_idx])
 
 # ─────────────────────────────────────────────────────────
 # 6. Confusion matrix
@@ -195,21 +200,11 @@ for i, c in enumerate(classes):
 accuracy   = np.diag(cm).sum() / cm.sum()
 macro_f1   = np.mean(f1_scores)
 
-# Regression metrics as bonus
-mae  = np.mean(np.abs(actual_scores - predicted_scores))
-rmse = np.sqrt(np.mean((actual_scores - predicted_scores) ** 2))
-ss_res = np.sum((actual_scores - predicted_scores) ** 2)
-ss_tot = np.sum((actual_scores - actual_scores.mean()) ** 2)
-r2 = 1 - ss_res / ss_tot if ss_tot > 0 else 0
-
 print("\n" + "="*50)
 print("SUMMARY")
 print("="*50)
 print(f"  Accuracy       : {accuracy:.3f}  ({accuracy*100:.1f}%)")
 print(f"  Macro F1       : {macro_f1:.3f}")
-print(f"  MAE            : {mae:.2f} pts")
-print(f"  RMSE           : {rmse:.2f} pts")
-print(f"  R²             : {r2:.4f}")
 
 print("\n" + "="*50)
 print("TRUSTWORTHINESS VERDICT")
@@ -224,24 +219,4 @@ else:
     verdict = "POOR — retrain or review data before using"
 
 print(f"  Macro F1 = {macro_f1:.3f}  →  {verdict}")
-
-if r2 > 0.60:
-    print(f"  R² = {r2:.4f}  →  Model explains {r2*100:.1f}% of variance ✓")
-else:
-    print(f"  R² = {r2:.4f}  →  Low variance explained — check data quality")
-
-if accuracy >= 0.80:
-    verdict_acc = "EXCELLENT — highly trustworthy for thesis"
-elif accuracy >= 0.70:
-    verdict_acc = "GOOD — trustworthy, suitable for thesis"
-elif accuracy >= 0.60:
-    verdict_acc = "ACCEPTABLE — usable with caveats in thesis"
-else:
-    verdict_acc = "POOR — retrain or review data before using"
-
-print(f"  Accuracy = {accuracy*100:.1f}%  →  {verdict_acc}")
-
-# Note: MAE context for regression-to-classification
-print(f"\n  Note: MAE of {mae:.1f} pts on a 0-100 scale.")
-print(f"  Classification accuracy limited by {mae:.1f}pt error near class boundaries.")
-print(f"  Regression performance (MAE/R²) is the primary metric for this model.")
+print(f"  Accuracy = {accuracy*100:.1f}%")

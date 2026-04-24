@@ -37,34 +37,27 @@ model_lock = threading.Lock()
 
 FEATURES = [
     # Core attendance
-    'hours_worked',
-    'is_late',
-    'checked_in',
-    'had_day_off',
+    'hours_worked', 'is_late', 'checked_in', 'had_day_off',
     # Task signals
-    'tasks_completed',
-    'avg_task_score',
-    'avg_task_percentage',
-    'has_task_signal',
-    'task_workload',
+    'tasks_completed', 'avg_task_score', 'avg_task_percentage', 'has_task_signal', 'task_workload',
     # Temporal lag features
-    'score_yesterday',
-    'score_3d_ago',
-    'score_7d_ago',
-    'score_delta_1d',
-    'score_delta_7d',
+    'score_yesterday', 'score_3d_ago', 'score_7d_ago', 'score_delta_1d', 'score_delta_7d',
     # Behavioral patterns
-    'checkin_streak',
+    'checkin_streak', 
+    'day_of_week'  # <-- ADDED to match train_lstm.py
 ]
 TARGET   = 'productivity_score'
-LOOKBACK = 14  # Match training configuration (train_lstm.py)
+LOOKBACK = 14  
 
-def predict_scaled(X: np.ndarray) -> float:
-    # Keras/TensorFlow inference can fail under concurrent Flask requests.
-    # Serialize access to the model to keep runtime stable.
+def predict_classification(X: np.ndarray) -> tuple:
+    """
+    Returns the predicted class index (0, 1, or 2) and the raw probabilities.
+    """
     with model_lock:
-        pred = model(X, training=False).numpy()
-    return float(pred[0][0])
+        pred_probs = model(X, training=False).numpy()[0]
+    
+    predicted_class_idx = int(np.argmax(pred_probs))
+    return predicted_class_idx, pred_probs.tolist()
 
 def get_last_n_days(user_id, n=LOOKBACK):
     query = text("""
@@ -84,7 +77,6 @@ def get_last_n_days(user_id, n=LOOKBACK):
     """)
     with pg_engine.connect() as conn:
         df = pd.read_sql(query, conn, params={"user_id": user_id, "limit_n": int(n)})
-    # Sort by date ascending for feature engineering (oldest to newest)
     df = df.sort_values('full_date').reset_index(drop=True)
     return df
 
@@ -100,58 +92,47 @@ def get_employee_name(user_id):
     return row[0] if row and row[0] else None
 
 def engineer_features(df):
-    """
-    Add engineered features to match train_lstm.py exactly.
-    Must be called BEFORE scaling and AFTER sorting by date.
-    """
-    # Convert booleans to int
     df['is_late']     = df['is_late'].astype(int)
     df['checked_in']  = df['checked_in'].astype(int)
     df['had_day_off'] = df['had_day_off'].astype(int)
 
-    # Task signal
     df['has_task_signal'] = (
         (df['avg_task_score'] > 0) |
         (df['avg_task_percentage'] > 0) |
         (df['tasks_completed'] > 0)
     ).astype(int)
 
-    # Task workload
-    df['task_workload'] = (
-        df['tasks_completed'] + df['avg_task_percentage'] / 100.0
-    )
+    df['task_workload'] = df['tasks_completed'] + df['avg_task_percentage'] / 100.0
 
-    # Lag features — must match train_lstm.py exactly
     df['score_yesterday'] = df['productivity_score'].shift(1)
     df['score_3d_ago']    = df['productivity_score'].shift(3)
     df['score_7d_ago']    = df['productivity_score'].shift(7)
     df['score_delta_1d']  = df['score_yesterday'] - df['score_3d_ago']
     df['score_delta_7d']  = df['score_3d_ago']    - df['score_7d_ago']
 
-    # Checkin streak
     df['checkin_streak'] = (
         df['checked_in']
         .groupby((df['checked_in'] != df['checked_in'].shift()).cumsum())
         .cumcount() + 1
     ) * df['checked_in']
 
+    # <-- ADDED day_of_week engineering
+    df['day_of_week'] = pd.to_datetime(df['full_date']).dt.dayofweek
+
     df.fillna(0, inplace=True)
     return df
 
-def get_trend(current_score: float, predicted_score: float, scores: list) -> str:
-    """
-    Use LSTM prediction vs current to determine real trend direction.
-    Also check 7-day slope for sustained patterns.
-    """
-    pred_diff = predicted_score - current_score
+def get_trend(current_score: float, predicted_class_idx: int, scores: list) -> str:
+    # Convert current score to class index based on train_lstm.py thresholds
+    if current_score >= 75: current_idx = 2
+    elif current_score >= 55: current_idx = 1
+    else: current_idx = 0
 
-    # If LSTM predicts significantly lower → declining
-    if pred_diff < -5:
-        return "declining"
-    if pred_diff > 5:
-        return "improving"
+    # Compare categories
+    if predicted_class_idx < current_idx: return "declining"
+    if predicted_class_idx > current_idx: return "improving"
 
-    # Flat LSTM prediction → check recent slope
+    # If staying in the same category, check recent slope
     if len(scores) >= 7:
         recent = scores[-7:]
         x      = np.arange(len(recent))
@@ -162,16 +143,9 @@ def get_trend(current_score: float, predicted_score: float, scores: list) -> str
     return "stable"
 
 def generate_prediction_for_user(user_id, employee_name=None):
-    """
-    Shared prediction logic used by both single and batch endpoints.
-    Ensures consistency across all prediction requests.
-    Returns a dict with prediction results or raises an exception.
-    """
     logger.debug(f"[PREDICT] User {user_id}: Starting prediction")
     
     df = get_last_n_days(user_id, LOOKBACK)
-    logger.debug(f"[PREDICT] User {user_id}: Retrieved {len(df)} rows")
-    
     if 'employee_name' in df.columns and len(df) > 0:
         retrieved_name = df['employee_name'].iloc[0]
         if retrieved_name:
@@ -179,62 +153,47 @@ def generate_prediction_for_user(user_id, employee_name=None):
     
     if not employee_name:
         employee_name = get_employee_name(user_id)
-    
-    logger.debug(f"[PREDICT] User {user_id}: Employee name = {employee_name}")
 
     if len(df) < LOOKBACK:
         raise ValueError(f"Insufficient data: {len(df)}/{LOOKBACK} days")
 
-    # Apply feature engineering
     df = engineer_features(df)
-    logger.debug(f"[PREDICT] User {user_id}: Raw scores = {df['productivity_score'].tolist()}")
-
-    # Current score (most recent, after smoothing)
     current_score = df['productivity_score'].iloc[-1]
-    
-    # Get last 7 days of scores for trend analysis
     recent_scores = df['productivity_score'].iloc[-7:].tolist()
-    logger.debug(f"[PREDICT] User {user_id}: Current score = {current_score}")
 
-    # Scale using saved scaler
+    # Scale the inputs
     all_cols = FEATURES + [TARGET]
     df[all_cols] = scaler.transform(df[all_cols])
 
-    # Take last LOOKBACK records, features only
     X = df[FEATURES].values[-LOOKBACK:, :]
     X = np.expand_dims(X, axis=0)
 
-    # Predict (using thread-safe model)
-    pred_scaled = predict_scaled(X)
-
-    # Inverse transform
-    dummy = np.zeros((1, len(all_cols)))
-    dummy[0, -1] = pred_scaled
-    pred_original = scaler.inverse_transform(dummy)[0, -1]
-    pred_original = round(float(np.clip(pred_original, 0, 100)), 2)
+    # Predict using classification
+    predicted_class_idx, probabilities = predict_classification(X)
     
-    logger.debug(f"[PREDICT] User {user_id}: Final prediction = {pred_original}")
+    class_names = ["Low", "Medium", "High"]
+    predicted_level = class_names[predicted_class_idx]
+    confidence = probabilities[predicted_class_idx]
 
-    # Determine trend
-    trend = get_trend(current_score, pred_original, recent_scores)
+    logger.debug(f"[PREDICT] User {user_id}: Class = {predicted_level}, Probabilities = {probabilities}")
+
+    trend = get_trend(current_score, predicted_class_idx, recent_scores)
 
     return {
         "user_id": user_id,
         "name": employee_name,
         "employee_name": employee_name,
-        "productivity_score": pred_original / 100.0,
-        "predicted_productivity": pred_original,
+        "predicted_level": predicted_level,
+        "confidence_score": round(float(confidence), 4),
+        "class_probabilities": {
+            "Low": round(float(probabilities[0]), 4),
+            "Medium": round(float(probabilities[1]), 4),
+            "High": round(float(probabilities[2]), 4)
+        },
         "current_productivity": round(float(current_score), 2),
-        "confidence": 0.85,
         "trend": trend,
-        "model_version": "v1.0",
-        "features_used": FEATURES,
-        "level": (
-            "Excellent" if pred_original >= 80 else
-            "Good" if pred_original >= 60 else
-            "Average" if pred_original >= 40 else
-            "Low"
-        )
+        "model_version": "v2.0_classifier",
+        "features_used": FEATURES
     }
 
 @app.route("/predict/<int:user_id>", methods=["GET"])
@@ -244,56 +203,30 @@ def predict(user_id):
         return jsonify(result)
     except ValueError as e:
         logger.warning(f"[PREDICT] User {user_id}: Validation error - {str(e)}")
-        return jsonify({
-            "error": str(e),
-            "user_id": user_id
-        }), 400
+        return jsonify({"error": str(e), "user_id": user_id}), 400
     except Exception as e:
         logger.error(f"[PREDICT] User {user_id}: Prediction failed - {str(e)}")
-        return jsonify({
-            "error": f"Prediction failed: {str(e)}",
-            "user_id": user_id
-        }), 500
+        return jsonify({"error": f"Prediction failed: {str(e)}", "user_id": user_id}), 500
 
 @app.route("/predict/all", methods=["POST"])
 def predict_all():
-    """Generate predictions for all employees using consistent SQLAlchemy connection"""
     try:
-        # Use SQLAlchemy for consistency (same as /predict/<user_id>)
         query = text("SELECT DISTINCT user_id, name FROM dim_employee ORDER BY user_id")
-        
-        logger.info("[PREDICT_ALL] Fetching all employees...")
         with pg_engine.connect() as conn:
             employees_df = pd.read_sql(query, conn)
         
         employees = list(employees_df.itertuples(index=False, name=None))
-        logger.info(f"[PREDICT_ALL] Found {len(employees)} employees")
-        
-        results = []
-        errors = []
+        results, errors = [], []
 
         for idx, (user_id, employee_name) in enumerate(employees):
             try:
-                logger.debug(f"[PREDICT_ALL] Processing {idx+1}/{len(employees)}: user_id={user_id}")
                 result = generate_prediction_for_user(user_id, employee_name)
                 results.append(result)
             except ValueError as e:
-                logger.warning(f"[PREDICT_ALL] User {user_id}: Validation error - {str(e)}")
-                errors.append({
-                    "user_id": user_id,
-                    "name": employee_name,
-                    "error": str(e)
-                })
+                errors.append({"user_id": user_id, "name": employee_name, "error": str(e)})
             except Exception as e:
-                logger.error(f"[PREDICT_ALL] User {user_id}: Prediction error - {str(e)}")
-                errors.append({
-                    "user_id": user_id,
-                    "name": employee_name,
-                    "error": f"Prediction error: {str(e)}"
-                })
+                errors.append({"user_id": user_id, "name": employee_name, "error": f"Prediction error: {str(e)}"})
 
-        logger.info(f"[PREDICT_ALL] Completed: {len(results)} successful, {len(errors)} failed")
-        
         return jsonify({
             "total_employees": len(employees),
             "successful": len(results),
@@ -311,5 +244,4 @@ def health():
     return jsonify({"status": "ok"})
 
 if __name__ == "__main__":
-    # Disable debug reloader for TensorFlow model stability.
     app.run(host="0.0.0.0", port=5001, debug=False, threaded=False)
