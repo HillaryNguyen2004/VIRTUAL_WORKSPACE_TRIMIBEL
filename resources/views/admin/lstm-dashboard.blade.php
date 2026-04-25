@@ -2,93 +2,114 @@
 
 @section('content')
 <div class="lstm-dash">
-
     {{-- HEADER --}}
     <div class="dash-header">
         <div>
             <h2 class="dash-title">Productivity Insights</h2>
-            <p class="dash-subtitle">LSTM-powered predictions &middot; Last run <span id="last-run">—</span></p>
+            <p class="dash-subtitle">LSTM-powered predictions · Last run <span id="last-run">—</span></p>
         </div>
         <div style="display:flex;gap:8px">
             <button id="btn-export" class="btn-secondary">Export Excel</button>
             <button id="btn-refresh" class="btn-primary">
                 <svg id="refresh-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                    <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/>
-                    <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                    <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
                 </svg>
-                Refresh predictions
+                Refresh
             </button>
         </div>
     </div>
 
     {{-- METRIC STRIP --}}
     <div class="metric-strip">
-        <div class="metric-tile">
-            <span class="metric-num" id="m-avg">—</span>
-            <span class="metric-lbl">Team avg predicted</span>
-            <span class="metric-sub" id="m-avg-delta"></span>
-        </div>
-        <div class="metric-tile accent-danger">
-            <span class="metric-num" id="m-risk">—</span>
-            <span class="metric-lbl">Need attention (&lt;50%)</span>
-            <span class="metric-sub" id="m-risk-sub"></span>
-        </div>
-        <div class="metric-tile accent-warn">
-            <span class="metric-num" id="m-burnout">—</span>
-            <span class="metric-lbl">Burnout signals</span>
-            <span class="metric-sub" style="color:#92400e">High hrs, low score</span>
-        </div>
-        <div class="metric-tile accent-ok">
-            <span class="metric-num" id="m-high">—</span>
-            <span class="metric-lbl">High performers (≥80%)</span>
-            <span class="metric-sub" id="m-high-sub"></span>
-        </div>
-        <div class="metric-tile">
-            <span class="metric-num" id="m-acc">—</span>
-            <span class="metric-lbl">Model accuracy</span>
-            <span class="metric-sub" id="m-acc-sub"></span>
-        </div>
+        <div class="metric-tile"><span class="metric-num" id="m-avg">—</span><span class="metric-lbl">Team avg</span><span class="metric-sub" id="m-avg-delta"></span></div>
+        <div class="metric-tile accent-danger"><span class="metric-num" id="m-risk">—</span><span class="metric-lbl">Need attention (<55%)</span><span class="metric-sub" id="m-risk-sub"></span></div>
+        <div class="metric-tile accent-warn"><span class="metric-num" id="m-burnout">—</span><span class="metric-lbl">Declining trend</span></div>
+        <div class="metric-tile accent-ok"><span class="metric-num" id="m-high">—</span><span class="metric-lbl">High performers (≥75%)</span><span class="metric-sub" id="m-high-sub"></span></div>
+        <div class="metric-tile"><span class="metric-num" id="m-acc">—</span><span class="metric-lbl">Model confidence</span><span class="metric-sub" id="m-acc-sub"></span></div>
     </div>
 
-    {{-- MAIN GRID: attention table + alerts --}}
+    {{-- MAIN GRID: Attention + Alerts --}}
     <div class="main-grid">
         <div class="panel">
-            <div class="panel-head">
-                <span class="panel-title">Needs attention</span>
-                <span class="panel-badge danger" id="badge-atrisk">—</span>
-            </div>
-            <div class="emp-grid attn-header">
-                <span>Employee</span>
-                <span>Current</span>
-                <span>Predicted</span>
-                <span>Trend</span>
+            <div class="panel-head"><span class="panel-title">Needs attention</span><span class="panel-badge danger" id="badge-atrisk">—</span></div>
+            <div class="attn-header">
+                <span>Employee</span><span>Current</span><span>Predicted</span><span>Trend</span>
             </div>
             <div id="attention-list"><div class="empty-state">Loading…</div></div>
         </div>
-
         <div class="panel">
-            <div class="panel-head">
-                <span class="panel-title">Alerts &amp; patterns</span>
-            </div>
+            <div class="panel-head"><span class="panel-title">Recommended actions</span></div>
             <div id="alerts-list"><div class="empty-state">Loading…</div></div>
         </div>
     </div>
 
-    {{-- ENGINEERED FEATURE BREAKDOWN --}}
-    <div class="section-label">Engineered feature breakdown</div>
-    <div class="feature-grid">
+    {{-- PREDICTION BREAKDOWN --}}
+    <div class="section-label">Prediction breakdown</div>
+    <div class="breakdown-grid">
         <div class="panel">
             <div class="panel-head">
-                <span class="panel-title">score_trend distribution</span>
-                <span class="panel-badge neutral">avg_7d − avg_30d</span>
+                <span class="panel-title">Class distribution</span>
             </div>
-            <div class="chart-wrap" style="height:120px"><canvas id="trend-chart"></canvas></div>
-            <p class="chart-hint">Negative = declining momentum · Positive = improving</p>
+            <div class="class-bars">
+                <div class="class-bar-row">
+                    <span class="class-bar-lbl">High</span>
+                    <div class="class-bar-bg">
+                        <div class="class-bar-fill fill-high" id="bar-high" style="width:0%"></div>
+                    </div>
+                    <span class="class-bar-cnt" id="cnt-high">—</span>
+                </div>
+                <div class="class-bar-row">
+                    <span class="class-bar-lbl">Medium</span>
+                    <div class="class-bar-bg">
+                        <div class="class-bar-fill fill-med" id="bar-med" style="width:0%"></div>
+                    </div>
+                    <span class="class-bar-cnt" id="cnt-med">—</span>
+                </div>
+                <div class="class-bar-row">
+                    <span class="class-bar-lbl">Low</span>
+                    <div class="class-bar-bg">
+                        <div class="class-bar-fill fill-low" id="bar-low" style="width:0%"></div>
+                    </div>
+                    <span class="class-bar-cnt" id="cnt-low">—</span>
+                </div>
+            </div>
         </div>
         <div class="panel">
             <div class="panel-head">
-                <span class="panel-title">Task signal coverage</span>
-                <span class="panel-badge info">has_task_signal</span>
+                <span class="panel-title">Momentum this week</span>
+            </div>
+            <div class="trend-rings">
+                <div class="trend-ring ring-up">
+                    <div class="ring-num" id="ring-improving">—</div>
+                    <div class="ring-lbl">Improving</div>
+                </div>
+                <div class="trend-ring ring-flat">
+                    <div class="ring-num" id="ring-stable">—</div>
+                    <div class="ring-lbl">Stable</div>
+                </div>
+                <div class="trend-ring ring-down">
+                    <div class="ring-num" id="ring-declining">—</div>
+                    <div class="ring-lbl">Declining</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- SIGNAL ANALYSIS --}}
+    <div class="section-label" style="margin-top:1.5rem">Signal analysis</div>
+    <div class="feature-grid">
+        <div class="panel">
+            <div class="panel-head">
+                <span class="panel-title">Score momentum distribution</span>
+                <span class="panel-badge neutral">7-day vs 30-day average</span>
+            </div>
+            <div class="chart-wrap" style="height:120px"><canvas id="trend-chart"></canvas></div>
+            <p class="chart-hint">Negative = declining momentum &middot; Positive = improving</p>
+        </div>
+        <div class="panel">
+            <div class="panel-head">
+                <span class="panel-title">Task activity coverage</span>
+                <span class="panel-badge info">employees with active tasks</span>
             </div>
             <div style="display:flex;align-items:center;gap:16px;margin-top:4px">
                 <div style="position:relative;height:90px;width:90px;flex-shrink:0">
@@ -99,18 +120,18 @@
         </div>
         <div class="panel">
             <div class="panel-head">
-                <span class="panel-title">Burnout signal composite</span>
-                <span class="panel-badge warn">hrs + trend</span>
+                <span class="panel-title">Burnout risk signals</span>
+                <span class="panel-badge warn">hours + score trend</span>
             </div>
-            <div class="burnout-grid" id="burnout-grid">
+            <div class="burnout-grid">
                 <div class="burnout-stat">
                     <div class="bs-val" id="b-overwork">—</div>
-                    <div class="bs-lbl">Overwork (&gt;9h/day)</div>
+                    <div class="bs-lbl">Working &gt;9h/day</div>
                     <div class="bs-bar"><div class="bs-fill" id="b-overwork-bar" style="background:#EF9F27"></div></div>
                 </div>
                 <div class="burnout-stat">
                     <div class="bs-val" id="b-neg-trend">—</div>
-                    <div class="bs-lbl">Negative score_trend</div>
+                    <div class="bs-lbl">Declining score trend</div>
                     <div class="bs-bar"><div class="bs-fill" id="b-neg-trend-bar" style="background:#EF9F27"></div></div>
                 </div>
                 <div class="burnout-stat">
@@ -123,7 +144,7 @@
     </div>
 
     {{-- DEPARTMENT BREAKDOWN --}}
-    <div class="section-label">By department</div>
+    <div class="section-label" style="margin-top:1.5rem">By department</div>
     <div class="dept-row" id="dept-row">
         <div class="empty-state" style="grid-column:1/-1">Loading…</div>
     </div>
@@ -143,7 +164,10 @@
         </div>
 
         <div class="panel">
-            <div class="panel-head"><span class="panel-title">Score distribution</span><span class="panel-hint">predicted productivity</span></div>
+            <div class="panel-head">
+                <span class="panel-title">Score distribution</span>
+                <span class="panel-hint">predicted productivity</span>
+            </div>
             <div class="chart-wrap"><canvas id="dist-chart"></canvas></div>
         </div>
 
@@ -166,20 +190,40 @@
         <div class="panel" style="grid-column: span 2">
             <div class="panel-head">
                 <span class="panel-title">Model transparency</span>
-                <span class="panel-badge neutral" id="model-version-badge">LSTM v1.0 · LOOKBACK=14</span>
+                <span class="panel-badge neutral">LSTM classifier &middot; LOOKBACK=14</span>
             </div>
             <div class="model-inner">
                 <div>
                     <div class="model-section-lbl">Model health</div>
                     <div class="model-stats-grid">
-                        <div class="model-stat"><div class="ms-val" id="ms-loss">—</div><div class="ms-lbl">Val loss</div></div>
-                        <div class="model-stat"><div class="ms-val" id="ms-mae">—</div><div class="ms-lbl">Best MAE</div></div>
-                        <div class="model-stat"><div class="ms-val" id="ms-epochs">—</div><div class="ms-lbl">Epochs ran</div></div>
-                        <div class="model-stat"><div class="ms-val" id="ms-conf">—</div><div class="ms-lbl">Confidence</div></div>
+                        <div class="model-stat">
+                            <div class="ms-val" id="ms-acc">—</div>
+                            <div class="ms-lbl">Accuracy</div>
+                        </div>
+                        <div class="model-stat">
+                            <div class="ms-val" id="ms-f1">—</div>
+                            <div class="ms-lbl">Macro F1</div>
+                        </div>
+                        <div class="model-stat">
+                            <div class="ms-val" id="ms-loss">—</div>
+                            <div class="ms-lbl">Val loss</div>
+                        </div>
+                        <div class="model-stat">
+                            <div class="ms-val" id="ms-epochs">—</div>
+                            <div class="ms-lbl">Epochs ran</div>
+                        </div>
                     </div>
+                    <div class="model-section-lbl" style="margin-top:14px">Prediction trustworthiness</div>
+                    <div class="trust-bar-wrap">
+                        <div class="trust-bar-track">
+                            <div class="trust-bar-fill" id="trust-fill" style="width:0%"></div>
+                        </div>
+                        <span class="trust-pct" id="trust-pct">—</span>
+                    </div>
+                    <p class="chart-hint" style="margin-top:6px">Based on held-out test accuracy (Feb 2026 onwards)</p>
                 </div>
                 <div>
-                    <div class="model-section-lbl">Feature importance (inferred from LSTM weights)</div>
+                    <div class="model-section-lbl">What the model pays attention to</div>
                     <div id="feature-importance-list" class="fi-list">
                         <div class="empty-state">Loading…</div>
                     </div>
@@ -200,8 +244,8 @@
                 <option value="">All departments</option>
             </select>
             <select id="risk-filter" class="tbl-select">
-                <option value="">All risk levels</option>
-                <option value="high">High performers (≥75%)</option>
+                <option value="">All levels</option>
+                <option value="high">High performers (&ge;75%)</option>
                 <option value="medium">Medium (55–74%)</option>
                 <option value="low">Needs attention (&lt;55%)</option>
             </select>
@@ -211,12 +255,12 @@
                 <thead>
                     <tr>
                         <th>Employee</th>
-                        <th>User ID</th>
                         <th>Department</th>
                         <th>Current</th>
-                        <th>Predicted</th>
+                        <th>Predicted class</th>
+                        <th>Predicted score</th>
                         <th>Trend</th>
-                        <th>Risk</th>
+                        <th>Confidence</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -230,6 +274,7 @@
         <div class="spinner"></div>
         <p>Loading predictions…</p>
     </div>
+
 </div>
 
 <style>
@@ -284,35 +329,58 @@
 /* ─── Main grid ───────────────────────────────────────────── */
 .main-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:1.5rem}
 
-/* ─── Employee attention grid ────────────────────────────── */
-.emp-grid{display:grid;grid-template-columns:1.8fr 1fr 1fr .8fr;gap:8px;align-items:center;
-  padding:.42rem 0;border-bottom:1px solid #f2f2f2;font-size:.77rem}
+/* ─── Attention list header ──────────────────────────────── */
+.attn-header{display:grid;grid-template-columns:1.8fr 1fr 1fr .8fr;gap:8px;
+  padding:.3rem 0 .5rem;border-bottom:1px solid #f0f0f0}
 .attn-header span{font-size:.67rem;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:.06em}
-.emp-name{font-size:.8rem;font-weight:700;color:#111}
-.emp-dept{font-size:.68rem;color:#aaa;margin-top:1px}
-.bar-bg{background:#f0f0f0;border-radius:4px;height:4px;margin-top:4px;overflow:hidden}
-.bar-fg{height:100%;border-radius:4px;transition:width .5s ease}
-.score-txt{font-size:.77rem;font-weight:600;color:#555;margin-top:2px}
-.trend-up  {color:#166534;font-size:.72rem;font-weight:700}
-.trend-down{color:#991b1b;font-size:.72rem;font-weight:700}
-.trend-flat{color:#94a3b8;font-size:.72rem;font-weight:700}
 
-/* ─── Alert items ─────────────────────────────────────────── */
-.alert-item{display:flex;align-items:flex-start;gap:9px;padding:.55rem 0;border-bottom:1px solid #f5f5f5}
-.alert-item:last-child{border-bottom:none}
-.alert-dot{width:6px;height:6px;border-radius:50%;margin-top:5px;flex-shrink:0}
+/* ─── attn-row (rendered by JS) ─────────────────────────── */
+.attn-row{display:grid;grid-template-columns:1.8fr 1fr 1fr .8fr;gap:8px;align-items:center;
+  padding:.5rem 0;border-bottom:1px solid #f5f5f5;font-size:.77rem}
+.attn-row:last-child{border-bottom:none}
+.emp-name{font-size:.8rem;font-weight:700;color:#111}
+.emp-sub{font-size:.68rem;color:#aaa;margin-top:1px}
+.score-bar-wrap{display:flex;flex-direction:column;gap:3px}
+.score-bar{background:#f0f0f0;border-radius:4px;height:4px;overflow:hidden}
+.score-fill{height:100%;border-radius:4px;transition:width .5s ease}
+.score-num{font-size:.72rem;font-weight:600;color:#555}
+.trend-up-txt  {color:#166534;font-size:.72rem;font-weight:700}
+.trend-down-txt{color:#991b1b;font-size:.72rem;font-weight:700}
+.trend-flat-txt{color:#94a3b8;font-size:.72rem;font-weight:700}
+
+/* ─── Action items (rendered by JS as action-item) ────────── */
+.action-item{display:flex;align-items:flex-start;gap:9px;padding:.55rem 0;border-bottom:1px solid #f5f5f5}
+.action-item:last-child{border-bottom:none}
+.action-dot{width:6px;height:6px;border-radius:50%;margin-top:5px;flex-shrink:0}
 .dot-red  {background:#E24B4A}.dot-amber{background:#EF9F27}.dot-blue{background:#378ADD}
-.alert-name{font-size:.8rem;font-weight:700;color:#111}
-.alert-desc{font-size:.71rem;color:#666;margin-top:2px;line-height:1.45}
-.alert-tag{margin-left:auto;flex-shrink:0;font-size:.66rem;font-weight:700;
+.action-name{font-size:.8rem;font-weight:700;color:#111}
+.action-desc{font-size:.71rem;color:#666;margin-top:2px;line-height:1.45}
+.action-tag{margin-left:auto;flex-shrink:0;font-size:.66rem;font-weight:700;
   padding:2px 8px;border-radius:20px;white-space:nowrap;align-self:flex-start}
 .tag-red  {background:#fee2e2;color:#991b1b}
 .tag-amber{background:#fef3c7;color:#92400e}
 .tag-blue {background:#dbeafe;color:#1e40af}
 
+/* ─── Prediction breakdown ───────────────────────────────── */
+.breakdown-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:1.5rem}
+.class-bars{display:flex;flex-direction:column;gap:12px;padding:.25rem 0}
+.class-bar-row{display:flex;align-items:center;gap:10px;font-size:.8rem}
+.class-bar-lbl{width:52px;font-size:.73rem;font-weight:600;color:#555;flex-shrink:0}
+.class-bar-bg{flex:1;background:#f0f0f0;border-radius:6px;height:10px;overflow:hidden}
+.class-bar-fill{height:100%;border-radius:6px;transition:width .6s ease}
+.fill-high{background:#639922}.fill-med{background:#378ADD}.fill-low{background:#E24B4A}
+.class-bar-cnt{font-size:.73rem;color:#888;width:72px;text-align:right;flex-shrink:0}
+.trend-rings{display:flex;justify-content:space-around;align-items:center;padding:1rem 0}
+.trend-ring{text-align:center}
+.ring-num{font-size:1.6rem;font-weight:600;letter-spacing:-.03em;line-height:1}
+.ring-lbl{font-size:.7rem;color:#999;margin-top:3px}
+.ring-up .ring-num  {color:#166534}
+.ring-flat .ring-num{color:#64748b}
+.ring-down .ring-num{color:#991b1b}
+
 /* ─── Feature breakdown grid ─────────────────────────────── */
 .feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:1.5rem}
-.chart-hint{font-size:.68rem;color:#bbb;margin-top:6px}
+.chart-hint{font-size:.68rem;color:#bbb;margin-top:6px;margin-bottom:0}
 .task-legend-text{font-size:.75rem;color:#666;line-height:1.7}
 .burnout-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
 .burnout-stat{background:#fafafa;border-radius:8px;padding:10px 12px}
@@ -326,9 +394,9 @@
 .dept-card{background:#fff;border:1px solid #ebebeb;border-radius:12px;padding:.85rem 1rem}
 .dept-card-name{font-size:.74rem;font-weight:700;color:#555;margin-bottom:.4rem;letter-spacing:.01em}
 .dept-card-score{font-size:1.3rem;font-weight:600;letter-spacing:-.03em;margin-bottom:.35rem}
-.dept-bar{background:#f0f0f0;border-radius:4px;height:3px;overflow:hidden;margin-bottom:.35rem}
-.dept-fill{height:100%;border-radius:4px}
-.dept-meta{font-size:.68rem;color:#bbb}
+.dept-bar-bg{background:#f0f0f0;border-radius:4px;height:3px;overflow:hidden;margin-bottom:.35rem}
+.dept-bar-fill{height:100%;border-radius:4px}
+.dept-card-meta{font-size:.68rem;color:#bbb;margin-bottom:.25rem}
 
 /* ─── Bottom grid ─────────────────────────────────────────── */
 .bottom-grid{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:14px;margin-bottom:1.5rem}
@@ -371,12 +439,27 @@
 .ms-val{font-size:1.15rem;font-weight:600;letter-spacing:-.02em;margin-bottom:2px}
 .ms-val.green{color:#166534}.ms-val.red{color:#991b1b}
 .ms-lbl{font-size:.69rem;color:#999}
+.trust-bar-wrap{display:flex;align-items:center;gap:10px;margin-top:4px}
+.trust-bar-track{flex:1;background:#f0f0f0;border-radius:6px;height:8px;overflow:hidden}
+.trust-bar-fill{height:100%;border-radius:6px;background:#639922;transition:width .6s ease}
+.trust-pct{font-size:.82rem;font-weight:600;color:#166534;white-space:nowrap;min-width:40px;text-align:right}
 .fi-list{margin-top:2px}
 .fi-row{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:.75rem}
-.fi-label{width:140px;flex-shrink:0;color:#666}
+.fi-label{width:180px;flex-shrink:0;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fi-track{flex:1;background:#f0f0f0;border-radius:3px;height:5px;overflow:hidden}
 .fi-fill{height:100%;border-radius:3px;background:#378ADD}
 .fi-val{width:30px;text-align:right;color:#bbb;flex-shrink:0;font-size:.7rem}
+
+/* ─── Class pills (used in table) ───────────────────────── */
+.class-pill{font-size:.66rem;font-weight:700;padding:2px 9px;border-radius:20px;white-space:nowrap}
+.pill-high{background:#dcfce7;color:#166534}
+.pill-med {background:#dbeafe;color:#1e40af}
+.pill-low {background:#fee2e2;color:#991b1b}
+
+/* ─── Confidence bar (used in table) ────────────────────── */
+.conf-bar{display:inline-block;width:36px;height:3px;background:#f0f0f0;border-radius:2px;
+  overflow:hidden;margin-right:4px;vertical-align:middle}
+.conf-fill{height:100%;border-radius:2px;background:#378ADD}
 
 /* ─── Table ───────────────────────────────────────────────── */
 .btn-toggle{font-size:.73rem;color:#999;background:none;border:none;cursor:pointer;padding:0;
@@ -394,14 +477,10 @@
   letter-spacing:.06em;padding:.5rem .6rem;border-bottom:1.5px solid #f0f0f0;text-align:left}
 .emp-table td{padding:.55rem .6rem;border-bottom:1px solid #f7f7f7;vertical-align:middle;color:#333}
 .emp-table tbody tr:hover td{background:#fafafa}
-.risk-pill{font-size:.66rem;font-weight:700;padding:2px 9px;border-radius:20px;white-space:nowrap}
-.pill-ok  {background:#dcfce7;color:#166534}
-.pill-med {background:#dbeafe;color:#1e40af}
-.pill-high{background:#fef3c7;color:#92400e}
-.pill-crit{background:#fee2e2;color:#991b1b}
 .btn-chart{font-size:.68rem;padding:3px 8px;border:1px solid #d0d0d0;border-radius:6px;
   background:#fff;cursor:pointer;color:#555;font-family:'DM Sans',sans-serif}
 .btn-chart:hover{border-color:#555}
+.empty-msg{font-size:.77rem;color:#ccc;text-align:center;padding:1.5rem 0}
 
 /* ─── Loading overlay ─────────────────────────────────────── */
 .loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.9);
@@ -416,6 +495,7 @@
 @media(max-width:1200px){
   .metric-strip{grid-template-columns:repeat(3,1fr)}
   .main-grid{grid-template-columns:1fr}
+  .breakdown-grid{grid-template-columns:1fr}
   .feature-grid{grid-template-columns:1fr 1fr}
   .dept-row{grid-template-columns:repeat(3,1fr)}
   .bottom-grid{grid-template-columns:1fr 1fr}
@@ -428,6 +508,7 @@
   .dept-row{grid-template-columns:1fr 1fr}
   .bottom-grid{grid-template-columns:1fr}
   .burnout-grid{grid-template-columns:1fr}
+  .breakdown-grid{grid-template-columns:1fr}
 }
 </style>
 

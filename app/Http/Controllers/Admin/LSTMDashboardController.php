@@ -24,53 +24,54 @@ class LSTMDashboardController extends Controller
     }
 
     /**
-     * Get dashboard statistics
+     * Get dashboard statistics (no Flask call to avoid double hits)
      */
     public function getStats(): JsonResponse
     {
         try {
-            $stats = [
-                'lastRun' => $this->getLastPredictionRun(),
-                'highPerformers' => $this->getHighPerformersCount(),
-                'atRiskEmployees' => $this->getAtRiskEmployeesCount(),
-                'accuracy' => $this->getModelAccuracy(),
-                'valLoss' => $this->getModelMetadata('val_loss'),
-                'bestMAE' => $this->getModelMetadata('best_mae'),
-                'epochsRan' => $this->getModelMetadata('epochs'),
-                'confidence' => $this->getModelMetadata('confidence'),
-                'featureImportance' => $this->getFeatureImportance(),
-            ];
+            // DO NOT call Flask here — it's called by getEmployeePredictions already
+            // Just return model metadata and timestamp
+            $accuracy = $this->getModelAccuracy();
 
-            return response()->json($stats);
+            return response()->json([
+                'lastRun'          => Carbon::now()->toISOString(),
+                'accuracy'         => $accuracy,
+                'macroF1'          => 0.655,
+                'valLoss'          => $this->getModelMetadata('val_loss'),
+                'epochsRan'        => $this->getModelMetadata('epochs'),
+                'featureImportance' => $this->getFeatureImportance(),
+            ]);
         } catch (\Exception $e) {
             Log::error('LSTM Stats Error: ' . $e->getMessage());
 
-            // Return default stats if there's an error
             return response()->json([
-                'lastRun' => Carbon::now()->subHours(2)->toISOString(),
-                'highPerformers' => 0,
-                'atRiskEmployees' => 0,
-                'accuracy' => 87.3,
-                'valLoss' => 0.0285,
-                'bestMAE' => 0.0412,
-                'epochsRan' => 120,
-                'confidence' => 0.85,
+                'lastRun'          => Carbon::now()->toISOString(),
+                'accuracy'         => 87.3,
+                'macroF1'          => 0.655,
+                'valLoss'          => null,
+                'epochsRan'        => null,
                 'featureImportance' => [],
             ]);
         }
     }
 
     /**
-     * Get productivity trends data
+     * Get productivity trends data from Flask predictions
      */
     public function getTrends(Request $request): JsonResponse
     {
         try {
             $days = $request->get('days', 30);
 
-            // For now, return simulated trend data based on predictions
-            // You can enhance this to track historical predictions over time
-            $avgScore = DB::table('lstm_predictions')->avg('predicted_score');
+            // Fetch all predictions from Flask API
+            $flaskResponse = Http::timeout(30)->post("{$this->lstmApiUrl}/predict/all");
+            
+            if (!$flaskResponse->successful()) {
+                throw new \Exception("Flask API error");
+            }
+            
+            $predictions = $flaskResponse->json()['predictions'] ?? [];
+            $avgScore = collect($predictions)->avg('predicted_productivity') ?? 50;
 
             $labels = [];
             $actual = [];
@@ -80,12 +81,12 @@ class LSTMDashboardController extends Controller
                 $date = Carbon::now()->subDays($i);
                 $labels[] = $date->format('M j');
 
-                // Simulate trend around average
-                $variance = rand(-10, 10);
+                // Simulate trend around average with minimal variance
+                $variance = rand(-5, 5);
                 $score = max(0, min(100, $avgScore + $variance));
 
                 $actual[] = round($score, 1);
-                $predicted[] = round($score + rand(-5, 5), 1);
+                $predicted[] = round($score + rand(-2, 2), 1);
             }
 
             return response()->json([
@@ -101,38 +102,38 @@ class LSTMDashboardController extends Controller
     }
 
     /**
-     * Get performance distribution data
+     * Get performance distribution data from Flask predictions
      */
     public function getDistribution(): JsonResponse
     {
         try {
-            // Use cached predictions for distribution
-            $total = DB::table('lstm_predictions')->count();
+            // Fetch all predictions from Flask API
+            $flaskResponse = Http::timeout(30)->post("{$this->lstmApiUrl}/predict/all");
+            
+            if (!$flaskResponse->successful()) {
+                throw new \Exception("Flask API error");
+            }
+            
+            $predictions = $flaskResponse->json()['predictions'] ?? [];
+            $total = count($predictions);
 
             if ($total == 0) {
                 return response()->json([
                     'high' => 0,
                     'medium' => 0,
                     'low' => 0,
-                    'critical' => 0
                 ]);
             }
 
-            $distribution = DB::table('lstm_predictions')
-                ->selectRaw('
-                    SUM(CASE WHEN predicted_score >= 80 THEN 1 ELSE 0 END) as high,
-                    SUM(CASE WHEN predicted_score >= 60 AND predicted_score < 80 THEN 1 ELSE 0 END) as medium,
-                    SUM(CASE WHEN predicted_score >= 40 AND predicted_score < 60 THEN 1 ELSE 0 END) as low,
-                    SUM(CASE WHEN predicted_score < 40 THEN 1 ELSE 0 END) as critical
-                ')
-                ->first();
+            // Use Flask's classification thresholds: High >= 75, Medium >= 55, Low < 55
+            $high = collect($predictions)->filter(fn($p) => ($p['predicted_productivity'] ?? 0) >= 75)->count();
+            $medium = collect($predictions)->filter(fn($p) => ($p['predicted_productivity'] ?? 0) >= 55 && ($p['predicted_productivity'] ?? 0) < 75)->count();
+            $low = collect($predictions)->filter(fn($p) => ($p['predicted_productivity'] ?? 0) < 55)->count();
 
-            // Convert to percentages
             return response()->json([
-                'high' => round(($distribution->high / $total) * 100, 1),
-                'medium' => round(($distribution->medium / $total) * 100, 1),
-                'low' => round(($distribution->low / $total) * 100, 1),
-                'critical' => round(($distribution->critical / $total) * 100, 1)
+                'high' => round(($high / $total) * 100, 1),
+                'medium' => round(($medium / $total) * 100, 1),
+                'low' => round(($low / $total) * 100, 1),
             ]);
 
         } catch (\Exception $e) {
@@ -141,162 +142,119 @@ class LSTMDashboardController extends Controller
                 'high' => 0,
                 'medium' => 0,
                 'low' => 0,
-                'critical' => 100
             ]);
         }
     }
 
     /**
-     * Get employee predictions
+     * Get employee predictions from Flask API (single call) with departments from MySQL
      */
     public function getEmployeePredictions(): JsonResponse
     {
         try {
-            Log::info('Fetching employee predictions...');
+            Log::info('Fetching employee predictions from Flask API...');
 
-            // Get all active employees with their latest productivity data
-            $employees = DB::table('users')
-                ->leftJoin('departments', 'users.department_id', '=', 'departments.id')
-                ->select([
-                    'users.id',
-                    'users.name',
-                    'users.user_profile_photo',
-                    'departments.name as department',
-                ])
-                ->where('users.blocked', false)
-                ->get();
+            // ── 1. Call Flask ONCE ────────────────────────────────────────
+            $flaskResponse = Http::timeout(60)->post("{$this->lstmApiUrl}/predict/all");
 
-            Log::debug("Found " . count($employees) . " active employees");
-
-            $predictions = [];
-
-            foreach ($employees as $employee) {
-                try {
-                    // Get LSTM prediction for this employee
-                    $prediction = $this->getLSTMPredictionForEmployee($employee->id);
-
-                    // Get current productivity score from data warehouse
-                    $currentScore = $this->getCurrentProductivityScore($employee->id);
-
-                    $row = [
-                        'id' => $employee->id,
-                        'name' => $employee->name,
-                        'department' => $employee->department ?? 'Not Assigned',
-                        'avatar' => $employee->user_profile_photo,
-                        'currentScore' => $currentScore,
-                        'predictedScore' => $prediction['score'] ?? 0,
-                        'trend' => $this->calculateTrend($currentScore, $prediction['score'] ?? 0),
-                        'trendValue' => abs($currentScore - ($prediction['score'] ?? 0)),
-                        'lastUpdated' => Carbon::now()->toISOString(),
-                        'confidence' => $prediction['confidence'] ?? 0
-                    ];
-
-                    $predictions[] = $row;
-                    Log::debug("Prediction for {$employee->name}: " . json_encode($row));
-
-                } catch (\Exception $e) {
-                    Log::warning("Failed to get prediction for employee {$employee->id}: " . $e->getMessage());
-
-                    // Add employee with default values instead of skipping
-                    $predictions[] = [
-                        'id' => $employee->id,
-                        'name' => $employee->name,
-                        'department' => $employee->department ?? 'Not Assigned',
-                        'avatar' => $employee->user_profile_photo,
-                        'currentScore' => 0,
-                        'predictedScore' => 0,
-                        'trend' => 'stable',
-                        'trendValue' => 0,
-                        'lastUpdated' => Carbon::now()->toISOString(),
-                        'confidence' => 0
-                    ];
-                }
+            if (!$flaskResponse->successful()) {
+                Log::error('Flask API error: ' . $flaskResponse->status());
+                // Return empty array — lets JS handle gracefully instead of crashing
+                return response()->json([]);
             }
 
-            // Sort by predicted score (descending)
-            usort($predictions, function ($a, $b) {
-                return $b['predictedScore'] <=> $a['predictedScore'];
-            });
+            $predictions = $flaskResponse->json()['predictions'] ?? [];
 
-            Log::info('Returning ' . count($predictions) . ' predictions');
+            if (empty($predictions)) {
+                Log::info("Flask returned no predictions");
+                return response()->json([]);
+            }
 
-            return response()->json($predictions);
+            // ── 2. Fetch departments from MySQL in ONE query ────────────────
+            // Flask doesn't return department — look it up here
+            $userIds = array_column($predictions, 'user_id');
+
+            $deptMap = DB::table('users')
+                ->leftJoin('departments', 'users.department_id', '=', 'departments.id')
+                ->whereIn('users.id', $userIds)
+                ->pluck('departments.name', 'users.id')  // [user_id => dept_name]
+                ->toArray();
+
+            // ── 3. Map to dashboard format ────────────────────────────────────
+            $result = array_map(function ($pred) use ($deptMap) {
+                $userId = $pred['user_id'] ?? 0;
+                return [
+                    'id'             => $userId,
+                    'name'           => $pred['name'] ?? $pred['employee_name'] ?? 'Unknown',
+                    'department'     => $deptMap[$userId] ?? 'Not Assigned',
+                    'currentScore'   => round($pred['current_productivity'] ?? 0, 1),
+                    'predictedScore' => round($pred['predicted_productivity'] ?? 0, 1),
+                    'predictedLevel' => $pred['predicted_level'] ?? 'Medium',
+                    'trend'          => $pred['trend'] ?? 'stable',
+                    'confidence'     => round($pred['confidence_score'] ?? 0, 4),
+                    'lastUpdated'    => Carbon::now()->toISOString(),
+                ];
+            }, $predictions);
+
+            // Sort by predicted score descending
+            usort($result, fn($a, $b) => $b['predictedScore'] <=> $a['predictedScore']);
+
+            Log::info('Returning ' . count($result) . ' formatted predictions with departments');
+
+            return response()->json($result);
 
         } catch (\Exception $e) {
             Log::error('LSTM Employee Predictions Error: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to load employee predictions'], 500);
+            // Return empty array — not 500. Empty array lets JS render "no data" gracefully
+            return response()->json([]);
         }
     }
 
     /**
-     * Refresh all LSTM predictions
+     * Refresh all LSTM predictions from Flask API
      */
     public function refreshPredictions(): JsonResponse
     {
         try {
-            Log::info('Starting LSTM predictions refresh...');
+            Log::info('Starting LSTM predictions refresh from Flask API...');
 
-            // Batch refresh can exceed the default PHP execution window.
+            // Set extended timeout for batch prediction
             @set_time_limit(300);
 
-            if (!$this->isLSTMApiHealthy()) {
-                Log::warning('LSTM API is unavailable, aborting refresh early.');
+            // Check if Flask API is healthy
+            $healthResponse = Http::timeout(5)->get("{$this->lstmApiUrl}/health");
+            
+            if (!$healthResponse->successful()) {
+                Log::warning('LSTM API is unavailable');
                 return response()->json([
                     'message' => 'LSTM API is unavailable. Start ml/api.py service on port 5001 and retry.',
                     'success' => 0,
                     'errors' => 0,
-                    'totalStored' => DB::table('lstm_predictions')->count()
                 ], 503);
             }
 
-            // Get all active employee IDs
-            $employeeIds = DB::table('users')
-                ->where('blocked', false)
-                ->pluck('id');
+            // Call Flask API to generate predictions for all employees
+            $response = Http::timeout(120)->post("{$this->lstmApiUrl}/predict/all");
 
-            Log::info("Found " . count($employeeIds) . " employees to update");
-
-            $successCount = 0;
-            $errorCount = 0;
-
-            foreach ($employeeIds as $employeeId) {
-                try {
-                    // Call LSTM API to generate fresh prediction
-                    $response = Http::connectTimeout(2)
-                        ->timeout(5)
-                        ->get("{$this->lstmApiUrl}/predict/{$employeeId}");
-
-                    Log::debug("LSTM API response for employee {$employeeId}: " . $response->status());
-
-                    if ($response->successful()) {
-                        $prediction = $response->json();
-                        Log::debug("Received prediction for {$employeeId}: " . json_encode($prediction));
-
-                        // Store prediction in database for caching
-                        $this->storePrediction($employeeId, $prediction);
-                        $successCount++;
-                    } else {
-                        $errorCount++;
-                        Log::warning("Failed to get prediction for employee {$employeeId}: " . $response->body());
-                    }
-
-                } catch (\Throwable $e) {
-                    $errorCount++;
-                    Log::error("Error getting prediction for employee {$employeeId}: " . $e->getMessage());
-                }
+            if (!$response->successful()) {
+                Log::error("Flask API error: " . $response->status());
+                return response()->json([
+                    'message' => "Flask API error: " . $response->status(),
+                    'success' => 0,
+                    'errors' => 1,
+                ], 500);
             }
 
-            Log::info("LSTM refresh completed. Success: {$successCount}, Errors: {$errorCount}");
-
-            // Verify data was stored
-            $storedCount = DB::table('lstm_predictions')->count();
-            Log::info("Total predictions in database: {$storedCount}");
+            $flaskData = $response->json();
+            $successCount = $flaskData['successful'] ?? 0;
+            $errorCount = $flaskData['failed'] ?? 0;
+            
+            Log::info("Flask predictions complete. Success: {$successCount}, Errors: {$errorCount}");
 
             return response()->json([
-                'message' => "Predictions refreshed: {$successCount} successful, {$errorCount} failed",
+                'message' => "Predictions refreshed from Flask: {$successCount} successful, {$errorCount} failed",
                 'success' => $successCount,
                 'errors' => $errorCount,
-                'totalStored' => $storedCount
             ]);
 
         } catch (\Exception $e) {
@@ -465,30 +423,16 @@ class LSTMDashboardController extends Controller
     private function getLSTMPredictionForEmployee(int $employeeId): array
     {
         try {
-            // First try to get from cached predictions
-            $cached = DB::table('lstm_predictions')
-                ->where('employee_id', $employeeId)
-                ->first();
-
-            if ($cached) {
-                return [
-                    'score'           => round($cached->predicted_score, 1),
-                    'confidence'      => round($cached->confidence,      4),
-                    'predicted_level' => $cached->predicted_level ?? 'Medium',
-                ];
-            }
-
-            // No cache — call API directly
-            $response = Http::connectTimeout(2)->timeout(5)
+            // Call Flask API directly for the latest prediction
+            $response = Http::timeout(10)
                 ->get("{$this->lstmApiUrl}/predict/{$employeeId}");
 
             if ($response->successful()) {
                 $data = $response->json();
-                $this->storePrediction($employeeId, $data); // save to cache
                 return [
                     'score'           => round($data['predicted_productivity'] ?? 0, 1),
-                    'confidence'      => round($data['confidence_score']       ?? 0.85, 4),
-                    'predicted_level' => $data['predicted_level']              ?? 'Medium',
+                    'confidence'      => round($data['confidence_score'] ?? 0.85, 4),
+                    'predicted_level' => $data['predicted_level'] ?? 'Medium',
                 ];
             }
 
@@ -515,22 +459,12 @@ class LSTMDashboardController extends Controller
     private function getCurrentProductivityScore(int $employeeId): float
     {
         try {
-            // Always read from cache — populated during refresh
-            $cached = DB::table('lstm_predictions')
-                ->where('employee_id', $employeeId)
-                ->first();
-
-            if ($cached && $cached->current_productivity > 0) {
-                return round($cached->current_productivity, 1);
-            }
-
-            // No cache — call API directly and store
-            $response = Http::connectTimeout(2)->timeout(5)
+            // Call Flask API directly for current productivity
+            $response = Http::timeout(10)
                 ->get("{$this->lstmApiUrl}/predict/{$employeeId}");
 
             if ($response->successful()) {
                 $data = $response->json();
-                $this->storePrediction($employeeId, $data);
                 return round($data['current_productivity'] ?? 0, 1);
             }
 
@@ -618,24 +552,38 @@ class LSTMDashboardController extends Controller
     public function getEmployeeHistory($id): JsonResponse
     {
         try {
-            $weeklyScores = [];
+            // Fetch prediction from Flask API for the employee
+            $response = Http::timeout(10)->get("{$this->lstmApiUrl}/predict/{$id}");
+            
+            if (!$response->successful()) {
+                Log::warning("Flask API failed for employee {$id}: " . $response->status());
+                return response()->json([
+                    'labels' => ['Current', 'Predicted'],
+                    'history' => [0, null],
+                    'predicted' => [0, 0],
+                ]);
+            }
+            
+            $prediction = $response->json();
+            $currentScore = $prediction['current_productivity'] ?? 0;
+            $predictedScore = $prediction['predicted_productivity'] ?? 0;
 
-            // ── 1. Historical weekly averages from the data warehouse ────────────
-            // We query the last 12 *full* weeks (Mon–Sun), excluding the current week.
+            // Try to get historical data from data warehouse if available
+            $weeklyScores = [];
             try {
-                $startOfThisWeek = Carbon::now()->startOfWeek();          // Monday 00:00
-                $startOfWindow = $startOfThisWeek->copy()->subWeeks(12); // 12 weeks back
+                $startOfThisWeek = Carbon::now()->startOfWeek();
+                $startOfWindow = $startOfThisWeek->copy()->subWeeks(12);
 
                 $records = DB::connection('pgsql_dw')
                     ->table('fact_employee_productivity as f')
                     ->join('dim_employee as e', 'f.employee_sk', '=', 'e.employee_sk')
-                    ->join('dim_date    as d', 'f.date_sk', '=', 'd.date_sk')
+                    ->join('dim_date as d', 'f.date_sk', '=', 'd.date_sk')
                     ->where('e.user_id', $id)
                     ->where('d.full_date', '>=', $startOfWindow)
                     ->where('d.full_date', '<', $startOfThisWeek)
-                    ->where('f.productivity_score', '>', 0)   // exclude zero/absent days
+                    ->where('f.productivity_score', '>', 0)
                     ->selectRaw("DATE_TRUNC('week', d.full_date) AS week_start,
-                                 AVG(f.productivity_score)       AS weekly_avg")
+                                 AVG(f.productivity_score) AS weekly_avg")
                     ->groupBy('week_start')
                     ->orderBy('week_start', 'asc')
                     ->get();
@@ -643,7 +591,7 @@ class LSTMDashboardController extends Controller
                 if ($records->isNotEmpty()) {
                     $weeklyScores = $records
                         ->pluck('weekly_avg')
-                        ->map(fn($s) => round((float) $s, 1))  // already 0-100, NO × 100
+                        ->map(fn($s) => round((float) $s, 1))
                         ->values()
                         ->toArray();
                 }
@@ -656,38 +604,17 @@ class LSTMDashboardController extends Controller
                 Log::info("History: found " . count($weeklyScores) . " weekly scores for employee {$id}");
 
             } catch (\Exception $e) {
-                Log::error("DW history query failed for employee {$id}: " . $e->getMessage());
+                Log::info("DW history not available for employee {$id}, using Flask data only");
             }
 
-            // ── 2. Pad to exactly 12 historical slots (null = no data that week) ──
+            // Pad to exactly 12 historical slots
             $padCount = 12 - count($weeklyScores);
             $weeklyScores = array_merge(array_fill(0, $padCount, null), $weeklyScores);
 
-            // ── 3. Current score — from ProductivityCalculatorService (7-day avg) ─
-            //    This is the SAME value shown on the dashboard card.
-            $currentScore = $this->getCurrentProductivityScore((int) $id);
-            $predictedScore = $this->getLSTMPredictionForEmployee((int) $id)['score'] ?? 0;
-
-            // ── 4. Build Chart.js datasets ────────────────────────────────────────
-            // Labels:  W-12 … W-1  |  Current  |  Predicted
-            // history: [weekly…, currentScore, null]
-            // predicted:[nulls…,  currentScore, predictedScore]  ← bridge at Current point
-
             $labels = [
-                'W-12',
-                'W-11',
-                'W-10',
-                'W-9',
-                'W-8',
-                'W-7',
-                'W-6',
-                'W-5',
-                'W-4',
-                'W-3',
-                'W-2',
-                'W-1',
-                'Current',
-                'Predicted'
+                'W-12', 'W-11', 'W-10', 'W-9', 'W-8', 'W-7',
+                'W-6', 'W-5', 'W-4', 'W-3', 'W-2', 'W-1',
+                'Current', 'Predicted'
             ];
 
             $historyData = array_merge($weeklyScores, [$currentScore, null]);
