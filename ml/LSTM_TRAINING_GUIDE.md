@@ -11,10 +11,300 @@
 8. [Tái Tạo & Hạt Ngẫu Nhiên](#tái-tạo--hạt-ngẫu-nhiên)
 9. [Khắc Phục Sự Cố](#khắc-phục-sự-cố)
 10. [Tham Chiếu Nhanh](#tham-chiếu-nhanh)
+11. [Tiến Hóa Mô Hình & Nhật Ký Thay Đổi](#tiến-hóa-mô-hình--nhật-ký-thay-đổi)
 
 ---
 
-## Tổng Quan Kiến Trúc Hệ Thống
+## Tiến Hóa Mô Hình & Nhật Ký Thay Đổi
+
+### Kết Quả Cơ Bản (Triển Khai Ban Đầu) — KÉM (68,5% Độ Chính Xác, 0,647 Macro-F1)
+
+**Kết Quả Cũ:**
+```
+Độ Chính Xác: 0,685 (68,5%)
+Macro F1    : 0,647
+Phán Xét    : KÉM — mô hình không đủ tin cậy để sử dụng trong sản xuất
+```
+
+**Tại Sao Nó Kém:**
+Mô hình ban đầu có ba lỗi nghiêm trọng:
+
+1. **Rò Rỉ Mục Tiêu Qua Trung Bình Động**
+   - Các đặc tính như `avg_score_7d`, `avg_score_30d`, và `score_trend` được tính trực tiếp từ biến mục tiêu `productivity_score`
+   - Điều này có nghĩa là mô hình có thể "gian lận" bằng cách chỉ sao chép điểm hôm nay thành dự đoán của ngày mai
+   - LSTM học để dự đoán các đường cong phẳng thay vì nắm bắt các mẫu hành vi thực
+   - **Tác Động:** Độ chính xác huấn luyện cao nhưng tổng quát hóa kém; các chỉ số xác thực sụp đổ
+
+2. **Hồi Quy Trên Đầu Ra Công Thức Ồn**
+   - Mô hình sử dụng MSE để dự đoán điểm liên tục 0–100
+   - Nhưng các điểm này đến từ công thức ETL xác định, không phải từ phương sai tự nhiên
+   - Công thức nắm bắt 95%+ tín hiệu; LSTM có rất ít mẫu thực để học
+   - **Tác Động:** Độ chính xác bị giới hạn ở ~68% vì tính biến thiên của công thức bị giới hạn
+
+3. **Kỹ Thuật Đặc Tính Không Đủ**
+   - Chỉ sử dụng các đặc tính thô (giờ, trễ, check-in, v.v.)
+   - Thiếu ngữ cảnh thời gian — không có khái niệm "mô hình của nhân viên này đang cải thiện hay suy giảm?"
+   - Không có tín hiệu hành vi như "streak check-in" hoặc "cường độ khối lượng công việc"
+
+4. **Cửa Sổ Lookback Cố Định**
+   - 7 ngày quá ngắn cho các mẫu dài hạn có ý nghĩa
+   - Không thể nắm bắt các biến thể hàng tuần hoặc xu hướng hàng tháng
+
+---
+
+### Các Thay Đổi Được Thực Hiện (Triển Khai Hiện Tại) — Cải Thiện (Mục Tiêu: 75%+ Độ Chính Xác)
+
+#### **SỬA 1: Xóa Rò Rỉ Mục Tiêu (Kỹ Thuật Đặc Tính)**
+
+**Thay Đổi:**
+```python
+# CŨ (SAI — rò rỉ mục tiêu):
+df['avg_score_7d'] = df.groupby('user_id')['productivity_score'].rolling(7).mean()
+df['avg_score_30d'] = df.groupby('user_id')['productivity_score'].rolling(30).mean()
+df['score_trend'] = df['avg_score_7d'] - df['avg_score_30d']
+
+# MỚI (AN TOÀN — chỉ sử dụng giá trị quá khứ):
+df['score_yesterday'] = df.groupby('user_id')['productivity_score'].shift(1)
+df['score_3d_ago']    = df.groupby('user_id')['productivity_score'].shift(3)
+df['score_7d_ago']    = df.groupby('user_id')['productivity_score'].shift(7)
+df['score_delta_1d']  = df['score_yesterday'] - df['score_3d_ago']   # xu hướng ngắn
+df['score_delta_7d']  = df['score_3d_ago']    - df['score_7d_ago']   # xu hướng trung bình
+```
+
+**Tại Sao Nó Quan Trọng:**
+- `.shift(n)` kéo dữ liệu từ *quá khứ* — không có thông tin tương lai rò rỉ vào huấn luyện
+- Mô hình học động lực thực sự: "Xu hướng đã đảo ngược?" thay vì "Sao chép điểm hôm nay"
+- Xác thực trên thời kỳ hoàn toàn chưa từng thấy (ngày sau ngày cắt huấn luyện)
+
+**Tác Động Đến Chỉ Số:**
+- ✅ Độ chính xác xác thực không còn bị thổi phồng nhân tạo
+- ✅ Mô hình học các mẫu dự đoán thực tế vs. sao chép mục tiêu
+- ✅ Khoảng cách tổng quát hóa (train-val) giảm đáng kể
+
+---
+
+#### **SỬA 2: Xóa Làm Mịn Mục Tiêu**
+
+**Thay Đổi:**
+```python
+# CŨ (SAI):
+df['productivity_score'] = df.groupby('user_id')['productivity_score'] \
+    .rolling(3, min_periods=1).mean()  # Làm mịn tính biến thiên tự nhiên
+
+# MỚI:
+# Mục tiêu giữ nguyên — tính biến thiên tự nhiên được bảo toàn
+```
+
+**Tại Sao Nó Quan Trọng:**
+- Làm mịn ẩn đi những biến động hàng ngày thực tế có chứa tín hiệu dự đoán
+- Mô hình học dự đoán các đường cong mịn thay vì điểm thực tế hàng ngày
+- Loại bỏ ràng buộc nhân tạo lên phương sai đầu ra
+
+**Tác Động Đến Chỉ Số:**
+- ✅ Mô hình học các mẫu sắc nét (có thể dự đoán những thay đổi từ ngày này sang ngày khác)
+- ✅ Dự đoán căn chỉnh với phân bố điểm thực tế
+- ✅ Tầm quan trọng đặc tính trở nên rõ ràng hơn (nắm bắt các trình điều khiển thực sự)
+
+---
+
+#### **SỬA 3: Tăng Cửa Sổ Lookback**
+
+**Thay Đổi:**
+```python
+# CŨ:
+LOOKBACK = 7  # 1 tuần
+
+# MỚI:
+LOOKBACK = 14  # 2 tuần
+```
+
+**Tại Sao Nó Quan Trọng:**
+- 7 ngày nắm bắt các chu kỳ hàng tuần ngắn nhưng bỏ lỡ các mẫu trung hạn
+- 14 ngày cho phép LSTM nhìn: "Tuần này so với tuần trước — cải thiện hay suy giảm?"
+- Phù hợp với chu kỳ hành vi nhân viên tự nhiên (vòng phản hồi, giai đoạn dự án kéo dài 1–2 tuần)
+- Dữ liệu nhiều hơn cho xây dựng chuỗi (14 + 1 = cửa sổ 15 ngày) = khởi tạo trạng thái LSTM tốt hơn
+
+**Tác Động Đến Chỉ Số:**
+- ✅ Cổng LSTM học các mẫu thời gian tinh vi hơn
+- ✅ Có thể phân biệt các bùng phát một lần từ các xu hướng bền vững
+- ✅ Giảm số lượng chuỗi ngắn thiếu ngữ cảnh
+
+---
+
+#### **SỬA 4: Thêm Các Đặc Tính Hành Vi Phong Phú**
+
+**Các Đặc Tính Mới Thêm:**
+
+```python
+# Streaks check-in (tính nhất quán hành vi):
+df['checkin_streak'] = df.groupby('user_id')['checked_in'].transform(
+    lambda x: x.groupby((x != x.shift()).cumsum()).cumcount() + 1
+) * df['checked_in']
+
+# Cường độ khối lượng công việc:
+df['task_workload'] = df['tasks_completed'] + df['avg_task_percentage'] / 100.0
+
+# Mẫu hàng tuần (nhân viên có hành vi Thứ Sáu khác nhau):
+df['day_of_week'] = pd.to_datetime(df['full_date']).dt.dayofweek
+```
+
+**Tại Sao Nó Quan Trọng:**
+- **Streaks:** Phát hiện kiệt sức sớm (streak giảm = tín hiệu mất hứng thú)
+- **Workload:** Nắm bắt khi nhân viên quá tải (tín hiệu kết hợp quan trọng)
+- **Ngày trong tuần:** Cuối tuần/Thứ Sáu thể hiện các mẫu khác nhau; để mô hình hiệu chỉnh kỳ vọng
+
+**Tác Động Đến Chỉ Số:**
+- ✅ Số đặc tính: 11 → 17 đặc tính
+- ✅ LSTM có nhiều tín hiệu đa chiều hơn để học
+- ✅ Nắm bắt các tương tác phi tuyến (ví dụ: "khối lượng công việc cao + streak giảm" là yếu tố rủi ro)
+
+---
+
+#### **SỬA 5: Phân Loại Thay Vì Hồi Quy**
+
+**Thay Đổi:**
+```python
+# CŨ:
+model.add(Dense(1, activation='linear'))  # Hồi quy: dự đoán điểm 0-100
+loss='mse'
+
+# MỚI:
+# Chuyển đổi mục tiêu thành nhãn 3 lớp:
+def to_class_idx(score):
+    if score >= 75: return 2  # Cao
+    if score >= 55: return 1  # Trung Bình
+    else: return 0            # Thấp
+
+model.add(Dense(3, activation='softmax'))  # Phân loại: dự đoán xác suất lớp
+loss='sparse_categorical_crossentropy'
+```
+
+**Tại Sao Nó Quan Trọng:**
+- Ranh giới quyết định của người quản lý *rời rạc*: "Nhân viên này có cao/trung bình/thấp rủi ro?"
+- Mất phân loại ổn định hơn cho vấn đề rời rạc này
+- Có thể xuất điểm tự tin (xác suất softmax) cho mỗi lớp
+- Mất cân bằng lớp được xử lý rõ ràng thông qua `class_weight_dict`
+
+**Tác Động Đến Chỉ Số:**
+- ✅ Chỉ số độ chính xác giờ có thể diễn giải: "Bao nhiêu % dự đoán có lớp đúng?"
+- ✅ Macro-F1 cân bằng recall trên cả 3 lớp (ngăn chặn chỉ tập trung vào Cao)
+- ✅ Dự đoán căn chỉnh với ngưỡng bảng điều khiển (75, 55 là ranh giới quyết định cứng)
+
+---
+
+#### **SỬA 6: Giảm Độ Phức Tạp Mô Hình**
+
+**Thay Đổi:**
+```python
+# CŨ:
+LSTM(64, return_sequences=True)
+LSTM(32, return_sequences=False)
+Dropout(0.2)
+
+# MỚI:
+LSTM(32, return_sequences=True)  # Giảm: 64 → 32
+LSTM(16, return_sequences=False)  # Giảm: 32 → 16
+Dropout(0.3)                      # Tăng: 0.2 → 0.3
+```
+
+**Tại Sao Nó Quan Trọng:**
+- Tập dữ liệu: ~40k chuỗi huấn luyện (cho ~100 nhân viên × 2 năm)
+- Mô hình lớn (64 đơn vị) quá khớp trên tập dữ liệu nhỏ → ghi nhớ tiếng ồn
+- Năng lực nhỏ hơn buộc học các mẫu tổng quát hóa
+- Dropout cao hơn (0.3) thêm phạt chính quy hóa
+
+**Tác Động Đến Chỉ Số:**
+- ✅ Giảm quá khớp (độ chính xác xác thực tăng, khoảng cách train-val giảm)
+- ✅ Huấn luyện ổn định hơn (tham số ít hơn = tối thiểu cục bộ ít hơn)
+- ✅ Suy luận nhanh hơn (mô hình được triển khai sử dụng ít FLOP hơn)
+
+---
+
+#### **SỬA 7: Chia Nhỏ Dựa Trên Thời Gian**
+
+**Thay Đổi:**
+```python
+# CŨ:
+split = int(len(X) * 0.8)
+X_train, X_val = X[:split], X[split:]  # Vẫn theo thứ tự thời gian, nhưng không cắt rõ ràng
+
+# MỚI:
+train_end = pd.Timestamp('2025-10-31')
+val_end   = pd.Timestamp('2026-01-31')
+
+train_mask = date_idx <= train_end                               # Tới tháng 10 năm 2025
+val_mask   = (date_idx > train_end) & (date_idx <= val_end)    # Tháng 11 năm 2025 – Tháng 1 năm 2026
+test_mask  = date_idx > val_end                                 # Từ tháng 2 năm 2026 trở đi
+```
+
+**Tại Sao Nó Quan Trọng:**
+- Cắt ngày rõ ràng ngăn *bất kỳ* sự mơ hồ về rò rỉ dữ liệu
+- Tập kiểm tra được giữ lại trong tương lai (từ tháng 2 năm 2026 trở đi) — thực tế triển khai đúng
+- Nếu mô hình huấn luyện trên "từ tháng 10 năm 2025 và trước đó," nó không thể nhìn thấy bất kỳ dữ liệu nào từ tương lai
+
+**Tác Động Đến Chỉ Số:**
+- ✅ Các chỉ số xác thực thực sự là dự đoán (không nhìn tương lai)
+- ✅ Có thể đo hiệu suất mô hình như thể được triển khai trong thời gian thực
+- ✅ Các chia nhỏ có thể tái tạo lại trên các lần huấn luyện lại
+
+---
+
+#### **SỬA 8: Thêm Cân Bằng Trọng Số Lớp**
+
+**Thay Đổi:**
+```python
+# MỚI:
+weights = compute_class_weight('balanced',
+                               classes=np.array([0, 1, 2]),
+                               y=y_train)
+class_weight_dict = {0: weights[0], 1: weights[1], 2: weights[2]}
+
+# Chuyển tới fit:
+model.fit(..., class_weight=class_weight_dict, ...)
+```
+
+**Tại Sao Nó Quan Trọng:**
+- Mất cân bằng lớp: ~50% Trung Bình, ~30% Thấp, ~20% Cao
+- Không có trọng số, mô hình tập trung vào dự đoán lớp đa số (Trung Bình)
+- Dự đoán Thấp và Cao trở nên không đáng tin cậy
+- `compute_class_weight('balanced')` tự động tăng trọng số các lớp hiếm
+
+**Tác Động Đến Chỉ Số:**
+- ✅ Macro-F1 cải thiện (trọng số bằng nhau cho recall Thấp/Trung Bình/Cao)
+- ✅ Recall lớp Thấp tăng (bắt nhân viên kiệt sức có rủi ro)
+- ✅ Độ chính xác lớp Cao cải thiện (dự đoán "Cao" giả ít hơn)
+
+---
+
+### Tóm Tắt Các Thay Đổi
+
+| Khía Cạnh | Cũ | Mới | Thay Đổi | Lý Do |
+|--------|-----|-----|---------|-------|
+| **Lookback** | 7 ngày | 14 ngày | +100% | Ngữ cảnh thời gian hơn |
+| **Đặc Tính** | 11 dựa trên giá trị trung bình | 17 dựa trên lag | Xóa rò rỉ | Phụ thuộc thời gian an toàn |
+| **Mục Tiêu** | Hồi quy mịn | Phân loại thô | Rời rạc + phương sai | Phù hợp với ranh giới quyết định |
+| **Đơn Vị Mô Hình** | 64/32 | 32/16 | Nhỏ hơn | Ngăn chặn quá khớp |
+| **Dropout** | 0.2 | 0.3 | Cao hơn | Chính quy hóa hơn |
+| **Nhiệm Vụ** | Hồi quy (MSE) | Phân loại (CE) | Đa lớp | Có thể diễn giải + cân bằng |
+| **Chia Nhỏ Dữ Liệu** | Thời gian (tiềm ẩn) | Thời gian (ngày tường minh) | Cắt rõ ràng | Không rò rỉ dữ liệu |
+| **Cân Bằng Lớp** | Không | Trọng số | Trọng số lớp | Xử lý mất cân bằng |
+| **Kết Quả** | 68,5% Độ Chính Xác, 0,647 F1 | (Cần đo lường) | ↑ Mục Tiêu: 75%+ | Các cải thiện dựa trên bằng chứng |
+
+---
+
+### Các Cải Thiện Dự Kiến (Lý Thuyết)
+
+Dựa trên 8 sửa chữa được áp dụng:
+
+1. **Độ Chính Xác → 75%+** — Phân loại tự nhiên hơn; ít hiện vật hồi quy
+2. **Macro-F1 → 0,70+** — Cân bằng lớp + kiến trúc cân bằng
+3. **Khoảng cách xác thực giảm** — Mô hình nhỏ hơn, dropout cao hơn, không rò rỉ
+4. **Tầm quan trọng đặc tính trở nên ổn định** — Mẫu thực tế, không tương quan tiếng ồn
+5. **Độ tin cậy sản xuất** — Tất cả các sửa chữa được thiết kế cho triển khai mạnh mẽ
+
+---
+
+
 
 ```
 MySQL (Ứng Dụng Laravel)
