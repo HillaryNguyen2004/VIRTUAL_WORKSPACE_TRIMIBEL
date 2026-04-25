@@ -44,21 +44,26 @@
     }
 
     function riskInfo(s) {
-        if (s >= 80) return { label: 'High',   cls: 'bg-green-100 text-green-800'   };  // High performer
-        if (s >= 60) return { label: 'Medium', cls: 'bg-blue-100 text-blue-800'     };  // Medium
+        if (s >= 75) return { label: 'High',   cls: 'bg-green-100 text-green-800'   };  // High performer
+        if (s >= 55) return { label: 'Medium', cls: 'bg-blue-100 text-blue-800'     };  // Medium
         return              { label: 'Low',    cls: 'bg-red-100 text-red-800'       };  // Low — needs attention
     }
 
     function riskKey(s) {
-        if (s >= 80) return 'high';
-        if (s >= 60) return 'medium';
+        if (s >= 75) return 'high';
+        if (s >= 55) return 'medium';
         return 'low';
     }
 
     function trendHtml(trend) {
         const t = (trend || '').toLowerCase();
-        if (t === 'up')   return '<span class="trend-up">▲ improving</span>';
-        if (t === 'down') return '<span class="trend-down">▼ declining</span>';
+        // New api.py returns 'improving'/'declining'/'stable'
+        // Old api.py returned 'up'/'down'/'stable'
+        // Handle both so existing cached data still works
+        if (t === 'improving' || t === 'up')
+            return '<span class="trend-up">▲ improving</span>';
+        if (t === 'declining' || t === 'down')
+            return '<span class="trend-down">▼ declining</span>';
         return '<span class="trend-flat">— stable</span>';
     }
 

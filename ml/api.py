@@ -1,6 +1,7 @@
 from flask import Flask, jsonify
 import numpy as np
 import pandas as pd
+import psycopg2
 import joblib
 import threading
 import logging
@@ -11,7 +12,6 @@ import sys
 sys.path.append('../etl')
 from config import PG_CONFIG
 
-# Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -30,39 +30,68 @@ pg_url = URL.create(
 )
 pg_engine = create_engine(pg_url, pool_pre_ping=True)
 
-# Load once at startup
 model  = load_model("models/lstm_productivity.keras")
 scaler = joblib.load("models/scaler.pkl")
 model_lock = threading.Lock()
 
+# ── Must match train_lstm.py EXACTLY ──────────────────────
 FEATURES = [
     # Core attendance
-    'hours_worked', 'is_late', 'checked_in', 'had_day_off',
+    'hours_worked',
+    'is_late',
+    'checked_in',
+    'had_day_off',
     # Task signals
-    'tasks_completed', 'avg_task_score', 'avg_task_percentage', 'has_task_signal', 'task_workload',
-    # Temporal lag features
-    'score_yesterday', 'score_3d_ago', 'score_7d_ago', 'score_delta_1d', 'score_delta_7d',
+    'tasks_completed',
+    'avg_task_score',
+    'avg_task_percentage',
+    'has_task_signal',
+    'task_workload',
+    # Temporal lag features (safe — no target leakage)
+    'score_yesterday',
+    'score_3d_ago',
+    'score_7d_ago',
+    'score_delta_1d',
+    'score_delta_7d',
     # Behavioral patterns
-    'checkin_streak', 
-    'day_of_week'  # <-- ADDED to match train_lstm.py
+    'checkin_streak',
+    'day_of_week',
 ]
 TARGET   = 'productivity_score'
-LOOKBACK = 14  
+LOOKBACK = 14  # must match train_lstm.py
+
+# Class definitions — must match train_lstm.py thresholds
+CLASS_NAMES   = ['Low', 'Medium', 'High']
+CLASS_MIDPOINTS = {
+    'Low':    27.5,   # midpoint of 0–55
+    'Medium': 65.0,   # midpoint of 55–74
+    'High':   87.5,   # midpoint of 75–100
+}
+
 
 def predict_classification(X: np.ndarray) -> tuple:
     """
-    Returns the predicted class index (0, 1, or 2) and the raw probabilities.
+    Returns (predicted_class_idx, probabilities_list).
+    Uses model_lock so concurrent Flask requests don't race on TF graph.
     """
     with model_lock:
         pred_probs = model(X, training=False).numpy()[0]
-    
     predicted_class_idx = int(np.argmax(pred_probs))
     return predicted_class_idx, pred_probs.tolist()
+
+
+def class_idx_to_score(class_idx: int) -> float:
+    """
+    Convert a predicted class index to a representative score (0-100).
+    Used so that the Laravel dashboard can keep showing numeric bars.
+    """
+    return CLASS_MIDPOINTS[CLASS_NAMES[class_idx]]
+
 
 def get_last_n_days(user_id, n=LOOKBACK):
     query = text("""
         SELECT
-            e.name AS employee_name,
+            e.name          AS employee_name,
             d.full_date,
             f.hours_worked, f.is_late, f.checked_in,
             f.had_day_off, f.tasks_completed,
@@ -77,25 +106,25 @@ def get_last_n_days(user_id, n=LOOKBACK):
     """)
     with pg_engine.connect() as conn:
         df = pd.read_sql(query, conn, params={"user_id": user_id, "limit_n": int(n)})
+    # Sort ascending — oldest first — required for lag features
     df = df.sort_values('full_date').reset_index(drop=True)
     return df
 
-def get_employee_name(user_id):
-    query = text("""
-        SELECT name
-        FROM dim_employee
-        WHERE user_id = :user_id
-        LIMIT 1
-    """)
-    with pg_engine.connect() as conn:
-        row = conn.execute(query, {"user_id": user_id}).fetchone()
-    return row[0] if row and row[0] else None
 
-def engineer_features(df):
+def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Reproduces the exact feature engineering from train_lstm.py.
+    Must be called AFTER sorting by full_date ascending.
+    Note: lag shifts are done within a single user's sorted window,
+    so groupby is not needed here (we already filtered to one user).
+    """
+    df = df.copy()
+
     df['is_late']     = df['is_late'].astype(int)
     df['checked_in']  = df['checked_in'].astype(int)
     df['had_day_off'] = df['had_day_off'].astype(int)
 
+    # Task signals
     df['has_task_signal'] = (
         (df['avg_task_score'] > 0) |
         (df['avg_task_percentage'] > 0) |
@@ -104,97 +133,128 @@ def engineer_features(df):
 
     df['task_workload'] = df['tasks_completed'] + df['avg_task_percentage'] / 100.0
 
+    # Lag features — shift within this single-employee window
     df['score_yesterday'] = df['productivity_score'].shift(1)
     df['score_3d_ago']    = df['productivity_score'].shift(3)
     df['score_7d_ago']    = df['productivity_score'].shift(7)
     df['score_delta_1d']  = df['score_yesterday'] - df['score_3d_ago']
     df['score_delta_7d']  = df['score_3d_ago']    - df['score_7d_ago']
 
+    # Attendance streak
     df['checkin_streak'] = (
         df['checked_in']
         .groupby((df['checked_in'] != df['checked_in'].shift()).cumsum())
         .cumcount() + 1
     ) * df['checked_in']
 
-    # <-- ADDED day_of_week engineering
+    # Day of week (0=Mon … 6=Sun)
     df['day_of_week'] = pd.to_datetime(df['full_date']).dt.dayofweek
 
     df.fillna(0, inplace=True)
     return df
 
+
 def get_trend(current_score: float, predicted_class_idx: int, scores: list) -> str:
-    # Convert current score to class index based on train_lstm.py thresholds
-    if current_score >= 75: current_idx = 2
-    elif current_score >= 55: current_idx = 1
-    else: current_idx = 0
+    """
+    Compare predicted class against current score's class.
+    Falls back to 7-day slope when the class is unchanged.
+    """
+    # Classify current score using train_lstm.py thresholds
+    if current_score >= 75:
+        current_class_idx = 2
+    elif current_score >= 55:
+        current_class_idx = 1
+    else:
+        current_class_idx = 0
 
-    # Compare categories
-    if predicted_class_idx < current_idx: return "declining"
-    if predicted_class_idx > current_idx: return "improving"
+    if predicted_class_idx > current_class_idx:
+        return "improving"
+    if predicted_class_idx < current_class_idx:
+        return "declining"
 
-    # If staying in the same category, check recent slope
+    # Same class — check recent slope for fine-grained signal
     if len(scores) >= 7:
         recent = scores[-7:]
         x      = np.arange(len(recent))
         slope  = float(np.polyfit(x, recent, 1)[0])
-        if slope < -1.0: return "declining"
-        if slope > 1.0:  return "improving"
+        if slope < -1.0:
+            return "declining"
+        if slope > 1.0:
+            return "improving"
 
     return "stable"
 
-def generate_prediction_for_user(user_id, employee_name=None):
+
+def generate_prediction_for_user(user_id: int, employee_name: str = None) -> dict:
     logger.debug(f"[PREDICT] User {user_id}: Starting prediction")
-    
+
     df = get_last_n_days(user_id, LOOKBACK)
+
+    # Extract employee name from query results
     if 'employee_name' in df.columns and len(df) > 0:
-        retrieved_name = df['employee_name'].iloc[0]
-        if retrieved_name:
-            employee_name = retrieved_name
-    
-    if not employee_name:
-        employee_name = get_employee_name(user_id)
+        retrieved = df['employee_name'].iloc[0]
+        if retrieved:
+            employee_name = retrieved
 
     if len(df) < LOOKBACK:
         raise ValueError(f"Insufficient data: {len(df)}/{LOOKBACK} days")
 
     df = engineer_features(df)
-    current_score = df['productivity_score'].iloc[-1]
-    recent_scores = df['productivity_score'].iloc[-7:].tolist()
 
-    # Scale the inputs
+    # Raw (unscaled) current score — used for trend logic
+    current_score_raw = float(df['productivity_score'].iloc[-1])
+    recent_scores_raw = df['productivity_score'].iloc[-7:].tolist()
+
+    # Scale using the saved scaler — same columns, same order as training
     all_cols = FEATURES + [TARGET]
     df[all_cols] = scaler.transform(df[all_cols])
 
+    # Build input tensor: (1, LOOKBACK, num_features)
     X = df[FEATURES].values[-LOOKBACK:, :]
     X = np.expand_dims(X, axis=0)
 
-    # Predict using classification
+    # Classify
     predicted_class_idx, probabilities = predict_classification(X)
-    
-    class_names = ["Low", "Medium", "High"]
-    predicted_level = class_names[predicted_class_idx]
-    confidence = probabilities[predicted_class_idx]
+    predicted_level = CLASS_NAMES[predicted_class_idx]
+    confidence      = float(probabilities[predicted_class_idx])
 
-    logger.debug(f"[PREDICT] User {user_id}: Class = {predicted_level}, Probabilities = {probabilities}")
+    # Representative numeric score for the dashboard (midpoint of predicted class)
+    predicted_score = class_idx_to_score(predicted_class_idx)
 
-    trend = get_trend(current_score, predicted_class_idx, recent_scores)
+    logger.debug(
+        f"[PREDICT] User {user_id}: class={predicted_level} "
+        f"probs={[round(p, 3) for p in probabilities]}"
+    )
+
+    trend = get_trend(current_score_raw, predicted_class_idx, recent_scores_raw)
 
     return {
-        "user_id": user_id,
-        "name": employee_name,
-        "employee_name": employee_name,
-        "predicted_level": predicted_level,
-        "confidence_score": round(float(confidence), 4),
+        "user_id":            user_id,
+        "name":               employee_name,
+        "employee_name":      employee_name,
+        # Classification outputs
+        "predicted_level":    predicted_level,       # "Low" | "Medium" | "High"
+        "predicted_class":    predicted_class_idx,   # 0 | 1 | 2
         "class_probabilities": {
-            "Low": round(float(probabilities[0]), 4),
+            "Low":    round(float(probabilities[0]), 4),
             "Medium": round(float(probabilities[1]), 4),
-            "High": round(float(probabilities[2]), 4)
+            "High":   round(float(probabilities[2]), 4),
         },
-        "current_productivity": round(float(current_score), 2),
-        "trend": trend,
-        "model_version": "v2.0_classifier",
-        "features_used": FEATURES
+        # Numeric score for dashboard bars — midpoint of predicted class
+        "predicted_productivity": round(predicted_score, 1),
+        # Kept for Laravel backwards compatibility
+        "productivity_score":     round(predicted_score / 100.0, 4),
+        "confidence":             round(confidence, 4),
+        "confidence_score":       round(confidence, 4),
+        # Current (real) score from warehouse
+        "current_productivity":   round(current_score_raw, 2),
+        "trend":                  trend,
+        "model_version":          "v2.0_classifier",
+        "features_used":          FEATURES,
+        "lookback":               LOOKBACK,
+        "level": predicted_level,  # alias kept for old consumers
     }
+
 
 @app.route("/predict/<int:user_id>", methods=["GET"])
 def predict(user_id):
@@ -202,46 +262,52 @@ def predict(user_id):
         result = generate_prediction_for_user(user_id)
         return jsonify(result)
     except ValueError as e:
-        logger.warning(f"[PREDICT] User {user_id}: Validation error - {str(e)}")
+        logger.warning(f"[PREDICT] User {user_id}: {e}")
         return jsonify({"error": str(e), "user_id": user_id}), 400
     except Exception as e:
-        logger.error(f"[PREDICT] User {user_id}: Prediction failed - {str(e)}")
+        logger.error(f"[PREDICT] User {user_id}: {e}")
         return jsonify({"error": f"Prediction failed: {str(e)}", "user_id": user_id}), 500
+
 
 @app.route("/predict/all", methods=["POST"])
 def predict_all():
     try:
-        query = text("SELECT DISTINCT user_id, name FROM dim_employee ORDER BY user_id")
         with pg_engine.connect() as conn:
-            employees_df = pd.read_sql(query, conn)
-        
+            employees_df = pd.read_sql(
+                text("SELECT DISTINCT user_id, name FROM dim_employee ORDER BY user_id"),
+                conn
+            )
+
         employees = list(employees_df.itertuples(index=False, name=None))
         results, errors = [], []
 
-        for idx, (user_id, employee_name) in enumerate(employees):
+        for (user_id, employee_name) in employees:
             try:
-                result = generate_prediction_for_user(user_id, employee_name)
+                result = generate_prediction_for_user(int(user_id), employee_name)
                 results.append(result)
             except ValueError as e:
                 errors.append({"user_id": user_id, "name": employee_name, "error": str(e)})
             except Exception as e:
-                errors.append({"user_id": user_id, "name": employee_name, "error": f"Prediction error: {str(e)}"})
+                errors.append({"user_id": user_id, "name": employee_name,
+                               "error": f"Prediction error: {str(e)}"})
 
         return jsonify({
             "total_employees": len(employees),
-            "successful": len(results),
-            "failed": len(errors),
-            "predictions": results,
-            "errors": errors if errors else None
+            "successful":      len(results),
+            "failed":          len(errors),
+            "predictions":     results,
+            "errors":          errors if errors else None,
         })
 
     except Exception as e:
-        logger.error(f"[PREDICT_ALL] Fatal error: {str(e)}")
-        return jsonify({"error": f"Failed to generate predictions: {str(e)}"}), 500
+        logger.error(f"[PREDICT_ALL] Fatal: {e}")
+        return jsonify({"error": f"Failed: {str(e)}"}), 500
+
 
 @app.route("/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok"})
+    return jsonify({"status": "ok", "model_version": "v2.0_classifier", "lookback": LOOKBACK})
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=False, threaded=False)

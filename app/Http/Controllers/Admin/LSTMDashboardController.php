@@ -378,12 +378,14 @@ class LSTMDashboardController extends Controller
             $path = base_path('ml/models/metrics.json');
             if (file_exists($path)) {
                 $data = json_decode(file_get_contents($path), true);
-                return round($data['accuracy'] ?? 81.2, 1);
+                $raw = $data['accuracy'] ?? 68.5;
+                // metrics.json might store 0.685 (decimal) or 68.5 (percent)
+                return $raw < 1.0 ? round($raw * 100, 1) : round($raw, 1);
             }
-            return 81.2;  // actual evaluated accuracy from evaluate_classifier.py
+            return 68.5;  // your actual evaluate_classifier.py result
         } catch (\Exception $e) {
             Log::warning('Failed to read metrics.json: ' . $e->getMessage());
-            return 81.2;
+            return 68.5;
         }
     }
 
@@ -470,8 +472,9 @@ class LSTMDashboardController extends Controller
 
             if ($cached) {
                 return [
-                    'score'      => round($cached->predicted_score, 1),
-                    'confidence' => round($cached->confidence,      2),
+                    'score'           => round($cached->predicted_score, 1),
+                    'confidence'      => round($cached->confidence,      4),
+                    'predicted_level' => $cached->predicted_level ?? 'Medium',
                 ];
             }
 
@@ -483,8 +486,9 @@ class LSTMDashboardController extends Controller
                 $data = $response->json();
                 $this->storePrediction($employeeId, $data); // save to cache
                 return [
-                    'score'      => round($data['predicted_productivity'] ?? 0, 1),
-                    'confidence' => round($data['confidence']             ?? 0.85, 2),
+                    'score'           => round($data['predicted_productivity'] ?? 0, 1),
+                    'confidence'      => round($data['confidence_score']       ?? 0.85, 4),
+                    'predicted_level' => $data['predicted_level']              ?? 'Medium',
                 ];
             }
 
@@ -492,7 +496,7 @@ class LSTMDashboardController extends Controller
             Log::error("LSTM API Error for employee {$employeeId}: " . $e->getMessage());
         }
 
-        return ['score' => 0, 'confidence' => 0];
+        return ['score' => 0, 'confidence' => 0, 'predicted_level' => 'Medium'];
     }
 
     private function isLSTMApiHealthy(): bool
@@ -566,33 +570,32 @@ class LSTMDashboardController extends Controller
     private function calculateTrend(float $current, float $predicted): string
     {
         $difference = $predicted - $current;
-
-        if (abs($difference) < 2)
-            return 'stable';
-        return $difference > 0 ? 'up' : 'down';
+        if (abs($difference) < 2) return 'stable';
+        return $difference > 0 ? 'improving' : 'declining';
     }
 
     private function storePrediction(int $employeeId, array $prediction): void
     {
         try {
-            // Use predicted_productivity directly — already 0-100 scale
+            // New classifier API returns predicted_productivity as the numeric approximation
+            // and predicted_level as the class string
             $predictedScore  = $prediction['predicted_productivity'] ?? 0;
             $currentScore    = $prediction['current_productivity']   ?? 0;
+            $predictedLevel  = $prediction['predicted_level']        ?? 'Medium';
+            $confidence      = $prediction['confidence_score']       ?? 0.85;
 
             DB::table('lstm_predictions')->updateOrInsert(
                 ['employee_id' => $employeeId],
                 [
                     'predicted_score'      => round($predictedScore, 2),
                     'current_productivity' => round($currentScore,   2),
-                    'confidence'           => $prediction['confidence'] ?? 0.85,
+                    'predicted_level'      => $predictedLevel,
+                    'confidence'           => round($confidence, 4),
                     'predicted_at'         => Carbon::now(),
                     'updated_at'           => Carbon::now(),
                     'created_at'           => Carbon::now(),
                 ]
             );
-
-            Log::debug("Stored prediction for employee {$employeeId}: current={$currentScore}, predicted={$predictedScore}");
-
         } catch (\Exception $e) {
             Log::error("Error storing prediction for employee {$employeeId}: " . $e->getMessage());
         }
