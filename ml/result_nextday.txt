@@ -60,3 +60,24 @@ VERDICT  (NEXT-DAY FORECAST)
   ➖ LSTM beats naive by 1.8 pp — modest signal, useful but limited.
 
   Reference: RF ceiling on this problem is ~69% accuracy.
+
+After delete class weights
+Epoch 82: ReduceLROnPlateau reducing learning rate to 1.9531250927684596e-06.
+462/462 [==============================] - 13s 28ms/step - loss: 0.6210 - accuracy: 0.7500 - val_loss: 0.6953 - val_accuracy: 0.7107 - lr: 3.9063e-06
+Epoch 82: early stopping
+
+📊 Test set performance:
+   Test loss:     0.6900
+   Test accuracy: 70.05%
+
+✅ Model saved → models/lstm_productivity_nextday.keras
+   Epochs run     : 82
+   Best val_loss  : 0.6950
+   Best train_acc : 75.19%
+   Best val_acc   : 71.47%
+   Overfit gap    : 3.72%
+   ✅ No significant overfit.
+
+Note: The next-day forecast ceiling on this dataset is ~70% (RF baseline).
+Naive 'tomorrow = today' baseline is ~66%. Anything in 67-72% is meaningful.
+

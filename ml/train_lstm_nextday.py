@@ -262,7 +262,7 @@ history = model.fit(
     epochs=120,
     batch_size=128,
     callbacks=[early_stop, reduce_lr],
-    class_weight=class_weight_dict,
+    # class_weight=class_weight_dict,
     verbose=1,
 )
 
