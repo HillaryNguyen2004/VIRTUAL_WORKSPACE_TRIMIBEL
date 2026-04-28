@@ -1175,3 +1175,49 @@ TRUSTWORTHINESS VERDICT
   Accuracy = 68.5%
 
 ```
+
+After add arima 
+📊 Test set performance (Feb 2026 onwards):
+   Test loss: 0.8666
+   Test accuracy:  0.6350  (63.5%)
+
+✅ Model saved → models/lstm_productivity.keras
+   Epochs run     : 45
+   Best val_loss  : 0.8787
+   Best train_acc : 0.6084  (60.8%)
+   Best val_acc   : 0.6215  (62.1%)
+   Overfit gap    : -0.0131 (train vs val accuracy)
+   ✅ No significant overfit detected.
+   Quality        : POOR — consider checking data or retraining
+
+✅ ARIMA Transformation complete!
+Evaluating on 1860 test sequences (after 2026-01-31)
+
+==================================================
+CONFUSION MATRIX
+==================================================
+              Pred Low Pred Medium   Pred High
+   Act Low         145          46          35
+Act Medium         216         341         251
+  Act High          64          69         693
+
+==================================================
+PER-CLASS METRICS  (β = 1, balanced F1)
+==================================================
+Class       Precision     Recall         F1    Support
+--------------------------------------------------
+Low             0.341      0.642      0.445        226
+Medium          0.748      0.422      0.540        808
+High            0.708      0.839      0.768        826
+
+==================================================
+SUMMARY
+==================================================
+  Accuracy       : 0.634  (63.4%)
+  Macro F1       : 0.584
+
+==================================================
+TRUSTWORTHINESS VERDICT
+==================================================
+  Macro F1 = 0.584  →  POOR — retrain or review data before using
+  Accuracy = 63.4%

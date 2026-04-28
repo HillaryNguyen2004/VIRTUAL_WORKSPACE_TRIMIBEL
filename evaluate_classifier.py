@@ -8,6 +8,8 @@ sys.path.append('../etl')
 from config import PG_CONFIG
 from tensorflow.keras.models import load_model
 
+from arima_binary_prob import ArimaProbConfig, add_arima_prob_features
+
 # ─────────────────────────────────────────────────────────
 # 1. Load model and scaler
 # ─────────────────────────────────────────────────────────
@@ -21,9 +23,9 @@ FEATURES = [
     'score_vs_baseline',
     # Core attendance (4)
     'hours_worked',
-    'is_late',
-    'checked_in',
-    'had_day_off',
+    'is_late_prob',
+    'checked_in_prob',
+    'had_day_off_prob',
     # Task signals (5)
     'tasks_completed',
     'avg_task_score',
@@ -82,9 +84,26 @@ user_ids = sorted(df['user_id'].unique())
 uid_map  = {uid: i / len(user_ids) for i, uid in enumerate(user_ids)}
 df['user_id_norm'] = df['user_id'].map(uid_map)
 
+# Binary attendance features (0/1)
 df['is_late']     = df['is_late'].astype(int)
 df['checked_in']  = df['checked_in'].astype(int)
 df['had_day_off'] = df['had_day_off'].astype(int)
+
+# Convert binary 0/1 into continuous probability-like signals using ARIMA
+add_arima_prob_features(
+    df,
+    user_col='user_id',
+    date_col='full_date',
+    binary_cols=('is_late', 'checked_in', 'had_day_off'),
+    out_suffix='_prob',
+    config=ArimaProbConfig(
+        arima_order=(1, 0, 0),
+        min_history=14,
+        refit_every=7,
+        clip_01=True,
+        fallback='rolling_mean_7',
+    ),
+)
 
 # ── Must match train_lstm.py exactly ──────────────────────
 df['has_task_signal'] = (
@@ -162,8 +181,8 @@ actual_scores = scaler.inverse_transform(dummy_actual)[:, -1]
 # ─────────────────────────────────────────────────────────
 # MUST MATCH train_lstm.py thresholds exactly!
 def to_class_label(score):
-    if score >= 75: return 'High'
-    if score >= 55: return 'Medium'
+    if score >= 80: return 'High'
+    if score >= 50: return 'Medium'
     return 'Low'
 
 actual_classes = np.array([to_class_label(s) for s in actual_scores])

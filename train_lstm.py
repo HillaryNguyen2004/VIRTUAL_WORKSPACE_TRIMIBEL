@@ -8,10 +8,14 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.utils.class_weight import compute_class_weight
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout, Input
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras.callbacks import EarlyStopping, LambdaCallback
+from tensorflow.keras.optimizers import Adam
+import math
 import sys
 sys.path.append('../etl')
 from config import PG_CONFIG
+
+from arima_binary_prob import ArimaProbConfig, add_arima_prob_features
 
 os.makedirs("models", exist_ok=True)
 
@@ -66,7 +70,7 @@ df['full_date'] = pd.to_datetime(df['full_date'])
 #     Compute mean/std from pre-training data (before 2025-08-31)
 #     This gives the model "who is this employee and are they normal?"
 # ════════════════════════════════════════════════════════════
-train_baseline_cutoff = pd.Timestamp('2025-08-31')
+train_baseline_cutoff = pd.Timestamp('2025-10-31')
 
 baseline = (
     df[df['full_date'] <= train_baseline_cutoff]
@@ -111,9 +115,27 @@ print(f"Baseline saved → models/baseline.pkl")
 LOOKBACK = 14   # FIX 3: increased from 7 → 14 for more context
 TARGET   = 'productivity_score'
 
+# Binary attendance features (0/1)
 df['is_late']     = df['is_late'].astype(int)
 df['checked_in']  = df['checked_in'].astype(int)
 df['had_day_off'] = df['had_day_off'].astype(int)
+
+# Convert binary 0/1 into continuous probability-like signals using ARIMA
+# (walk-forward per employee; fallback = rolling mean over past 7 days)
+add_arima_prob_features(
+    df,
+    user_col='user_id',
+    date_col='full_date',
+    binary_cols=('is_late', 'checked_in', 'had_day_off'),
+    out_suffix='_prob',
+    config=ArimaProbConfig(
+        arima_order=(1, 0, 0),
+        min_history=14,
+        refit_every=7,
+        clip_01=True,
+        fallback='rolling_mean_7',
+    ),
+)
 
 # ── Original behavioral features (kept) ───────────────────
 df['has_task_signal'] = (
@@ -155,9 +177,9 @@ FEATURES = [
     'score_vs_baseline',
     # Core attendance (4)
     'hours_worked',
-    'is_late',
-    'checked_in',
-    'had_day_off',
+    'is_late_prob',
+    'checked_in_prob',
+    'had_day_off_prob',
     # Task signals (5)
     'tasks_completed',
     'avg_task_score',
@@ -175,7 +197,7 @@ FEATURES = [
     'day_of_week',
 ]
 
-print(f"Features: {len(FEATURES)} (20 total) → {FEATURES}")
+print(f"Features: {len(FEATURES)} → {FEATURES}")
 
 # ════════════════════════════════════════════════════════════
 # 4. SCALE THE DATA
@@ -227,8 +249,8 @@ print(f"Training shape → X: {X.shape}, y: {y.shape}")
 # ════════════════════════════════════════════════════════════
 def to_class_idx(score):
     """Convert productivity score (0-100) to class index."""
-    if score >= 75: return 2     # High
-    if score >= 55: return 1     # Medium
+    if score >= 80: return 2     # High — cleaner separation from Medium
+    if score >= 50: return 1     # Medium — wider band reduces boundary confusion
     return 0                     # Low
 
 # Inverse-scale y_list back to scores, then convert to class indices
@@ -270,8 +292,8 @@ weights = compute_class_weight('balanced',
                                classes=np.array([0, 1, 2]),
                                y=y_train)
 # FIX 1: Boost Low class weight even more (was 1.5x, now 2.5x)
-weights[0] *= 2.5    # Low is hardest class, penalise missing it more
-weights[1] *= 1.2    # Slight boost to Medium too
+weights[0] *= 1.5    # Low is hardest class, penalise missing it more
+# weights[1] *= 1.2    # Slight boost to Medium too
 class_weight_dict = {0: weights[0], 1: weights[1], 2: weights[2]}
 print(f"Class weights (boosted): Low={weights[0]:.2f}, Med={weights[1]:.2f}, High={weights[2]:.2f}")
 
@@ -296,7 +318,7 @@ model = Sequential([
 ])
 
 model.compile(
-    optimizer='adam',
+    optimizer=Adam(learning_rate=1e-4, clipnorm=1.0),
     loss='sparse_categorical_crossentropy',   # Step 3: 3-class classifier, was MSE
     metrics=['accuracy']                      # Step 3: was MAE
 )
@@ -305,18 +327,21 @@ model.summary()
 # ── Callbacks ─────────────────────────────────────────────
 early_stop = EarlyStopping(
     monitor='val_loss',
-    patience=15,                         # slightly more patience
+    patience=30,                         # more patience — cyclical lr needs room to cycle
     restore_best_weights=True,
     verbose=1
 )
 
-# Reduce learning rate when stuck — helps escape local minima
-reduce_lr = ReduceLROnPlateau(
-    monitor='val_loss',
-    factor=0.5,
-    patience=7,
-    min_lr=1e-6,
-    verbose=1
+# Cyclical learning rate — periodically bumps lr back up to escape local minima
+def cyclical_lr(epoch, base_lr=1e-4, max_lr=8e-4, step_size=20):
+    cycle = math.floor(1 + epoch / (2 * step_size))
+    x = abs(epoch / step_size - 2 * cycle + 1)
+    return base_lr + (max_lr - base_lr) * max(0, 1 - x)
+
+clr_callback = LambdaCallback(
+    on_epoch_begin=lambda epoch, logs: (
+        model.optimizer.learning_rate.assign(cyclical_lr(epoch))
+    )
 )
 
 # ════════════════════════════════════════════════════════════
@@ -328,7 +353,7 @@ history = model.fit(
     validation_data=(X_val, y_val),
     epochs=200,
     batch_size=16,                       # FIX 6: was 64
-    callbacks=[early_stop, reduce_lr],
+    callbacks=[early_stop, clr_callback],
     class_weight=class_weight_dict,      # Step 2: balance class imbalance
     verbose=1
 )
@@ -373,3 +398,6 @@ elif best_val_acc >= 0.65:
     print("   Quality        : OK — acceptable for a thesis demo")
 else:
     print("   Quality        : POOR — consider checking data or retraining")
+
+
+# python3 -m py_compile arima_binary_prob.py train_lstm.py evaluate_classifier.py
