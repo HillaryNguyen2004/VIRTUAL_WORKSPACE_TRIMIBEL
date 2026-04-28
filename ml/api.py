@@ -30,42 +30,46 @@ pg_url = URL.create(
 )
 pg_engine = create_engine(pg_url, pool_pre_ping=True)
 
-model  = load_model("models/lstm_productivity.keras")
-scaler = joblib.load("models/scaler.pkl")
+model    = load_model("models/lstm_productivity.keras")
+scaler   = joblib.load("models/scaler.pkl")
+baseline = joblib.load("models/baseline.pkl")  # Load personal baseline
 model_lock = threading.Lock()
 
-# ── Must match train_lstm.py EXACTLY ──────────────────────
+# ── Must match train_lstm.py EXACTLY ────────────────── (20 total)
 FEATURES = [
-    # Core attendance
+    # Personal context (2) — individual prediction
+    'user_id_norm',
+    'score_vs_baseline',
+    # Core attendance (4)
     'hours_worked',
     'is_late',
     'checked_in',
     'had_day_off',
-    # Task signals
+    # Task signals (5)
     'tasks_completed',
     'avg_task_score',
     'avg_task_percentage',
     'has_task_signal',
     'task_workload',
-    # Temporal lag features (safe — no target leakage)
+    # Temporal lag features (5)
     'score_yesterday',
     'score_3d_ago',
     'score_7d_ago',
     'score_delta_1d',
     'score_delta_7d',
-    # Behavioral patterns
+    # Behavioral patterns (2)
     'checkin_streak',
     'day_of_week',
 ]
 TARGET   = 'productivity_score'
 LOOKBACK = 14  # must match train_lstm.py
 
-# Class definitions — must match train_lstm.py thresholds
+# Class definitions — must match train_lstm.py thresholds (75→80, 55→50)
 CLASS_NAMES   = ['Low', 'Medium', 'High']
 CLASS_MIDPOINTS = {
-    'Low':    27.5,   # midpoint of 0–55
-    'Medium': 65.0,   # midpoint of 55–74
-    'High':   87.5,   # midpoint of 75–100
+    'Low':    25.0,   # midpoint of 0–50
+    'Medium': 65.0,   # midpoint of 50–79
+    'High':   90.0,   # midpoint of 80–100
 }
 
 
@@ -111,7 +115,7 @@ def get_last_n_days(user_id, n=LOOKBACK):
     return df
 
 
-def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
+def engineer_features(df: pd.DataFrame, user_id: int) -> pd.DataFrame:
     """
     Reproduces the exact feature engineering from train_lstm.py.
     Must be called AFTER sorting by full_date ascending.
@@ -151,6 +155,21 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df['day_of_week'] = pd.to_datetime(df['full_date']).dt.dayofweek
 
     df.fillna(0, inplace=True)
+
+    # Personal baseline features (FIX 2)
+    if user_id in baseline['user_id'].values:
+        user_baseline = baseline[baseline['user_id'] == user_id].iloc[0]
+        personal_mean = user_baseline['personal_mean']
+        personal_std  = max(user_baseline['personal_std'], 1)  # avoid div by 0
+        df['score_vs_baseline'] = (df['productivity_score'] - personal_mean) / personal_std
+    else:
+        df['score_vs_baseline'] = 0.0  # unknown user, default to 0
+
+    # Normalised user ID (all users in the baseline set)
+    all_user_ids = sorted(baseline['user_id'].unique())
+    uid_map = {uid: i / len(all_user_ids) for i, uid in enumerate(all_user_ids)}
+    df['user_id_norm'] = float(uid_map.get(user_id, 0.5))  # default to midpoint if not in baseline
+
     return df
 
 
@@ -159,10 +178,10 @@ def get_trend(current_score: float, predicted_class_idx: int, scores: list) -> s
     Compare predicted class against current score's class.
     Falls back to 7-day slope when the class is unchanged.
     """
-    # Classify current score using train_lstm.py thresholds
-    if current_score >= 75:
+    # Classify current score using train_lstm.py thresholds (updated)
+    if current_score >= 80:
         current_class_idx = 2
-    elif current_score >= 55:
+    elif current_score >= 50:
         current_class_idx = 1
     else:
         current_class_idx = 0
@@ -199,7 +218,7 @@ def generate_prediction_for_user(user_id: int, employee_name: str = None) -> dic
     if len(df) < LOOKBACK:
         raise ValueError(f"Insufficient data: {len(df)}/{LOOKBACK} days")
 
-    df = engineer_features(df)
+    df = engineer_features(df, user_id)
 
     # Raw (unscaled) current score — used for trend logic
     current_score_raw = float(df['productivity_score'].iloc[-1])

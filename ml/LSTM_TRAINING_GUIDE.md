@@ -1098,3 +1098,126 @@ python3 evaluate_classifier.py
 - [ ] Thêm bài kiểm tra holdout dựa trên thời gian (90 ngày cuối cùng) để đánh giá trung thực
 - [ ] Ghi lại đóng góp kỹ sư đặc tính (R² 0,42 → 0,84) trong luận văn
 - [ ] Giải thích hiệu suất F1 Medium thấp hơn như vấn đề ranh giới cấu trúc, không phải lỗi mô hình
+
+
+(venv) ry@ry-Inspiron-5584:/opt/lampp/htdocs/DO_AN_CHUYEN_NGANH/ml$ python3 evaluate_classifier.py
+2026-04-25 23:14:11.204158: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+Evaluating on 1800 test sequences (after 2026-01-31)
+After change
+==================================================
+CONFUSION MATRIX
+==================================================
+              Pred Low Pred Medium   Pred High
+   Act Low         222          44          33
+Act Medium         199         290         156
+  Act High         104          64         688
+
+==================================================
+PER-CLASS METRICS  (β = 1, balanced F1)
+==================================================
+Class       Precision     Recall         F1    Support
+--------------------------------------------------
+Low             0.423      0.742      0.539        299
+Medium          0.729      0.450      0.556        645
+High            0.784      0.804      0.794        856
+
+==================================================
+SUMMARY
+==================================================
+  Accuracy       : 0.667  (66.7%)
+  Macro F1       : 0.630
+
+==================================================
+TRUSTWORTHINESS VERDICT
+==================================================
+  Macro F1 = 0.630  →  POOR — retrain or review data before using
+  Accuracy = 66.7%
+
+
+Before change
+but if i keep the single lstm the result is not good
+
+```markdown
+after change result 
+(venv) ry@ry-Inspiron-5584:/opt/lampp/htdocs/DO_AN_CHUYEN_NGANH/ml$ python3 evaluate_classifier.py
+2026-04-25 16:59:57.345639: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+Evaluating on 1800 test sequences (after 2026-01-31)
+
+==================================================
+CONFUSION MATRIX
+==================================================
+              Pred Low Pred Medium   Pred High
+   Act Low         185          77          37
+Act Medium         133         349         163
+  Act High          55         102         699
+
+==================================================
+PER-CLASS METRICS  (β = 1, balanced F1)
+==================================================
+Class       Precision     Recall         F1    Support
+--------------------------------------------------
+Low             0.496      0.619      0.551        299
+Medium          0.661      0.541      0.595        645
+High            0.778      0.817      0.797        856
+
+==================================================
+SUMMARY
+==================================================
+  Accuracy       : 0.685  (68.5%)
+  Macro F1       : 0.647
+
+==================================================
+TRUSTWORTHINESS VERDICT
+==================================================
+  Macro F1 = 0.647  →  POOR — retrain or review data before using
+  Accuracy = 68.5%
+
+```
+
+After add arima 
+📊 Test set performance (Feb 2026 onwards):
+   Test loss: 0.8666
+   Test accuracy:  0.6350  (63.5%)
+
+✅ Model saved → models/lstm_productivity.keras
+   Epochs run     : 45
+   Best val_loss  : 0.8787
+   Best train_acc : 0.6084  (60.8%)
+   Best val_acc   : 0.6215  (62.1%)
+   Overfit gap    : -0.0131 (train vs val accuracy)
+   ✅ No significant overfit detected.
+   Quality        : POOR — consider checking data or retraining
+
+✅ ARIMA Transformation complete!
+Evaluating on 1860 test sequences (after 2026-01-31)
+
+==================================================
+CONFUSION MATRIX
+==================================================
+              Pred Low Pred Medium   Pred High
+   Act Low         145          46          35
+Act Medium         216         341         251
+  Act High          64          69         693
+
+==================================================
+PER-CLASS METRICS  (β = 1, balanced F1)
+==================================================
+Class       Precision     Recall         F1    Support
+--------------------------------------------------
+Low             0.341      0.642      0.445        226
+Medium          0.748      0.422      0.540        808
+High            0.708      0.839      0.768        826
+
+==================================================
+SUMMARY
+==================================================
+  Accuracy       : 0.634  (63.4%)
+  Macro F1       : 0.584
+
+==================================================
+TRUSTWORTHINESS VERDICT
+==================================================
+  Macro F1 = 0.584  →  POOR — retrain or review data before using
+  Accuracy = 63.4%
