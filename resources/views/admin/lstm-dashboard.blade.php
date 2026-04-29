@@ -2,240 +2,209 @@
 
 @section('content')
 <div class="lstm-dash">
-    {{-- HEADER --}}
+
+    {{-- ══════════════════════════════════════════════════════
+         HEADER
+    ══════════════════════════════════════════════════════ --}}
     <div class="dash-header">
         <div>
-            <h2 class="dash-title">Productivity Insights</h2>
-            <p class="dash-subtitle">LSTM-powered predictions · Last run <span id="last-run">—</span></p>
+            <h2 class="dash-title">Productivity Outlook</h2>
+            <p class="dash-subtitle"
+               title="Dự đoán hạng năng suất ngày mai cho từng nhân viên dựa trên 14 ngày làm việc gần nhất.">
+                Tomorrow's predicted productivity class · LSTM forecast based on past 14 days
+            </p>
         </div>
-        <div style="display:flex;gap:8px">
-            <button id="btn-export" class="btn-secondary">Export Excel</button>
-            <button id="btn-refresh" class="btn-primary">
-                <svg id="refresh-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                    <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
+        <div class="header-actions">
+            <span class="last-run" title="Lần chạy mô hình gần nhất">
+                Last updated <span id="last-run">—</span>
+            </span>
+            <button id="btn-export" class="btn-secondary" title="Tải báo cáo Excel">Export</button>
+            <button id="btn-refresh" class="btn-primary" title="Chạy lại dự đoán">
+                <svg id="refresh-icon" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.2">
+                    <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/>
+                    <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
                 </svg>
                 Refresh
             </button>
         </div>
     </div>
 
-    {{-- METRIC STRIP --}}
-    <div class="metric-strip">
-        <div class="metric-tile"><span class="metric-num" id="m-avg">—</span><span class="metric-lbl">Team avg</span><span class="metric-sub" id="m-avg-delta"></span></div>
-        <div class="metric-tile accent-danger"><span class="metric-num" id="m-risk">—</span><span class="metric-lbl">Need attention (<55%)</span><span class="metric-sub" id="m-risk-sub"></span></div>
-        <div class="metric-tile accent-warn"><span class="metric-num" id="m-burnout">—</span><span class="metric-lbl">Declining trend</span></div>
-        <div class="metric-tile accent-ok"><span class="metric-num" id="m-high">—</span><span class="metric-lbl">High performers (≥75%)</span><span class="metric-sub" id="m-high-sub"></span></div>
-        <div class="metric-tile"><span class="metric-num" id="m-acc">—</span><span class="metric-lbl">Model confidence</span><span class="metric-sub" id="m-acc-sub"></span></div>
-    </div>
-
-    {{-- MAIN GRID: Attention + Alerts --}}
-    <div class="main-grid">
-        <div class="panel">
-            <div class="panel-head"><span class="panel-title">Needs attention</span><span class="panel-badge danger" id="badge-atrisk">—</span></div>
-            <div class="attn-header">
-                <span>Employee</span><span>Current</span><span>Predicted</span><span>Trend</span>
+    {{-- ══════════════════════════════════════════════════════
+         TIER 1 — SNAPSHOT
+         "What's the situation tomorrow?"
+    ══════════════════════════════════════════════════════ --}}
+    <div class="tier-1 panel">
+        <div class="snapshot-row">
+            <div class="snapshot-headline">
+                <div class="snapshot-label" title="Tổng quan dự đoán cho ngày mai">Tomorrow's outlook</div>
+                <div class="snapshot-main">
+                    <span class="snapshot-num" id="snap-attention">—</span>
+                    <span class="snapshot-text">need attention</span>
+                </div>
+                <div class="snapshot-sub" id="snap-sub">—</div>
             </div>
-            <div id="attention-list"><div class="empty-state">Loading…</div></div>
-        </div>
-        <div class="panel">
-            <div class="panel-head"><span class="panel-title">Recommended actions</span></div>
-            <div id="alerts-list"><div class="empty-state">Loading…</div></div>
-        </div>
-    </div>
-
-    {{-- PREDICTION BREAKDOWN --}}
-    <div class="section-label">Prediction breakdown</div>
-    <div class="breakdown-grid">
-        <div class="panel">
-            <div class="panel-head">
-                <span class="panel-title">Class distribution</span>
-            </div>
-            <div class="class-bars">
-                <div class="class-bar-row">
-                    <span class="class-bar-lbl">High</span>
-                    <div class="class-bar-bg">
-                        <div class="class-bar-fill fill-high" id="bar-high" style="width:0%"></div>
-                    </div>
-                    <span class="class-bar-cnt" id="cnt-high">—</span>
+            <div class="snapshot-bars">
+                <div class="snap-bar snap-bar-low"
+                     title="Số nhân viên được dự đoán có năng suất Thấp ngày mai">
+                    <span class="snap-bar-num" id="snap-low">—</span>
+                    <span class="snap-bar-lbl">Predicted Low <span class="snap-bar-thresh">&lt;50</span></span>
                 </div>
-                <div class="class-bar-row">
-                    <span class="class-bar-lbl">Medium</span>
-                    <div class="class-bar-bg">
-                        <div class="class-bar-fill fill-med" id="bar-med" style="width:0%"></div>
-                    </div>
-                    <span class="class-bar-cnt" id="cnt-med">—</span>
+                <div class="snap-bar snap-bar-med"
+                     title="Số nhân viên được dự đoán có năng suất Trung bình ngày mai">
+                    <span class="snap-bar-num" id="snap-med">—</span>
+                    <span class="snap-bar-lbl">Predicted Medium <span class="snap-bar-thresh">50–79</span></span>
                 </div>
-                <div class="class-bar-row">
-                    <span class="class-bar-lbl">Low</span>
-                    <div class="class-bar-bg">
-                        <div class="class-bar-fill fill-low" id="bar-low" style="width:0%"></div>
-                    </div>
-                    <span class="class-bar-cnt" id="cnt-low">—</span>
-                </div>
-            </div>
-        </div>
-        <div class="panel">
-            <div class="panel-head">
-                <span class="panel-title">Momentum this week</span>
-            </div>
-            <div class="trend-rings">
-                <div class="trend-ring ring-up">
-                    <div class="ring-num" id="ring-improving">—</div>
-                    <div class="ring-lbl">Improving</div>
-                </div>
-                <div class="trend-ring ring-flat">
-                    <div class="ring-num" id="ring-stable">—</div>
-                    <div class="ring-lbl">Stable</div>
-                </div>
-                <div class="trend-ring ring-down">
-                    <div class="ring-num" id="ring-declining">—</div>
-                    <div class="ring-lbl">Declining</div>
+                <div class="snap-bar snap-bar-high"
+                     title="Số nhân viên được dự đoán có năng suất Cao ngày mai">
+                    <span class="snap-bar-num" id="snap-high">—</span>
+                    <span class="snap-bar-lbl">Predicted High <span class="snap-bar-thresh">≥80</span></span>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- SIGNAL ANALYSIS --}}
-    <div class="section-label" style="margin-top:1.5rem">Signal analysis</div>
-    <div class="feature-grid">
-        <div class="panel">
+    {{-- ══════════════════════════════════════════════════════
+         TIER 2 — ACTION
+         "Who do I need to talk to?"
+    ══════════════════════════════════════════════════════ --}}
+    <div class="tier-2">
+        <div class="panel attention-panel">
             <div class="panel-head">
-                <span class="panel-title">Score momentum distribution</span>
-                <span class="panel-badge neutral">7-day vs 30-day average</span>
-            </div>
-            <div class="chart-wrap" style="height:120px"><canvas id="trend-chart"></canvas></div>
-            <p class="chart-hint">Negative = declining momentum &middot; Positive = improving</p>
-        </div>
-        <div class="panel">
-            <div class="panel-head">
-                <span class="panel-title">Task activity coverage</span>
-                <span class="panel-badge info">employees with active tasks</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:16px;margin-top:4px">
-                <div style="position:relative;height:90px;width:90px;flex-shrink:0">
-                    <canvas id="task-signal-chart"></canvas>
+                <div>
+                    <span class="panel-title" title="Nhân viên cần được quan tâm">Who needs attention</span>
+                    <span class="panel-sub">Sorted by predicted risk · click a row to see history</span>
                 </div>
-                <div id="task-signal-legend" class="task-legend-text"></div>
+                <div class="attention-controls">
+                    <select id="attn-filter" class="tbl-select" title="Lọc theo dự đoán">
+                        <option value="all">All concerns</option>
+                        <option value="low">Predicted Low only</option>
+                        <option value="declining">Declining trend only</option>
+                    </select>
+                </div>
             </div>
-        </div>
-        <div class="panel">
-            <div class="panel-head">
-                <span class="panel-title">Burnout risk signals</span>
-                <span class="panel-badge warn">hours + score trend</span>
+
+            <div class="attn-table-head">
+                <span title="Tên nhân viên">Employee</span>
+                <span title="Xu hướng 7 ngày qua">Recent trajectory</span>
+                <span title="Hạng dự đoán cho ngày mai">Predicted</span>
+                <span title="Độ tự tin của mô hình">Model confidence</span>
+                <span></span>
             </div>
-            <div class="burnout-grid">
-                <div class="burnout-stat">
-                    <div class="bs-val" id="b-overwork">—</div>
-                    <div class="bs-lbl">Working &gt;9h/day</div>
-                    <div class="bs-bar"><div class="bs-fill" id="b-overwork-bar" style="background:#EF9F27"></div></div>
-                </div>
-                <div class="burnout-stat">
-                    <div class="bs-val" id="b-neg-trend">—</div>
-                    <div class="bs-lbl">Declining score trend</div>
-                    <div class="bs-bar"><div class="bs-fill" id="b-neg-trend-bar" style="background:#EF9F27"></div></div>
-                </div>
-                <div class="burnout-stat">
-                    <div class="bs-val" id="b-combined">—</div>
-                    <div class="bs-lbl">Both signals combined</div>
-                    <div class="bs-bar"><div class="bs-fill" id="b-combined-bar" style="background:#E24B4A"></div></div>
-                </div>
+            <div id="attention-list">
+                <div class="empty-state">Loading…</div>
             </div>
         </div>
     </div>
 
-    {{-- DEPARTMENT BREAKDOWN --}}
-    <div class="section-label" style="margin-top:1.5rem">By department</div>
-    <div class="dept-row" id="dept-row">
-        <div class="empty-state" style="grid-column:1/-1">Loading…</div>
-    </div>
-
-    {{-- BOTTOM GRID --}}
-    <div class="bottom-grid">
+    {{-- ══════════════════════════════════════════════════════
+         TIER 3 — CONTEXT
+         "How does this break down?"
+    ══════════════════════════════════════════════════════ --}}
+    <div class="section-label">Context</div>
+    <div class="tier-3">
+        {{-- Department breakdown --}}
         <div class="panel">
             <div class="panel-head">
-                <span class="panel-title">7-day prediction horizon</span>
-                <span class="panel-hint">actual vs LSTM predicted</span>
+                <span class="panel-title" title="Trung bình theo phòng ban">By department</span>
+                <span class="panel-hint">Predicted average for tomorrow</span>
             </div>
-            <div class="chart-wrap"><canvas id="horizon-chart"></canvas></div>
-            <div class="horizon-legend">
-                <span class="legend-dot" style="background:#378ADD"></span> Actual &nbsp;&nbsp;
-                <span class="legend-dot legend-dashed" style="background:#1D9E75"></span> LSTM predicted
+            <div id="dept-list">
+                <div class="empty-state">Loading…</div>
             </div>
         </div>
 
+        {{-- Predicted score distribution (REAL data) --}}
         <div class="panel">
             <div class="panel-head">
-                <span class="panel-title">Score distribution</span>
-                <span class="panel-hint">predicted productivity</span>
+                <span class="panel-title" title="Phân phối điểm dự đoán">Score distribution</span>
+                <span class="panel-hint">Tomorrow's predicted scores</span>
             </div>
             <div class="chart-wrap"><canvas id="dist-chart"></canvas></div>
         </div>
 
-        <div class="panel">
-            <div class="panel-head"><span class="panel-title">This week's insights</span></div>
-            <div id="insights-list"></div>
-        </div>
-    </div>
-
-    {{-- TOP PERFORMERS + MODEL TRANSPARENCY --}}
-    <div class="transparency-grid">
+        {{-- Top performers (compact) --}}
         <div class="panel">
             <div class="panel-head">
-                <span class="panel-title">Top performers</span>
-                <span class="panel-badge ok" id="badge-top">—</span>
+                <span class="panel-title" title="Nhân viên có dự đoán cao nhất">Top predicted</span>
+                <span class="panel-hint">Tomorrow</span>
             </div>
-            <div id="top-list"><div class="empty-state">Loading…</div></div>
-        </div>
-
-        <div class="panel" style="grid-column: span 2">
-            <div class="panel-head">
-                <span class="panel-title">Model transparency</span>
-                <span class="panel-badge neutral">LSTM classifier &middot; LOOKBACK=14</span>
-            </div>
-            <div class="model-inner">
-                <div>
-                    <div class="model-section-lbl">Model health</div>
-                    <div class="model-stats-grid">
-                        <div class="model-stat">
-                            <div class="ms-val" id="ms-acc">—</div>
-                            <div class="ms-lbl">Accuracy</div>
-                        </div>
-                        <div class="model-stat">
-                            <div class="ms-val" id="ms-f1">—</div>
-                            <div class="ms-lbl">Macro F1</div>
-                        </div>
-                        <div class="model-stat">
-                            <div class="ms-val" id="ms-loss">—</div>
-                            <div class="ms-lbl">Val loss</div>
-                        </div>
-                        <div class="model-stat">
-                            <div class="ms-val" id="ms-epochs">—</div>
-                            <div class="ms-lbl">Epochs ran</div>
-                        </div>
-                    </div>
-                    <div class="model-section-lbl" style="margin-top:14px">Prediction trustworthiness</div>
-                    <div class="trust-bar-wrap">
-                        <div class="trust-bar-track">
-                            <div class="trust-bar-fill" id="trust-fill" style="width:0%"></div>
-                        </div>
-                        <span class="trust-pct" id="trust-pct">—</span>
-                    </div>
-                    <p class="chart-hint" style="margin-top:6px">Based on held-out test accuracy (Feb 2026 onwards)</p>
-                </div>
-                <div>
-                    <div class="model-section-lbl">What the model pays attention to</div>
-                    <div id="feature-importance-list" class="fi-list">
-                        <div class="empty-state">Loading…</div>
-                    </div>
-                </div>
+            <div id="top-list">
+                <div class="empty-state">Loading…</div>
             </div>
         </div>
     </div>
 
-    {{-- ALL EMPLOYEES TABLE --}}
+    {{-- ══════════════════════════════════════════════════════
+         TIER 4 — TRUST
+         "Can I trust these numbers?"
+    ══════════════════════════════════════════════════════ --}}
+    <div class="section-label">About this model</div>
+    <div class="tier-4 panel">
+        <div class="trust-grid">
+            <div class="trust-cell"
+                 title="Độ chính xác trên dữ liệu kiểm tra (chưa từng thấy trong quá trình huấn luyện)">
+                <div class="trust-num" id="ms-acc">—</div>
+                <div class="trust-lbl">Test accuracy</div>
+                <div class="trust-sub">Held-out data, Feb 2026 onward</div>
+            </div>
+            <div class="trust-cell"
+                 title="So với cách đoán đơn giản: 'ngày mai giống ngày hôm nay'">
+                <div class="trust-num" id="ms-uplift">—</div>
+                <div class="trust-lbl">Lift over naive baseline</div>
+                <div class="trust-sub">vs. "tomorrow = today" guess</div>
+            </div>
+            <div class="trust-cell"
+                 title="Macro F1 — trung bình cân bằng giữa các hạng">
+                <div class="trust-num" id="ms-f1">—</div>
+                <div class="trust-lbl">Macro F1</div>
+                <div class="trust-sub">Balance across all classes</div>
+            </div>
+            <div class="trust-cell"
+                 title="Số ngày dữ liệu được dùng làm đầu vào">
+                <div class="trust-num" id="ms-lookback">14</div>
+                <div class="trust-lbl">Lookback window</div>
+                <div class="trust-sub">Days of history per prediction</div>
+            </div>
+        </div>
+
+        <div class="trust-classes">
+            <div class="trust-class-row">
+                <span class="trust-class-lbl">High class</span>
+                <span class="trust-class-bar"><span class="tcb-fill tcb-high" id="cls-f1-high-bar"></span></span>
+                <span class="trust-class-val" id="cls-f1-high">—</span>
+                <span class="trust-class-note">Strong predictions</span>
+            </div>
+            <div class="trust-class-row">
+                <span class="trust-class-lbl">Medium class</span>
+                <span class="trust-class-bar"><span class="tcb-fill tcb-med" id="cls-f1-med-bar"></span></span>
+                <span class="trust-class-val" id="cls-f1-med">—</span>
+                <span class="trust-class-note">Reasonably reliable</span>
+            </div>
+            <div class="trust-class-row">
+                <span class="trust-class-lbl">Low class</span>
+                <span class="trust-class-bar"><span class="tcb-fill tcb-low" id="cls-f1-low-bar"></span></span>
+                <span class="trust-class-val" id="cls-f1-low">—</span>
+                <span class="trust-class-note">Use as signal, not verdict</span>
+            </div>
+        </div>
+
+        <div class="trust-disclaimer"
+             title="Lưu ý quan trọng về cách diễn giải kết quả">
+            <strong>How to read this:</strong> The model forecasts a class, not an exact score.
+            Predictions for the Low class have lower reliability (F1 = 0.38) — when the model
+            flags someone as Low, treat it as a prompt to check in, not a final judgement.
+            High predictions are more dependable (F1 = 0.78). Class thresholds: Low &lt;50,
+            Medium 50–79, High ≥80.
+        </div>
+    </div>
+
+    {{-- ══════════════════════════════════════════════════════
+         FULL TABLE (collapsed by default)
+    ══════════════════════════════════════════════════════ --}}
     <div class="section-row">
         <div class="section-label" style="margin:0">All employees</div>
-        <button class="btn-toggle" id="btn-toggle-all">Show all ▾</button>
+        <button class="btn-toggle" id="btn-toggle-all" title="Hiển thị/ẩn bảng đầy đủ">Show all ▾</button>
     </div>
     <div class="panel" id="panel-all" style="display:none">
         <div class="table-filters">
@@ -244,10 +213,10 @@
                 <option value="">All departments</option>
             </select>
             <select id="risk-filter" class="tbl-select">
-                <option value="">All levels</option>
-                <option value="high">High performers (&ge;75%)</option>
-                <option value="medium">Medium (55–74%)</option>
-                <option value="low">Needs attention (&lt;55%)</option>
+                <option value="">All classes</option>
+                <option value="high">Predicted High</option>
+                <option value="medium">Predicted Medium</option>
+                <option value="low">Predicted Low</option>
             </select>
         </div>
         <div class="tbl-wrap">
@@ -256,11 +225,10 @@
                     <tr>
                         <th>Employee</th>
                         <th>Department</th>
-                        <th>Current</th>
-                        <th>Predicted class</th>
-                        <th>Predicted score</th>
-                        <th>Trend</th>
-                        <th>Confidence</th>
+                        <th title="Điểm hôm nay">Today</th>
+                        <th title="Hạng dự đoán cho ngày mai">Predicted (tomorrow)</th>
+                        <th title="Xu hướng 7 ngày">Trend</th>
+                        <th title="Độ tự tin">Confidence</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -269,246 +237,231 @@
         </div>
     </div>
 
-    {{-- LOADING OVERLAY --}}
+    {{-- LOADING --}}
     <div id="loading-overlay" class="loading-overlay">
         <div class="spinner"></div>
         <p>Loading predictions…</p>
     </div>
-
 </div>
 
 <style>
 /* ─── Reset & base ──────────────────────────────────────── */
 .lstm-dash *{box-sizing:border-box}
-.lstm-dash{padding:1.5rem 0 3rem;font-family:'DM Sans',sans-serif;color:#111}
+.lstm-dash{padding:1.5rem 0 3rem;font-family:'DM Sans',sans-serif;color:#1a1a1a}
 
 /* ─── Header ────────────────────────────────────────────── */
-.dash-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem}
-.dash-title{font-size:1.35rem;font-weight:600;letter-spacing:-.02em;margin:0 0 3px}
-.dash-subtitle{font-size:.75rem;color:#888;margin:0}
+.dash-header{display:flex;justify-content:space-between;align-items:flex-start;
+  margin-bottom:1.5rem;gap:1rem;flex-wrap:wrap}
+.dash-title{font-size:1.4rem;font-weight:600;letter-spacing:-.02em;margin:0 0 4px;color:#0f172a}
+.dash-subtitle{font-size:.78rem;color:#64748b;margin:0;line-height:1.5;cursor:help}
+.header-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.last-run{font-size:.72rem;color:#94a3b8;cursor:help;margin-right:4px}
 
-.btn-primary{display:inline-flex;align-items:center;gap:6px;padding:.4rem .95rem;font-size:.76rem;
-  font-weight:600;border:1px solid #111;border-radius:8px;background:#111;color:#fff;
-  cursor:pointer;transition:all .15s;white-space:nowrap;font-family:'DM Sans',sans-serif}
-.btn-primary:hover{background:#333;border-color:#333}
-.btn-primary:disabled{opacity:.45;cursor:not-allowed}
+.btn-primary{display:inline-flex;align-items:center;gap:6px;padding:.45rem 1rem;
+  font-size:.76rem;font-weight:600;border:1px solid #0f172a;border-radius:8px;
+  background:#0f172a;color:#fff;cursor:pointer;transition:all .15s;
+  white-space:nowrap;font-family:inherit}
+.btn-primary:hover{background:#1e293b}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
 .btn-primary.spinning #refresh-icon{animation:spin .7s linear infinite}
-.btn-secondary{display:inline-flex;align-items:center;gap:6px;padding:.4rem .95rem;font-size:.76rem;
-  font-weight:600;border:1px solid #d4d4d4;border-radius:8px;background:#fff;color:#333;
-  cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
-.btn-secondary:hover{border-color:#888;background:#fafafa}
+.btn-secondary{display:inline-flex;align-items:center;gap:6px;padding:.45rem 1rem;
+  font-size:.76rem;font-weight:600;border:1px solid #cbd5e1;border-radius:8px;
+  background:#fff;color:#334155;cursor:pointer;transition:all .15s;font-family:inherit}
+.btn-secondary:hover{border-color:#94a3b8;background:#f8fafc}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* ─── Metric strip ───────────────────────────────────────── */
-.metric-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:1.5rem}
-.metric-tile{background:#fafafa;border:1px solid #ebebeb;border-radius:12px;padding:.85rem 1rem}
-.metric-tile.accent-danger{border-left:3px solid #E24B4A;border-radius:0 12px 12px 0}
-.metric-tile.accent-warn  {border-left:3px solid #EF9F27;border-radius:0 12px 12px 0}
-.metric-tile.accent-ok    {border-left:3px solid #639922;border-radius:0 12px 12px 0}
-.metric-num{display:block;font-size:1.5rem;font-weight:600;letter-spacing:-.03em;line-height:1;margin-bottom:3px}
-.metric-lbl{font-size:.7rem;color:#888;font-weight:500}
-.metric-sub{display:block;font-size:.69rem;margin-top:3px;color:#999}
+/* ─── Panels ─────────────────────────────────────────────── */
+.panel{background:#fff;border:1px solid #ebebeb;border-radius:14px;padding:1.1rem 1.25rem}
+.panel-head{display:flex;align-items:flex-start;justify-content:space-between;
+  margin-bottom:.85rem;gap:8px}
+.panel-title{font-size:.85rem;font-weight:700;color:#0f172a;letter-spacing:-.01em;
+  cursor:help;display:block}
+.panel-sub{font-size:.7rem;color:#94a3b8;display:block;margin-top:2px;font-weight:500}
+.panel-hint{font-size:.7rem;color:#94a3b8;font-weight:500}
 
 /* ─── Section label ─────────────────────────────────────── */
-.section-label{font-size:.68rem;font-weight:700;color:#bbb;letter-spacing:.08em;
-  text-transform:uppercase;margin:0 0 .75rem}
-.section-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+.section-label{font-size:.68rem;font-weight:700;color:#94a3b8;letter-spacing:.1em;
+  text-transform:uppercase;margin:1.5rem 0 .85rem}
+.section-row{display:flex;align-items:center;justify-content:space-between;
+  margin:1.5rem 0 .85rem}
 
-/* ─── Panels ─────────────────────────────────────────────── */
-.panel{background:#fff;border:1px solid #ebebeb;border-radius:14px;padding:1rem 1.2rem;overflow:hidden}
-.panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem}
-.panel-title{font-size:.82rem;font-weight:700;color:#111;letter-spacing:-.01em}
-.panel-hint{font-size:.7rem;color:#ccc}
-.panel-badge{font-size:.67rem;font-weight:700;padding:2px 9px;border-radius:20px}
-.panel-badge.neutral{background:#f1f5f9;color:#64748b}
-.panel-badge.ok     {background:#dcfce7;color:#166534}
-.panel-badge.danger {background:#fee2e2;color:#991b1b}
-.panel-badge.info   {background:#dbeafe;color:#1e40af}
-.panel-badge.warn   {background:#fef3c7;color:#92400e}
+/* ═══════════════════════════════════════════════════════════
+   TIER 1 — SNAPSHOT
+═══════════════════════════════════════════════════════════ */
+.tier-1{margin-bottom:14px;padding:1.4rem 1.5rem}
+.snapshot-row{display:grid;grid-template-columns:1fr 1.4fr;gap:1.5rem;align-items:center}
+.snapshot-label{font-size:.72rem;color:#64748b;margin-bottom:6px;cursor:help}
+.snapshot-main{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+.snapshot-num{font-size:2.3rem;font-weight:600;letter-spacing:-.04em;line-height:1;color:#0f172a}
+.snapshot-text{font-size:.95rem;color:#475569;font-weight:500}
+.snapshot-sub{font-size:.74rem;color:#94a3b8}
 
-/* ─── Main grid ───────────────────────────────────────────── */
-.main-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:1.5rem}
+.snapshot-bars{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.snap-bar{padding:.85rem 1rem;border-radius:10px;cursor:help;
+  display:flex;flex-direction:column;gap:3px}
+.snap-bar-low {background:#fef2f2;color:#991b1b}
+.snap-bar-med {background:#f1f5f9;color:#334155}
+.snap-bar-high{background:#f0fdf4;color:#166534}
+.snap-bar-num{font-size:1.6rem;font-weight:600;letter-spacing:-.03em;line-height:1}
+.snap-bar-lbl{font-size:.7rem;font-weight:500;line-height:1.3}
+.snap-bar-thresh{opacity:.65;font-weight:400;margin-left:2px}
 
-/* ─── Attention list header ──────────────────────────────── */
-.attn-header{display:grid;grid-template-columns:1.8fr 1fr 1fr .8fr;gap:8px;
-  padding:.3rem 0 .5rem;border-bottom:1px solid #f0f0f0}
-.attn-header span{font-size:.67rem;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:.06em}
+/* ═══════════════════════════════════════════════════════════
+   TIER 2 — ACTION
+═══════════════════════════════════════════════════════════ */
+.tier-2{margin-bottom:1.5rem}
+.attention-panel{padding:1.1rem 0 .5rem}
+.attention-panel .panel-head{padding:0 1.25rem;margin-bottom:.85rem}
+.attention-controls{display:flex;gap:8px}
 
-/* ─── attn-row (rendered by JS) ─────────────────────────── */
-.attn-row{display:grid;grid-template-columns:1.8fr 1fr 1fr .8fr;gap:8px;align-items:center;
-  padding:.5rem 0;border-bottom:1px solid #f5f5f5;font-size:.77rem}
+.attn-table-head{display:grid;grid-template-columns:1.6fr 1.2fr .7fr 1fr 80px;
+  gap:10px;padding:.5rem 1.25rem;border-top:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;
+  background:#fafbfc}
+.attn-table-head span{font-size:.66rem;font-weight:700;color:#94a3b8;
+  text-transform:uppercase;letter-spacing:.06em;cursor:help}
+
+.attn-row{display:grid;grid-template-columns:1.6fr 1.2fr .7fr 1fr 80px;
+  gap:10px;align-items:center;padding:.7rem 1.25rem;border-bottom:1px solid #f5f5f5;
+  font-size:.78rem;transition:background .15s}
+.attn-row:hover{background:#fafbfc}
 .attn-row:last-child{border-bottom:none}
-.emp-name{font-size:.8rem;font-weight:700;color:#111}
-.emp-sub{font-size:.68rem;color:#aaa;margin-top:1px}
-.score-bar-wrap{display:flex;flex-direction:column;gap:3px}
-.score-bar{background:#f0f0f0;border-radius:4px;height:4px;overflow:hidden}
-.score-fill{height:100%;border-radius:4px;transition:width .5s ease}
-.score-num{font-size:.72rem;font-weight:600;color:#555}
-.trend-up-txt  {color:#166534;font-size:.72rem;font-weight:700}
-.trend-down-txt{color:#991b1b;font-size:.72rem;font-weight:700}
-.trend-flat-txt{color:#94a3b8;font-size:.72rem;font-weight:700}
 
-/* ─── Action items (rendered by JS as action-item) ────────── */
-.action-item{display:flex;align-items:flex-start;gap:9px;padding:.55rem 0;border-bottom:1px solid #f5f5f5}
-.action-item:last-child{border-bottom:none}
-.action-dot{width:6px;height:6px;border-radius:50%;margin-top:5px;flex-shrink:0}
-.dot-red  {background:#E24B4A}.dot-amber{background:#EF9F27}.dot-blue{background:#378ADD}
-.action-name{font-size:.8rem;font-weight:700;color:#111}
-.action-desc{font-size:.71rem;color:#666;margin-top:2px;line-height:1.45}
-.action-tag{margin-left:auto;flex-shrink:0;font-size:.66rem;font-weight:700;
-  padding:2px 8px;border-radius:20px;white-space:nowrap;align-self:flex-start}
-.tag-red  {background:#fee2e2;color:#991b1b}
-.tag-amber{background:#fef3c7;color:#92400e}
-.tag-blue {background:#dbeafe;color:#1e40af}
+.attn-emp-name{font-weight:700;font-size:.84rem;color:#0f172a;
+  display:flex;align-items:center;gap:8px}
+.attn-emp-avatar{width:28px;height:28px;border-radius:50%;display:flex;
+  align-items:center;justify-content:center;font-size:.62rem;font-weight:700;
+  color:#fff;flex-shrink:0}
+.attn-emp-info{display:flex;flex-direction:column;min-width:0}
+.attn-emp-dept{font-size:.68rem;color:#94a3b8;font-weight:500;margin-top:1px}
 
-/* ─── Prediction breakdown ───────────────────────────────── */
-.breakdown-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:1.5rem}
-.class-bars{display:flex;flex-direction:column;gap:12px;padding:.25rem 0}
-.class-bar-row{display:flex;align-items:center;gap:10px;font-size:.8rem}
-.class-bar-lbl{width:52px;font-size:.73rem;font-weight:600;color:#555;flex-shrink:0}
-.class-bar-bg{flex:1;background:#f0f0f0;border-radius:6px;height:10px;overflow:hidden}
-.class-bar-fill{height:100%;border-radius:6px;transition:width .6s ease}
-.fill-high{background:#639922}.fill-med{background:#378ADD}.fill-low{background:#E24B4A}
-.class-bar-cnt{font-size:.73rem;color:#888;width:72px;text-align:right;flex-shrink:0}
-.trend-rings{display:flex;justify-content:space-around;align-items:center;padding:1rem 0}
-.trend-ring{text-align:center}
-.ring-num{font-size:1.6rem;font-weight:600;letter-spacing:-.03em;line-height:1}
-.ring-lbl{font-size:.7rem;color:#999;margin-top:3px}
-.ring-up .ring-num  {color:#166534}
-.ring-flat .ring-num{color:#64748b}
-.ring-down .ring-num{color:#991b1b}
+.traj-text{font-size:.74rem;font-weight:600}
+.traj-declining{color:#991b1b}
+.traj-improving{color:#166534}
+.traj-stable{color:#64748b}
+.traj-detail{font-size:.66rem;color:#94a3b8;font-weight:500;margin-top:1px}
 
-/* ─── Feature breakdown grid ─────────────────────────────── */
-.feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:1.5rem}
-.chart-hint{font-size:.68rem;color:#bbb;margin-top:6px;margin-bottom:0}
-.task-legend-text{font-size:.75rem;color:#666;line-height:1.7}
-.burnout-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
-.burnout-stat{background:#fafafa;border-radius:8px;padding:10px 12px}
-.bs-val{font-size:1.2rem;font-weight:600;letter-spacing:-.02em;margin-bottom:2px}
-.bs-lbl{font-size:.69rem;color:#888}
-.bs-bar{background:#ebebeb;border-radius:3px;height:3px;margin-top:6px;overflow:hidden}
-.bs-fill{height:100%;border-radius:3px;transition:width .5s}
-
-/* ─── Department row ─────────────────────────────────────── */
-.dept-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:1.5rem}
-.dept-card{background:#fff;border:1px solid #ebebeb;border-radius:12px;padding:.85rem 1rem}
-.dept-card-name{font-size:.74rem;font-weight:700;color:#555;margin-bottom:.4rem;letter-spacing:.01em}
-.dept-card-score{font-size:1.3rem;font-weight:600;letter-spacing:-.03em;margin-bottom:.35rem}
-.dept-bar-bg{background:#f0f0f0;border-radius:4px;height:3px;overflow:hidden;margin-bottom:.35rem}
-.dept-bar-fill{height:100%;border-radius:4px}
-.dept-card-meta{font-size:.68rem;color:#bbb;margin-bottom:.25rem}
-
-/* ─── Bottom grid ─────────────────────────────────────────── */
-.bottom-grid{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:14px;margin-bottom:1.5rem}
-.chart-wrap{position:relative;height:160px}
-.horizon-legend{font-size:.7rem;color:#999;margin-top:8px;display:flex;align-items:center;gap:4px}
-.legend-dot{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle}
-.legend-dashed{border-radius:0;height:2px;width:14px;vertical-align:middle}
-
-/* ─── Insights ────────────────────────────────────────────── */
-.insight-item{display:flex;gap:9px;padding:.45rem 0;border-bottom:1px solid #f5f5f5;align-items:flex-start}
-.insight-item:last-child{border-bottom:none}
-.insight-icon{width:17px;height:17px;border-radius:50%;display:flex;align-items:center;
-  justify-content:center;flex-shrink:0;margin-top:2px;font-size:8px;font-weight:800}
-.i-up  {background:#dcfce7;color:#166534}
-.i-down{background:#fee2e2;color:#991b1b}
-.i-warn{background:#fef3c7;color:#92400e}
-.i-info{background:#dbeafe;color:#1e40af}
-.insight-text{font-size:.73rem;color:#555;line-height:1.5}
-.insight-text strong{color:#111;font-weight:700}
-
-/* ─── Transparency + top performers grid ─────────────────── */
-.transparency-grid{display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-bottom:1.5rem}
-
-/* ─── Top performers ─────────────────────────────────────── */
-.top-item{display:flex;align-items:center;gap:9px;padding:.45rem 0;border-bottom:1px solid #f5f5f5}
-.top-item:last-child{border-bottom:none}
-.top-rank{font-size:.67rem;font-weight:700;color:#ccc;width:14px;text-align:center;flex-shrink:0}
-.top-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;
-  justify-content:center;font-size:.6rem;font-weight:700;flex-shrink:0;color:#fff}
-.top-info{flex:1;min-width:0}
-.top-name{font-size:.78rem;font-weight:700;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.top-dept{font-size:.66rem;color:#aaa}
-.top-score{font-size:.82rem;font-weight:700;color:#166534;white-space:nowrap}
-
-/* ─── Model transparency ─────────────────────────────────── */
-.model-inner{display:grid;grid-template-columns:1fr 1.6fr;gap:20px}
-.model-section-lbl{font-size:.7rem;color:#999;margin-bottom:8px;font-weight:600}
-.model-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.model-stat{background:#fafafa;border-radius:8px;padding:10px 12px}
-.ms-val{font-size:1.15rem;font-weight:600;letter-spacing:-.02em;margin-bottom:2px}
-.ms-val.green{color:#166534}.ms-val.red{color:#991b1b}
-.ms-lbl{font-size:.69rem;color:#999}
-.trust-bar-wrap{display:flex;align-items:center;gap:10px;margin-top:4px}
-.trust-bar-track{flex:1;background:#f0f0f0;border-radius:6px;height:8px;overflow:hidden}
-.trust-bar-fill{height:100%;border-radius:6px;background:#639922;transition:width .6s ease}
-.trust-pct{font-size:.82rem;font-weight:600;color:#166534;white-space:nowrap;min-width:40px;text-align:right}
-.fi-list{margin-top:2px}
-.fi-row{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:.75rem}
-.fi-label{width:180px;flex-shrink:0;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fi-track{flex:1;background:#f0f0f0;border-radius:3px;height:5px;overflow:hidden}
-.fi-fill{height:100%;border-radius:3px;background:#378ADD}
-.fi-val{width:30px;text-align:right;color:#bbb;flex-shrink:0;font-size:.7rem}
-
-/* ─── Class pills (used in table) ───────────────────────── */
-.class-pill{font-size:.66rem;font-weight:700;padding:2px 9px;border-radius:20px;white-space:nowrap}
+.cls-pill{font-size:.66rem;font-weight:700;padding:3px 10px;border-radius:20px;
+  white-space:nowrap;display:inline-block}
 .pill-high{background:#dcfce7;color:#166534}
-.pill-med {background:#dbeafe;color:#1e40af}
+.pill-med {background:#e0e7ff;color:#3730a3}
 .pill-low {background:#fee2e2;color:#991b1b}
 
-/* ─── Confidence bar (used in table) ────────────────────── */
-.conf-bar{display:inline-block;width:36px;height:3px;background:#f0f0f0;border-radius:2px;
-  overflow:hidden;margin-right:4px;vertical-align:middle}
-.conf-fill{height:100%;border-radius:2px;background:#378ADD}
+.conf-cell{display:flex;align-items:center;gap:8px;cursor:help}
+.conf-bar-wrap{flex:1;background:#f1f5f9;border-radius:3px;height:5px;overflow:hidden;max-width:60px}
+.conf-bar-fill{height:100%;border-radius:3px;background:#3b82f6;transition:width .5s}
+.conf-num{font-size:.72rem;font-weight:600;color:#475569;min-width:32px}
+
+.btn-mini{font-size:.68rem;padding:4px 10px;border:1px solid #e2e8f0;border-radius:6px;
+  background:#fff;cursor:pointer;color:#64748b;font-family:inherit;transition:all .15s}
+.btn-mini:hover{border-color:#0f172a;color:#0f172a}
+
+.empty-state{font-size:.78rem;color:#cbd5e1;text-align:center;padding:2.5rem 1.25rem}
+
+/* ═══════════════════════════════════════════════════════════
+   TIER 3 — CONTEXT
+═══════════════════════════════════════════════════════════ */
+.tier-3{display:grid;grid-template-columns:1.2fr 1.2fr 1fr;gap:14px;margin-bottom:.5rem}
+
+/* Department list */
+.dept-row-item{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;
+  padding:.55rem 0;border-bottom:1px solid #f5f5f5}
+.dept-row-item:last-child{border-bottom:none}
+.dept-name{font-size:.78rem;font-weight:600;color:#0f172a}
+.dept-meta{font-size:.66rem;color:#94a3b8;font-weight:500;margin-top:2px}
+.dept-bar-wrap{display:flex;align-items:center;gap:8px;width:100%;margin-top:6px}
+.dept-bar-track{flex:1;background:#f1f5f9;border-radius:3px;height:5px;overflow:hidden}
+.dept-bar-fill-inline{height:100%;border-radius:3px;transition:width .6s ease}
+.dept-score-lbl{font-size:.78rem;font-weight:700;color:#0f172a;white-space:nowrap}
+
+.chart-wrap{position:relative;height:160px}
+
+/* Top performers compact */
+.top-row{display:flex;align-items:center;gap:9px;padding:.5rem 0;
+  border-bottom:1px solid #f5f5f5}
+.top-row:last-child{border-bottom:none}
+.top-rank{font-size:.7rem;font-weight:700;color:#cbd5e1;width:14px;text-align:center;flex-shrink:0}
+.top-avatar{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:.55rem;font-weight:700;flex-shrink:0;color:#fff}
+.top-info{flex:1;min-width:0}
+.top-name{font-size:.76rem;font-weight:600;color:#0f172a;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.top-dept{font-size:.64rem;color:#94a3b8}
+.top-score-num{font-size:.78rem;font-weight:700;color:#166534;white-space:nowrap}
+
+/* ═══════════════════════════════════════════════════════════
+   TIER 4 — TRUST
+═══════════════════════════════════════════════════════════ */
+.tier-4{margin-bottom:1.5rem;padding:1.3rem 1.5rem}
+.trust-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:1.5rem;
+  padding-bottom:1.2rem;border-bottom:1px solid #f1f5f9}
+.trust-cell{cursor:help}
+.trust-num{font-size:1.7rem;font-weight:600;letter-spacing:-.03em;line-height:1;
+  color:#0f172a;margin-bottom:4px}
+.trust-lbl{font-size:.78rem;font-weight:600;color:#475569;margin-bottom:2px}
+.trust-sub{font-size:.68rem;color:#94a3b8}
+
+.trust-classes{display:flex;flex-direction:column;gap:8px;margin-bottom:1rem}
+.trust-class-row{display:grid;grid-template-columns:90px 1fr 50px 1.1fr;gap:12px;
+  align-items:center;font-size:.74rem}
+.trust-class-lbl{font-weight:600;color:#0f172a}
+.trust-class-bar{background:#f1f5f9;border-radius:3px;height:6px;overflow:hidden;width:100%}
+.tcb-fill{display:block;height:100%;border-radius:3px;transition:width .6s ease}
+.tcb-high{background:#22c55e}
+.tcb-med {background:#3b82f6}
+.tcb-low {background:#ef4444}
+.trust-class-val{font-weight:700;color:#0f172a;text-align:right}
+.trust-class-note{color:#64748b;font-size:.72rem}
+
+.trust-disclaimer{font-size:.74rem;color:#475569;line-height:1.6;
+  background:#fafbfc;border-left:3px solid #cbd5e1;padding:.75rem 1rem;border-radius:0 8px 8px 0;
+  cursor:help}
+.trust-disclaimer strong{color:#0f172a;font-weight:700}
 
 /* ─── Table ───────────────────────────────────────────────── */
-.btn-toggle{font-size:.73rem;color:#999;background:none;border:none;cursor:pointer;padding:0;
-  font-family:'DM Sans',sans-serif}
-.btn-toggle:hover{color:#333}
+.btn-toggle{font-size:.74rem;color:#64748b;background:none;border:none;cursor:pointer;
+  padding:0;font-family:inherit;font-weight:500}
+.btn-toggle:hover{color:#0f172a}
 .table-filters{display:flex;gap:8px;margin-bottom:.85rem;flex-wrap:wrap}
-.tbl-search{flex:1;min-width:180px;padding:.38rem .7rem;font-size:.77rem;
-  border:1px solid #e0e0e0;border-radius:8px;outline:none;font-family:'DM Sans',sans-serif}
-.tbl-search:focus{border-color:#888}
-.tbl-select{padding:.38rem .65rem;font-size:.77rem;border:1px solid #e0e0e0;border-radius:8px;
-  outline:none;background:#fff;cursor:pointer;font-family:'DM Sans',sans-serif}
+.tbl-search{flex:1;min-width:180px;padding:.42rem .75rem;font-size:.78rem;
+  border:1px solid #e2e8f0;border-radius:8px;outline:none;font-family:inherit}
+.tbl-search:focus{border-color:#0f172a}
+.tbl-select{padding:.42rem .7rem;font-size:.78rem;border:1px solid #e2e8f0;
+  border-radius:8px;outline:none;background:#fff;cursor:pointer;font-family:inherit}
 .tbl-wrap{overflow-x:auto}
-.emp-table{width:100%;border-collapse:collapse;font-size:.77rem}
-.emp-table th{font-size:.67rem;font-weight:700;color:#bbb;text-transform:uppercase;
-  letter-spacing:.06em;padding:.5rem .6rem;border-bottom:1.5px solid #f0f0f0;text-align:left}
-.emp-table td{padding:.55rem .6rem;border-bottom:1px solid #f7f7f7;vertical-align:middle;color:#333}
-.emp-table tbody tr:hover td{background:#fafafa}
-.btn-chart{font-size:.68rem;padding:3px 8px;border:1px solid #d0d0d0;border-radius:6px;
-  background:#fff;cursor:pointer;color:#555;font-family:'DM Sans',sans-serif}
-.btn-chart:hover{border-color:#555}
-.empty-msg{font-size:.77rem;color:#ccc;text-align:center;padding:1.5rem 0}
+.emp-table{width:100%;border-collapse:collapse;font-size:.78rem}
+.emp-table th{font-size:.66rem;font-weight:700;color:#94a3b8;text-transform:uppercase;
+  letter-spacing:.06em;padding:.55rem .65rem;border-bottom:1.5px solid #f0f0f0;
+  text-align:left;cursor:help}
+.emp-table td{padding:.6rem .65rem;border-bottom:1px solid #f7f7f7;vertical-align:middle;color:#334155}
+.emp-table tbody tr:hover td{background:#fafbfc}
 
-/* ─── Loading overlay ─────────────────────────────────────── */
-.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.9);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:12px}
+/* ─── Loading ──────────────────────────────────────────────── */
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.92);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:9999;gap:14px}
 .loading-overlay.hidden{display:none!important}
-.spinner{width:28px;height:28px;border:2.5px solid #ebebeb;border-top-color:#333;
+.spinner{width:30px;height:30px;border:2.5px solid #e2e8f0;border-top-color:#0f172a;
   border-radius:50%;animation:spin .7s linear infinite}
-.loading-overlay p{font-size:.78rem;color:#888}
-.empty-state{font-size:.77rem;color:#ccc;text-align:center;padding:2rem 0}
+.loading-overlay p{font-size:.78rem;color:#64748b}
 
 /* ─── Responsive ─────────────────────────────────────────── */
-@media(max-width:1200px){
-  .metric-strip{grid-template-columns:repeat(3,1fr)}
-  .main-grid{grid-template-columns:1fr}
-  .breakdown-grid{grid-template-columns:1fr}
-  .feature-grid{grid-template-columns:1fr 1fr}
-  .dept-row{grid-template-columns:repeat(3,1fr)}
-  .bottom-grid{grid-template-columns:1fr 1fr}
-  .transparency-grid{grid-template-columns:1fr}
-  .model-inner{grid-template-columns:1fr}
+@media(max-width:1100px){
+  .tier-3{grid-template-columns:1fr 1fr}
+  .tier-3>.panel:last-child{grid-column:1/-1}
+  .snapshot-row{grid-template-columns:1fr}
+  .trust-grid{grid-template-columns:repeat(2,1fr)}
 }
 @media(max-width:700px){
-  .metric-strip{grid-template-columns:1fr 1fr}
-  .feature-grid{grid-template-columns:1fr}
-  .dept-row{grid-template-columns:1fr 1fr}
-  .bottom-grid{grid-template-columns:1fr}
-  .burnout-grid{grid-template-columns:1fr}
-  .breakdown-grid{grid-template-columns:1fr}
+  .snapshot-bars{grid-template-columns:1fr}
+  .tier-3{grid-template-columns:1fr}
+  .attn-table-head,.attn-row{grid-template-columns:1.5fr .8fr 80px}
+  .attn-table-head span:nth-child(2),
+  .attn-table-head span:nth-child(4),
+  .attn-row>*:nth-child(2),
+  .attn-row>*:nth-child(4){display:none}
+  .trust-grid{grid-template-columns:1fr 1fr}
+  .trust-class-row{grid-template-columns:80px 1fr 40px}
+  .trust-class-note{display:none}
 }
 </style>
 
@@ -516,7 +469,8 @@
 
 @push('scripts')
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="{{ asset('js/admin/lstm-dashboard.js') }}"></script>
 @endpush

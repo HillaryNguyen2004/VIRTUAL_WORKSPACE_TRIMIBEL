@@ -10,6 +10,8 @@ import pandas as pd
 import joblib
 import sys
 from datetime import date
+import json
+from datetime import datetime
 
 from sqlalchemy import create_engine
 from tensorflow.keras.models import load_model
@@ -266,3 +268,21 @@ else:
     print(f"  ❌ LSTM worse than naive by {abs(gain):.1f} pp — model is hurting, not helping.")
 
 print(f"\n  Reference: RF ceiling on this problem is ~69% accuracy.")
+
+metrics_out = {
+    "accuracy":      round(accuracy_lstm * 100, 2),     # e.g. 70.05
+    "naiveAccuracy": round(accuracy_naive * 100, 2),    # e.g. 65.00
+    "macroF1":       round(macro_f1_lstm, 4),
+    # f1_scores list is in classes order: ['Low', 'Medium', 'High']
+    "f1Low":         round(f1_scores[0], 4),
+    "f1Med":         round(f1_scores[1], 4),
+    "f1High":        round(f1_scores[2], 4),
+    "lookback":      LOOKBACK,
+    "lastRun":       datetime.utcnow().isoformat() + "Z",
+}
+ 
+with open("models/metrics.json", "w") as f:
+    json.dump(metrics_out, f, indent=2)
+ 
+print(f"\n📝 metrics.json written → models/metrics.json")
+print(json.dumps(metrics_out, indent=2))
