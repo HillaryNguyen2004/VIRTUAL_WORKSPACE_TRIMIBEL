@@ -1,0 +1,246 @@
+model_deepseek-1:8b,question,answer_deepseek-1:8b,precision_deepseek-1:8b,recall_deepseek-1:8b,f1_deepseek-1:8b,groundedness_deepseek-1:8b,latency_deepseek-1:8b,num_citations_deepseek-1:8b,model_llama3.1:8b,answer_llama3.1:8b,precision_llama3.1:8b,recall_llama3.1:8b,f1_llama3.1:8b,groundedness_llama3.1:8b,latency_llama3.1:8b,num_citations_llama3.1:8b,f1_delta,latency_delta,groundedness_delta
+deepseek-1:8b,Which employees are declining?,"All employees listed in the knowledge are currently showing a declining trend in productivity, as indicated by the model predictions in each entry.
+
+List of employees with declining productivity:
+
+1. Do Dat (ID 8)
+2. Ho Nam (ID 13)
+3. Do Dung (ID 14)
+4. Bui Bao (ID 19)
+5. Do Phuc (ID 15)
+6. Do Chi (ID 4)
+7. Pham Anh (ID 24)
+8. Pham Dung (ID 18)
+9. Dang Binh (ID 5)
+10. Vu Linh (ID 20)
+11. Pham Hieu (ID 27)
+12. Ho An (ID 7)
+13. Dang Dung (ID 12)
+14. Nguyen Anh (ID 25)
+15. Dang Anh (ID 10)
+16. Hoang Minh (ID 2)
+17. Le Dung (ID 3)
+18. Do Minh (ID 22)
+19. Nguyen Minh (ID 17)
+20. Dang Mai (ID 30)
+21. Tran An (ID 1)
+22. Tran Linh (ID 26)
+23. Tran Linh (ID 6)
+24. Pham Anh (ID 11)",1.0,1.0,1.0,1.0,149.94762992858887,24,llama3.1:8b,"Bot Bot can identify employees that are declining based on the provided knowledge. To determine which employees are declining, Bot Bot will look at each entry and check if it indicates a decline in productivity.
+
+Here are the employees who are declining:
+
+1. Do Dat (ID 8) - Productivity is predicted to be 56.79%, indicating a decline.
+2. Ho Nam (ID 13) - Productivity is predicted to be 55.42%, indicating a decline.
+3. Do Dung (ID 14) - Productivity is predicted to be 40.31%, indicating a decline.
+4. Bui Bao (ID 19) - Although productivity is predicted to be slightly lower, it's still considered a declining trend.
+5. Do Phuc (ID 15) - Productivity is actually predicted to increase, not decrease.
+6. Do Chi (ID 4) - Although productivity is predicted to be slightly lower, it's still considered a declining trend.
+7. Pham Anh (ID 24) - Productivity is predicted to be 54.3%, indicating a decline.
+8. Pham Dung (ID 18) - Productivity is predicted to be 54.53%, indicating a decline.
+9. Dang Binh (ID 5) - Although productivity is trending downward, it's not considered a significant decline.
+10. Vu Linh (ID 20) - Despite strong performance, productivity is trending downward.
+11. Pham Hieu (ID 27) - Productivity is predicted to be 48.07%, indicating a decline.
+12. Ho An (ID 7) - Although productivity is trending downward, it's not considered a significant decline.
+13. Dang Dung (ID 12) - Although productivity is trending downward, it's not considered a significant decline.
+14. Nguyen Anh (ID 25) - Despite strong performance, productivity is trending downward.
+15. Dang Anh (ID 10) - Despite strong performance, productivity is trending downward.
+16. Hoang Minh (ID 2) - Productivity is predicted to be 71.84%, indicating a decline.
+17. Le Dung (ID 3) - Although productivity is trending downward, it's not considered a significant decline.
+18. Do Minh (ID 22) - Despite strong performance, productivity is trending downward.
+19. Nguyen Minh (ID 17) - Productivity is predicted to be 60.82%, indicating a decline.
+20. Dang Mai (ID 30) - Despite strong performance, productivity is trending downward.
+21. Tran An (ID 1) - Although productivity is predicted to decrease slightly, it's still considered a declining trend.
+22. Tran Linh (ID 26) - Despite strong performance, productivity is trending downward.
+23. Tran Linh (ID 6) - Productivity is predicted to be 67.6%, indicating a decline.
+24. Pham Anh (ID 11) - Although productivity is trending downward, it's not considered a significant decline.
+
+As an admin user, Bot Bot can only view the information provided in the knowledge section and cannot provide further analysis or intervention for these employees.",1.0,1.0,1.0,1.0,51.9730498790741,24,0.0,97.97458004951477,0.0
+deepseek-1:8b,Which employees are improving?,"The employees who are improving, based on the model's predictions from 2026-04-22, are:
+
+1. Ho Nam (ID 9)
+2. Dang Nam (ID 23)
+3. Tran Nhi (ID 21)
+4. Vu Mai (ID 16)
+5. Do Long (ID 29)
+6. Le Nam (ID 28)",1.0,1.0,1.0,1.0,51.92069220542908,6,llama3.1:8b,"You can view the employees who are improving in a few ways:
+
+1. From entry [2], Dang Nam (ID 23) is on an improving trajectory, but current productivity is lower than some others.
+2. From entry [3], Tran Nhi (ID 21) and Do Long (ID 29) are both on an improving trend.
+
+Note: Bot Bot cannot determine all employees improving without further information.",0.0,0.0,0.0,1.0,15.704373836517334,6,1.0,36.21631836891174,0.0
+deepseek-1:8b,Which employees are high performers?,"The high performers are:
+
+1. Employee Ho Nam (ID 9)
+2. Employee Dang Mai (ID 30)
+3. Employee Dang Anh (ID 10)
+4. Employee Nguyen Anh (ID 25)
+5. Employee Tran Nhi (ID 21)",1.0,0.45454545454545453,0.625,1.0,48.33586525917053,5,llama3.1:8b,"To find which employees are high performers, the admin can check the provided Knowledge:
+
+1. Employee Ho Nam (ID 9) has current productivity of 90.83% and is predicted to be 88.84%, indicating an improving trend.
+2. Employee Dang Mai (ID 30) has current productivity of 91.25% but is trending downward, despite being a high performer.
+3. Employee Dang Anh (ID 10) has current productivity of 95.4% but is also trending downward, despite being a high performer.
+4. Employee Nguyen Anh (ID 25) has current productivity of 99.27% and is trending downward, despite being a high performer.
+5. Employee Tran Nhi (ID 21) has current productivity of 66.67% but is predicted to be 91.11%, indicating an improving trend.
+
+The admin can see that all employees in the Knowledge are considered high performers.",1.0,0.45454545454545453,0.625,1.0,20.313329935073853,5,0.0,28.02253532409668,0.0
+deepseek-1:8b,Who are average?,"Average performance level employees are those with a performance level of ""Average"" and confidence 0.85. Here are the employees identified as average:
+
+1. Do Dat (ID 8) - Current productivity: 62.5%, Predicted: 56.79%, Declining trend.
+2. Ho Nam (ID 13) - Current productivity: 73.41%, Predicted: 55.42%, Declining trend.
+3. Do Dung (ID 14) - Current productivity: 46.04%, Predicted: 40.31%, Declining trend.
+4. Bui Bao (ID 19) - Current productivity: 57.5%, Predicted: 57.04%, Declining trend.
+5. Do Phuc (ID 15) - Current productivity: 54.44%, Predicted: 55.61%, Declining trend.
+6. Do Chi (ID 4) - Current productivity: 57.48%, Predicted: 56.43%, Declining trend.
+7. Pham Anh (ID 24) - Current productivity: 56.94%, Predicted: 54.3%, Declining trend.
+8. Pham Dung (ID 18) - Current productivity: 57.27%, Predicted: 54.53%, Declining trend.
+9. Pham Hieu (ID 27) - Current productivity: 53.26%, Predicted: 48.07%, Declining trend.
+
+All these employees are at risk and may need intervention.",1.0,1.0,1.0,1.0,53.281540870666504,9,llama3.1:8b,"The concept of ""average"" isn't directly related to the provided Knowledge text, but it seems to be referring to the productivity levels mentioned in the entries.
+
+To determine who are average, we can look for entries where the performance level is explicitly stated as Average. Here's what Bot Bot found:
+
+* Employee Do Dat (ID 8) has a current productivity of 62.5% and predicts a decline.
+* Employee Ho Nam (ID 13) has a current productivity of 73.41%, but this isn't described as average, it's actually above the others.
+* Employee Do Dung (ID 14) has a current productivity of 46.04%.
+* Employee Bui Bao (ID 19) has a current productivity of 57.5%.
+* Employee Do Phuc (ID 15) has a current productivity of 54.44%.
+* Employee Do Chi (ID 4) has a current productivity of 57.48%.
+* Employee Pham Anh (ID 24) has a current productivity of 56.94%.
+* Employee Pham Dung (ID 18) has a current productivity of 57.27%.
+* Employee Pham Hieu (ID 27) has a current productivity of 53.26%.
+
+From these entries, we can see that the following employees have their performance level explicitly stated as Average:
+
+1. Do Dat (ID 8)
+2. Do Dung (ID 14)
+3. Bui Bao (ID 19)
+4. Do Phuc (ID 15)
+5. Do Chi (ID 4)
+6. Pham Anh (ID 24)
+7. Pham Dung (ID 18)
+8. Pham Hieu (ID 27)",1.0,1.0,1.0,1.0,29.43942093849182,9,0.0,23.842119932174683,0.0
+deepseek-1:8b,Which excellent employees are declining?,"Based on the provided Knowledge, the following employees are classified as ""Excellent"" and are experiencing a declining trend in productivity:
+
+1. Vu Linh (ID 20)
+2. Nguyen Anh (ID 25)
+3. Dang Anh (ID 10)
+4. Do Minh (ID 22)
+5. Dang Mai (ID 30)
+6. Tran An (ID 1)
+7. Tran Linh (ID 26)
+8. Pham Anh (ID 11)
+
+All listed employees have a performance level of ""Excellent"" with a confidence of 0.85 and show a declining trend as per the model predictions.",1.0,1.0,1.0,1.0,78.79007697105408,8,llama3.1:8b,"You can see which employees are declining by looking at their current and predicted productivities.
+
+1. Employee Vu Linh (ID 20) has a current productivity of 100.0% and predicted productivity of 91.69%, indicating a declining trend.
+2. Employee Nguyen Anh (ID 25) has a current productivity of 99.27% and predicted productivity of 89.75%, indicating a declining trend.
+3. Employee Dang Anh (ID 10) has a current productivity of 95.4% and predicted productivity of 85.35%, indicating a declining trend.
+4. Employee Do Minh (ID 22) has a current productivity of 94.86% and predicted productivity of 85.47%, indicating a declining trend.
+5. Employee Dang Mai (ID 30) has a current productivity of 91.25% and predicted productivity of 83.2%, indicating a declining trend.
+6. Employee Tran An (ID 1) has a current productivity of 89.69% and predicted productivity of 89.73%, indicating a declining trend, but with almost identical values.
+
+Note: These are the only employees mentioned in the Knowledge section as having declining productivities.",1.0,0.75,0.8571428571428571,1.0,24.157132863998413,8,0.1428571428571429,54.632944107055664,0.0
+deepseek-1:8b,Give team overview,"Bot Bot:  
+Here is the team overview based on the available data:  
+
+- **Total employees**: 30  
+- **Declining employees**: 24 (80% of the team)  
+- **Improving employees**: 6 (20% of the team)  
+- **High performers (excellent level)**: 11  
+- **Overall team health**: Critical — the majority of employees are declining in productivity.",1.0,1.0,1.0,0.2,28.128406763076782,1,llama3.1:8b,"You can view the current team overview by looking at the Team Productivity Overview Report. This report provides a summary of the team's performance, including:
+
+1. Total employees: 30
+2. Declining employees: 24 (80% of the team)
+3. Improving employees: 6 (20% of the team)
+4. High performers (Excellent level): 11
+
+The overall team health is critical, indicating that a majority of employees are declining in productivity.",1.0,1.0,1.0,0.2,14.116483926773071,1,0.0,14.011922836303711,0.0
+deepseek-1:8b,Ai đang tăng năng suất?,"Dưới đây là thông tin về các nhân viên đang tăng năng suất (dựa trên dữ liệu ngày 2026-04-22):
+
+- **Dang Nam (ID 23)**:  
+  - Năng suất hiện tại: 63.58%  
+  - Dự báo: 69.53% (đang tăng)  
+
+- **Do Long (ID 29)**:  
+  - Năng suất hiện tại: 69.97%  
+  - Dự báo: 79.09% (đang tăng)  
+
+- **Ho Nam (ID 9)**:  
+  - Năng suất hiện tại: 90.83%  
+  - Dự báo: 88.84% (đang tăng)  
+
+- **Tran Nhi (ID 21)**:  
+  - Năng suất hiện tại: 66.67%  
+  - Dự báo: 91.11% (đang tăng)  
+
+- **Le Nam (ID 28)**:  
+  - Năng suất hiện tại: 64.64%  
+  - Dự báo: 69.91% (đang tăng)  
+
+Tất cả các nhân viên trên đều đang có xu hướng tăng năng suất và được đánh giá là có hiệu suất làm việc tốt hoặc xuất sắc.",0.0,0.0,0.0,1.0,39.53164982795715,5,llama3.1:8b,"Bot Bot không có thông tin về năng suất tổng thể của hệ thống. Tuy nhiên, dựa trên dữ liệu trong Knowledge, có một số nhân viên đang tăng năng suất:
+
+- Dang Nam (ID 23): Năng suất dự đoán sẽ là 69.53%, chỉ cao hơn 6% so với mức hiện tại.
+- Do Long (ID 29): Năng suất dự đoán sẽ là 79.09%, chỉ cao hơn 9.12% so với mức hiện tại.
+- Ho Nam (ID 9): Năng suất dự đoán sẽ là 88.84%, chỉ thấp hơn 2% so với mức hiện tại.
+- Tran Nhi (ID 21): Năng suất dự đoán sẽ là 91.11%, cao hơn 24.44% so với mức hiện tại.
+- Le Nam (ID 28): Năng suất dự đoán sẽ là 69.91%, chỉ cao hơn 5.27% so với mức hiện tại.
+
+Bot Bot không thể cung cấp thông tin về năng suất tổng thể của hệ thống vì dữ liệu không được cung cấp trong Knowledge.",0.0,0.0,0.0,1.0,21.87937617301941,5,0.0,17.652273654937744,0.0
+deepseek-1:8b,Những nhân viên nào đang giảm năng suất?,"Những nhân viên đang giảm năng suất là:
+
+- Do Dat (ID 8)
+- Ho Nam (ID 13)
+- Do Dung (ID 14)
+- Bui Bao (ID 19)
+- Do Phuc (ID 15)
+- Do Chi (ID 4)
+- Pham Anh (ID 24)
+- Pham Dung (ID 18)
+- Dang Binh (ID 5)
+- Vu Linh (ID 20)
+- Pham Hieu (ID 27)
+- Ho An (ID 7)
+- Dang Dung (ID 12)
+- Nguyen Anh (ID 25)
+- Dang Anh (ID 10)
+- Hoang Minh (ID 2)
+- Le Dung (ID 3)
+- Do Minh (ID 22)
+- Nguyen Minh (ID 17)
+- Dang Mai (ID 30)
+- Tran An (ID 1)
+- Tran Linh (ID 26)
+- Tran Linh (ID 6)
+- Pham Anh (ID 11)",1.0,1.0,1.0,1.0,40.07156705856323,24,llama3.1:8b,"Bạn có thể xem danh sách nhân viên đang giảm năng suất như sau:
+
+1. Do Dat (ID 8)
+2. Ho Nam (ID 13)
+3. Do Dung (ID 14)
+4. Bui Bao (ID 19)
+5. Do Phuc (ID 15)
+6. Do Chi (ID 4)
+7. Pham Anh (ID 24)
+8. Pham Dung (ID 18)
+
+Những nhân viên này đang có xu hướng giảm năng suất, nhưng Bot Bot không thể xác định mức độ giảm năng suất cụ thể vì thông tin về tăng trưởng không được cung cấp trong Knowledge.",1.0,0.3333333333333333,0.5,1.0,24.617915868759155,24,0.5,15.453651189804077,0.0
+deepseek-1:8b,Who needs intervention?,"Based on the provided Knowledge, the following employees are identified as being at risk and may need intervention:
+
+1.  Do Dung (ID 14)
+2.  Do Phuc (ID 15)
+3.  Do Chi (ID 4)
+4.  Bui Bao (ID 19)
+5.  Ho Nam (ID 13)",1.0,0.5555555555555556,0.7142857142857143,1.0,30.647846221923828,5,llama3.1:8b,"Based on the provided Knowledge, employees who are at risk and may need intervention are:
+
+1. Do Dung (ID 14)
+2. Do Phuc (ID 15)
+3. Do Chi (ID 4)
+4. Bui Bao (ID 19)
+5. Ho Nam (ID 13)
+
+These employees have a declining trend in their productivity, and according to the model, they are at risk of needing intervention.
+
+As an admin user, you can monitor these employees' productivity trends and take necessary actions if required.
+
+Note: The knowledge does not specify what kind of intervention is needed or who should perform it.",1.0,0.5555555555555556,0.7142857142857143,1.0,16.941723108291626,5,0.0,13.706123113632202,0.0
+deepseek-1:8b,Which employees got promoted?,"The information provided does not cover any details about employee promotions. The Knowledge section only includes data on employee performance, productivity, and trends as of 2026-04-22, but no promotions are mentioned.",0.1111111111111111,0.1111111111111111,0.1111111111111111,1.0,36.469825983047485,5,llama3.1:8b,"It is not covered in the Knowledge section whether any employees got promoted or not. The provided information only includes current and predicted productivity levels, performance levels, and trajectories for specific employees, but it does not mention promotions.",0.2222222222222222,0.2222222222222222,0.2222222222222222,1.0,12.740381956100464,5,-0.1111111111111111,23.72944402694702,0.0

@@ -144,6 +144,10 @@ Route::middleware(['auth'])->group(function () {
         ->name('ai-workspaces.upload-files');
     Route::post('ai-workspaces/{ai_workspace}/ingest', [AIWorkspaceController::class, 'ingestFiles'])
         ->name('ai-workspaces.ingest');
+    Route::get('workspace-files/{ai_workspace_file}/preview', [AIWorkspaceController::class, 'previewFile'])
+        ->name('workspace-files.preview');
+    Route::get('workspace-files/{ai_workspace_file}/download', [AIWorkspaceController::class, 'downloadFile'])
+        ->name('workspace-files.download');
     Route::delete('workspace-files/{ai_workspace_file}', [AIWorkspaceController::class, 'deleteFile'])
         ->name('workspace-files.delete');
     Route::get('ai-workspaces/{ai_workspace}/export', [AIWorkspaceController::class, 'export'])
