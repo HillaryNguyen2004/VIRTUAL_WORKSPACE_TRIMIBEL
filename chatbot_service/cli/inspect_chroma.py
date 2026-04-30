@@ -23,6 +23,7 @@ DEFAULT_COLLECTION = os.getenv("COLLECTION", "kb_collection")
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Inspect records stored in Chroma vector DB.")
+    parser.add_argument("--db-path", help="Override the Chroma database path to inspect.")
     parser.add_argument("--collection", help="Collection name to inspect. Defaults to COLLECTION from .env.")
     parser.add_argument("--limit", type=int, default=5, help="Number of records to print. Ignored when --all is used.")
     parser.add_argument("--offset", type=int, default=0, help="Offset to start reading from.")
@@ -33,15 +34,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--list-collections", action="store_true", help="Only print available collections and exit.")
     return parser.parse_args()
 
-def build_client() -> chromadb.PersistentClient:
+def build_client(db_path: str) -> chromadb.PersistentClient:
     return chromadb.PersistentClient(
-        path=DB_PATH,
+        path=db_path,
         settings=ChromaSettings(anonymized_telemetry=False),
     )
 
-def pick_collection_name(client: chromadb.PersistentClient, requested: str | None) -> str | None:
+def pick_collection_name(client: chromadb.PersistentClient, requested: str | None, db_path: str) -> str | None:
     collection_names = [col.name for col in client.list_collections()]
-    print("DB path:", DB_PATH)
+    print("DB path:", db_path)
     print("Collections:", collection_names)
 
     if requested:
@@ -79,9 +80,10 @@ def build_records(result: dict, include_embeddings: bool, doc_chars: int) -> lis
 
 def main() -> int:
     args = parse_args()
+    db_path = args.db_path or DB_PATH
     with redirect_stderr(io.StringIO()):
-        client = build_client()
-    collection_name = pick_collection_name(client, args.collection)
+        client = build_client(db_path)
+    collection_name = pick_collection_name(client, args.collection, db_path)
 
     if args.list_collections:
         return 0

@@ -15,31 +15,33 @@
                 </div>
             </div>
 
-            <div class="flex gap-2">
-                <a href="{{ route('ai-workspaces.edit', $workspace) }}"
-                    class="inline-flex items-center justify-center gap-2 bg-white border border-blue-600/30 px-4 py-2 rounded-xl text-sm font-medium text-blue-600 hover:bg-blue-50 transition-all shadow-sm">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                        </path>
-                    </svg>
-                    {{ __('ai.edit') }}
-                </a>
-                <form action="{{ route('ai-workspaces.destroy', $workspace) }}" method="POST" class="inline">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit"
-                        class="inline-flex items-center justify-center gap-2 bg-white border border-danger/30 px-4 py-2 rounded-xl text-sm font-medium text-danger hover:bg-danger/5 transition-all shadow-sm"
-                        onclick="return confirm('{{ __('ai.confirm_delete') }}')">
+            @can('update', $workspace)
+                <div class="flex gap-2">
+                    <a href="{{ route('ai-workspaces.edit', $workspace) }}"
+                        class="inline-flex items-center justify-center gap-2 bg-white border border-blue-600/30 px-4 py-2 rounded-xl text-sm font-medium text-blue-600 hover:bg-blue-50 transition-all shadow-sm">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
                             </path>
                         </svg>
-                        {{ __('ai.delete') }}
-                    </button>
-                </form>
-            </div>
+                        {{ __('ai.edit') }}
+                    </a>
+                    <form action="{{ route('ai-workspaces.destroy', $workspace) }}" method="POST" class="inline">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit"
+                            class="inline-flex items-center justify-center gap-2 bg-white border border-danger/30 px-4 py-2 rounded-xl text-sm font-medium text-danger hover:bg-danger/5 transition-all shadow-sm"
+                            onclick="return confirm('{{ __('ai.confirm_delete') }}')">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                </path>
+                            </svg>
+                            {{ __('ai.delete') }}
+                        </button>
+                    </form>
+                </div>
+            @endcan
         </div>
 
         <!-- Messages -->
@@ -96,49 +98,55 @@
             <h2 class="text-lg md:text-xl font-semibold text-main mb-2">{{ __('ai.upload_files') }}</h2>
             <p class="text-muted-600 text-sm mb-6">{{ __('ai.upload_files_desc') }}</p>
 
-            <form action="{{ route('ai-workspaces.upload-files', $workspace) }}" method="POST" enctype="multipart/form-data">
-                @csrf
+            @can('upload', $workspace)
+                <form action="{{ route('ai-workspaces.upload-files', $workspace) }}" method="POST" enctype="multipart/form-data">
+                    @csrf
 
-                <div class="mb-6">
-                    <label for="files" class="block">
-                        <div class="border-2 border-dashed border-muted-300 rounded-lg p-8 text-center hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer">
-                            <svg class="mx-auto h-12 w-12 text-muted-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
-                            </svg>
-                            <p class="text-sm font-medium text-muted-700">{{ __('ai.drag_files') }}</p>
-                            <p class="text-xs text-muted-500 mt-1">{{ __('ai.supported_formats') }}: PDF, TXT, MD, DOCX, PPTX, XLSX</p>
-                        </div>
-                        <input
-                            type="file"
-                            name="files[]"
-                            id="files"
-                            multiple
-                            accept=".pdf,.txt,.md,.docx,.pptx,.xlsx"
-                            class="hidden"
-                            onchange="document.getElementById('fileList').innerHTML = Array.from(this.files).map(f => f.name).join(', ')">
-                    </label>
-                    <p class="text-sm text-muted-600 mt-2" id="fileList"></p>
-                    @if($upload_errors ?? false)
-                        <div class="mt-3 space-y-1">
-                            @foreach($upload_errors as $error)
-                                <p class="text-red-600 text-xs">{{ $error }}</p>
-                            @endforeach
-                        </div>
-                    @endif
-                </div>
+                    <div class="mb-6">
+                        <label for="files-batch" class="block" id="batch-dropzone-label">
+                            <div id="batch-dropzone"
+                                class="border-2 border-dashed border-muted-300 rounded-lg p-8 text-center hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer">
+                                <svg class="mx-auto h-12 w-12 text-muted-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                                </svg>
+                                <p class="text-sm font-medium text-muted-700">Kéo thả hoặc bấm để chọn nhiều file</p>
+                                <p class="text-xs text-muted-500 mt-1">{{ __('ai.supported_formats') }}: PDF, TXT, MD, DOCX, PPTX, XLSX, CSV</p>
+                            </div>
+                            <input
+                                type="file"
+                                name="files[]"
+                                id="files-batch"
+                                multiple
+                                accept=".pdf,.txt,.md,.docx,.pptx,.xlsx,.csv"
+                                class="hidden">
+                        </label>
+                        <p class="text-sm text-muted-600 mt-2" id="batchFileList"></p>
+                    </div>
 
-                <button
-                    type="submit"
-                    class="inline-flex items-center justify-center rounded-lg bg-primary-gradient px-6 py-3 text-white text-sm font-semibold shadow-lg shadow-primary/20 transition-all hover:shadow-lg focus:ring-4 focus:ring-primary/30 active:scale-95">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                    {{ __('ai.upload_files') }}
-                </button>
-            </form>
+                    <button
+                        type="submit"
+                        class="inline-flex items-center justify-center rounded-lg bg-primary-gradient px-6 py-3 text-white text-sm font-semibold shadow-lg shadow-primary/20 transition-all hover:shadow-lg focus:ring-4 focus:ring-primary/30 active:scale-95">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        {{ __('ai.upload_files') }}
+                    </button>
+                </form>
+
+                @if($upload_errors ?? false)
+                    <div class="mt-4 space-y-1">
+                        @foreach($upload_errors as $error)
+                            <p class="text-red-600 text-xs">{{ $error }}</p>
+                        @endforeach
+                    </div>
+                @endif
+            @else
+                <p class="text-sm text-muted-600">Bạn chỉ có thể xem và tải file trong workspace này. Chỉ chủ workspace mới được upload và ingest file.</p>
+            @endcan
         </div>
 
         <!-- Ingest Section -->
+        @can('ingest', $workspace)
         @if($stats['pending_files'] > 0 || $stats['failed_files'] > 0)
             <div class="bg-blue-50 rounded-2xl border border-blue-200 p-6 md:p-8">
                 <div class="flex items-start justify-between gap-4">
@@ -148,12 +156,12 @@
                             {{ __('ai.files_pending_ingest', ['count' => $stats['pending_files']]) }}
                         </p>
                     </div>
-                    <form action="{{ route('ai-workspaces.ingest', $workspace) }}" method="POST" class="flex-shrink-0">
+                    <form id="ingest-form" action="{{ route('ai-workspaces.ingest', $workspace) }}" method="POST" class="flex-shrink-0">
                         @csrf
-                        <button
+                        <button id="ingest-btn"
                             type="submit"
                             class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg id="ingest-icon" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                             </svg>
                             {{ __('ai.start_ingest') }}
@@ -162,6 +170,7 @@
                 </div>
             </div>
         @endif
+        @endcan
 
         <!-- Files List -->
         <div class="bg-white rounded-2xl border border-muted-200 shadow-sm overflow-hidden">
@@ -228,14 +237,32 @@
                                         {{ $file->created_at->format('M d, H:i') }}
                                     </td>
                                     <td class="px-6 py-4 text-right">
-                                        <form action="{{ route('workspace-files.delete', $file) }}" method="POST" class="inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-red-600 hover:text-red-700 text-xs font-medium"
-                                                    onclick="return confirm('{{ __('ai.confirm_delete') }}')">
-                                                {{ __('ai.delete') }}
-                                            </button>
-                                        </form>
+                                        <div class="inline-flex items-center gap-3">
+                                            {{-- <a href="{{ route('workspace-files.preview', $file) }}" target="_blank"
+                                                class="text-blue-600 hover:text-blue-700 text-xs font-medium">Preview</a> --}}
+                                            <a href="{{ route('workspace-files.download', $file) }}"
+                                                class="p-1.5 rounded-lg text-muted-400 hover:bg-primary/10 hover:text-primary transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
+                                                    class="w-4 h-4 fill-current">
+                                                    <path d="M352 96C352 78.3 337.7 64 320 64C302.3 64 288 78.3 288 96L288 306.7L246.6 265.3C234.1 252.8 213.8 252.8 201.3 265.3C188.8 277.8 188.8 298.1 201.3 310.6L297.3 406.6C309.8 419.1 330.1 419.1 342.6 406.6L438.6 310.6C451.1 298.1 451.1 277.8 438.6 265.3C426.1 252.8 405.8 252.8 393.3 265.3L352 306.7L352 96zM160 384C124.7 384 96 412.7 96 448L96 480C96 515.3 124.7 544 160 544L480 544C515.3 544 544 515.3 544 480L544 448C544 412.7 515.3 384 480 384L433.1 384L376.5 440.6C345.3 471.8 294.6 471.8 263.4 440.6L206.9 384L160 384zM464 440C477.3 440 488 450.7 488 464C488 477.3 477.3 488 464 488C450.7 488 440 477.3 440 464C440 450.7 450.7 440 464 440z"/>
+                                                </svg>
+                                            </a>
+                                            @can('update', $workspace)
+                                                <form action="{{ route('workspace-files.delete', $file) }}" method="POST" class="inline">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit"
+                                                        onclick="return confirm('{{ __('ai.confirm_delete') }}')"
+                                                        class="p-1.5 rounded-lg text-muted-400 hover:bg-danger/10 hover:text-danger transition-colors">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
+                                                            class="w-4 h-4 fill-current">
+                                                            <path
+                                                                d="M232.7 69.9L224 96L128 96C110.3 96 96 110.3 96 128C96 145.7 110.3 160 128 160L512 160C529.7 160 544 145.7 544 128C544 110.3 529.7 96 512 96L416 96L407.3 69.9C402.9 56.8 390.7 48 376.9 48L263.1 48C249.3 48 237.1 56.8 232.7 69.9zM512 208L128 208L149.1 531.1C150.7 556.4 171.7 576 197 576L443 576C468.3 576 489.3 556.4 490.9 531.1L512 208z" />
+                                                        </svg>
+                                                    </button>
+                                                </form>
+                                            @endcan
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -251,28 +278,95 @@
                 @endif
             @endif
         </div>
+
+        <div id="ingest-loading-overlay" class="ingest-loading-overlay hidden" aria-live="polite" aria-busy="true">
+            <div class="ingest-spinner"></div>
+            <p class="text-sm font-medium text-slate-700">Loading ingest…</p>
+        </div>
     </div>
 
     <!-- File upload script -->
     <script>
-        const fileInput = document.getElementById('files');
-        const dropZone = fileInput.closest('label');
+        const batchFileInput = document.getElementById('files-batch');
+        const batchDropzone = document.getElementById('batch-dropzone');
+        const batchFileList = document.getElementById('batchFileList');
 
-        if (dropZone) {
-            dropZone.addEventListener('dragover', (e) => {
+        if (batchFileInput && batchFileList) {
+            batchFileInput.addEventListener('change', () => {
+                if (!batchFileInput.files || batchFileInput.files.length === 0) {
+                    batchFileList.textContent = '';
+                    return;
+                }
+                batchFileList.textContent = Array.from(batchFileInput.files).map((f) => f.name).join(', ');
+            });
+        }
+
+        if (batchDropzone && batchFileInput) {
+            batchDropzone.addEventListener('dragover', (e) => {
                 e.preventDefault();
-                dropZone.classList.add('border-primary', 'bg-primary/5');
+                batchDropzone.classList.add('border-primary', 'bg-primary/5');
             });
 
-            dropZone.addEventListener('dragleave', () => {
-                dropZone.classList.remove('border-primary', 'bg-primary/5');
+            batchDropzone.addEventListener('dragleave', () => {
+                batchDropzone.classList.remove('border-primary', 'bg-primary/5');
             });
 
-            dropZone.addEventListener('drop', (e) => {
+            batchDropzone.addEventListener('drop', (e) => {
                 e.preventDefault();
-                fileInput.files = e.dataTransfer.files;
-                fileInput.onchange?.();
+                batchDropzone.classList.remove('border-primary', 'bg-primary/5');
+                batchFileInput.files = e.dataTransfer.files;
+                batchFileInput.dispatchEvent(new Event('change'));
+            });
+        }
+
+        const ingestForm = document.getElementById('ingest-form');
+        const ingestBtn = document.getElementById('ingest-btn');
+        const ingestIcon = document.getElementById('ingest-icon');
+        const ingestOverlay = document.getElementById('ingest-loading-overlay');
+
+        if (ingestForm && ingestBtn && ingestOverlay) {
+            ingestForm.addEventListener('submit', () => {
+                ingestBtn.disabled = true;
+                ingestBtn.classList.add('opacity-70', 'cursor-not-allowed');
+                if (ingestIcon) {
+                    ingestIcon.classList.add('animate-spin');
+                }
+                ingestOverlay.classList.remove('hidden');
             });
         }
     </script>
+
+    <style>
+        .ingest-loading-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(4px);
+        }
+
+        .ingest-loading-overlay.hidden {
+            display: none !important;
+        }
+
+        .ingest-spinner {
+            width: 30px;
+            height: 30px;
+            border-radius: 9999px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #2563eb;
+            animation: ingest-spin 0.7s linear infinite;
+        }
+
+        @keyframes ingest-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
 @endsection

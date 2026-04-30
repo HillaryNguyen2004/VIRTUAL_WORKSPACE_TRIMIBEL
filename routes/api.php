@@ -72,7 +72,9 @@ Route::middleware(['auth:sanctum'])->prefix('chat')->group(function () {
 });
 
 // Chat bot - DISABLED (controller missing)
-// Route::post('/chat-bot', [ChatbotController::class, 'chatBot']);
+Route::post('/chat-bot', [ChatbotController::class, 'chatBot']);
+Route::post('/chat-bot/stream', [ChatbotController::class, 'chatBotStream']);
+Route::post('/chat-bot/stop', [ChatbotController::class, 'stopChatBot']);
 
 // Task API Routes for Kanban board (support both Sanctum and web auth)
 Route::prefix('tasks')->group(function () {

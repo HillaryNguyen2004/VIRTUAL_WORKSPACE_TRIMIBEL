@@ -388,7 +388,7 @@
                             <p class="text-lg text-white font-semibold">Bot Bot</p>
                             <div class="flex items-center gap-2">
                                 <div class="w-2 h-2 rounded-full bg-green-500 border"></div>
-                                <p class="text-sm text-white">Online now</p>
+                                <p class="text-sm text-white">{{ __('chatbot.online_now') }}</p>
                             </div>
                         </div>
                     </div>
@@ -403,31 +403,88 @@
 
                 {{-- Chat (scrollable) --}}
                 <div id="chat-section"
-                    class="flex-1 overflow-y-auto px-3 py-4 space-y-3 min-w-[100vw] sm:min-w-[400px]">
+                    class="flex-1 overflow-y-auto px-3 py-4 space-y-1.5 min-w-[100vw] sm:min-w-[400px]">
                     <div class="flex items-end gap-2">
                         <div class="flex items-center justify-center rounded-full p-2 border bg-white">
                             <img src="{{ asset('img/bot.png') }}" alt="" class="w-6 h-6">
                         </div>
                         <div
                             class="max-w-[280px] shadow-lg rounded-2xl px-3 py-2 border border-gray-300 bg-gray-50 text-sm">
-                            Hi, how can I help you?
+                            {{ __('chatbot.welcome') }}
+                        </div>
+                    </div>
+
+                    <div id="chatbot-suggested-prompts" class="pr-2 pb-1">
+                        <p class="text-xs font-semibold text-gray-500 mb-2">{{ __('chatbot.try_one_of_these') }}:</p>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" class="chatbot-prompt-btn text-xs px-3 py-1.5 rounded-full border border-gray-300 bg-white text-gray-700 hover:border-[#5D3FD3] hover:text-[#5D3FD3] transition"
+                                data-message="{{ __('chatbot.productivity_overview') }}">
+                                {{ __('chatbot.productivity_overview') }}
+                            </button>
+                            <button type="button" class="chatbot-prompt-btn text-xs px-3 py-1.5 rounded-full border border-gray-300 bg-white text-gray-700 hover:border-[#5D3FD3] hover:text-[#5D3FD3] transition"
+                                data-message="{{ __('chatbot.user_productivity') }}">
+                                {{ __('chatbot.user_productivity') }}
+                            </button>
+                            <button type="button" class="chatbot-prompt-btn text-xs px-3 py-1.5 rounded-full border border-gray-300 bg-white text-gray-700 hover:border-[#5D3FD3] hover:text-[#5D3FD3] transition"
+                                data-message="{{ __('chatbot.top_productivity_trends') }}">
+                                {{ __('chatbot.top_productivity_trends') }}
+                            </button>
                         </div>
                     </div>
                 </div>
 
                 {{-- send section --}}
                 <div
-                    class="h-20 px-3 py-2 border-t border-gray-300 shrink-0 flex items-center gap-2 min-w-[100vw] sm:min-w-[400px] bg-white">
-                    <input id="chatbot-input" type="text" placeholder="Type a message…"
-                        class="flex-1 rounded-xl px-3 py-2 border border-gray-300 placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3]" />
+                    class="px-3 py-2 border-t border-gray-300 shrink-0 flex flex-col gap-2 min-w-[100vw] sm:min-w-[400px] bg-white">
+                    @php
+                        $chatVisibleWorkspaces = app(\App\Services\AIWorkspaceService::class)
+                            ->getVisibleWorkspacesForUser(auth()->user());
+                        $mapWorkspaceValue = function ($workspace) {
+                            if ($workspace->visibility === 'public') {
+                                return 'public';
+                            }
 
-                    <button id="chatbot-send-btn" type="button"
-                        class="p-2 rounded-full bg-[#5D3FD3] fill-white hover:opacity-95">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5">
-                            <path
-                                d="M568.4 37.7C578.2 34.2 589 36.7 596.4 44C603.8 51.3 606.2 62.2 602.7 72L424.7 568.9C419.7 582.8 406.6 592 391.9 592C377.7 592 364.9 583.4 359.6 570.3L295.4 412.3C290.9 401.3 292.9 388.7 300.6 379.7L395.1 267.3C400.2 261.2 399.8 252.3 394.2 246.7C388.6 241.1 379.6 240.7 373.6 245.8L261.2 340.1C252.1 347.7 239.6 349.7 228.6 345.3L70.1 280.8C57 275.5 48.4 262.7 48.4 248.5C48.4 233.8 57.6 220.7 71.5 215.7L568.4 37.7z" />
-                        </svg>
-                    </button>
+                            return $workspace->id;
+                        };
+
+                        $chatWorkspaceOptions = $chatVisibleWorkspaces->mapWithKeys(function ($workspace) use ($mapWorkspaceValue) {
+                            $value = $mapWorkspaceValue($workspace);
+
+                            return [$value => $workspace->name . ' (' . ucfirst($workspace->visibility) . ')'];
+                        })->all();
+
+                        // Hardcoded scope for productivity vector DB.
+                        $chatWorkspaceOptions = ['productivity' => 'Productivity Insights'] + $chatWorkspaceOptions;
+
+                        $chatDefaultWorkspace = $chatVisibleWorkspaces->firstWhere('visibility', 'public')
+                            ?: $chatVisibleWorkspaces->first();
+                        $chatDefaultWorkspaceValue = $chatDefaultWorkspace
+                            ? $mapWorkspaceValue($chatDefaultWorkspace)
+                            : null;
+                    @endphp
+
+                    <x-form.select
+                        label="Workspace"
+                        name="chatbot_workspace"
+                        id="chatbot-workspace-select"
+                        :value="$chatDefaultWorkspaceValue"
+                        :options="$chatWorkspaceOptions"
+                        :showChevron="true"
+                        class="w-full"
+                    />
+
+                    <div class="flex items-center gap-2">
+                        <input id="chatbot-input" type="text" placeholder="{{ __('chatbot.type_message') }}"
+                            class="flex-1 rounded-xl px-3 py-2 border border-gray-300 placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3]" />
+
+                        <button id="chatbot-send-btn" type="button"
+                            class="p-2 w-9 h-9 inline-flex items-center justify-center rounded-full bg-[#5D3FD3] fill-white hover:opacity-95">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5">
+                                <path
+                                    d="M568.4 37.7C578.2 34.2 589 36.7 596.4 44C603.8 51.3 606.2 62.2 602.7 72L424.7 568.9C419.7 582.8 406.6 592 391.9 592C377.7 592 364.9 583.4 359.6 570.3L295.4 412.3C290.9 401.3 292.9 388.7 300.6 379.7L395.1 267.3C400.2 261.2 399.8 252.3 394.2 246.7C388.6 241.1 379.6 240.7 373.6 245.8L261.2 340.1C252.1 347.7 239.6 349.7 228.6 345.3L70.1 280.8C57 275.5 48.4 262.7 48.4 248.5C48.4 233.8 57.6 220.7 71.5 215.7L568.4 37.7z" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </aside>
 
@@ -508,6 +565,40 @@
             }
         }
     </script>
+
+    <style>
+        .chatbot-markdown ol {
+            list-style: decimal;
+            padding-left: 1.15rem;
+            margin: 0.3rem 0;
+        }
+
+        .chatbot-markdown ul {
+            list-style: disc;
+            padding-left: 1.15rem;
+            margin: 0.3rem 0;
+        }
+
+        .chatbot-markdown li {
+            margin: 0;
+        }
+
+        .chatbot-markdown p {
+            margin: 0 !important;
+        }
+
+        .chatbot-markdown li p {
+            margin: 0;
+        }
+
+        .chatbot-markdown li + li {
+            margin-top: 0.15rem;
+        }
+
+        .chatbot-markdown br + br {
+            display: none;
+        }
+    </style>
 
     @stack('scripts')
 </body>

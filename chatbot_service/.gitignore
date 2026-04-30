@@ -17,6 +17,3 @@ build/
 
 # notebooks
 .ipynb_checkpoints/
-
-# optional: large raw docs (keep a tiny sample)
-data/raw/

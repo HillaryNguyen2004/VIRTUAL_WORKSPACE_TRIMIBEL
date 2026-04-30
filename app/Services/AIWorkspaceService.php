@@ -5,14 +5,42 @@ namespace App\Services;
 use App\Models\AIWorkspace;
 use App\Models\AIWorkspaceFile;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\ExecutableFinder;
 // use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 
-class WorkspaceService
+class AIWorkspaceService
 {
+    /**
+     * Get visible active workspaces for a user (same visibility rules as AI Workspace listing).
+     */
+    public function getVisibleWorkspacesForUser($user)
+    {
+        $query = AIWorkspace::query()->active();
+
+        if (!$user->hasRole('admin')) {
+            $teamUserIds = $this->getTeamScopeUserIds($user);
+
+            $query->where(function ($q) use ($user, $teamUserIds) {
+                $q->where(function ($privateQ) use ($user) {
+                    $privateQ->where('visibility', 'private')
+                        ->where('user_id', $user->id);
+                })->orWhere('visibility', 'public')
+                    ->orWhere(function ($teamQ) use ($teamUserIds) {
+                        $teamQ->where('visibility', 'team')
+                            ->whereIn('user_id', $teamUserIds);
+                    });
+            });
+        }
+
+        return $query
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'name', 'slug', 'visibility']);
+    }
+
     /**
      * Get all workspaces with filtering, searching and sorting
      */
@@ -21,11 +49,23 @@ class WorkspaceService
         $user = auth()->user();
         $query = AIWorkspace::query();
 
-        // Admin can see all active workspaces, users see their own or public ones
+        // Admin can see all active workspaces.
+        // Non-admin visibility rules:
+        // - public: everyone can see
+        // - team: only users in the same team scope can see
+        // - private: only owner can see
         if (!$user->hasRole('admin')) {
-            $query->where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)
-                    ->orWhere('visibility', 'public');
+            $teamUserIds = $this->getTeamScopeUserIds($user);
+
+            $query->where(function ($q) use ($user, $teamUserIds) {
+                $q->where(function ($privateQ) use ($user) {
+                    $privateQ->where('visibility', 'private')
+                        ->where('user_id', $user->id);
+                })->orWhere('visibility', 'public')
+                    ->orWhere(function ($teamQ) use ($teamUserIds) {
+                        $teamQ->where('visibility', 'team')
+                            ->whereIn('user_id', $teamUserIds);
+                    });
             });
         }
 
@@ -52,12 +92,34 @@ class WorkspaceService
     }
 
     /**
-     * Create a new workspace with folder
+     * Resolve team scope for a user:
+     * - staff leader: self + members
+     * - team member/substaff: leader + peers + self
+     * - user without team: only self
+     */
+    private function getTeamScopeUserIds($user): array
+    {
+        $leaderId = $user->team_leader_id ?: $user->id;
+
+        $ids = \App\Models\User::query()
+            ->where('id', $leaderId)
+            ->orWhere('team_leader_id', $leaderId)
+            ->pluck('id')
+            ->all();
+
+        if (!in_array($user->id, $ids, true)) {
+            $ids[] = $user->id;
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Create a new workspace with S3 storage
      */
     public function createWorkspace(array $data): AIWorkspace
     {
         $slug = AIWorkspace::generateSlug($data['name']);
-        $folderPath = AIWorkspace::getStoragePath() . '/' . $slug;
 
         $workspace = AIWorkspace::create([
             'user_id' => $data['user_id'],
@@ -65,12 +127,17 @@ class WorkspaceService
             'description' => $data['description'] ?? null,
             'slug' => $slug,
             'visibility' => $data['visibility'] ?? 'private',
-            'folder_path' => $folderPath,
+            'folder_path' => '',  // Temporary placeholder
             'status' => 'active',
         ]);
 
-        // Create the folder
-        $workspace->createFolder();
+        // Set S3 prefix using workspace ID
+        $s3Prefix = 'ai-workspace/' . $workspace->id;
+        $workspace->folder_path = $s3Prefix;
+        $workspace->save();
+
+        // Ensure vector workspace folders exist for Chroma
+        $this->ensureVectorWorkspaceFolders($workspace);
 
         return $workspace;
     }
@@ -86,21 +153,33 @@ class WorkspaceService
             'visibility' => $data['visibility'] ?? $workspace->visibility,
         ]);
 
+        // Ensure matching vector workspace folders exist when visibility changes.
+        $this->ensureVectorWorkspaceFolders($workspace);
+
         return $workspace;
     }
 
     /**
-     * Delete workspace with all files and folder
+     * Delete workspace with all files from S3
      */
     public function deleteWorkspace(AIWorkspace $workspace): bool
     {
-        // Delete all files from database
-        $workspace->files()->delete();
-
-        // Delete folder from filesystem
-        if (is_dir($workspace->folder_path)) {
-            $this->deleteDirectory($workspace->folder_path);
+        // Delete all files from S3
+        $s3Prefix = $workspace->folder_path;
+        try {
+            $files = Storage::disk('s3')->files($s3Prefix);
+            foreach ($files as $file) {
+                Storage::disk('s3')->delete($file);
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Failed to delete workspace files from S3', [
+                'prefix' => $s3Prefix,
+                'error' => $e->getMessage()
+            ]);
         }
+
+        // Delete database records
+        $workspace->files()->delete();
 
         // Delete workspace record
         return $workspace->delete();
@@ -156,13 +235,12 @@ class WorkspaceService
     }
 
     /**
-     * Store a single file
+     * Store a single file to AWS S3
      */
     private function storeFile(AIWorkspace $workspace, UploadedFile $file): AIWorkspaceFile
     {
         $extension = strtolower($file->getClientOriginalExtension());
         $originalName = $file->getClientOriginalName();
-        $temporaryPath = $file->getRealPath();
 
         // Validate file type
         if (!AIWorkspaceFile::isSupportedFormat($extension)) {
@@ -172,30 +250,17 @@ class WorkspaceService
         }
 
         $fileSize = $file->getSize();
-        if (($fileSize === false || $fileSize === null) && $temporaryPath && is_readable($temporaryPath)) {
-            $fileSize = filesize($temporaryPath);
-        }
-
         if ($fileSize === false || $fileSize === null) {
             throw new \Exception('Cannot determine uploaded file size');
         }
 
-        // Validate file size (max 50MB per file)
-        $maxSize = 50 * 1024 * 1024;
+        // Validate file size (max 512MB per file - matches server config in .htaccess)
+        $maxSize = 512 * 1024 * 1024;
         if ($fileSize > $maxSize) {
-            throw new \Exception("File size exceeds maximum limit of 50MB");
+            throw new \Exception("File size exceeds maximum limit of 512MB");
         }
 
-        // Check if workspace folder exists and is writable
-        if (!is_dir($workspace->folder_path)) {
-            throw new \Exception("Workspace folder does not exist: " . $workspace->folder_path);
-        }
-
-        if (!is_writable($workspace->folder_path)) {
-            throw new \Exception("Workspace folder is not writable: " . $workspace->folder_path);
-        }
-
-        // Capture metadata before the temporary upload file is moved.
+        // Capture metadata before upload
         try {
             $mimeType = $file->getMimeType();
         } catch (\Throwable $e) {
@@ -217,32 +282,38 @@ class WorkspaceService
             };
         }
 
-        // Generate unique filename
+        // Normalize folder path - migrate old local paths to S3 prefix format
+        $folderPath = $workspace->folder_path;
+        if (strpos($folderPath, '/') === 0 || strpos($folderPath, 'Users/') === 0 || strpos($folderPath, 'chatbot_service') === 0) {
+            // This is a local filesystem path, convert to S3 prefix
+            $folderPath = 'ai-workspace/' . $workspace->id;
+            $workspace->folder_path = $folderPath;
+            $workspace->save();
+        }
+
+        // Generate unique filename and S3 path
         $fileName = Str::uuid() . '.' . $extension;
-        $filePath = $workspace->folder_path . '/' . $fileName;
+        $s3Path = $folderPath . '/' . $fileName;  // e.g., ai-workspace/{id}/{file-uuid}.ext
 
-        // Store file - use stream if move fails
+        // Upload to S3
         try {
-            $file->move($workspace->folder_path, $fileName);
-        } catch (\Exception $e) {
-            if (!$temporaryPath || !is_readable($temporaryPath)) {
-                throw new \Exception('Cannot read uploaded file', 0, $e);
-            }
-
-            $content = file_get_contents($temporaryPath);
-            if ($content === false) {
+            $fileContent = file_get_contents($file->getRealPath());
+            if ($fileContent === false) {
                 throw new \Exception("Cannot read uploaded file");
             }
 
-            $written = file_put_contents($filePath, $content);
-            if ($written === false) {
-                throw new \Exception("Cannot write file to workspace folder: " . $workspace->folder_path);
-            }
+            Storage::disk('s3')->put(
+                $s3Path,
+                $fileContent,
+                'private'
+            );
+        } catch (\Exception $e) {
+            throw new \Exception("Failed to upload file to S3: " . $e->getMessage(), 0, $e);
         }
 
-        // Verify file was actually written
-        if (!file_exists($filePath)) {
-            throw new \Exception("File was not saved successfully: " . $filePath);
+        // Verify file exists in S3
+        if (!Storage::disk('s3')->exists($s3Path)) {
+            throw new \Exception("File was not saved successfully to S3: " . $s3Path);
         }
 
         try {
@@ -250,14 +321,18 @@ class WorkspaceService
                 'workspace_id' => $workspace->id,
                 'file_name' => $fileName,
                 'original_name' => $originalName,
-                'file_path' => $filePath,
+                'file_path' => $s3Path,  // Store S3 path
                 'mime_type' => $mimeType,
                 'file_size' => $fileSize,
+                'chunk_count' => 0,
                 'ingest_status' => 'pending',
             ]);
         } catch (\Throwable $e) {
-            if (file_exists($filePath)) {
-                @unlink($filePath);
+            // Clean up S3 file on database error
+            try {
+                Storage::disk('s3')->delete($s3Path);
+            } catch (\Throwable $deleteError) {
+                \Log::warning('Failed to cleanup S3 file on error', ['path' => $s3Path]);
             }
 
             throw $e;
@@ -265,7 +340,7 @@ class WorkspaceService
     }
 
     /**
-     * Run ingest for workspace files
+     * Ingest files to workspace
      */
     public function ingestWorkspace(AIWorkspace $workspace): array
     {
@@ -305,29 +380,44 @@ class WorkspaceService
     }
 
     /**
-     * Ingest a single file using Python script
+     * Ingest a single file from S3 using Python script
      */
     private function ingestFile(AIWorkspace $workspace, AIWorkspaceFile $file): array
     {
+        $tempFilePath = null;
+
         try {
             // Update status to processing
             $file->update(['ingest_status' => 'processing']);
 
+            // Download file from S3 to temporary location for processing
+            $s3Path = $file->file_path;
+            $fileContent = Storage::disk('s3')->get($s3Path);
+            $tempFilePath = sys_get_temp_dir() . '/' . Str::uuid() . '.' . pathinfo($s3Path, PATHINFO_EXTENSION);
+            file_put_contents($tempFilePath, $fileContent);
+
             // Resolve interpreter + build command
             $pythonBinary = $this->resolvePythonBinary();
             $pythonScript = base_path('chatbot_service/cli/ingest_workspace.py');
-            $workspaceDir = $workspace->folder_path;
-            $targetFile = $file->file_path;
+            $targetFile = $tempFilePath;  // Temporary local copy
+            $originalName = (string) ($file->original_name ?? $file->file_name ?? basename((string) $s3Path));
+            $workspaceScope = $this->resolveWorkspaceVectorScope($workspace);
+            $workspaceRole = $this->normalizeRoleForRag(
+                optional($workspace->user?->roles()->first())->name
+            );
             $processEnv = [
                 'PYTHONPATH' => base_path('chatbot_service'),
+                'RAG_USER_ROLE' => $workspaceRole,
             ];
 
             // Run the ingest process inside chatbot_service so relative imports/config work.
+            // Use temp directory instead of S3 path for workspace directory
             $process = new Process(
-                [$pythonBinary, $pythonScript, $workspaceDir, $targetFile],
+                [$pythonBinary, $pythonScript, sys_get_temp_dir(), $targetFile, $workspaceScope, $workspaceRole, $originalName, $file->file_name],
                 base_path('chatbot_service'),
                 $processEnv
             );
+            $process->setTimeout(300);
             $process->run();
 
             if (!$process->isSuccessful()) {
@@ -379,6 +469,11 @@ class WorkspaceService
             ]);
 
             throw $e;
+        } finally {
+            // Clean up temporary file
+            if ($tempFilePath && file_exists($tempFilePath)) {
+                @unlink($tempFilePath);
+            }
         }
     }
 
@@ -421,6 +516,37 @@ class WorkspaceService
         );
     }
 
+    private function normalizeRoleForRag(?string $role): string
+    {
+        $normalized = strtolower((string) $role);
+
+        return match ($normalized) {
+            'admin', 'subadmin' => 'admin',
+            'staff', 'substaff' => 'staff',
+            default => 'user',
+        };
+    }
+
+    private function resolveWorkspaceVectorScope(AIWorkspace $workspace): string
+    {
+        if ($workspace->visibility === 'public') {
+            return 'public';
+        }
+
+        return (string) $workspace->id;
+    }
+
+    private function ensureVectorWorkspaceFolders(AIWorkspace $workspace): void
+    {
+        $scope = $this->resolveWorkspaceVectorScope($workspace);
+
+        $chromaWorkspacePath = base_path('chatbot_service/var/chroma_db/workspaces/' . $scope);
+
+        if (!is_dir($chromaWorkspacePath)) {
+            @mkdir($chromaWorkspacePath, 0755, true);
+        }
+    }
+
     /**
      * Parse chunk count from ingest script output
      */
@@ -438,15 +564,23 @@ class WorkspaceService
     }
 
     /**
-     * Delete a workspace file
+     * Delete a workspace file from S3 and vector DB
      */
     public function deleteFile(AIWorkspaceFile $file): bool
     {
         $workspace = $file->workspace;
 
-        // Delete physical file
-        if (file_exists($file->file_path)) {
-            unlink($file->file_path);
+        // Delete chunks from vector DB before removing the DB record
+        $this->deleteFileFromVectorDb($workspace, $file);
+
+        // Delete from S3
+        try {
+            Storage::disk('s3')->delete($file->file_path);
+        } catch (\Exception $e) {
+            \Log::warning('Failed to delete file from S3', [
+                'path' => $file->file_path,
+                'error' => $e->getMessage()
+            ]);
         }
 
         // Delete database record
@@ -457,6 +591,45 @@ class WorkspaceService
         $workspace->updateStorageSize();
 
         return true;
+    }
+
+    /**
+     * Remove a file's chunks from the ChromaDB vector store.
+     */
+    private function deleteFileFromVectorDb(AIWorkspace $workspace, AIWorkspaceFile $file): void
+    {
+        try {
+            $pythonBinary = $this->resolvePythonBinary();
+            $pythonScript = base_path('chatbot_service/cli/delete_file_chunks.py');
+            $workspaceScope = $this->resolveWorkspaceVectorScope($workspace);
+
+            $process = new Process(
+                [$pythonBinary, $pythonScript, $file->file_name, $workspaceScope],
+                base_path('chatbot_service'),
+                ['PYTHONPATH' => base_path('chatbot_service')]
+            );
+            $process->setTimeout(60);
+            $process->run();
+
+            if (!$process->isSuccessful()) {
+                \Log::warning('Failed to delete file chunks from vector DB', [
+                    'file' => $file->file_name,
+                    'workspace' => $workspaceScope,
+                    'stderr' => trim($process->getErrorOutput()),
+                ]);
+            } else {
+                \Log::info('Deleted file chunks from vector DB', [
+                    'file' => $file->file_name,
+                    'workspace' => $workspaceScope,
+                    'output' => trim($process->getOutput()),
+                ]);
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Exception while deleting file chunks from vector DB', [
+                'file' => $file->file_name,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

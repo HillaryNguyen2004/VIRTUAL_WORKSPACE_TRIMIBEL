@@ -15,7 +15,7 @@ return new class extends Migration {
             $table->foreignId('workspace_id')->constrained('ai_workspaces')->onDelete('cascade');
             $table->string('file_name');
             $table->string('original_name');
-            $table->string('file_path');
+            $table->text('file_path');
             $table->string('mime_type');
             $table->bigInteger('file_size'); // in bytes
             $table->integer('chunk_count')->default(0);
