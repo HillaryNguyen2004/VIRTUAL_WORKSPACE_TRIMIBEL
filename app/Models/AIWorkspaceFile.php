@@ -6,11 +6,26 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int $workspace_id
+ * @property string $file_name
+ * @property string $original_name
+ * @property string $file_path
+ * @property string $mime_type
+ * @property int $file_size
+ * @property int $chunk_count
+ * @property string $ingest_status
+ * @property string|null $ingest_error
+ * @property \Illuminate\Support\Carbon|null $ingested_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 class AIWorkspaceFile extends Model
 {
     use HasFactory;
 
-    public const SUPPORTED_EXTENSIONS = ['pdf', 'txt', 'md', 'docx', 'pptx', 'xlsx'];
+    public const SUPPORTED_EXTENSIONS = ['pdf', 'txt', 'md', 'docx', 'xlsx', 'csv'];
 
     protected $table = 'ai_workspace_files';
 
@@ -39,22 +54,6 @@ class AIWorkspaceFile extends Model
     public function workspace(): BelongsTo
     {
         return $this->belongsTo(AIWorkspace::class);
-    }
-
-    /**
-     * Scope: Filter by status
-     */
-    public function scopeByStatus($query, string $status)
-    {
-        return $query->where('ingest_status', $status);
-    }
-
-    /**
-     * Scope: Filter pending files
-     */
-    public function scopePending($query)
-    {
-        return $query->where('ingest_status', 'pending');
     }
 
     /**

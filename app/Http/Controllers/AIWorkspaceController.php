@@ -4,15 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\AIWorkspace;
 use App\Models\AIWorkspaceFile;
-use App\Services\WorkspaceService;
+use App\Services\AIWorkspaceService;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class AIWorkspaceController extends Controller
 {
-    protected WorkspaceService $workspaceService;
+    private const INGEST_MAX_EXECUTION_TIME = 600;
 
-    public function __construct(WorkspaceService $workspaceService)
+    protected AIWorkspaceService $workspaceService;
+
+    public function __construct(AIWorkspaceService $workspaceService)
     {
         $this->workspaceService = $workspaceService;
         $this->middleware('auth');
@@ -121,12 +124,12 @@ class AIWorkspaceController extends Controller
      */
     public function uploadFiles(Request $request, AIWorkspace $workspace)
     {
-        $this->authorize('update', $workspace);
+        $this->authorize('upload', $workspace);
 
         $allowedMimes = implode(',', AIWorkspaceFile::supportedFormats());
 
         $validated = $request->validate([
-            'files.*' => 'required|file|mimes:' . $allowedMimes,
+            'files.*' => 'required|file|mimes:' . $allowedMimes . '|max:524288', // 512MB max file size
         ]);
 
         $files = $request->file('files', []);
@@ -172,7 +175,10 @@ class AIWorkspaceController extends Controller
      */
     public function ingestFiles(Request $request, AIWorkspace $workspace)
     {
-        $this->authorize('update', $workspace);
+        $this->authorize('ingest', $workspace);
+
+        // Ingest can run longer for large files/workspaces.
+        @set_time_limit(self::INGEST_MAX_EXECUTION_TIME);
 
         $results = $this->workspaceService->ingestWorkspace($workspace);
 
@@ -198,6 +204,67 @@ class AIWorkspaceController extends Controller
         $this->workspaceService->deleteFile($file);
 
         return back()->with('success', __('ai.file_deleted_success'));
+    }
+
+    /**
+     * Preview a workspace file from S3.
+     */
+    public function previewFile(AIWorkspaceFile $file)
+    {
+        $workspace = $file->workspace;
+        $this->authorize('view', $workspace);
+
+        $s3Path = $file->getAttribute('file_path');
+        if (!$s3Path) {
+            abort(404, 'File path not found');
+        }
+
+        // Check if file exists in S3
+        if (!Storage::disk('s3')->exists($s3Path)) {
+            abort(404, 'File not found in storage');
+        }
+
+        $displayName = $file->getAttribute('original_name') ?: $file->getAttribute('file_name');
+        $fileName = addslashes((string) $displayName);
+        $mimeType = $file->getAttribute('mime_type') ?: 'application/octet-stream';
+
+        // Stream file from S3 for preview
+        $content = Storage::disk('s3')->get($s3Path);
+
+        return response($content)
+            ->header('Content-Type', $mimeType)
+            ->header('Content-Disposition', "inline; filename=\"$fileName\"")
+            ->header('Cache-Control', 'no-cache, must-revalidate');
+    }
+
+    /**
+     * Download a workspace file from S3.
+     */
+    public function downloadFile(AIWorkspaceFile $file)
+    {
+        $workspace = $file->workspace;
+        $this->authorize('view', $workspace);
+
+        $s3Path = $file->getAttribute('file_path');
+        if (!$s3Path) {
+            abort(404, 'File path not found');
+        }
+
+        // Check if file exists in S3
+        if (!Storage::disk('s3')->exists($s3Path)) {
+            abort(404, 'File not found in storage');
+        }
+
+        $downloadName = (string) ($file->getAttribute('original_name') ?: $file->getAttribute('file_name'));
+        $mimeType = $file->getAttribute('mime_type') ?: 'application/octet-stream';
+
+        // Stream file from S3 for download
+        $content = Storage::disk('s3')->get($s3Path);
+
+        return response($content)
+            ->header('Content-Type', $mimeType)
+            ->header('Content-Disposition', "attachment; filename=\"$downloadName\"")
+            ->header('Content-Length', Storage::disk('s3')->size($s3Path));
     }
 
     /**
