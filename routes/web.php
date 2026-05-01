@@ -144,6 +144,10 @@ Route::middleware(['auth'])->group(function () {
         ->name('ai-workspaces.upload-files');
     Route::post('ai-workspaces/{ai_workspace}/ingest', [AIWorkspaceController::class, 'ingestFiles'])
         ->name('ai-workspaces.ingest');
+    Route::get('workspace-files/{ai_workspace_file}/preview', [AIWorkspaceController::class, 'previewFile'])
+        ->name('workspace-files.preview');
+    Route::get('workspace-files/{ai_workspace_file}/download', [AIWorkspaceController::class, 'downloadFile'])
+        ->name('workspace-files.download');
     Route::delete('workspace-files/{ai_workspace_file}', [AIWorkspaceController::class, 'deleteFile'])
         ->name('workspace-files.delete');
     Route::get('ai-workspaces/{ai_workspace}/export', [AIWorkspaceController::class, 'export'])
@@ -410,9 +414,9 @@ Route::post('/tasks/{task}/status', [TaskController::class, 'updateStatus'])->na
 // })->name('meet');
 
 Route::get('/meeting', [MeetingController::class, 'index'])->name('meeting');
-Route::post('/meetings/api/generate-room', [MeetingController::class, 'generateRoomApi'])->name('meetings.api.generate');
-Route::post('/meetings/api/find-slots', [MeetingController::class, 'findSmartSlots'])->name('meetings.smart.slots');
-Route::post('/meetings/api/book-meeting', [MeetingController::class, 'bookSmartMeeting'])->name('meetings.smart.book');
+Route::post('/api/meetings/generate', [MeetingController::class, 'generateRoomApi'])->middleware('auth')->name('api.meetings.generate');
+Route::post('/meetings/smart/slots', [MeetingController::class, 'findSmartSlots'])->middleware(['auth', 'web'])->name('meetings.smart.slots');
+Route::post('/meetings/smart/book', [MeetingController::class, 'bookSmartMeeting'])->middleware(['auth', 'web'])->name('meetings.smart.book');
 
 Route::get('/meetings/history', [MeetingController::class, 'history'])->name('meetings.history');
 

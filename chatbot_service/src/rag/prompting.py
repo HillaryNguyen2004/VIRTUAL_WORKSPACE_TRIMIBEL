@@ -8,16 +8,43 @@ def _serialize_passages(passages: List[Dict[str, Any]]) -> str:
         src = (p.get("metadata") or {}).get("source", "unknown")
         title = (p.get("metadata") or {}).get("title", "")
         head = f"[{i}] source={src}" + (f" | title={title}" if title else "")
-        blocks.append(f"{head}\n{p['content'].strip()}")
+        body = (p.get("document") or p.get("content") or "").strip()
+        blocks.append(f"{head}\n{body}")
     return "\n\n".join(blocks)
 
-def build_rag_prompt(user_q: str, user_role: str, passages: List[Dict[str, Any]], target_lang: str = "en") -> str:
+def build_rag_prompt(
+    user_q: str,
+    user_role: str,
+    passages: List[Dict[str, Any]], 
+    target_lang: str = "en", 
+    history: str = ""
+) -> str:
     kb = _serialize_passages(passages)
+    
+    # Inject conversation history if available
+    history_block = f"""CONVERSATION HISTORY:
+    <history>
+    {history}
+    </history>
+
+    """ if history else ""
+    
     return f"""
         SYSTEM INSTRUCTIONS:
         <system>
         You are Bot Bot.
-        You are a retrieval-augmented assistant. Use ONLY the "Knowledge" text below. If the answer is not in Knowledge, say that it is not covered.
+        You are Bot Bot, a retrieval-augmented assistant.
+
+        You can use BOTH:
+        1. Knowledge (retrieved documents)
+        2. Conversation History
+
+        Priority rules:
+        - Use Knowledge for factual/system/domain questions
+        - Use Conversation History for personal context (e.g., user's name)
+        - If neither contains the answer, say it is not covered
+
+        Do NOT ignore Conversation History.
         </system>
 
         USER ROLE:
@@ -65,6 +92,7 @@ def build_rag_prompt(user_q: str, user_role: str, passages: List[Dict[str, Any]]
         - Do NOT mention "source", "sources", "citations", or reference markers like "[1]" or "[2]" in your answer.
         </formatting>
 
+        {history_block}
         Question:
         {user_q}
 
@@ -74,22 +102,111 @@ def build_rag_prompt(user_q: str, user_role: str, passages: List[Dict[str, Any]]
         Answer:
     """
 
-def build_general_prompt(user_q: str, target_lang: str = "en") -> str:
+def build_general_prompt(user_q: str, target_lang: str = "en", history: str = "",) -> str:
     """
     Fallback when we have no (or clearly insufficient) knowledge.
     """
+    # Inject conversation history if available
+    history_block = f"""CONVERSATION HISTORY:
+    <history>
+    {history}
+    </history>
+
+    """ if history else ""
+    
     return f"""
         SYSTEM INSTRUCTIONS:
         <system>
         Your name is Bot Bot.
         You are a careful assistant. Answer using general knowledge only.
-        If you are unsure, say so briefly.
+        You are Bot Bot.
+
+        You can use:
+        - Conversation history (for context like user name)
+        - General knowledge
+
+        Rules:
+        - Prefer history for personal questions
+        - If unsure, say briefly
         </system>
 
+        {history_block}
         Answer in {target_lang}. Be concise, step-by-step when helpful.
 
         Question:
         {user_q}
 
         Answer:
+    """
+    
+def build_chitchat_prompt(
+    user_q: str,
+    target_lang: str = "en",
+    history: str = ""
+) -> str:
+
+    history_block = f"""CONVERSATION HISTORY:
+    <history>
+    {history}
+    </history>
+
+    """ if history else ""
+
+    return f"""
+        SYSTEM:
+        <system>
+        You are Bot Bot, a friendly and natural conversational assistant.
+
+        You are NOT the user.
+        Do NOT pretend to be the user.
+
+        Guidelines:
+        - Be natural, friendly, and concise
+        - Do NOT mention employees, productivity, analytics
+        - Use conversation history when relevant (e.g., user's name)
+        - Respond like a human conversation (not formal documentation)
+        - If the user introduces themselves, acknowledge it politely
+        - Do NOT repeat the user's sentence as your identity
+        - Do NOT mention being an AI model
+        </system>
+
+        {history_block}
+
+        LANGUAGE:
+        - Answer in {target_lang}
+
+        User:
+        {user_q}
+
+        Assistant:
+    """
+
+def build_summary_prompt(passages: List[Dict[str, Any]], lang: str) -> str:
+    """
+    For summarization, we want to encourage more abstraction and insight extraction, rather than just listing facts.
+    """
+    
+    context = "\n\n".join(
+        (p.get("content") or p.get("document") or "").strip()
+        for p in passages
+        if (p.get("content") or p.get("document"))
+    )
+
+    return f"""
+        You are a data analyst.
+
+        Summarize the following knowledge.
+
+        Requirements:
+        - Extract key insights
+        - Identify trends if any
+        - Be concise
+        - Do NOT list raw records
+
+        Language: {lang}
+
+        Knowledge:
+        {context}
+
+        Summary:
     """

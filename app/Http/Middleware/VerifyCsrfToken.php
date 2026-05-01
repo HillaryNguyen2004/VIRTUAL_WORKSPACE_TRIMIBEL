@@ -13,5 +13,6 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         'onlyoffice/callback/*',
+        'api/chat-bot*',
     ];
 }

@@ -48,6 +48,8 @@ return [
 
     'rag' => [
         'python_binary' => env('RAG_PYTHON_BIN'),
+        'ingest_process_timeout' => (float) env('RAG_INGEST_PROCESS_TIMEOUT', 300),
+        'ingest_max_execution_time' => (int) env('RAG_INGEST_MAX_EXECUTION_TIME', 300),
     ],
 
     'node_binary' => env('NODE_BINARY', 'node'),

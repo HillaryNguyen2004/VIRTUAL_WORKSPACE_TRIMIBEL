@@ -34,20 +34,19 @@ class AIWorkspacePolicy
      */
     public function view(User $user, AIWorkspace $workspace): bool
     {
-        // User can always view their own workspace
-        if ((int) $workspace->user_id === (int) $user->id) {
-            return true;
+        // private: only owner
+        if ($workspace->visibility === 'private') {
+            return (int) $workspace->user_id === (int) $user->id;
         }
 
-        // Public workspaces can be viewed by anyone
+        // public: everyone
         if ($workspace->visibility === 'public') {
             return true;
         }
 
-        // Team workspaces - implement your team logic here if needed
+        // team: only same team scope
         if ($workspace->visibility === 'team') {
-            // Add team checking logic here
-            return true;
+            return in_array((int) $workspace->user_id, $this->getTeamScopeUserIds($user), true);
         }
 
         return false;
@@ -65,6 +64,24 @@ class AIWorkspacePolicy
      * Determine whether the user can update the model.
      */
     public function update(User $user, AIWorkspace $workspace): bool
+    {
+        return (int) $workspace->user_id === (int) $user->id;
+    }
+
+    /**
+     * Determine whether the user can upload files to the workspace.
+     * Only owner can upload files.
+     */
+    public function upload(User $user, AIWorkspace $workspace): bool
+    {
+        return (int) $workspace->user_id === (int) $user->id;
+    }
+
+    /**
+     * Determine whether the user can trigger ingest for the workspace.
+     * Only owner can ingest files.
+     */
+    public function ingest(User $user, AIWorkspace $workspace): bool
     {
         return (int) $workspace->user_id === (int) $user->id;
     }
@@ -91,5 +108,23 @@ class AIWorkspacePolicy
     public function forceDelete(User $user, AIWorkspace $workspace): bool
     {
         return (int) $workspace->user_id === (int) $user->id;
+    }
+
+    private function getTeamScopeUserIds(User $user): array
+    {
+        $leaderId = $user->team_leader_id ?: $user->id;
+
+        $ids = User::query()
+            ->where('id', $leaderId)
+            ->orWhere('team_leader_id', $leaderId)
+            ->pluck('id')
+            ->map(fn($id) => (int) $id)
+            ->all();
+
+        if (!in_array((int) $user->id, $ids, true)) {
+            $ids[] = (int) $user->id;
+        }
+
+        return $ids;
     }
 }

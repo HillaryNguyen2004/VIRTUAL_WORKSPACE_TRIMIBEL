@@ -1,269 +1,635 @@
 from __future__ import annotations
-from typing import Tuple, List, Dict, Any, Optional
+from dataclasses import dataclass
+from typing import Tuple, List, Dict, Any, Optional, Callable
+import logging
 import re
+import unicodedata
 
 from .retrieval import retrieve
-from .prompting import build_rag_prompt, build_general_prompt
-# from .gemini_generator import generate_answer
-from .ollama_generate import generate_answer
+from .prompting import build_rag_prompt, build_general_prompt, build_summary_prompt, build_chitchat_prompt
+from .ollama_generate import generate_answer, stream_answer as ollama_stream_answer, GenerationCancelled
 from .lang import detect_lang
+from .memory import get_memory
 
-MIN_DOCS_FOR_CONFIDENT_RAG = 2
-MIN_TOP_SCORE = 0.35
+log = logging.getLogger(__name__)
 
-def is_chitchat(user_q: str) -> bool:
-    text = user_q.lower().strip()
-    words = text.split()
+def _log_final_response(
+    active_logger: Any,
+    mode: str,
+    request_id: str,
+    answer_text: str,
+    citations: List[Dict[str, Any]],
+    usage: Dict[str, int],
+) -> None:
+    active_logger.info(
+        "%s response payload: %s",
+        mode,
+        {
+            "request_id": request_id,
+            "answer": answer_text,
+            "citations": citations,
+            "usage": usage,
+        },
+    )
 
-    # Very short trivial messages (1–3 words)
-    # Greetings
-    greetings = [
-        "hi", "hello", "hey", "heyy", "yo",
-        "good morning", "good afternoon", "good evening",
-    ]
 
-    if len(words) <= 3 and any(g == text for g in greetings):
+def _zero_usage() -> Dict[str, int]:
+    return {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+# =========================
+# CONFIG
+# =========================
+INTENT_CHITCHAT = "chitchat"
+INTENT_SUMMARIZE = "summarize"
+INTENT_ANALYTICS = "analytics"
+INTENT_QA = "qa"
+
+MAX_CONTEXT_PASSAGES = 20
+SUMMARY_BATCH_SIZE = 10
+SUMMARY_MAX_PASSAGES = 200
+
+# =========================
+# QUERY ANALYSIS CLASS
+# =========================
+@dataclass
+class QueryAnalysis:
+    intent: str
+    filters: Optional[dict]
+    is_aggregation: bool
+    lang: str
+
+# =========================
+# RETRIEVAL PLAN CLASS
+# =========================    
+@dataclass
+class RetrievalPlan:
+    mode: str            # normal | aggregation | fallback
+    k: int
+    where: Optional[dict]
+
+# =========================
+# NORMALIZATION
+# =========================
+def normalize_text(text: str) -> str:
+    text = text.lower().strip()
+    text = unicodedata.normalize("NFD", text)
+    text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
+    return re.sub(r"\s+", " ", text)
+
+# =========================
+# INTENT DETECTION
+# =========================
+def is_chitchat(q: str) -> bool:
+    text = normalize_text(q)
+
+    if re.search(r"\b(employee|productivity|nhan vien)\b", text):
+        return False
+
+    # greeting
+    if re.search(r"\b(hi|hello|hey|xin chao|chao)\b", text):
         return True
 
-    # Simple acknowledgements / thanks / closings
-    short_ack = {
-        "ok", "okay", "okk", "okie",
-        "thanks", "thank you", "thx", "tks",
-        "cam on", "cảm ơn",
-        "bye", "goodbye", "bye bye", "see you",
-        "got it", "roger", "noted",
-    }
-    if len(words) <= 4 and text in short_ack:
+    # identity / capability
+    if re.search(r"\b(who are you|ban la ai)\b", text):
         return True
 
-    # Classic small-talk / social phrases
-    small_talk_phrases = [
-        "what's up",
-        "whats up",
-        "sup",
-        "how's it going",
-        "hows it going",
-        "how is it going",
-        "how's your day",
-        "hows your day",
-        "how is your day",
-        "tell me a joke",
-        "make me laugh",
-        "i'm bored",
-        "im bored",
-        "talk to me",
-        "chat with me",
-        "keep me company",
-    ]
-    if any(phrase in text for phrase in small_talk_phrases):
+    # capability-specific
+    if re.search(r"\b(what can you do|ban lam duoc gi|your capabilities)\b", text):
         return True
 
-    # Meta questions about the bot itself
-    patterns: List[str] = [
-        r"\bwhat('?s| is) your name\b",
-        r"\bwho are you\b",
-        r"\bwhat can you do\b",
-        r"\bhow are you\b",
-        r"\bnice to meet you\b",
-
-        r"\bare you (a )?robot\b",
-        r"\bare you (a )?human\b",
-        r"\bare you real\b",
-        r"\bdo you have feelings\b",
-        r"\bwhere are you from\b",
-        r"\bhow old are you\b",
-        r"\bdo you sleep\b",
-        r"\bdo you (speak|know) (vietnamese|english)\b",
-        r"\bwho made you\b",
-        r"\bwho created you\b",
-    ]
-    if any(re.search(p, text) for p in patterns):
+    # small talk
+    if re.search(r"\b(how are you|khoe khong)\b", text):
         return True
-
-    # Emoji or laugh-only messages
-    laugh_tokens = {"haha", "hahaha", "lol", "lmao", "rofl", "hahaah", "hihi"}
-    if len(words) <= 3 and (
-        text in laugh_tokens
-        or all(ch in "😄😂🤣😅😉😊😍❤️👍👌🙏🤭🤔🥲🥹🥰" for ch in text if not ch.isspace())
-    ):
+    
+    if re.search(r"\b(thank you|cam on|thanks)\b", text):
+        return True
+    
+    if re.search(r"\b(sorry|xin loi)\b", text):
+        return True
+    
+    if re.search(r"\b(nice to meet you)\b", text):
         return True
 
     return False
 
-# def is_db_question(user_q: str) -> bool:
-#     text = user_q.lower()
+def is_analytics_query(q: str) -> bool:
+    return bool(re.search(r"\b(overview|tinh hinh|tong the)\b", normalize_text(q)))
 
-#     asks_how_to = any(
-#         phrase in text
-#         for phrase in [
-#             "how to",
-#             "how do i",
-#             "where can i",
-#             "how can i",
-#         ]
+def is_summarize_query(q: str) -> bool:
+    return bool(re.search(r"\b(summarize|summary|tom tat)\b", normalize_text(q)))
+
+def is_comparison_query(q: str) -> bool:
+    return bool(re.search(
+        r"\b(larger|more|less|compare|which group|higher|lower)\b",
+        normalize_text(q)
+    ))
+
+def is_aggregation_query(q: str) -> bool:
+    text = normalize_text(q)
+
+    if is_chitchat(q):
+        return False
+    
+    if is_summarize_query(q):
+        return False
+    
+    if is_comparison_query(q):
+        return False
+
+    return bool(re.search(
+        r"\b(list|all|enumerate|find all|nhung nhan vien|cac nhan vien)\b",
+        text
+    ))
+
+def classify_intent(q: str) -> str:
+    if is_chitchat(q):
+        return INTENT_CHITCHAT
+    
+    if is_analytics_query(q):
+        return INTENT_ANALYTICS
+    
+    if is_summarize_query(q):
+        return INTENT_SUMMARIZE
+    
+    return INTENT_QA
+
+# =========================
+# FILTER EXTRACTION
+# =========================
+def extract_productivity_filters(q: str) -> dict | None:
+    text = normalize_text(q)
+
+    trends = []
+    levels = []
+    filters = []
+
+    # trends (multi-value)
+    if re.search(r"\b(declining|giam|sut giam)\b", text):
+        trends.append("declining")
+
+    if re.search(r"\b(improving|tang|cai thien)\b", text):
+        trends.append("improving")
+
+    if trends:
+        if len(trends) == 1:
+            filters.append({"trend": {"$eq": trends[0]}})
+        else:
+            filters.append({"trend": {"$in": trends}})
+
+    # levels (multi-value)
+    if re.search(r"\b(excellent|xuat sac|top)\b", text):
+        levels.append("Excellent")
+
+    if re.search(r"\b(good|kha|tot)\b", text):
+        levels.append("Good")
+
+    if re.search(r"\b(average|trung binh)\b", text):
+        levels.append("Average")
+
+    if levels:
+        if len(levels) == 1:
+            filters.append({"level": {"$eq": levels[0]}})
+        else:
+            filters.append({"level": {"$in": levels}})
+
+    # risk
+    if re.search(r"\b(risk|intervention|nguy co)\b", text):
+        filters.append({"trend": {"$eq": "declining"}})
+
+    # overview
+    if re.search(r"\b(overview|summary|summarize|tong quan|tong quat)\b", text):
+        return {"record_type": "team_summary"}
+
+    if not filters:
+        return None
+
+    if len(filters) == 1:
+        return filters[0]
+
+    return {"$and": filters}
+
+# =========================
+# QUERY ANALYSIS
+# =========================
+def analyze_query(user_q: str, lang_hint: Optional[str]) -> QueryAnalysis:
+    lang = lang_hint or detect_lang(user_q) or "en"
+
+    intent = classify_intent(user_q)
+    filters = extract_productivity_filters(user_q)
+    is_agg = is_aggregation_query(user_q)
+
+    return QueryAnalysis(
+        intent=intent,
+        filters=filters,
+        is_aggregation=is_agg,
+        lang=lang,
+    )
+
+# =========================
+# BUILD RETRIEVAL PLAN
+# =========================
+def build_retrieval_plan(
+    analysis: QueryAnalysis,
+    k: Optional[int],
+) -> RetrievalPlan:
+    # =========================
+    # CHITCHAT → no retrieval
+    # =========================
+    if analysis.intent == INTENT_CHITCHAT:
+        return RetrievalPlan("none", 0, None)
+        
+    base_k = k if k is not None else 5
+    
+    # summarize = full scan
+    if analysis.intent == INTENT_SUMMARIZE:
+        return RetrievalPlan("summarize", SUMMARY_MAX_PASSAGES, analysis.filters)
+
+    # analytics = aggregation
+    if analysis.is_aggregation:
+        return RetrievalPlan("aggregation", 100, analysis.filters)
+
+    return RetrievalPlan("normal", base_k, analysis.filters)
+
+# =========================
+# RETRIEVAL STRATEGY
+# =========================
+def retrieve_passages(
+    user_q: str,
+    plan: RetrievalPlan,
+    workspace_id: Optional[str],
+    user_role: Optional[str],
+    should_cancel: Optional[Callable[[], bool]] = None,
+) -> List[Dict[str, Any]]:
+    if plan.mode == "none":
+        return []
+
+    # aggregation already pre-expanded k
+    return retrieve(
+        user_q if plan.mode != "aggregation" else "",
+        k=plan.k,
+        workspace_id=workspace_id,
+        user_role=user_role,
+        where=plan.where or {},
+        should_cancel=should_cancel,
+    )
+
+def summarize_passages(passages, lang, should_cancel: Optional[Callable[[], bool]] = None):
+    passages = passages[:SUMMARY_MAX_PASSAGES]
+
+    partial = []
+
+    for i in range(0, len(passages), SUMMARY_BATCH_SIZE):
+        if should_cancel and should_cancel():
+            raise GenerationCancelled("Request canceled")
+
+        batch = passages[i:i+SUMMARY_BATCH_SIZE]
+
+        prompt = build_summary_prompt(batch, lang)
+        text, _ = generate_answer(prompt, should_cancel=should_cancel)
+
+        partial.append(text)
+
+    final_prompt = build_summary_prompt(
+        [{"content": s} for s in partial],
+        lang
+    )
+
+    return generate_answer(final_prompt, should_cancel=should_cancel)
+
+# =========================
+# MAIN ANSWER
+# =========================
+# def answer(
+#     user_q: str,
+#     k: Optional[int] = None,
+#     lang_hint: Optional[str] = None,
+#     user_id: Optional[str] = None,
+#     user_role: Optional[str] = None,
+#     workspace_id: Optional[str] = None,
+#     logger: Optional[Any] = None,
+#     should_cancel: Optional[Callable[[], bool]] = None,
+# ) -> Tuple[str, List[Dict[str, Any]], Dict[str, int]]:
+
+#     target_lang = lang_hint or detect_lang(user_q) or "en"
+#     active_logger = logger or log
+
+#     def ensure_not_cancelled() -> None:
+#         if should_cancel and should_cancel():
+#             raise GenerationCancelled("Request canceled")
+
+#     ensure_not_cancelled()
+
+#     # =========================
+#     # 1. ANALYZE
+#     # =========================
+#     analysis = analyze_query(user_q, lang_hint)
+#     ensure_not_cancelled()
+    
+#     active_logger.info(
+#         "Query analysis: intent=%s aggregation=%s filters=%s lang=%s",
+#         analysis.intent,
+#         analysis.is_aggregation,
+#         analysis.filters,
+#         analysis.lang,
 #     )
-#     if asks_how_to:
-#         return False
 
-#     # Domain flags
-#     about_attendance = any(
-#         k in text
-#         for k in [
-#             "check in",
-#             "check-in",
-#             "check out",
-#             "checkout",
-#             "attendance",
-#         ]
+#     memory = get_memory(f"{user_id}_{workspace_id}", max_turns=10)
+#     ensure_not_cancelled()
+
+#     # =========================
+#     # 2. CHITCHAT
+#     # =========================
+#     if analysis.intent == INTENT_CHITCHAT:
+#         active_logger.info("Chitchat path selected for query=%r", user_q)
+#         prompt = build_chitchat_prompt(user_q, analysis.lang, history=memory.get_context_text())
+#         text, usage = generate_answer(prompt, should_cancel=should_cancel)
+
+#         memory.add("user", user_q)
+#         memory.add("assistant", text)
+
+#         _log_final_response(
+#             active_logger,
+#             "CHAT",
+#             f"{user_id}_{workspace_id}",
+#             text,
+#             [],
+#             usage,
+#         )
+
+#         return text, [], usage
+
+#     # =========================
+#     # 3. BUILD RETRIEVAL PLAN
+#     # =========================
+#     plan = build_retrieval_plan(analysis, k)
+#     ensure_not_cancelled()
+
+#     log.info("Retrieval plan: mode=%s k=%s where=%s", plan.mode, plan.k, plan.where)
+
+#     # =========================
+#     # 4. RETRIEVAL
+#     # =========================
+#     passages = retrieve_passages(
+#         user_q,
+#         plan,
+#         workspace_id,
+#         user_role,
+#         should_cancel=should_cancel,
 #     )
-#     about_tasks = any(
-#         k in text
-#         for k in [
-#             "task",
-#             "tasks",
-#             "assigned task",
-#             "assigned tasks",
-#         ]
-#     )
-#     about_requests = any(
-#         k in text
-#         for k in [
-#             "day off",
-#             "day-off",
-#             "leave request",
-#             "leave requests",
-#             "time off",
-#         ]
-#     )
-#     about_users = any(
-#         k in text
-#         for k in [
-#             "user list",
-#             "list of users",
-#             "all users",
-#         ]
-#     )
-#     # NEW: team / leader domain
-#     about_team = any(
-#         k in text
-#         for k in [
-#             "team leader",
-#             "team lead",
-#             "leader of my team",
-#             "my team members",
-#             "team members",
-#             "my team",
-#         ]
-#     )
+#     ensure_not_cancelled()
 
-#     mentions_me = any(
-#         k in text
-#         for k in [
-#             " my ",
-#             " for me",
-#             " assigned to me",
-#             " my task",
-#             " my tasks",
-#             " my request",
-#             " my requests",
-#         ]
-#     ) or text.startswith("my ")
+#     if not passages:
+#         prompt = build_general_prompt(
+#             user_q,
+#             analysis.lang,
+#             history=memory.get_context_text(),
+#         )
+#         text, usage = generate_answer(prompt, should_cancel=should_cancel)
+#         ensure_not_cancelled()
 
-#     asks_stats = any(
-#         k in text
-#         for k in [
-#             "how many",
-#             "count",
-#             "total",
-#             "list all",
-#             "show me all",
-#             "show all",
-#         ]
+#         _log_final_response(
+#             active_logger,
+#             "CHAT",
+#             f"{user_id}_{workspace_id}",
+#             text,
+#             [],
+#             usage,
+#         )
+
+#         return text, [], usage
+    
+#     # =========================
+#     # 5. SUMMARIZE MODE
+#     # =========================
+#     if plan.mode == "summarize":
+#         text, usage = summarize_passages(passages, analysis.lang, should_cancel=should_cancel)
+
+#         memory.add("user", user_q)
+#         memory.add("assistant", text)
+
+#         _log_final_response(
+#             active_logger,
+#             "CHAT",
+#             f"{user_id}_{workspace_id}",
+#             text,
+#             [],
+#             usage,
+#         )
+        
+#         return text, [], usage
+
+#     # =========================
+#     # 6. NORMAL RAG
+#     # =========================
+#     if plan.k:
+#         passages = passages[:plan.k]
+    
+#     prompt = build_rag_prompt(
+#         user_q,
+#         user_role,
+#         passages,
+#         target_lang,
+#         history=memory.get_context_text(),
 #     )
 
-#     domain = about_attendance or about_tasks or about_requests or about_users or about_team
+#     text, usage = generate_answer(prompt, should_cancel=should_cancel)
+#     ensure_not_cancelled()
 
-#     if domain and (mentions_me or asks_stats or about_team):
-#         return True
+#     memory.add("user", user_q)
+#     memory.add("assistant", text)
 
-#     return False
+#     citations = [
+#         {
+#             "rank": i + 1,
+#             "id": p.get("id"),
+#             "source": (p.get("metadata") or {}).get("source", "unknown"),
+#         }
+#         for i, p in enumerate(passages)
+#     ]
 
+#     _log_final_response(
+#         active_logger,
+#         "CHAT",
+#         f"{user_id}_{workspace_id}",
+#         text,
+#         citations,
+#         usage,
+#     )
 
-# def _score(p: Dict[str, Any]) -> float:
-#     meta = p.get("metadata") or {}
-#     raw = p.get("score", meta.get("score", 0.0))
-#     try:
-#         return float(raw)
-#     except (TypeError, ValueError):
-#         return 0.0
+#     return text, citations, usage
 
-
+# =========================
+# STREAMING ANSWER
+# =========================
 def answer(
     user_q: str,
     k: Optional[int] = None,
     lang_hint: Optional[str] = None,
     user_id: Optional[str] = None,
     user_role: Optional[str] = None,
-) -> Tuple[str, List[Dict[str, Any]]]:
-
+    workspace_id: Optional[str] = None,
+    logger: Optional[Any] = None,
+    should_cancel: Optional[Callable[[], bool]] = None,
+):
+    """Stream answer with logging similar to answer() function."""
     target_lang = lang_hint or detect_lang(user_q) or "en"
+    active_logger = logger or log
 
-    # Handle chit-chat first (no retrieval, no citations, no DB)
-    if is_chitchat(user_q):
-        prompt = f"""System:
-            Your name is Bot Bot.
-            You are a friendly, concise assistant having a casual conversation with the user. You can help user to answer about their works or something related to them
-            Do NOT mention documents, retrieval, or knowledge bases.
-            
-            
-            If you do not know the answer or are not sure:
-            - say so politely, without inventing information, and
-            - then ask a short follow-up question about the system or the user's use case
-            that could help you answer better.
+    def ensure_not_cancelled() -> None:
+        if should_cancel and should_cancel():
+            raise GenerationCancelled("Request canceled")
 
-            Answer in {target_lang}.
+    ensure_not_cancelled()
 
-            User: {user_q}
-            Assistant:
-        """
-        text = generate_answer(prompt, temperature=0.6)
-        return text, []
+    # =========================
+    # 1. ANALYZE
+    # =========================
+    analysis = analyze_query(user_q, lang_hint)
+    ensure_not_cancelled()
     
-    # DB agent here
-    # text = answer_from_db(user_q, target_lang=target_lang, user_id=user_id,)
-    # return text, []
+    active_logger.info(
+        "STREAM Query analysis: intent=%s aggregation=%s filters=%s lang=%s",
+        analysis.intent,
+        analysis.is_aggregation,
+        analysis.filters,
+        analysis.lang,
+    )
 
-    # Retrieve candidate passages from the knowledge base (RAG)
-    passages = retrieve(user_q, k)
+    memory = get_memory(f"{user_id}_{workspace_id}", max_turns=10)
+    ensure_not_cancelled()
 
-    # if passages:
-    #     top = passages[0]
-    #     top_score = _score(top)
-    #     enough_docs = len(passages) >= MIN_DOCS_FOR_CONFIDENT_RAG
-    #     strong_top = top_score >= MIN_TOP_SCORE
-    #     use_docs = enough_docs or strong_top
-    # else:
-    #     top_score = 0.0
-    #     use_docs = False
+    # =========================
+    # 2. CHITCHAT
+    # =========================
+    if analysis.intent == INTENT_CHITCHAT:
+        active_logger.info("STREAM Chitchat path selected for query=%r", user_q)
+        prompt = build_chitchat_prompt(user_q, analysis.lang, history=memory.get_context_text())
+        accumulated_text = ""
+        usage: Dict[str, int] = _zero_usage()
+        for chunk in ollama_stream_answer(prompt, should_cancel=should_cancel, on_usage=usage.update):
+            accumulated_text += chunk
+            yield chunk
 
-    # If retrieval looks good -> RAG path (prefer guideline/docs)
-    # if use_docs:
-    prompt = build_rag_prompt(user_q, user_role, passages, target_lang)
-    text = generate_answer(prompt, temperature=0.2)
+        memory.add("user", user_q)
+        memory.add("assistant", accumulated_text)
+        _log_final_response(
+            active_logger,
+            "STREAM",
+            f"{user_id}_{workspace_id}",
+            accumulated_text,
+            [],
+            usage,
+        )
+        return
 
-    citations: List[Dict[str, Any]] = []
-    for i, p in enumerate(passages):
-            meta = p.get("metadata") or {}
-            citations.append({
-                "rank": i + 1,
-                "id": p.get("id"),
-                "source": meta.get("source"),
-                # "score": _score(p),
-            })
+    # =========================
+    # 3. BUILD RETRIEVAL PLAN
+    # =========================
+    plan = build_retrieval_plan(analysis, k)
+    ensure_not_cancelled()
 
-    return text, citations
+    active_logger.info("STREAM Retrieval plan: mode=%s k=%s where=%s", plan.mode, plan.k, plan.where)
 
-    # Fallback: general knowledge (no good docs, not a DB query)
-    # prompt = build_general_prompt(user_q, target_lang)
-    # text = generate_answer(prompt, temperature=0.2)
-    # return text, []
+    # =========================
+    # 4. RETRIEVAL
+    # =========================
+    passages = retrieve_passages(
+        user_q,
+        plan,
+        workspace_id,
+        user_role,
+        should_cancel=should_cancel,
+    )
+    ensure_not_cancelled()
+
+    if not passages:
+        active_logger.info("STREAM No passages found, using general prompt")
+        prompt = build_general_prompt(
+            user_q,
+            analysis.lang,
+            history=memory.get_context_text(),
+        )
+        accumulated_text = ""
+        usage = _zero_usage()
+        for chunk in ollama_stream_answer(prompt, should_cancel=should_cancel, on_usage=usage.update):
+            accumulated_text += chunk
+            yield chunk
+        
+        memory.add("user", user_q)
+        memory.add("assistant", accumulated_text)
+        _log_final_response(
+            active_logger,
+            "STREAM",
+            f"{user_id}_{workspace_id}",
+            accumulated_text,
+            [],
+            usage,
+        )
+        return
+    
+    # =========================
+    # 5. SUMMARIZE MODE
+    # =========================
+    if plan.mode == "summarize":
+        active_logger.info("STREAM Summarize mode with %d passages", len(passages))
+        text, usage = summarize_passages(passages, analysis.lang, should_cancel=should_cancel)
+
+        memory.add("user", user_q)
+        memory.add("assistant", text)
+        _log_final_response(
+            active_logger,
+            "STREAM",
+            f"{user_id}_{workspace_id}",
+            text,
+            [],
+            usage,
+        )
+        
+        yield text
+        return
+
+    # =========================
+    # 6. NORMAL RAG
+    # =========================
+    if plan.k:
+        passages = passages[:plan.k]
+    
+    active_logger.info(
+        "STREAM RAG mode with %d passages",
+        len(passages),
+    )
+    
+    prompt = build_rag_prompt(
+        user_q,
+        user_role,
+        passages,
+        target_lang,
+        history=memory.get_context_text(),
+    )
+
+    accumulated_text = ""
+    usage = _zero_usage()
+    for chunk in ollama_stream_answer(prompt, should_cancel=should_cancel, on_usage=usage.update):
+        accumulated_text += chunk
+        yield chunk
+
+    memory.add("user", user_q)
+    memory.add("assistant", accumulated_text)
+
+    citations = [
+        {
+            "rank": i + 1,
+            "id": p.get("id"),
+            "source": (p.get("metadata") or {}).get("source", "unknown"),
+        }
+        for i, p in enumerate(passages)
+    ]
+
+    _log_final_response(
+        active_logger,
+        "STREAM",
+        f"{user_id}_{workspace_id}",
+        accumulated_text,
+        citations,
+        usage,
+    )
