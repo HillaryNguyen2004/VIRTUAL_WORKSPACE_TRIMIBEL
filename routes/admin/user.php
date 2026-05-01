@@ -52,6 +52,11 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('admin_or_permission:admin.dashboard.edit')
             ->name('api.alerts.productivity');
 
+        // Backward/alternate alias for clients expecting /api/lstm/send-alert
+        Route::post('send-alert', [LSTMDashboardController::class, 'sendProductivityAlert'])
+            ->middleware('admin_or_permission:admin.dashboard.edit')
+            ->name('api.lstm.send_alert');
+
         Route::post('export-excel', [LSTMDashboardController::class, 'exportExcel'])
             ->middleware('admin_or_permission:admin.dashboard.view')
             ->name('api.lstm.export');

@@ -66,10 +66,17 @@ def load_dim_employee():
         SELECT u.id, u.name, u.username, u.email,
                u.department_id, d.name AS dept_name,
                u.team_leader_id,
-               DATE(u.created_at) AS hire_date
+               DATE(u.created_at) AS hire_date,
+               r.name  AS role_name,
+               r.level AS role_level
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
+        LEFT JOIN model_has_roles mhr 
+               ON u.id = mhr.model_id 
+              AND mhr.model_type = 'App\\Models\\User'
+        LEFT JOIN roles r ON mhr.role_id = r.id
     """, mysql_engine)
+
     for _, row in df.iterrows():
         pg_cur.execute("""
             SELECT employee_sk FROM dim_employee
@@ -79,14 +86,17 @@ def load_dim_employee():
             pg_cur.execute("""
                 INSERT INTO dim_employee
                     (user_id, name, username, email, department_id,
-                     dept_name, team_leader_id, hire_date, valid_from, is_current)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,TRUE)
+                     dept_name, team_leader_id, hire_date, valid_from,
+                     is_current, role_name, role_level)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,TRUE,%s,%s)
             """, (
                 int(row['id']), row['name'], row['username'], row['email'],
                 int(row['department_id'])  if pd.notna(row['department_id'])  else None,
                 row['dept_name'],
                 int(row['team_leader_id']) if pd.notna(row['team_leader_id']) else None,
-                row['hire_date'], date.today()
+                row['hire_date'], date.today(),
+                row['role_name']  if pd.notna(row['role_name'])  else 'user',
+                int(row['role_level']) if pd.notna(row['role_level']) else 10,
             ))
     pg_conn.commit()
     print("dim_employee done.")
@@ -228,29 +238,51 @@ def get_date_sk(d):
 # ════════════════════════════════════════════════════════════
 def compute_productivity(hours_worked, is_late, checked_in,
                           had_day_off, tasks_completed,
-                          avg_task_score, avg_task_pct):
+                          avg_task_score, avg_task_pct,
+                          role_name='user'):
+    """
+    Weights by role:
+      admin  → attendance + hours only (no tasks)
+      staff  → attendance + hours + task_pct (no score, they're the scorers)
+      user   → attendance + hours + task_pct + task_score (full formula)
+    """
     if had_day_off and not checked_in:
         return 0.0
 
     hours_score     = min(hours_worked / 8.0, 1.0)
     attendance      = 1.0 if (checked_in and not is_late) else (0.5 if checked_in else 0.0)
-    task_score_norm = min(avg_task_score / 10.0,  1.0)   # score is 0-10
     task_pct_norm   = min(avg_task_pct   / 100.0, 1.0)
+    task_score_norm = min(avg_task_score / 100.0, 1.0)
 
-    has_tasks = tasks_completed > 0 or avg_task_score > 0 or avg_task_pct > 0
+    if role_name == 'admin':
+        # Admin (user_id=1): no tasks at all, pure attendance
+        score = (0.60 * attendance + 0.40 * hours_score) * 100
 
-    if has_tasks:
-        score = (
-            0.25 * attendance     +
-            0.25 * hours_score    +
-            0.30 * task_pct_norm  +
-            0.20 * task_score_norm
-        ) * 100
+    elif role_name == 'staff':
+        # Staff (team leaders): they assign scores but don't receive them
+        # Evaluated on attendance + hours + task completion %
+        has_tasks = tasks_completed > 0 or avg_task_pct > 0
+        if has_tasks:
+            score = (
+                0.30 * attendance   +
+                0.30 * hours_score  +
+                0.40 * task_pct_norm
+            ) * 100
+        else:
+            score = (0.60 * attendance + 0.40 * hours_score) * 100
+
     else:
-        score = (
-            0.60 * attendance  +
-            0.40 * hours_score
-        ) * 100
+        # Regular users/employees: full formula with score
+        has_tasks = tasks_completed > 0 or avg_task_score > 0 or avg_task_pct > 0
+        if has_tasks:
+            score = (
+                0.25 * attendance      +
+                0.25 * hours_score     +
+                0.30 * task_pct_norm   +
+                0.20 * task_score_norm
+            ) * 100
+        else:
+            score = (0.60 * attendance + 0.40 * hours_score) * 100
 
     return round(score, 2)
 
@@ -273,11 +305,26 @@ def load_fact():
         "SELECT id, name, username FROM users", mysql_engine
     )
 
+    # NEW: load roles
+    roles_df = pd.read_sql("""
+        SELECT u.id AS user_id, r.name AS role_name
+        FROM users u
+        LEFT JOIN model_has_roles mhr 
+               ON u.id = mhr.model_id 
+              AND mhr.model_type = 'App\\\\Models\\\\User'
+        LEFT JOIN roles r ON mhr.role_id = r.id
+    """, mysql_engine)
+    user_role_map: dict[int, str] = {
+        int(row['user_id']): str(row['role_name']) if pd.notna(row['role_name']) else 'user'
+        for _, row in roles_df.iterrows()
+    }
+
     checkins_df = pd.read_sql("""
-        SELECT user_name, date,
+        SELECT user_id, date,
                CAST(working_hours AS CHAR) AS working_hours,
                is_late, check_in_time, check_out_time
         FROM check_ins
+        WHERE user_id IS NOT NULL
     """, mysql_engine)
 
     # FIX 2: no longer filtering NULL start/due dates
@@ -287,6 +334,7 @@ def load_fact():
             assigned_user_id,
             project_id,
             phase_id,
+            parent_id,
             status,
             score,
             percentage,
@@ -299,6 +347,28 @@ def load_fact():
 
     tasks_df['score']      = tasks_df['score'].fillna(0).astype(float)
     tasks_df['percentage'] = tasks_df['percentage'].fillna(0).astype(float)
+
+    # ── Roll up child scores to parent tasks ──────────────────
+    # Sub-tasks carry the actual scores; parent tasks have score=0
+    # We replace a parent's score=0 with the average of its children's scores
+    child_score_rollup = (
+        tasks_df[tasks_df['score'] > 0]          # only scored children
+        .groupby('parent_id')['score']
+        .mean()
+        .reset_index()
+        .rename(columns={'parent_id': 'task_id', 'score': 'child_avg_score'})
+    )
+    tasks_df = tasks_df.merge(child_score_rollup, on='task_id', how='left')
+
+    # Use child avg score only when the task itself has score=0
+    tasks_df['score'] = tasks_df.apply(
+        lambda r: r['child_avg_score']
+                  if r['score'] == 0 and pd.notna(r['child_avg_score'])
+                  else r['score'],
+        axis=1
+    )
+    tasks_df.drop(columns=['child_avg_score'], inplace=True)
+    # ─────────────────────────────────────────────────────────
 
     # Safe date conversion — NULL becomes the fallback range
     def to_date(val, fallback: date) -> date:
@@ -344,9 +414,7 @@ def load_fact():
     # ── (user_id, date) pairs ──────────────────────────────
     date_user_pairs: set = set()
     for _, row in checkins_df.iterrows():
-        uname = str(row['user_name']).lower().replace(" ", "")
-        if uname in name_map:
-            date_user_pairs.add((name_map[uname], row['date']))
+        date_user_pairs.add((int(row['user_id']), row['date']))
     for _, row in dayoff_df.iterrows():
         date_user_pairs.add((int(row['user_id']), row['date']))
 
@@ -355,16 +423,11 @@ def load_fact():
     # ── Fast indexes ───────────────────────────────────────
     checkin_index: dict = {}
     for _, row in checkins_df.iterrows():
-        checkin_index[(str(row['user_name']).lower().replace(" ", ""), row['date'])] = row
+        checkin_index[(int(row['user_id']), row['date'])] = row
 
     dayoff_index: dict = {}
     for _, row in dayoff_df.iterrows():
         dayoff_index.setdefault((int(row['user_id']), row['date']), []).append(row)
-
-    uid_to_name: dict[int, str] = {
-        int(u['id']): u['name'].lower().replace(" ", "")
-        for _, u in users_df.iterrows()
-    }
 
     inserted = 0
 
@@ -375,7 +438,7 @@ def load_fact():
             continue
 
         # ── Check-in ───────────────────────────────────────
-        ci_row = checkin_index.get((uid_to_name.get(user_id, ""), record_date))
+        ci_row = checkin_index.get((user_id, record_date))
 
         check_in_time = check_out_time = None
         if ci_row is not None:
@@ -408,10 +471,11 @@ def load_fact():
         tasks_completed   = sum(1 for t in active_tasks if t['status'] == 'completed')
         tasks_in_progress = sum(1 for t in active_tasks if t['status'] == 'in_progress')
 
-        # FIX 3: score only from completed tasks
-        completed = [t for t in active_tasks if t['status'] == 'completed']
-        avg_task_score = float(np.mean([t['score'] for t in completed])) \
-                         if completed else 0.0
+        # FIX 2: Score from ALL active tasks, not just completed
+        # (score represents quality of work regardless of completion)
+        scored_tasks = [t for t in active_tasks if t['score'] > 0]
+        avg_task_score = float(np.mean([t['score'] for t in scored_tasks])) \
+                         if scored_tasks else 0.0
         avg_task_pct   = float(np.mean([t['percentage'] for t in active_tasks])) \
                          if active_tasks else 0.0
 
@@ -432,10 +496,14 @@ def load_fact():
         dept_sk  = get_sk("dim_department", "dept_id", dept_row[0]) \
                    if dept_row and dept_row[0] else None
 
+        # Get this user's role
+        user_role = user_role_map.get(user_id, 'user')
+
         prod_score = compute_productivity(
             hours_worked, is_late, checked_in,
             had_day_off, tasks_completed,
-            avg_task_score, avg_task_pct
+            avg_task_score, avg_task_pct,
+            role_name=user_role          # ← add this
         )
 
         pg_cur.execute("""
@@ -477,3 +545,4 @@ def run_full_etl():
     load_dim_task()
     load_fact()
     print("✅ Full ETL complete.")
+

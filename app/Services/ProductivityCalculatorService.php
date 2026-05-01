@@ -19,34 +19,36 @@ use Illuminate\Support\Facades\Log;
 class ProductivityCalculatorService
 {
     /**
-     * Calculate current productivity score for an employee over a given period
+     * Calculate current productivity score for an employee
+     *
+     * Calls Flask ML API to get LSTM-computed productivity score from warehouse.
+     * This ensures consistency between batch predictions and real-time API responses.
      *
      * @param int $employeeId User ID
-     * @param int $days Number of days to look back (default 7)
+     * @param int $days Number of days to look back (unused, kept for backwards compatibility)
      * @return float Productivity score (0-100)
      */
     public function calculateCurrentProductivityScore(int $employeeId, int $days = 7): float
     {
-        $endDate = Carbon::today();
-        $startDate = $endDate->copy()->subDays($days - 1);
+        try {
+            $response = \Illuminate\Support\Facades\Http::timeout(10)
+                ->get("http://127.0.0.1:5001/predict/{$employeeId}");
 
-        $dailyScores = [];
-
-        // Calculate productivity for each day in the range
-        for ($date = $startDate->copy(); $date <= $endDate; $date->addDay()) {
-            $dailyScore = $this->calculateDailyProductivityScore($employeeId, $date);
-            if ($dailyScore !== null) {
-                $dailyScores[] = $dailyScore;
+            if ($response->successful()) {
+                $data = $response->json();
+                // Flask returns 0-1 scale, convert to 0-100
+                $score = ($data['productivity_score'] ?? 0) * 100;
+                Log::info("Flask productivity score for employee {$employeeId}: {$score}");
+                return round($score, 2);
             }
-        }
 
-        if (empty($dailyScores)) {
-            Log::warning("No daily scores found for employee {$employeeId} in last {$days} days");
+            Log::warning("Flask API failed for employee {$employeeId}: HTTP " . $response->status());
+            return 0.0;
+
+        } catch (\Exception $e) {
+            Log::error("Flask API unreachable for employee {$employeeId}: " . $e->getMessage());
             return 0.0;
         }
-
-        $avgScore = array_sum($dailyScores) / count($dailyScores);
-        return round($avgScore, 1);
     }
 
     /**
