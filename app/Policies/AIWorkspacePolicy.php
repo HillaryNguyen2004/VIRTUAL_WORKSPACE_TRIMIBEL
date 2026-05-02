@@ -70,10 +70,18 @@ class AIWorkspacePolicy
 
     /**
      * Determine whether the user can upload files to the workspace.
-     * Only owner can upload files.
+     * Public: any authenticated user. Team: team members only. Private: owner only.
      */
     public function upload(User $user, AIWorkspace $workspace): bool
     {
+        if ($workspace->visibility === 'public') {
+            return true;
+        }
+
+        if ($workspace->visibility === 'team') {
+            return in_array((int) $user->id, $this->getTeamScopeUserIds($workspace->user), true);
+        }
+
         return (int) $workspace->user_id === (int) $user->id;
     }
 

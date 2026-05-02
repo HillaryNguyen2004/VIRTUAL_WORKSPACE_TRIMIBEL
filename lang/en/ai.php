@@ -19,6 +19,7 @@ return [
     'filter' => 'Filter',
     'reset' => 'Reset',
     'files_pending_ingest' => ':count file(s) pending ingestion',
+    'reingest_ready' => ':count file(s) ready for ingestion',
 
     // Fields
     'name' => 'Name',
@@ -36,7 +37,7 @@ return [
 
     // Files & Upload
     'upload_files' => 'Upload files',
-    'upload_files_desc' => 'Upload PDF, TXT, MD, DOCX or XLSX files to ingest into the vector database.',
+    'upload_files_desc' => 'Upload PDF, TXT, MD, DOCX, XLSX or CSV files to ingest into the vector database.',
     'workspace_files' => 'Workspace files',
     'no_files' => 'No files yet',
     'drag_files' => 'Drag files here or click to select',
@@ -59,6 +60,7 @@ return [
     'processing' => 'Processing',
     'completed' => 'Completed',
     'failed' => 'Failed',
+    'loading_ingest' => 'Loading ingest...',
 
     // Actions & Table
     'actions' => 'Actions',
@@ -78,6 +80,9 @@ return [
     'files_uploaded' => ':count file(s) uploaded successfully.',
     'file_deleted_success' => 'File deleted successfully.',
     'ingest_completed' => ':count file(s) ingested successfully.',
+    'ingest_failed_single' => 'Failed to ingest file: :name',
+    'file_not_eligible_for_ingest' => 'This file is not eligible for re-ingestion.',
+    'retry_ingest' => 'Retry ingest',
     'upload_failed' => 'Upload failed',
     'no_files_uploaded' => 'No files were uploaded',
 ];

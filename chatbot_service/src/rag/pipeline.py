@@ -156,7 +156,10 @@ def classify_intent(q: str) -> str:
 # =========================
 # FILTER EXTRACTION
 # =========================
-def extract_productivity_filters(q: str) -> dict | None:
+def extract_productivity_filters(q: str, workspace_id: str = None) -> dict | None:
+    if workspace_id != "productivity":
+        return None
+    
     text = normalize_text(q)
 
     trends = []
@@ -211,11 +214,11 @@ def extract_productivity_filters(q: str) -> dict | None:
 # =========================
 # QUERY ANALYSIS
 # =========================
-def analyze_query(user_q: str, lang_hint: Optional[str]) -> QueryAnalysis:
+def analyze_query(user_q: str, lang_hint: Optional[str], workspace_id: str = None) -> QueryAnalysis:
     lang = lang_hint or detect_lang(user_q) or "en"
 
     intent = classify_intent(user_q)
-    filters = extract_productivity_filters(user_q)
+    filters = extract_productivity_filters(user_q, workspace_id)
     is_agg = is_aggregation_query(user_q)
 
     return QueryAnalysis(
@@ -231,6 +234,7 @@ def analyze_query(user_q: str, lang_hint: Optional[str]) -> QueryAnalysis:
 def build_retrieval_plan(
     analysis: QueryAnalysis,
     k: Optional[int],
+    workspace_id: Optional[str] = None,
 ) -> RetrievalPlan:
     # =========================
     # CHITCHAT → no retrieval
@@ -240,15 +244,17 @@ def build_retrieval_plan(
         
     base_k = k if k is not None else 5
     
+    filters = analysis.filters if workspace_id == "productivity" else None
+    
     # summarize = full scan
     if analysis.intent == INTENT_SUMMARIZE:
-        return RetrievalPlan("summarize", SUMMARY_MAX_PASSAGES, analysis.filters)
+        return RetrievalPlan("summarize", SUMMARY_MAX_PASSAGES, filters)
 
     # analytics = aggregation
     if analysis.is_aggregation:
-        return RetrievalPlan("aggregation", 100, analysis.filters)
+        return RetrievalPlan("aggregation", 100, filters)
 
-    return RetrievalPlan("normal", base_k, analysis.filters)
+    return RetrievalPlan("normal", base_k, filters)
 
 # =========================
 # RETRIEVAL STRATEGY
@@ -257,7 +263,6 @@ def retrieve_passages(
     user_q: str,
     plan: RetrievalPlan,
     workspace_id: Optional[str],
-    user_role: Optional[str],
     should_cancel: Optional[Callable[[], bool]] = None,
 ) -> List[Dict[str, Any]]:
     if plan.mode == "none":
@@ -268,7 +273,6 @@ def retrieve_passages(
         user_q if plan.mode != "aggregation" else "",
         k=plan.k,
         workspace_id=workspace_id,
-        user_role=user_role,
         where=plan.where or {},
         should_cancel=should_cancel,
     )
@@ -484,7 +488,7 @@ def answer(
     # =========================
     # 1. ANALYZE
     # =========================
-    analysis = analyze_query(user_q, lang_hint)
+    analysis = analyze_query(user_q, lang_hint, workspace_id)
     ensure_not_cancelled()
     
     active_logger.info(
@@ -525,7 +529,7 @@ def answer(
     # =========================
     # 3. BUILD RETRIEVAL PLAN
     # =========================
-    plan = build_retrieval_plan(analysis, k)
+    plan = build_retrieval_plan(analysis, k, workspace_id)
     ensure_not_cancelled()
 
     active_logger.info("STREAM Retrieval plan: mode=%s k=%s where=%s", plan.mode, plan.k, plan.where)
@@ -537,7 +541,6 @@ def answer(
         user_q,
         plan,
         workspace_id,
-        user_role,
         should_cancel=should_cancel,
     )
     ensure_not_cancelled()

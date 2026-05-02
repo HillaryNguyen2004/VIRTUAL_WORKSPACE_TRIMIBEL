@@ -13,7 +13,6 @@ def retrieve(
     query_text: str,
     k: int | None = None,
     workspace_id: str | None = None,
-    user_role: str | None = None,
     where: dict | None = None,
     should_cancel: Optional[Callable[[], bool]] = None,
 ) -> List[Dict[str, Any]]:
@@ -30,7 +29,6 @@ def retrieve(
         qv,
         k * 3,   # overfetch
         workspace_id=workspace_id,
-        user_role=user_role,
         where=where
     )
 
