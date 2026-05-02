@@ -1,187 +1,273 @@
-# Chatbot Service · Gemini RAG API
+# Chatbot Service · Ollama RAG API
 
-A **Retrieval-Augmented Generation** chatbot powered by **Google Gemini, FastAPI, and ChromaDB**.
-Drop in docs, ingest, and ask grounded questions through a clean HTTP API.
+A Retrieval-Augmented Generation chatbot powered by Ollama, FastAPI, and ChromaDB.
+It supports general document Q&A plus a productivity workflow that can call the LSTM Flask API, rebuild the productivity vector DB, and answer employee-specific questions with grounded data.
 
-## ✨ Features
+## Features
 
-- 📚 RAG pipeline: chunk → embed → store → retrieve → generate
+- Ollama-based generation and embeddings end to end
+- FastAPI HTTP API for chat
+- Persistent ChromaDB vector storage
+- Document ingestion for PDFs, TXT, MD, DOCX, XLSX, CSV, PKL, and KERAS metadata snapshots
+- Productivity workflow that can call the Flask LSTM API
+- Productivity refresh flow that can rebuild the productivity vector DB from `predict/all`
+- Multi-language chat support
 
-- 🤖 Generation with Gemini 2.5 Flash (fallbacks supported)
+## Architecture
 
-- 🔍 Vector search with ChromaDB (persistent)
+### General RAG flow
 
-- 🧠 Embeddings with text-embedding-004 (fixed dimensionality)
-
-- ⚡ FastAPI HTTP endpoint: /chat
-
-- 🧩 Modular “Standard” layout for easy scaling and testing
-
-## 🧱 Architecture
-```
+```mermaid
 flowchart TD
   A[User / Client] -->|POST /chat| B[FastAPI]
-  B --> C[embed_query()]
-  C --> D[ChromaDB: query_by_vector]
-  D --> E[Top-K Context]
-  E --> F[Prompt Builder]
-  F --> G[Gemini (gen model)]
-  G --> H[Answer + Citations]
-  H --> A
+  B --> C[Detect language / intent]
+  C --> D[Ollama embed_query()]
+  D --> E[ChromaDB query_by_vector]
+  E --> F[Top-K context]
+  F --> G[Prompt builder]
+  G --> H[Ollama chat generation]
+  H --> I[Answer + citations]
+  I --> A
 ```
 
-## 📁 Project Structure
+### Productivity flow
+
+```mermaid
+flowchart TD
+  A[Admin / Job Trigger] -->|POST /refresh/productivity| B[Flask ML API]
+  B --> C[/predict/all]
+  C --> D[Clear productivity collection]
+  D --> E[Embed snapshot text with Ollama]
+  E --> F[Store snapshots in ChromaDB productivity]
+  F --> G[Chatbot can retrieve or answer directly]
 ```
-chatbot-service/
+
+### Specific employee question flow
+
+```mermaid
+flowchart TD
+  A[User asks about employee productivity] --> B[Parse employee id]
+  B --> C[Call Flask /predict/<id>]
+  C --> D[Return predicted/current/trend/level]
+  D --> E[Optionally persist snapshot to ChromaDB]
+  E --> F[Chat response]
+```
+
+## Project Structure
+
+```text
+chatbot_service/
 ├─ api/
 │  ├─ __init__.py
-│  └─ app.py                 # FastAPI server (health + /chat)
+│  ├─ app.py                 # FastAPI server (/healthz, /chat)
+│  └─ schemas.py             # Request/response models
 ├─ cli/
-│  ├─ ingest.py              # Ingest docs in data/raw → Chroma
-│  └─ eval.py                # Optional local Q&A CLI
+│  ├─ ingest.py              # Legacy workspace ingest
+│  ├─ ingest_workspace.py    # Workspace ingest / productivity refresh helper
+│  └─ inspect_chroma.py      # Inspect Chroma collections
 ├─ src/
 │  └─ rag/
 │     ├─ __init__.py
 │     ├─ config.py           # .env settings
-│     ├─ chunking.py         # loaders + splitters
+│     ├─ chunking.py         # File loaders + splitters
 │     ├─ embeddings/
-│     │  └─ gemini.py        # text-embedding-004 (+ EMBED_DIM)
+│     │  └─ ollama.py        # Ollama embeddings
 │     ├─ vectorstores/
-│     │  └─ chroma_store.py  # add + query_by_vector
-│     ├─ retrieval.py        # embed_query + top-k
-│     ├─ prompting.py        # prompt template
-│     ├─ generator.py        # gemini generateContent
-│     └─ pipeline.py         # end-to-end answer()
-├─ data/
-│  └─ raw/                   # Put PDFs/TXT here (gitignored)
+│     │  └─ chroma_store.py  # Chroma add/query/delete helpers
+│     ├─ retrieval.py        # Embed query + retrieve top-k
+│     ├─ prompting.py        # Prompt templates
+│     ├─ ollama_generate.py  # Ollama chat generation
+│     └─ pipeline.py         # Main answer() orchestration
 ├─ var/
-│  └─ chroma_db/             # Chroma persistent store (gitignored)
+│  └─ chroma_db/             # Persistent Chroma storage
+├─ data/
+│  └─ raw/                   # Optional document source folder
 ├─ requirements.txt
 └─ README.md
 ```
 
-## 🚀 Quickstart
-### 1) Environment
-```
+## Quickstart
+
+### 1) Create environment
+
+```bash
 python -m venv .venv
-source .venv/bin/activate         # Windows: .\.venv\Scripts\Activate.ps1
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-**Create `.env`**
-```
-GOOGLE_API_KEY=your_key_here
-GEN_MODEL=gemini-2.5-flash
-EMBED_MODEL=models/text-embedding-004
+### 2) Configure `.env`
+
+Example for Ollama + productivity workflow:
+
+```env
+OLLAMA_BASE_URL=http://localhost:11434
+MODEL_NAME=llama3.2:latest
+EMBED_MODEL=qwen3-embedding:latest
 EMBED_DIM=768
 CHROMA_DIR=var/chroma_db
-COLLECTION=docs
-TOP_K=5
+COLLECTION=kb_collection
+TOP_K=4
+PRODUCTIVITY_API_BASE_URL=http://127.0.0.1:5001
+ANONYMIZED_TELEMETRY=False
 ```
 
-> Keep EMBED_DIM consistent across ingest and query. Changing it requires rebuilding the DB.
+Notes:
 
-### 2) Ingest documents
+- `MODEL_NAME` is the Ollama chat model used for generation.
+- `EMBED_MODEL` is the Ollama embedding model.
+- `PRODUCTIVITY_API_BASE_URL` points to the Flask LSTM service.
+- `CHROMA_DIR` should point to the Chroma root used by the chatbot service.
 
-Put PDFs/TXT into `data/raw/`, then:
-```
-python -m cli.ingest
+### 3) Run Ollama
+
+Make sure Ollama is running and the models are available locally.
+
+Example:
+
+```bash
+ollama serve
+ollama pull deepseek-r1:latest
+ollama pull qwen3-embedding:latest
 ```
 
-### 3) Run the API
-```
+### 4) Run the FastAPI chatbot service
+
+```bash
 uvicorn api.app:app --host 127.0.0.1 --port 8002 --reload
 ```
 
 Health check:
-```
-curl http://0.0.0.0:8002/healthz
+
+```bash
+curl http://127.0.0.1:8002/health
 ```
 
-## 🧭 API
-`POST /chat`
+## Workflows
 
-Request
-Ask multiple language (vi-VN for Viet Nam, en-US for English)
+### A. General document Q&A
+
+1. Put documents into a workspace.
+2. Ingest them into ChromaDB.
+3. Ask a question through `POST /chat`.
+4. The system retrieves top-k chunks and answers using Ollama.
+
+### B. Productivity insight for one employee
+
+1. User asks a question like:
+    - `give me productivity insight of user_1`
+    - `show productivity of employee 12`
+2. Chatbot parses the employee id.
+3. It calls Flask `GET /predict/<id>`.
+4. The response is formatted into a human-readable answer.
+
+### C. Refresh productivity vector DB
+
+This is the workflow for rebuilding the productivity workspace from fresh predictions.
+
+1. Run ETL.
+2. Train the LSTM model.
+3. Call Flask `POST /predict/all`.
+4. Delete the old productivity Chroma collection.
+5. Store the new snapshot records into `workspace_id=productivity`.
+6. Chatbot uses those snapshots for retrieval.
+
+CLI:
+
+```bash
+python3 cli/ingest_workspace.py --refresh-productivity
 ```
+
+Optional API base URL override:
+
+```bash
+cd chatbot_service
+python3 cli/ingest_workspace.py --refresh-productivity --api-base-url http://127.0.0.1:5001
+```
+
+## API
+
+### `POST /chat`
+
+Request:
+
+```json
 {
-  "message": "Explain the architecture.",
-  "k": 4,
-  "lang": "en-US"
+    "message": "Give me productivity insight of user_1",
+    "k": 5,
+    "lang": "en",
+    "user_id": "1",
+    "user_role": "admin",
+    "workspace_id": "productivity"
 }
 ```
 
-```
-Response
+Response:
 
+```json
 {
-  "answer": "A concise, grounded explanation...",
-  "citations": [
-    { "rank": 1, "id": "Topic.pdf-0", "source": "Topic.pdf" }
-  ],
-  "confidence": {
-    "level": "high",
-    "score": 0.87,
-    "reason": "The answer is supported by multiple relevant context chunks."
-  }
+    "answer": "Productivity insight for employee 1: ...",
+    "citations": []
 }
 ```
 
-`GET /healthz`
+### `GET /health`
 
-Returns `{"status":"ok"}`
+Returns:
 
-## ⚙️ Configuration
-| Variable | Example | Notes |
-| --- | --- | --- |
-| `GOOGLE_API_KEY` | `sk-...` | Required |
-| `GEN_MODEL` | `gemini-2.5-flash` | Fallbacks supported |
-| `EMBED_MODEL` | `models/text-embedding-004` | Keep models/ prefix |
-| `EMBED_DIM` | `768` | Must match collection dimensionality |
-| `CHROMA_DIR` | `var/chroma_db` | Persistent store path |
-| `COLLECTION` | `docs` | Chroma collection name |
-| `TOP_K` | `5` | Retrieval depth |
-
-## 🔁 Model fallback (optional)
-
-If a quota error occurs:
-
-1. Try `gemini-2.5-flash-lite`
-
-2. Then `gemini-2.5-pro` (if your key has access)
-
-This can be automated inside `generator.py` with a try -> fallback flow.
-
-## 📊 Local AI Evaluation (Defense-ready)
-
-This project now includes a local evaluation workflow under `eval/` to produce reproducible quality metrics.
-
-### Run steps
-
-1. Start API
-
-```bash
-uvicorn api.app:app --host 127.0.0.1 --port 8002 --reload
+```json
+{ "status": "ok" }
 ```
 
-2. Run evaluator
+## Productivity Vector DB
+
+The productivity Chroma workspace stores snapshot-style records such as:
+
+- `user_id`
+- `employee_name`
+- `predicted_productivity`
+- `current_productivity`
+- `trend`
+- `level`
+- `confidence`
+- `snapshot_date`
+
+These records are used to answer follow-up questions faster and with more context.
+
+## Inspect the Vector DB
+
+Use the Chroma inspect script to view what is inside productivity:
 
 ```bash
-python eval/run_local_eval.py --dataset eval/testset_v1.jsonl --api-url http://127.0.0.1:8002/chat --k 4
+cd chatbot_service
+python3 cli/inspect_chroma.py \
+  --db-path var/chroma_db/workspaces/productivity \
+  --all \
+  --doc-chars 1200
+
+python3 cli/inspect_chroma.py \
+  --db-path var/chroma_db/workspaces/public \
+  --collection kb_collection \
+  --all \
+  --doc-chars 1200
 ```
 
-### Generated artifacts
+## Configuration Reference
 
-- `eval/reports/run_*/results.csv` (case-level scores)
-- `eval/reports/run_*/summary.json` (aggregate metrics)
-- `eval/reports/run_*/report.md` (slide-friendly summary)
+| Variable                    | Example                  | Notes                          |
+| --------------------------- | ------------------------ | ------------------------------ |
+| `OLLAMA_BASE_URL`           | `http://localhost:11434` | Ollama server URL              |
+| `MODEL_NAME`                | `deepseek-r1:latest`        | Chat generation model          |
+| `EMBED_MODEL`               | `qwen3-embedding:latest` | Embedding model                |
+| `EMBED_DIM`                 | `768`                    | Must match the embedding model |
+| `CHROMA_DIR`                | `var/chroma_db`          | Persistent Chroma root         |
+| `COLLECTION`                | `kb_collection`          | Chroma collection name         |
+| `TOP_K`                     | `5`                      | Retrieval depth                |
+| `PRODUCTIVITY_API_BASE_URL` | `http://127.0.0.1:5001`  | Flask LSTM API base URL        |
+| `ANONYMIZED_TELEMETRY`      | `False`                  | Disable Chroma telemetry       |
 
-### Metrics included
+## Notes
 
-- `pass_rate`
-- `answer_non_empty_rate`
-- `avg_fact_hit_rate`
-- `avg_citation_count`
-- `p50_latency_ms`, `p95_latency_ms`
-
-
+- The chatbot service now uses Ollama for generation and embeddings.
+- Gemini-specific files may still exist in the repository, but the active runtime path is Ollama-based.
+- If you change embedding model or dimension, rebuild the Chroma DB.

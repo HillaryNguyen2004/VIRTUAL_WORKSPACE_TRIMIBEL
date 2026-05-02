@@ -16,36 +16,6 @@ function openImageModal(imageSrc, imageName) {
     modalEl.setAttribute("aria-modal", "true");
 }
 
-// Open PDF in preview modal
-function openPdfPreview(pdfUrl, fileName) {
-    const modalEl = document.getElementById("pdfPreviewModal");
-    if (!modalEl) return;
-
-    document.getElementById("pdfPreviewTitle").textContent = fileName;
-    document.getElementById("pdfPreviewFrame").src = pdfUrl;
-    document.getElementById("pdfDownloadLink").href = pdfUrl;
-    document.getElementById("pdfDownloadLink").download = fileName;
-
-    if (typeof bootstrap !== "undefined" && bootstrap.Modal) {
-        bootstrap.Modal.getOrCreateInstance(modalEl).show();
-    } else {
-        modalEl.classList.add("show");
-        modalEl.style.display = "block";
-        modalEl.removeAttribute("aria-hidden");
-        modalEl.setAttribute("aria-modal", "true");
-    }
-}
-
-// Clear PDF src when modal closes to stop background loading
-document.addEventListener("DOMContentLoaded", function () {
-    const pdfModal = document.getElementById("pdfPreviewModal");
-    if (pdfModal) {
-        pdfModal.addEventListener("hidden.bs.modal", function () {
-            document.getElementById("pdfPreviewFrame").src = "";
-        });
-    }
-});
-
 // Handle file selection
 function handleFileSelect(input, type) {
     const file = input.files[0];

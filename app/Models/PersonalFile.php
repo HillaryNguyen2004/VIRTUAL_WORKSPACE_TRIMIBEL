@@ -15,7 +15,6 @@ class PersonalFile extends Model
         'original_name',
         'mime_type',
         'size',
-        'searchable_text',
     ];
 
     public function user(): BelongsTo

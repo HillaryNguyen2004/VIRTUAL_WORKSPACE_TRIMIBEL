@@ -87,40 +87,18 @@
                                                 <div>{{ $message->content }}</div>
                                             @endif
                                         @elseif($message->type === 'file' && $message->hasFile())
-                                            @php
-                                                $ext = strtolower(pathinfo($message->file_name ?? '', PATHINFO_EXTENSION));
-                                                $isPdf = $ext === 'pdf';
-                                                $fileIcon = match($ext) {
-                                                    'pdf' => 'bi-file-earmark-pdf text-danger',
-                                                    'doc', 'docx' => 'bi-file-earmark-word text-primary',
-                                                    'xls', 'xlsx' => 'bi-file-earmark-excel text-success',
-                                                    'ppt', 'pptx' => 'bi-file-earmark-ppt text-warning',
-                                                    'zip', 'rar', '7z' => 'bi-file-earmark-zip text-secondary',
-                                                    'mp4', 'mov', 'avi' => 'bi-file-earmark-play text-info',
-                                                    default => 'bi-file-earmark text-primary',
-                                                };
-                                            @endphp
                                             <div class="message-file p-3 bg-light rounded border">
                                                 <div class="d-flex align-items-center">
-                                                    <i class="bi {{ $fileIcon }} fs-4 me-3"></i>
+                                                    <i class="bi bi-file-earmark fs-4 me-3 text-primary"></i>
                                                     <div class="flex-grow-1">
                                                         <div class="fw-medium">{{ $message->file_name }}</div>
                                                         <div class="text-muted small">{{ $message->getFormattedFileSize() }}</div>
                                                     </div>
-                                                    <div class="d-flex gap-2">
-                                                        @if($isPdf)
-                                                            <button type="button"
-                                                                class="btn btn-outline-secondary btn-sm"
-                                                                onclick="openPdfPreview('{{ $message->getFileUrl() }}', '{{ e($message->file_name) }}')">
-                                                                <i class="bi bi-eye"></i> Preview
-                                                            </button>
-                                                        @endif
-                                                        <a href="{{ $message->getFileUrl() }}"
-                                                           download="{{ $message->file_name }}"
-                                                           class="btn btn-outline-primary btn-sm">
-                                                            <i class="bi bi-download"></i> Download
-                                                        </a>
-                                                    </div>
+                                                    <a href="{{ $message->getFileUrl() }}" 
+                                                       download="{{ $message->file_name }}"
+                                                       class="btn btn-outline-primary btn-sm">
+                                                        <i class="bi bi-download"></i> Download
+                                                    </a>
                                                 </div>
                                             </div>
                                             @if($message->content && $message->content !== 'File: ' . $message->file_name)
@@ -225,26 +203,6 @@
             </div>
             <div class="modal-body text-center">
                 <img id="modalImage" class="img-fluid" alt="Full size image">
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- PDF Preview Modal -->
-<div class="modal fade" id="pdfPreviewModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="pdfPreviewTitle">PDF Preview</h5>
-                <div class="ms-auto d-flex gap-2 align-items-center">
-                    <a id="pdfDownloadLink" href="#" download class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-download"></i> Download
-                    </a>
-                    <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-            </div>
-            <div class="modal-body p-0" style="height: 80vh;">
-                <iframe id="pdfPreviewFrame" src="" style="width:100%;height:100%;border:none;" title="PDF Preview"></iframe>
             </div>
         </div>
     </div>

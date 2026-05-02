@@ -8,38 +8,25 @@ class ChatRequest(BaseModel):
     lang: str | None = None
     user_id: str | None = None
     user_role: str | None = None
+    workspace_id: str | None = None
+    request_id: str | None = Field(default=None, min_length=1, max_length=128)
+
+
+class CancelRequest(BaseModel):
+    request_id: str = Field(..., min_length=1, max_length=128)
 
 class Citation(BaseModel):
     rank: int
     id: str
     source: str
-    page: int | None = None
-    line: int | None = None
 
-class Confidence(BaseModel):
-    level: str
-    score: float
-    reason: str
+
+class Usage(BaseModel):
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
 
 class ChatResponse(BaseModel):
     answer: str
     citations: List[Citation]
-    confidence: Confidence
-
-class IngestRequest(BaseModel):
-    path: str = Field(..., min_length=1)
-    doc_id: str | None = None
-    source_type: str = "online_doc"
-
-class IngestResponse(BaseModel):
-    status: str
-    chunks: int
-    path: str
-
-class DeleteRequest(BaseModel):
-    doc_id: str
-    source_type: str = "online_doc"
-
-class DeleteResponse(BaseModel):
-    status: str
-    deleted: int
+    usage: Usage | None = None

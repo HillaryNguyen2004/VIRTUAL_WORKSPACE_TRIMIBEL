@@ -12,12 +12,8 @@ use App\Models\Document;
 use App\Models\PersonalDocumentLink;
 use App\Models\PersonalFile;
 use App\Models\PersonalFolder;
-use App\Models\PersonalFolderShare;
 use App\Repositories\DocumentRepository;
 use App\Services\DocumentService;
-use App\Services\OnlineDocsSearchService;
-use App\Services\PersonalFileSearchService;
-use App\Services\RagIndexService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -34,10 +30,7 @@ class OnlineDocumentController extends Controller
 {
     public function __construct(
         private DocumentRepository $repository,
-        private DocumentService $service,
-        private OnlineDocsSearchService $searchService,
-        private PersonalFileSearchService $personalFileSearchService,
-        private RagIndexService $ragIndex
+        private DocumentService $service
     ) {
     }
 
@@ -52,44 +45,14 @@ class OnlineDocumentController extends Controller
             $currentFolder = PersonalFolder::query()
                 ->where('user_id', $user->id)
                 ->whereKey($currentFolderId)
-                ->first();
-
-            // Also check shared folders the user has access to
-            if (!$currentFolder) {
-                $sharedFolderIds = PersonalFolderShare::query()
-                    ->where('user_id', $user->id)
-                    ->pluck('folder_id');
-                $currentFolder = PersonalFolder::query()
-                    ->whereKey($currentFolderId)
-                    ->whereIn('id', $sharedFolderIds)
-                    ->first();
-            }
-
-            if (!$currentFolder) {
-                abort(404);
-            }
+                ->firstOrFail();
         }
 
-        $storageCanEdit = !$currentFolder || $currentFolder->user_id === $user->id;
-
-        $ownedFolders = PersonalFolder::query()
+        $folders = PersonalFolder::query()
             ->where('user_id', $user->id)
             ->where('parent_id', $currentFolder?->id)
             ->orderBy('name')
             ->get();
-
-        $sharedFolders = collect();
-        if ($currentFolder === null) {
-            $sharedFolderIds = PersonalFolderShare::query()
-                ->where('user_id', $user->id)
-                ->pluck('folder_id');
-            $sharedFolders = PersonalFolder::query()
-                ->whereIn('id', $sharedFolderIds)
-                ->where('user_id', '!=', $user->id)
-                ->orderBy('name')
-                ->get();
-        }
-        $folders = $ownedFolders->merge($sharedFolders)->unique('id')->values();
 
         $files = PersonalFile::query()
             ->where('user_id', $user->id)
@@ -111,20 +74,6 @@ class OnlineDocumentController extends Controller
 
         $folderBreadcrumbs = $this->buildFolderBreadcrumbs($currentFolder);
 
-        // Global search
-        $globalSearchQuery = trim((string) $request->query('doc_query', ''));
-        $globalSearchResults = collect();
-        $personalSearchResults = collect();
-
-        if ($globalSearchQuery !== '') {
-            $candidates = $this->repository->getSearchCandidatesForUser($user, $globalSearchQuery);
-            $globalSearchResults = $this->searchService->rankDocuments($candidates, $globalSearchQuery);
-            $globalSearchResults = $this->searchService->enrichDocumentsWithMatchLocation($globalSearchResults, $globalSearchQuery);
-
-            $personalSearchResults = $this->personalFileSearchCandidates($user->id, $globalSearchQuery);
-            $personalSearchResults = $this->personalFileSearchService->rankFiles($personalSearchResults, $globalSearchQuery);
-        }
-
         return view('online-docs.docs', compact(
             'recentDocuments',
             'currentFolder',
@@ -132,395 +81,8 @@ class OnlineDocumentController extends Controller
             'files',
             'links',
             'allFolders',
-            'folderBreadcrumbs',
-            'storageCanEdit',
-            'globalSearchQuery',
-            'globalSearchResults',
-            'personalSearchResults'
+            'folderBreadcrumbs'
         ));
-    }
-
-    private function personalFileSearchCandidates(int $userId, string $query): \Illuminate\Support\Collection
-    {
-        $rawQuery = mb_strtolower(trim($query));
-        $normalizedQuery = trim(preg_replace('/[^a-z0-9\s]+/i', ' ', \Illuminate\Support\Str::ascii($rawQuery)) ?? '');
-        $tokens = array_values(array_filter(
-            preg_split('/\s+/', $normalizedQuery) ?: [],
-            static fn (string $t): bool => strlen($t) >= 2
-        ));
-
-        return PersonalFile::query()
-            ->where('user_id', $userId)
-            ->where(function ($searchQuery) use ($tokens, $rawQuery, $normalizedQuery): void {
-                $searchTerms = $tokens !== []
-                    ? $tokens
-                    : array_values(array_unique(array_filter([$rawQuery, $normalizedQuery], fn ($t) => $t !== '')));
-                foreach ($searchTerms as $term) {
-                    $like = '%' . $term . '%';
-                    $searchQuery->orWhere('original_name', 'like', $like)
-                        ->orWhere('searchable_text', 'like', $like)
-                        ->orWhere('mime_type', 'like', $like);
-                }
-            })
-            ->limit(200)
-            ->get();
-    }
-
-    public function shareFolder(Request $request, PersonalFolder $folder)
-    {
-        $user = auth()->user();
-        if ($folder->user_id !== $user->id) {
-            abort(403);
-        }
-
-        $data = $request->validate([
-            'email' => ['required', 'email'],
-            'permission' => ['sometimes', 'in:view,edit'],
-        ]);
-
-        $targetUser = \App\Models\User::where('email', $data['email'])->first();
-        if (!$targetUser || $targetUser->id === $user->id) {
-            return $this->redirectToStorageFolder($request, $folder->parent_id)
-                ->with('storage_error', __('online_docs.folder_share_invalid_user'));
-        }
-
-        PersonalFolderShare::updateOrCreate(
-            ['folder_id' => $folder->id, 'user_id' => $targetUser->id],
-            ['shared_by' => $user->id, 'permission' => $data['permission'] ?? 'view']
-        );
-
-        return $this->redirectToStorageFolder($request, $folder->parent_id)
-            ->with('storage_success', __('online_docs.folder_shared'));
-    }
-
-    public function removeFolderShare(Request $request, PersonalFolder $folder, PersonalFolderShare $share)
-    {
-        $user = auth()->user();
-        if ($folder->user_id !== $user->id || $share->folder_id !== $folder->id) {
-            abort(403);
-        }
-
-        $share->delete();
-
-        return $this->redirectToStorageFolder($request, $folder->parent_id)
-            ->with('storage_success', __('online_docs.folder_share_removed'));
-    }
-
-    public function generateFolderShareLink(Request $request, PersonalFolder $folder)
-    {
-        $user = auth()->user();
-        if ($folder->user_id !== $user->id) {
-            abort(403);
-        }
-
-        if (!$folder->share_token) {
-            $folder->update([
-                'share_token' => Str::random(32),
-                'share_link_enabled' => true,
-            ]);
-        }
-
-        $shareUrl = route('online-docs.folders.share.open', ['token' => $folder->share_token]);
-
-        if ($request->expectsJson()) {
-            return response()->json(['url' => $shareUrl]);
-        }
-
-        return $this->redirectToStorageFolder($request, $folder->parent_id);
-    }
-
-    public function openFolderShareLink(Request $request, string $token)
-    {
-        $folder = PersonalFolder::query()
-            ->where('share_token', $token)
-            ->where('share_link_enabled', true)
-            ->firstOrFail();
-
-        $user = auth()->user();
-
-        if ($folder->user_id !== $user->id) {
-            PersonalFolderShare::updateOrCreate(
-                ['folder_id' => $folder->id, 'user_id' => $user->id],
-                ['shared_by' => $folder->user_id, 'permission' => 'view']
-            );
-        }
-
-        return redirect()->route('online-docs.home', ['folder' => $folder->id])
-            ->with('storage_success', __('online_docs.folder_share_link_opened'));
-    }
-
-    public function summarizeDocument(Document $document)
-    {
-        $this->authorize('view', $document);
-
-        $content = $this->service->getDocumentContent($document);
-        $plainText = strip_tags((string) $content);
-        $plainText = html_entity_decode($plainText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $plainText = trim((string) preg_replace('/\s+/', ' ', $plainText));
-
-        if ($plainText === '') {
-            return response()->json(['summary' => __('online_docs.ai_summary_empty')]);
-        }
-
-        $chatbotUrl = rtrim((string) (config('services.chatbot.base_url') ?: config('services.chatbot.url', '')), '/');
-        if ($chatbotUrl === '') {
-            return response()->json(['error' => __('online_docs.ai_summary_error')], 503);
-        }
-
-        try {
-            $prompt = "Summarize the following document in a clear, concise way. "
-                . "Provide: 1) A 2-3 sentence overview, 2) Key points as bullet points (max 6), 3) Main conclusions if any. "
-                . "Return plain text only, no JSON.\n\nDocument:\n"
-                . mb_substr($plainText, 0, 6000);
-
-            $response = Http::timeout(60)->post($chatbotUrl . '/chat', [
-                'message' => $prompt,
-                'k' => 1,
-                'lang' => app()->getLocale(),
-            ]);
-
-            if (!$response->successful()) {
-                return response()->json(['error' => __('online_docs.ai_summary_error')], 500);
-            }
-
-            $summary = (string) ($response->json('answer') ?? '');
-
-            return response()->json(['summary' => $summary]);
-        } catch (\Throwable $e) {
-            return response()->json(['error' => __('online_docs.ai_summary_error')], 500);
-        }
-    }
-
-    public function actionItems(Document $document)
-    {
-        $this->authorize('view', $document);
-
-        $content = $this->service->getDocumentContent($document);
-        $plainText = strip_tags((string) $content);
-        $plainText = html_entity_decode($plainText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $plainText = trim((string) preg_replace('/\s+/', ' ', $plainText));
-
-        if ($plainText === '') {
-            return response()->json(['items' => []]);
-        }
-
-        $chatbotUrl = rtrim((string) (config('services.chatbot.base_url') ?: config('services.chatbot.url', '')), '/');
-        if ($chatbotUrl === '') {
-            return response()->json(['error' => __('online_docs.action_items_error')], 503);
-        }
-
-        try {
-            $prompt = "Extract all action items, tasks, to-dos, deadlines, and assignments from the following document. "
-                . "Return a JSON array of objects with fields: task (string), owner (string or null), due_date (string or null). "
-                . "Only return the JSON array, no explanation.\n\nDocument:\n"
-                . mb_substr($plainText, 0, 6000);
-
-            $response = Http::timeout(30)->post($chatbotUrl . '/chat', [
-                'message' => $prompt,
-                'k' => 1,
-                'lang' => app()->getLocale(),
-            ]);
-
-            if (!$response->successful()) {
-                return response()->json(['error' => __('online_docs.action_items_error')], 500);
-            }
-
-            $answer = (string) ($response->json('answer') ?? '');
-            // Extract JSON array from the answer
-            if (preg_match('/\[.*\]/s', $answer, $matches)) {
-                $items = json_decode($matches[0], true);
-                if (is_array($items)) {
-                    return response()->json(['items' => $items]);
-                }
-            }
-
-            return response()->json(['items' => [], 'raw' => $answer]);
-        } catch (\Throwable $e) {
-            return response()->json(['error' => __('online_docs.action_items_error')], 500);
-        }
-    }
-
-    public function searchAgent(Request $request)
-    {
-        $data = $request->validate([
-            'query' => ['required', 'string', 'min:2', 'max:500'],
-        ]);
-
-        $user = auth()->user();
-        $query = trim($data['query']);
-
-        // Try the RAG chatbot first; fall back to built-in BM25 search if unavailable.
-        $chatbotUrl = rtrim((string) (config('services.chatbot.base_url') ?: ''), '/');
-        if ($chatbotUrl !== '') {
-            try {
-                $response = Http::timeout(45)->post($chatbotUrl . '/chat', [
-                    'message'   => $query,
-                    'k'         => 12,
-                    'lang'      => app()->getLocale(),
-                    'user_id'   => (string) $user->id,
-                    'user_role' => $user->role ?? $user->position ?? null,
-                ]);
-
-                if ($response->successful()) {
-                    $answer = (string) ($response->json('answer') ?? '');
-                    $citations = $response->json('citations') ?? [];
-                    $confidence = $response->json('confidence') ?? ['level' => 'low', 'score' => 0.0, 'reason' => ''];
-
-                    $enrichedCitations = $this->enrichCitations($citations, $user);
-
-                    return response()->json([
-                        'answer' => $answer,
-                        'citations' => $enrichedCitations,
-                        'confidence' => $confidence,
-                        'source' => 'rag',
-                    ]);
-                }
-            } catch (\Throwable) {
-                // Chatbot unavailable — fall through to BM25 fallback below.
-            }
-        }
-
-        // BM25 fallback: use the existing ranked search pipeline.
-        return $this->searchAgentBm25Fallback($user, $query);
-    }
-
-    private function enrichCitations(array $citations, $user): array
-    {
-        $enriched = [];
-        foreach ($citations as $citation) {
-            $sourceId = (string) ($citation['id'] ?? '');
-            $source   = (string) ($citation['source'] ?? '');
-            $rank     = (int)    ($citation['rank'] ?? 0);
-            $page     = (int)    ($citation['page'] ?? 0);
-            $line     = (int)    ($citation['line'] ?? 0);
-
-            $docLink = null;
-            $fileLink = null;
-            $displayName = $source;
-
-            if (is_numeric($sourceId)) {
-                $doc = Document::query()
-                    ->where(function ($q) use ($user) {
-                        $q->where('owner_id', $user->id)
-                            ->orWhereHas('sharedUsers', fn ($q2) => $q2->where('user_id', $user->id));
-                    })
-                    ->find((int) $sourceId);
-
-                if ($doc) {
-                    $docLink = route('online-docs.docs.show', $doc);
-                    $displayName = $doc->title ?: $source;
-                }
-            }
-
-            if (!$docLink) {
-                $file = PersonalFile::query()
-                    ->where('user_id', $user->id)
-                    ->where(function ($q) use ($source) {
-                        $q->where('original_name', 'like', '%' . basename($source) . '%')
-                            ->orWhere('stored_path', 'like', '%' . basename($source) . '%');
-                    })
-                    ->first();
-
-                if ($file) {
-                    $fileLink = route('online-docs.files.preview', $file);
-                    $displayName = $file->original_name ?: $source;
-                }
-            }
-
-            $enriched[] = [
-                'rank'         => $rank,
-                'id'           => $sourceId,
-                'source'       => $source,
-                'display_name' => $displayName,
-                'doc_link'     => $docLink,
-                'file_link'    => $fileLink,
-                'page'         => $page > 0 ? $page : null,
-                'line'         => $line > 0 ? $line : null,
-                'source_type'  => $docLink ? 'doc' : ($fileLink ? 'file' : 'unknown'),
-            ];
-        }
-        return $enriched;
-    }
-
-    private function searchAgentBm25Fallback($user, string $query): \Illuminate\Http\JsonResponse
-    {
-        // Search documents
-        $candidates = $this->repository->getSearchCandidatesForUser($user, $query);
-        $rankedDocs = $this->searchService->rankDocuments($candidates, $query);
-        $rankedDocs = $this->searchService->enrichDocumentsWithMatchLocation($rankedDocs, $query);
-
-        // Search personal files
-        $fileCandidates = $this->personalFileSearchCandidates($user->id, $query);
-        $rankedFiles = $this->personalFileSearchService->rankFiles($fileCandidates, $query);
-
-        if ($rankedDocs->isEmpty() && $rankedFiles->isEmpty()) {
-            return response()->json([
-                'answer'     => __('online_docs.search_agent_empty'),
-                'citations'  => [],
-                'confidence' => ['level' => 'low', 'score' => 0.0, 'reason' => 'No matching documents found.'],
-                'source'     => 'bm25',
-            ]);
-        }
-
-        // Build a plain-text answer summarising top matches
-        $lines = [];
-        $citations = [];
-        $rank = 1;
-
-        foreach ($rankedDocs->take(5) as $doc) {
-            $snippet = $doc->search_match_snippet ?? Str::limit((string) ($doc->searchable_text ?? ''), 200);
-            $page    = $doc->search_match_page ?? null;
-            $line    = $doc->search_match_line ?? null;
-            $loc     = $page ? " (page {$page})" : '';
-            $lines[] = "• [{$doc->title}]{$loc}: {$snippet}";
-
-            $citations[] = [
-                'rank'         => $rank++,
-                'id'           => (string) $doc->id,
-                'source'       => $doc->title,
-                'display_name' => $doc->title,
-                'doc_link'     => route('online-docs.docs.show', $doc),
-                'file_link'    => null,
-                'page'         => $page,
-                'line'         => $line,
-                'source_type'  => 'doc',
-            ];
-        }
-
-        foreach ($rankedFiles->take(3) as $file) {
-            $snippet = Str::limit((string) ($file->searchable_text ?? ''), 200);
-            $lines[] = "• [{$file->original_name}]: {$snippet}";
-
-            $ext = strtolower(pathinfo((string) $file->original_name, PATHINFO_EXTENSION));
-            $isOffice = in_array($ext, ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'], true);
-
-            $citations[] = [
-                'rank'         => $rank++,
-                'id'           => (string) $file->id,
-                'source'       => $file->original_name,
-                'display_name' => $file->original_name,
-                'doc_link'     => $isOffice ? route('online-docs.files.open', $file) : null,
-                'file_link'    => route('online-docs.files.preview', $file),
-                'page'         => null,
-                'line'         => null,
-                'source_type'  => 'file',
-            ];
-        }
-
-        $answer = implode("\n", $lines);
-        $topScore = (float) ($rankedDocs->first()?->search_score ?? $rankedFiles->first()?->search_score ?? 0.0);
-        $level = $topScore >= 3.0 ? 'high' : ($topScore >= 1.0 ? 'medium' : 'low');
-
-        return response()->json([
-            'answer'     => $answer,
-            'citations'  => $citations,
-            'confidence' => [
-                'level'  => $level,
-                'score'  => round(min(1.0, $topScore / 5.0), 2),
-                'reason' => 'Results ranked by BM25 keyword relevance (AI model unavailable).',
-            ],
-            'source' => 'bm25',
-        ]);
     }
 
     public function createFolder(Request $request)
@@ -555,8 +117,6 @@ class OnlineDocumentController extends Controller
         $data = $request->validate([
             'file' => ['required', 'file'],
             'folder_id' => ['nullable', 'integer'],
-            'target_name' => ['nullable', 'string', 'max:255'],
-            'conflict_strategy' => ['nullable', 'in:error,auto_rename,replace'],
         ]);
 
         $folderId = $data['folder_id'] ?? null;
@@ -569,81 +129,19 @@ class OnlineDocumentController extends Controller
         }
 
         $file = $request->file('file');
-        $requestedName = isset($data['target_name']) ? (string) $data['target_name'] : (string) $file->getClientOriginalName();
-        $originalName = $this->normalizeStorageName($requestedName, 255, 'untitled');
-        $conflictStrategy = in_array($data['conflict_strategy'] ?? null, ['error', 'auto_rename', 'replace'], true)
-            ? $data['conflict_strategy']
-            : 'auto_rename';
-
-        // Check for duplicate (case-insensitive)
-        $existingFile = PersonalFile::query()
-            ->where('user_id', $user->id)
-            ->where('folder_id', $folderId)
-            ->whereRaw('LOWER(original_name) = ?', [mb_strtolower($originalName)])
-            ->first();
-
-        if ($existingFile) {
-            if ($conflictStrategy === 'error') {
-                return response()->json(['message' => __('online_docs.file_name_conflict')], 409);
-            }
-
-            if ($conflictStrategy === 'replace') {
-                Storage::disk('local')->delete($existingFile->stored_path);
-                $existingFile->forceDelete();
-            } else {
-                // auto_rename - find unique name
-                $pathInfo = pathinfo($originalName);
-                $baseName = $pathInfo['filename'] ?? 'untitled';
-                $extension = $pathInfo['extension'] ?? '';
-                $counter = 1;
-                while (true) {
-                    $newName = $extension ? $baseName . '(' . $counter . ').' . $extension : $baseName . '(' . $counter . ')';
-                    $exists = PersonalFile::query()
-                        ->where('user_id', $user->id)
-                        ->where('folder_id', $folderId)
-                        ->whereRaw('LOWER(original_name) = ?', [mb_strtolower($newName)])
-                        ->exists();
-                    if (!$exists) {
-                        $originalName = $newName;
-                        break;
-                    }
-                    $counter++;
-                }
-            }
-        }
-
         $extension = $file->getClientOriginalExtension();
         $filename = $extension ? Str::uuid() . '.' . $extension : (string) Str::uuid();
         $baseDir = 'personal-files/' . $user->id . '/' . ($folderId ? ('folder-' . $folderId) : 'root');
-
-        // Extract searchable text BEFORE storeAs() moves the temp file
-        $searchableText = $this->personalFileSearchService->buildSearchableTextForUpload($file);
-        if ($originalName !== (string) $file->getClientOriginalName()) {
-            $searchableText = $this->personalFileSearchService->withUpdatedFileName($searchableText, $originalName);
-        }
-
         $storedPath = $file->storeAs($baseDir, $filename, 'local');
 
-        $personalFile = PersonalFile::create([
+        PersonalFile::create([
             'user_id' => $user->id,
             'folder_id' => $folderId,
             'stored_path' => $storedPath,
-            'original_name' => $originalName,
+            'original_name' => $file->getClientOriginalName(),
             'mime_type' => $file->getMimeType(),
             'size' => $file->getSize(),
-            'searchable_text' => $searchableText,
         ]);
-
-        // Auto-index into ChromaDB for semantic search (non-blocking, best-effort)
-        $this->ragIndex->indexFile($storedPath, 'personal_file_' . $personalFile->id, 'personal_file');
-
-        if ($request->expectsJson()) {
-            return response()->json([
-                'status' => 'created',
-                'name' => $originalName,
-                'message' => __('online_docs.upload_done'),
-            ]);
-        }
 
         return redirect()->route('online-docs.home', $folderId ? ['folder' => $folderId] : []);
     }
@@ -858,12 +356,7 @@ class OnlineDocumentController extends Controller
             'name' => ['required', 'string', 'max:255'],
         ]);
 
-        $updates = ['original_name' => $data['name']];
-        if ($file->searchable_text) {
-            $updates['searchable_text'] = $this->personalFileSearchService
-                ->withUpdatedFileName((string) $file->searchable_text, $data['name']);
-        }
-        $file->update($updates);
+        $file->update(['original_name' => $data['name']]);
 
         return $this->redirectToStorageFolder($request, $file->folder_id)
             ->with('storage_success', __('online_docs.file_renamed'));
@@ -881,7 +374,6 @@ class OnlineDocumentController extends Controller
         }
 
         $folderId = $file->folder_id;
-        $this->ragIndex->deleteDoc('personal_file_' . $file->id, 'personal_file');
         $file->delete();
 
         return $this->redirectToStorageFolder($request, $folderId)
@@ -974,8 +466,6 @@ class OnlineDocumentController extends Controller
             $request->validated()['title'],
             'docs'
         );
-
-        $this->ragIndex->indexDocument($document);
 
         return redirect()->route('online-docs.docs.show', $document);
     }
@@ -1101,9 +591,6 @@ class OnlineDocumentController extends Controller
 
         $this->service->updateDocument($document, auth()->user(), $request->validated());
 
-        // Re-index after content update so search agent stays up to date
-        $this->ragIndex->indexDocument($document);
-
         if ($request->expectsJson()) {
             return response()->json(['status' => 'ok']);
         }
@@ -1139,7 +626,6 @@ class OnlineDocumentController extends Controller
             Storage::disk('local')->delete($document->pptx_path);
         }
 
-        $this->ragIndex->deleteDocument($document);
         $document->delete();
 
         return redirect()->back();
@@ -1155,8 +641,6 @@ class OnlineDocumentController extends Controller
             $message = $error->getMessage() ?: __('online_docs.import_failed');
             return redirect()->back()->with('docx_error', $message);
         }
-
-        $this->ragIndex->indexDocument($document);
 
         return redirect()->route('online-docs.docs.show', $document);
     }
@@ -1731,15 +1215,8 @@ class OnlineDocumentController extends Controller
         string $createRouteName
     ) {
         $user = auth()->user();
-        $searchQuery = trim((string) request()->query('q', ''));
-
         $ownedDocuments = $this->repository->getOwnedDocumentsByType($user, $type);
         $sharedDocuments = $this->repository->getSharedDocumentsByType($user, $type);
-
-        if ($searchQuery !== '') {
-            $ownedDocuments = collect($this->searchService->rankDocuments($ownedDocuments, $searchQuery));
-            $sharedDocuments = collect($this->searchService->rankDocuments($sharedDocuments, $searchQuery));
-        }
 
         return view('online-docs.type', [
             'type' => $type,
@@ -1748,7 +1225,6 @@ class OnlineDocumentController extends Controller
             'createRouteName' => $createRouteName,
             'ownedDocuments' => $ownedDocuments,
             'sharedDocuments' => $sharedDocuments,
-            'searchQuery' => $searchQuery,
         ]);
     }
 
@@ -1889,14 +1365,5 @@ class OnlineDocumentController extends Controller
         $folderId = $redirectFolderId ?: $fallbackFolderId;
 
         return redirect()->route('online-docs.home', $folderId ? ['folder' => $folderId] : []);
-    }
-
-    private function normalizeStorageName(string $name, int $maxLen, string $default): string
-    {
-        $name = trim((string) $name);
-        if (empty($name)) {
-            return $default;
-        }
-        return mb_substr($name, 0, $maxLen, 'UTF-8');
     }
 }

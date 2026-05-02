@@ -6,7 +6,6 @@ use App\Models\Document;
 use App\Models\User;
 use App\Repositories\DocumentRepository;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
 
@@ -32,7 +31,6 @@ class DocumentService
             'title' => $title,
             'type' => $type,
             'html_path' => 'pending',
-            'searchable_text' => '',
             'last_edited_by' => $user->id,
         ]);
 
@@ -58,7 +56,6 @@ class DocumentService
 
         $document->update([
             'title' => $data['title'],
-            'searchable_text' => $this->extractSearchableText($data['content'] ?? ''),
             'last_edited_by' => $user->id,
         ]);
 
@@ -108,7 +105,6 @@ class DocumentService
         $document->update([
             'html_path' => $contentPath,
             'docx_path' => $importPath,
-            'searchable_text' => $this->extractSearchableText($html),
             'last_edited_by' => $user->id,
         ]);
 
@@ -192,59 +188,6 @@ class DocumentService
         return $docxPath;
     }
 
-    /**
-     * Rebuild HTML content and searchable_text from the persisted DOCX file.
-     * This is required after OnlyOffice callbacks because OnlyOffice writes DOCX,
-     * while search reads searchable_text derived from HTML content.
-     */
-    public function syncHtmlAndSearchFromDocx(Document $document): void
-    {
-        if ($document->type !== 'docs') {
-            return;
-        }
-
-        $docxPath = $this->ensureDocxPath($document);
-        if (!Storage::disk('local')->exists($docxPath)) {
-            return;
-        }
-
-        $contentPath = $document->html_path ?: "documents/{$document->id}/content.html";
-        $tempPath = "documents/{$document->id}/imports/reindex_" . now()->format('YmdHisv') . '.html';
-
-        try {
-            Storage::disk('local')->makeDirectory("documents/{$document->id}/imports");
-
-            $this->converter->importDocxToHtml(
-                Storage::disk('local')->path($docxPath),
-                Storage::disk('local')->path($tempPath)
-            );
-
-            $html = Storage::disk('local')->exists($tempPath)
-                ? (string) Storage::disk('local')->get($tempPath)
-                : '';
-
-            if (trim($html) === '') {
-                return;
-            }
-
-            Storage::disk('local')->put($contentPath, $html);
-
-            $document->update([
-                'html_path' => $contentPath,
-                'searchable_text' => $this->extractSearchableText($html),
-            ]);
-        } catch (\Throwable $error) {
-            Log::warning('online_docs.reindex_from_docx_failed', [
-                'document_id' => $document->id,
-                'message' => $error->getMessage(),
-            ]);
-        } finally {
-            if (Storage::disk('local')->exists($tempPath)) {
-                Storage::disk('local')->delete($tempPath);
-            }
-        }
-    }
-
         /**
          * Ensure document has a base PPTX file and return its storage path
          */
@@ -268,15 +211,6 @@ class DocumentService
 
                 return $pptxPath;
         }
-
-            private function extractSearchableText(string $html): string
-            {
-                $text = strip_tags($html);
-                $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                $text = preg_replace('/\s+/u', ' ', $text) ?? '';
-
-                return trim($text);
-            }
 
         private function createMinimalPptx(string $targetPath, string $title): void
         {
