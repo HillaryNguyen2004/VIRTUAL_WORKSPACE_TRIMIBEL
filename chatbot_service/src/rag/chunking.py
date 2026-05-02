@@ -1,358 +1,199 @@
 from __future__ import annotations
 
-import csv
-import re
 from pathlib import Path
-from typing import Iterable, Tuple, List, Dict
+from typing import Iterable, Tuple, List
 from xml.etree import ElementTree
 from zipfile import ZipFile
-from pypdf import PdfReader
 
-from langchain_text_splitters import (
-    MarkdownHeaderTextSplitter,
-    RecursiveCharacterTextSplitter
-)
-from langchain_experimental.text_splitter import SemanticChunker
+from pdfminer.high_level import extract_text as pdf_to_text
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-# =========================
-# CONFIG
-# =========================
 OFFICE_XML_NAMESPACES = {
+    "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
     "main": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
     "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
 }
 
-SUPPORTED_EXTENSIONS = {
-    ".pdf", ".txt", ".md", ".docx",
-    ".xlsx", ".csv"
-}
+SUPPORTED_EXTENSIONS = {".pdf", ".txt", ".md", ".docx", ".xlsx"}
 
-# =========================
-# EMBEDDING WRAPPER
-# =========================
-class OllamaEmbeddingWrapper:
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        from src.rag.embeddings.ollama import embed_texts
-        return embed_texts(texts)
 
-    def embed_query(self, text: str) -> List[float]:
-        from src.rag.embeddings.ollama import embed_query
-        return embed_query(text)
+def _normalize_text(parts: List[str]) -> str:
+    cleaned = [part.strip() for part in parts if part and part.strip()]
+    return "\n".join(cleaned)
 
-# =========================
-# SPLITTERS
-# =========================
-def make_semantic_splitter():
-    """
-    Uses a semantic chunker with a custom embedding model to split text into semantically meaningful chunks.
-    """
-    
-    return SemanticChunker(
-        OllamaEmbeddingWrapper(),
-        breakpoint_threshold_type="percentile",
-        breakpoint_threshold_amount=85,
-    )
 
-def make_recursive_splitter():
-    """
-    Fallback splitter that uses a recursive character-based approach to split text into chunks of a specified size with some overlap.
-    """
-    
-    return RecursiveCharacterTextSplitter(
-        chunk_size=800,
-        chunk_overlap=100
-    )
-
-# =========================
-# SECTION SPLIT
-# =========================
-def split_by_sections(text: str) -> List[Dict]:
-    """
-    Detect multi-format sections:
-    - 1. / 1.1
-    - # markdown
-    - bullet
-    - ALL CAPS titles
-    """
-
-    pattern = r"""
-    (?=\n\s*(?:                 # lookahead
-        \d+\.\d+ |              # 1.1
-        \d+\.\s |               # 1.
-        [A-Z][A-Z\s]{5,} |      # ALL CAPS TITLE
-        \#\s | \#\#\s |         # markdown
-        [-•]\s                 # bullet
-    ))
-    """
-    parts = re.split(pattern, text)
-
-    results = []
-    for part in parts:
-        part = part.strip()
-        if not part:
-            continue
-
-        lines = part.split("\n")
-        title = lines[0][:100]
-
-        results.append({
-            "title": title,
-            "content": part
-        })
-
-    return results
-
-# =========================
-# SEMANTIC CORE
-# =========================
-def is_bullet_block(text: str):
-    lines = text.split("\n")
-    bullet_lines = [l for l in lines if l.strip().startswith(("-", "*"))]
-    return len(bullet_lines) >= 2
-
-def semantic_chunk_text(text: str) -> List[str]:
-    semantic = make_semantic_splitter()
-
-    try:
-        docs = semantic.create_documents([text])
-        chunks = [d.page_content for d in docs]
-
-        # fallback nếu semantic không chia được
-        if len(chunks) < 2:
-            raise ValueError("Too few semantic chunks")
-
-        return chunks
-
-    except Exception:
-        splitter = make_recursive_splitter()
-        return splitter.split_text(text)
-
-# =========================
-# PDF
-# =========================
-def chunk_pdf(path: Path):
-    reader = PdfReader(str(path))
-
-    chunks, metas = [], []
-
-    for i, page in enumerate(reader.pages):
-        text = page.extract_text() or ""
-        if not text.strip():
-            continue
-
-        sections = split_by_sections(text)
-
-        for sec in sections:
-            sub_chunks = semantic_chunk_text(sec["content"])
-
-            for idx, chunk in enumerate(sub_chunks):
-                chunks.append(chunk)
-                metas.append({
-                    "source": path.name,
-                    "page": i + 1,
-                    "section": sec["title"],
-                    "chunk_index": idx,
-                    "type": "semantic",
-                })
-
-    return chunks, metas
-
-# =========================
-# DOCX
-# =========================
-def read_docx(path: Path) -> str:
-    paragraphs = []
+def _read_docx(path: Path) -> str:
+    paragraphs: List[str] = []
 
     with ZipFile(path) as archive:
-        root = ElementTree.parse(archive.open("word/document.xml")).getroot()
+        with archive.open("word/document.xml") as document_xml:
+            root = ElementTree.parse(document_xml).getroot()
 
-    for p in root.findall(".//w:p", OFFICE_XML_NAMESPACES):
-        texts = [t.text or "" for t in p.findall(".//w:t", OFFICE_XML_NAMESPACES)]
-        line = "".join(texts).strip()
-        if line:
-            paragraphs.append(line)
+    for paragraph in root.findall(".//w:p", OFFICE_XML_NAMESPACES):
+        runs = [node.text or "" for node in paragraph.findall(".//w:t", OFFICE_XML_NAMESPACES)]
+        text = "".join(runs).strip()
+        if text:
+            paragraphs.append(text)
 
-    return "\n".join(paragraphs)
+    return _normalize_text(paragraphs)
 
-# =========================
-# TABLE
-# =========================
-def extract_xlsx_as_dicts(path: Path) -> List[Dict[str, str]]:
-    def load_shared_strings(archive: ZipFile) -> List[str]:
-        try:
-            if "xl/sharedStrings.xml" not in archive.namelist():
-                return []
 
-            root = ElementTree.parse(archive.open("xl/sharedStrings.xml")).getroot()
+def _read_xlsx(path: Path) -> str:
+    rows: List[str] = []
 
-            return [
-                "".join(t.text or "" for t in si.findall(".//main:t", OFFICE_XML_NAMESPACES))
-                for si in root.findall("main:si", OFFICE_XML_NAMESPACES)
-            ]
-        except:
+    def shared_strings(archive: ZipFile) -> List[str]:
+        if "xl/sharedStrings.xml" not in archive.namelist():
             return []
 
-    def get_cell_value(cell, shared_strings):
-        try:
-            cell_type = cell.attrib.get("t")
-            value_node = cell.find("main:v", OFFICE_XML_NAMESPACES)
+        with archive.open("xl/sharedStrings.xml") as strings_xml:
+            root = ElementTree.parse(strings_xml).getroot()
 
-            if value_node is None:
-                return "".join(
-                    n.text or "" for n in cell.findall(".//main:t", OFFICE_XML_NAMESPACES)
-                ).strip()
-
-            value = value_node.text
-
-            if cell_type == "s" and value.isdigit():
-                return shared_strings[int(value)]
-
-            return value or ""
-        except:
-            return ""
-
-    rows_out = []
+        values: List[str] = []
+        for item in root.findall("main:si", OFFICE_XML_NAMESPACES):
+            text_nodes = [node.text or "" for node in item.findall(".//main:t", OFFICE_XML_NAMESPACES)]
+            values.append("".join(text_nodes))
+        return values
 
     with ZipFile(path) as archive:
-        shared_strings = load_shared_strings(archive)
+        string_table = shared_strings(archive)
 
-        sheets = sorted(f for f in archive.namelist() if f.startswith("xl/worksheets/sheet"))
-
-        for sheet_idx, sheet in enumerate(sheets):
-            root = ElementTree.parse(archive.open(sheet)).getroot()
-            rows = root.findall(".//main:row", OFFICE_XML_NAMESPACES)
-
-            parsed = []
-            for r in rows:
-                vals = [
-                    get_cell_value(c, shared_strings).strip()
-                    for c in r.findall("main:c", OFFICE_XML_NAMESPACES)
-                ]
-                if any(vals):
-                    parsed.append(vals)
-
-            if not parsed:
-                continue
-
-            headers = parsed[0]
-
-            for i, row in enumerate(parsed[1:]):
-                obj = {
-                    headers[j]: val
-                    for j, val in enumerate(row)
-                    if val
-                }
-                if obj:
-                    obj["_sheet"] = f"sheet_{sheet_idx+1}"
-                    obj["_row"] = str(i+1)
-                    rows_out.append(obj)
-
-    return rows_out
-
-def structured_table_chunks(path: Path):
-    ext = path.suffix.lower()
-
-    if ext == ".csv":
-        with open(path, encoding="utf-8-sig", errors="replace") as f:
-            rows = list(csv.DictReader(f))
-
-    elif ext == ".xlsx":
-        rows = extract_xlsx_as_dicts(path)
-
-    else:
-        return [], []
-
-    chunks, metas = [], []
-
-    for i, row in enumerate(rows):
-        content = " | ".join(
-            f"{k}: {v}"
-            for k, v in row.items()
-            if not k.startswith("_") and v
+        worksheet_names = sorted(
+            name
+            for name in archive.namelist()
+            if name.startswith("xl/worksheets/sheet") and name.endswith(".xml")
         )
 
-        chunks.append(f"Record {i+1}: {content}")
+        for sheet_idx, worksheet_name in enumerate(worksheet_names):
+            with archive.open(worksheet_name) as sheet_xml:
+                root = ElementTree.parse(sheet_xml).getroot()
 
-        metas.append({
-            "source": path.name,
-            "row_index": i,
-            "sheet": row.get("_sheet") or "",
-            "type": "table"
-        })
+            headers: List[str] = []
+            sheet_rows: List[List[str]] = []
 
-    return chunks, metas
+            for row in root.findall(".//main:row", OFFICE_XML_NAMESPACES):
+                values: List[str] = []
 
-# =========================
-# MARKDOWN
-# =========================
-def split_markdown(text: str, source: str):
-    splitter = MarkdownHeaderTextSplitter([
-        ("#", "h1"), ("##", "h2"), ("###", "h3"),
-    ])
+                for cell in row.findall("main:c", OFFICE_XML_NAMESPACES):
+                    cell_type = cell.attrib.get("t")
+                    value_node = cell.find("main:v", OFFICE_XML_NAMESPACES)
 
-    docs = splitter.split_text(text)
+                    if value_node is None or value_node.text is None:
+                        inline_text_nodes = cell.findall(".//main:t", OFFICE_XML_NAMESPACES)
+                        inline_text = "".join(node.text or "" for node in inline_text_nodes).strip()
+                        values.append(inline_text)
+                        continue
 
-    return (
-        [d.page_content for d in docs],
-        [{
-            "source": source,
-            "headers": d.metadata,
-            "type": "markdown",
-            "chunk_index": i
-        } for i, d in enumerate(docs)]
-    )
+                    cell_value = value_node.text
 
-# =========================
-# MAIN ENTRY
-# =========================
-def chunk_file(path: Path) -> Tuple[List[str], List[dict]]:
+                    if cell_type == "s":
+                        try:
+                            shared_index = int(cell_value)
+                            values.append(string_table[shared_index])
+                        except (IndexError, ValueError):
+                            values.append(cell_value)
+                    else:
+                        values.append(cell_value)
+
+                if values:
+                    sheet_rows.append(values)
+
+            if not sheet_rows:
+                continue
+
+            # first row = headers
+            headers = sheet_rows[0]
+
+            for row_values in sheet_rows[1:]:
+                pairs = []
+
+                for i, value in enumerate(row_values):
+                    if i < len(headers):
+                        header = headers[i].strip()
+                    else:
+                        header = f"column_{i}"
+
+                    if value and value.strip():
+                        pairs.append(f"{header}: {value.strip()}")
+
+                if pairs:
+                    rows.append(f"Sheet {sheet_idx+1} | " + ", ".join(pairs))
+
+    return _normalize_text(rows)
+
+def _read_csv(path: Path) -> str:
+    rows = []
+
+    with open(path, newline="", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        data = list(reader)
+
+    if not data:
+        return ""
+
+    headers = data[0]
+
+    for row in data[1:]:
+        pairs = []
+        for i, value in enumerate(row):
+            if i < len(headers):
+                header = headers[i].strip()
+            else:
+                header = f"column_{i}"
+
+            if value.strip():
+                pairs.append(f"{header}: {value.strip()}")
+
+        if pairs:
+            rows.append("Row:\n- " + "\n- ".join(pairs))
+
+    return "\n\n".join(rows)
+
+def read_file(path: Path) -> str:
     ext = path.suffix.lower()
-
-    # PDF
     if ext == ".pdf":
-        return chunk_pdf(path)
-
-    # TABLE
-    if ext in [".csv", ".xlsx"]:
-        return structured_table_chunks(path)
-
-    # TEXT
+        return pdf_to_text(str(path))
     if ext == ".docx":
-        text = read_docx(path)
-    else:
-        text = path.read_text(encoding="utf-8", errors="ignore")
+        return _read_docx(path)
+    if ext == ".xlsx":
+        return _read_xlsx(path)
+    if ext == ".csv":
+        return _read_csv(path)
+    return path.read_text(encoding="utf-8", errors="ignore")
 
-    # MARKDOWN
-    if ext == ".md":
-        return split_markdown(text, path.name)
+# returns a RecursiveCharacterTextSplitter
+def make_splitter(chunk: int, overlap: int) -> RecursiveCharacterTextSplitter:
+    return RecursiveCharacterTextSplitter(chunk_size=chunk, chunk_overlap=overlap)
 
-    # SECTION + SEMANTIC
-    sections = split_by_sections(text)
+def split_text(text: str, splitter: RecursiveCharacterTextSplitter) -> List[str]:
+    return splitter.split_text(text)
 
-    chunks, metas = [], []
-
-    for sec in sections:
-        # if bullet block, keep as is; else try semantic chunking
-        if is_bullet_block(sec["content"]):
-            sub_chunks = [sec["content"]]
-        else:
-            sub_chunks = semantic_chunk_text(sec["content"])
-
-        for i, chunk in enumerate(sub_chunks):
-            chunks.append(chunk)
-            metas.append({
-                "source": path.name,
-                "section": sec["title"],
-                "chunk_index": i,
-                "type": "semantic",
-            })
-
-    return chunks, metas
-
-# =========================
-# ITERATOR
-# =========================
 def iter_data_files(root: Path) -> Iterable[Path]:
     for p in root.iterdir():
         if p.is_file() and p.suffix.lower() in SUPPORTED_EXTENSIONS:
             yield p
+
+# returns chunks, metadatas
+def chunk_file(path: Path, splitter: RecursiveCharacterTextSplitter) -> Tuple[List[str], List[dict]]:
+    text = read_file(path)
+    chunks = split_text(text, splitter)
+    metas = []
+    char_offset = 0
+    lines_so_far = 1
+    lines_per_page = 45
+
+    for i, chunk in enumerate(chunks):
+        # Count lines up to this chunk's position in the original text
+        start = text.find(chunk, char_offset)
+        if start >= 0:
+            lines_so_far = text[:start].count('\n') + 1
+            char_offset = start + len(chunk)
+
+        page = max(1, (lines_so_far - 1) // lines_per_page + 1)
+        metas.append({
+            "source": path.name,
+            "chunk_index": i,
+            "page": page,
+            "line": lines_so_far,
+        })
+
+    return chunks, metas

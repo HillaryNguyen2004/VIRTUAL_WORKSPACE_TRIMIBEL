@@ -55,7 +55,7 @@
             @endif
             @if(($isDocs || $isPowerpoint) && $onlyofficeConfig && $canUpdateDocument)
                 @if($isForcedViewMode)
-                    <a href="{{ route('online-docs.docs.show', ['document' => $document, 'mode' => 'edit']) }}" class="online-docs-action-btn online-docs-primary-btn px-4 py-2 rounded-xl bg-secondary text-white text-sm font-medium hover:bg-secondary/90">
+                    <a href="{{ route('online-docs.docs.show', ['document' => $document, 'mode' => 'edit']) }}" class="online-docs-action-btn online-docs-primary-btn px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-hover">
                         {{ __('online_docs.enable_edit') }}
                     </a>
                 @else
@@ -63,6 +63,14 @@
                         {{ __('online_docs.view_only') }}
                     </a>
                 @endif
+            @endif
+            @if($isDocs)
+                <button type="button" data-open-modal="action-items-modal" class="online-docs-action-btn px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-700 hover:bg-muted-50" data-action-items-open>
+                    {{ __('online_docs.extract_action_items') }}
+                </button>
+                <button type="button" data-open-modal="ai-summary-modal" class="online-docs-action-btn px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-700 hover:bg-muted-50" data-ai-summary-open>
+                    {{ __('online_docs.ai_summary') }}
+                </button>
             @endif
             @can('share', $document)
                 <button type="button" data-open-modal="share-modal" class="online-docs-action-btn px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-700 hover:bg-muted-50">
@@ -145,7 +153,7 @@
                                 <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-700 hover:bg-muted-50">
                                     {{ __('online_docs.cancel') }}
                                 </button>
-                                <button type="submit" class="px-4 py-2 rounded-xl bg-secondary text-white hover:bg-secondary/90 text-sm font-medium">
+                                <button type="submit" class="px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary-hover text-sm font-medium">
                                     {{ $importLabel }}
                                 </button>
                             </div>
@@ -194,7 +202,7 @@
                             <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-700 hover:bg-muted-50">
                                 {{ __('online_docs.cancel') }}
                             </button>
-                            <button type="submit" class="px-4 py-2 rounded-xl bg-secondary text-white hover:bg-secondary/90 text-sm font-medium">
+                            <button type="submit" class="px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary-hover text-sm font-medium">
                                 Share with others
                             </button>
                         </div>
@@ -241,6 +249,35 @@
                 </div>
             </div>
         @endcan
+
+        @if($isDocs)
+            <div id="action-items-modal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/40 p-4" data-modal-overlay>
+                <div class="w-full max-w-2xl rounded-xl border border-muted-200 bg-white p-5 max-h-[85vh] overflow-y-auto">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <h4 class="text-sm font-semibold text-main">{{ __('online_docs.extract_action_items') }}</h4>
+                        <button type="button" data-close-modal class="px-3 py-1 rounded-lg border border-muted-200 text-xs text-muted-700 hover:bg-muted-50">{{ __('online_docs.cancel') }}</button>
+                    </div>
+                    <p class="text-xs text-muted-500 mb-3">{{ __('online_docs.action_items_hint') }}</p>
+                    <div id="action-items-loading" class="hidden rounded-lg border border-muted-200 bg-muted-50 px-3 py-2 text-xs text-muted-600">{{ __('online_docs.action_items_loading') }}</div>
+                    <div id="action-items-empty" class="hidden rounded-lg border border-muted-200 bg-muted-50 px-3 py-2 text-xs text-muted-600">{{ __('online_docs.action_items_empty') }}</div>
+                    <div id="action-items-error" class="hidden rounded-lg border border-danger/20 bg-danger/10 px-3 py-2 text-xs text-danger">{{ __('online_docs.action_items_error') }}</div>
+                    <div id="action-items-list" class="flex flex-col gap-2"></div>
+                </div>
+            </div>
+
+            <div id="ai-summary-modal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/40 p-4" data-modal-overlay>
+                <div class="w-full max-w-2xl rounded-xl border border-muted-200 bg-white p-5 max-h-[85vh] overflow-y-auto">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <h4 class="text-sm font-semibold text-main">{{ __('online_docs.ai_summary') }}</h4>
+                        <button type="button" data-close-modal class="px-3 py-1 rounded-lg border border-muted-200 text-xs text-muted-700 hover:bg-muted-50">{{ __('online_docs.cancel') }}</button>
+                    </div>
+                    <p class="text-xs text-muted-500 mb-3">{{ __('online_docs.ai_summary_hint') }}</p>
+                    <div id="ai-summary-loading" class="hidden rounded-lg border border-muted-200 bg-muted-50 px-3 py-2 text-xs text-muted-600">{{ __('online_docs.ai_summary_loading') }}</div>
+                    <div id="ai-summary-error" class="hidden rounded-lg border border-danger/20 bg-danger/10 px-3 py-2 text-xs text-danger">{{ __('online_docs.ai_summary_error') }}</div>
+                    <div id="ai-summary-content" class="hidden prose prose-sm max-w-none text-sm text-main whitespace-pre-wrap leading-relaxed"></div>
+                </div>
+            </div>
+        @endif
     </div>
 @endsection
 
@@ -359,6 +396,104 @@
             const shouldOpenShareModal = @json($shouldOpenShareModal);
             if (shouldOpenShareModal) {
                 openModal(document.getElementById('share-modal'));
+            }
+
+            const actionItemsOpen = document.querySelector('[data-action-items-open]');
+            const actionItemsList = document.getElementById('action-items-list');
+            const actionItemsLoading = document.getElementById('action-items-loading');
+            const actionItemsEmpty = document.getElementById('action-items-empty');
+            const actionItemsError = document.getElementById('action-items-error');
+            const actionItemsUrl = @json(route('online-docs.docs.action-items', $document));
+
+            const renderActionItems = (items) => {
+                if (!actionItemsList) {
+                    return;
+                }
+
+                actionItemsList.innerHTML = '';
+                items.forEach((item, index) => {
+                    const row = document.createElement('div');
+                    row.className = 'rounded-lg border border-muted-200 bg-white px-3 py-2';
+                    const due = item.due_date ? `<span class="text-[11px] text-muted-500">Due: ${item.due_date}</span>` : '';
+                    const priority = item.priority ? `<span class="text-[11px] text-muted-500 uppercase">${item.priority}</span>` : '';
+                    row.innerHTML = `
+                        <p class="text-sm text-main"><strong>${index + 1}.</strong> ${item.task || ''}</p>
+                        <div class="mt-1 flex items-center gap-2">${due}${priority}</div>
+                    `;
+                    actionItemsList.appendChild(row);
+                });
+            };
+
+            if (actionItemsOpen && actionItemsList) {
+                actionItemsOpen.addEventListener('click', async () => {
+                    actionItemsLoading?.classList.remove('hidden');
+                    actionItemsEmpty?.classList.add('hidden');
+                    actionItemsError?.classList.add('hidden');
+                    actionItemsList.innerHTML = '';
+
+                    try {
+                        const response = await fetch(actionItemsUrl, {
+                            headers: {
+                                'Accept': 'application/json',
+                            },
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('action items request failed');
+                        }
+
+                        const payload = await response.json();
+                        const items = Array.isArray(payload.items) ? payload.items : [];
+                        if (!items.length) {
+                            actionItemsEmpty?.classList.remove('hidden');
+                        } else {
+                            renderActionItems(items);
+                        }
+                    } catch (error) {
+                        actionItemsError?.classList.remove('hidden');
+                    } finally {
+                        actionItemsLoading?.classList.add('hidden');
+                    }
+                });
+            }
+
+            const aiSummaryOpen = document.querySelector('[data-ai-summary-open]');
+            const aiSummaryLoading = document.getElementById('ai-summary-loading');
+            const aiSummaryError = document.getElementById('ai-summary-error');
+            const aiSummaryContent = document.getElementById('ai-summary-content');
+            const aiSummaryUrl = @json(route('online-docs.docs.summary', $document));
+            let aiSummaryLoaded = false;
+
+            if (aiSummaryOpen && aiSummaryContent) {
+                aiSummaryOpen.addEventListener('click', async () => {
+                    if (aiSummaryLoaded) return;
+
+                    aiSummaryLoading?.classList.remove('hidden');
+                    aiSummaryError?.classList.add('hidden');
+                    aiSummaryContent.classList.add('hidden');
+
+                    try {
+                        const response = await fetch(aiSummaryUrl, {
+                            headers: { 'Accept': 'application/json' },
+                        });
+
+                        if (!response.ok) throw new Error('summary request failed');
+
+                        const payload = await response.json();
+                        if (payload.error) {
+                            aiSummaryError.textContent = payload.error;
+                            aiSummaryError?.classList.remove('hidden');
+                        } else {
+                            aiSummaryContent.textContent = payload.summary || '';
+                            aiSummaryContent.classList.remove('hidden');
+                            aiSummaryLoaded = true;
+                        }
+                    } catch (error) {
+                        aiSummaryError?.classList.remove('hidden');
+                    } finally {
+                        aiSummaryLoading?.classList.add('hidden');
+                    }
+                });
             }
 
             const sharePicker = document.getElementById('doc-share-picker');

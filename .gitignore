@@ -55,4 +55,4 @@ yarn-error.log
 .venv/
 venv/
 face_detection/__pycache__/
-face_detection/*.pyc 
+face_detection/*.pyc chatbot_service/var/chroma_db/
