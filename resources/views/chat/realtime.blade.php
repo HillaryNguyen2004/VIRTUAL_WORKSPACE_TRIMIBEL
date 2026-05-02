@@ -1802,13 +1802,24 @@ window.selectedFileType = null;
 function handleFileSelectRealtime(input, type) {
     const file = input.files[0];
     if(!file) return;
+
+    const MAX_BYTES = 40 * 1024 * 1024; // 40MB — matches server limit
+    if (file.size > MAX_BYTES) {
+        alert(`File is too large (${(file.size/1024/1024).toFixed(1)} MB). Maximum allowed size is 40 MB.`);
+        input.value = '';
+        return;
+    }
+
     window.selectedFile = file;
     window.selectedFileType = type;
-    
+
     document.getElementById('file-preview').classList.remove('hidden');
     document.getElementById('file-icon').className = type === 'image' ? 'far fa-image' : 'fas fa-file-alt';
     document.getElementById('file-name').textContent = file.name;
-    document.getElementById('file-size').textContent = (file.size/1024).toFixed(1) + ' KB';
+    const sizeKB = file.size / 1024;
+    document.getElementById('file-size').textContent = sizeKB >= 1024
+        ? (sizeKB / 1024).toFixed(1) + ' MB'
+        : sizeKB.toFixed(1) + ' KB';
     
     if(type === 'image') {
         const r = new FileReader();

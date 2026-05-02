@@ -74,6 +74,24 @@ def delete_collection(workspace_id: str | None = None) -> None:
         # Collection may not exist yet; ignore and recreate on next write.
         pass
     
+def count_legacy_chunks(workspace_id: str | None = None, sample: int = 50) -> int:
+    """
+    Sample up to `sample` documents from the collection and count how many
+    do NOT start with a contextual header (i.e. ingested before the
+    chunk-header upgrade). Returns the count of legacy chunks found.
+    """
+    coll = get_collection(workspace_id=workspace_id)
+    total = coll.count()
+    if total == 0:
+        return 0
+
+    safe_sample = min(sample, total)
+    results = coll.get(limit=safe_sample, include=["documents"])
+    docs = results.get("documents") or []
+    legacy = sum(1 for d in docs if d and not d.lstrip().startswith("[File:"))
+    return legacy
+
+
 def query_by_vector(
     vec: List[float],
     k: int,

@@ -2,14 +2,52 @@ from __future__ import annotations
 from typing import List, Dict, Any
 
 def _serialize_passages(passages: List[Dict[str, Any]]) -> str:
-    # passages: [{ id, content, metadata }]
+    """
+    Format retrieved passages for injection into the RAG prompt.
+
+    Each passage is rendered as:
+        [N] source=X | section=Y | page=Z | type=T
+        <chunk body>
+
+    The chunk body already contains a contextual header injected at ingest
+    time (by chunking.py:prepend_header), so the LLM sees provenance both
+    in the passage label AND inside the text itself — double-grounding.
+    """
     blocks = []
     for i, p in enumerate(passages, start=1):
-        src = (p.get("metadata") or {}).get("source", "unknown")
-        title = (p.get("metadata") or {}).get("title", "")
-        head = f"[{i}] source={src}" + (f" | title={title}" if title else "")
+        meta = p.get("metadata") or {}
+
+        # Build label parts — include every non-empty provenance field
+        label_parts = []
+        src = meta.get("source") or meta.get("file_name") or "unknown"
+        label_parts.append(f"source={src}")
+
+        section = meta.get("section") or ""
+        if section:
+            label_parts.append(f"section={section[:60]}")
+
+        page = meta.get("page")
+        if page is not None:
+            label_parts.append(f"page={page}")
+
+        sheet = meta.get("sheet") or ""
+        if sheet:
+            label_parts.append(f"sheet={sheet}")
+
+        headers = meta.get("headers") or {}
+        if headers:
+            h_str = " > ".join(str(v) for v in headers.values() if v)
+            if h_str:
+                label_parts.append(f"heading={h_str}")
+
+        doc_type = meta.get("type") or ""
+        if doc_type:
+            label_parts.append(f"type={doc_type}")
+
+        label = f"[{i}] " + " | ".join(label_parts)
         body = (p.get("document") or p.get("content") or "").strip()
-        blocks.append(f"{head}\n{body}")
+        blocks.append(f"{label}\n{body}")
+
     return "\n\n".join(blocks)
 
 def build_rag_prompt(

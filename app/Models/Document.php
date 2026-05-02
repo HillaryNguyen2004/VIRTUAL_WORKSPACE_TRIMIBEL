@@ -14,6 +14,7 @@ class Document extends Model
         'title',
         'type',
         'html_path',
+        'searchable_text',
         'docx_path',
         'xlsx_path',
         'pptx_path',

@@ -23,6 +23,7 @@ use App\Http\Controllers\FaceRegisterController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\WBOController;
 use App\Http\Controllers\OnlineDocumentController;
+use App\Http\Controllers\ChunkedUploadController;
 use App\Http\Controllers\AIWorkspaceController;
 use Illuminate\Http\Request;
 
@@ -66,6 +67,10 @@ Route::middleware(['auth'])->prefix('online-docs')->name('online-docs.')->group(
     Route::post('/folders', [OnlineDocumentController::class, 'createFolder'])->name('folders.store');
     Route::put('/folders/{folder}', [OnlineDocumentController::class, 'renameFolder'])->name('folders.update');
     Route::delete('/folders/{folder}', [OnlineDocumentController::class, 'deleteFolder'])->name('folders.delete');
+    Route::post('/folders/{folder}/share', [OnlineDocumentController::class, 'shareFolder'])->name('folders.share');
+    Route::delete('/folders/{folder}/share/{share}', [OnlineDocumentController::class, 'removeFolderShare'])->name('folders.share.remove');
+    Route::post('/folders/{folder}/share-link', [OnlineDocumentController::class, 'generateFolderShareLink'])->name('folders.share.link');
+    Route::get('/shared-folder/{token}', [OnlineDocumentController::class, 'openFolderShareLink'])->name('folders.share.open');
     Route::post('/files', [OnlineDocumentController::class, 'uploadPersonalFile'])->name('files.store');
     Route::put('/files/{file}', [OnlineDocumentController::class, 'renameFile'])->name('files.update');
     Route::delete('/files/{file}', [OnlineDocumentController::class, 'deleteFile'])->name('files.delete');
@@ -78,6 +83,14 @@ Route::middleware(['auth'])->prefix('online-docs')->name('online-docs.')->group(
     Route::post('/storage/move', [OnlineDocumentController::class, 'moveStorageItem'])->name('storage.move');
     Route::post('/storage/bulk-move', [OnlineDocumentController::class, 'bulkMoveStorageItems'])->name('storage.bulk-move');
     Route::post('/storage/bulk-delete', [OnlineDocumentController::class, 'bulkDeleteStorageItems'])->name('storage.bulk-delete');
+    
+    // Chunked upload routes for large files
+    Route::post('/upload/initiate', [ChunkedUploadController::class, 'initiate'])->name('upload.initiate');
+    Route::post('/upload/chunk', [ChunkedUploadController::class, 'uploadChunk'])->name('upload.chunk');
+    Route::post('/upload/assemble', [ChunkedUploadController::class, 'assemble'])->name('upload.assemble');
+    Route::get('/upload/status', [ChunkedUploadController::class, 'status'])->name('upload.status');
+    Route::post('/upload/cancel', [ChunkedUploadController::class, 'cancel'])->name('upload.cancel');
+    
     Route::get('/docs', [OnlineDocumentController::class, 'docsIndex'])->name('docs');
     Route::post('/docs', [OnlineDocumentController::class, 'store'])->name('docs.store');
     Route::post('/excel', [OnlineDocumentController::class, 'createExcel'])->name('excel.create');
@@ -97,8 +110,11 @@ Route::middleware(['auth'])->prefix('online-docs')->name('online-docs.')->group(
     Route::post('/docs/{document}/share', [OnlineDocumentController::class, 'share'])->name('docs.share');
     Route::put('/docs/{document}/share', [OnlineDocumentController::class, 'updateShare'])->name('docs.share.update');
     Route::delete('/docs/{document}/share', [OnlineDocumentController::class, 'removeShare'])->name('docs.share.remove');
+    Route::get('/docs/{document}/action-items', [OnlineDocumentController::class, 'actionItems'])->name('docs.action-items');
+    Route::get('/docs/{document}/summary', [OnlineDocumentController::class, 'summarizeDocument'])->name('docs.summary');
     Route::get('/docs/{document}/presence', [OnlineDocumentController::class, 'presence'])->name('docs.presence');
     Route::post('/docs/{document}/presence', [OnlineDocumentController::class, 'touchPresence'])->name('docs.presence.touch');
+    Route::post('/search-agent', [OnlineDocumentController::class, 'searchAgent'])->name('search-agent');
 });
 
 Route::prefix('onlyoffice')->name('onlyoffice.')->group(function () {

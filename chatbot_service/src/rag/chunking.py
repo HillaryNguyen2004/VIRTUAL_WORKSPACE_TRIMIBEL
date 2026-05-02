@@ -28,6 +28,74 @@ SUPPORTED_EXTENSIONS = {
 }
 
 # =========================
+# CHUNK HEADER
+# =========================
+def build_chunk_header(meta: dict) -> str:
+    """
+    Build a short context header that gets prepended to every chunk before
+    embedding and storage.
+
+    Why: embedding models and LLMs work better when each chunk carries
+    its own provenance — which file, which section, which page it came from.
+    Without this, a chunk like "Attendance is tracked daily" gives no clue
+    about whether it's a policy doc, a report, or a tutorial.
+
+    The header format is intentionally plain text (not JSON/XML) so the LLM
+    reads it naturally as part of the chunk.
+
+    Output example:
+        [File: HR Policy.pdf | Section: 2. Leave Policy | Page: 4 | Type: pdf]
+    """
+    parts = []
+
+    source = meta.get("source") or meta.get("file_name") or ""
+    if source:
+        parts.append(f"File: {source}")
+
+    section = meta.get("section") or ""
+    if section:
+        # Truncate very long section titles
+        parts.append(f"Section: {section[:80]}")
+
+    page = meta.get("page")
+    if page is not None:
+        parts.append(f"Page: {page}")
+
+    row = meta.get("row_index")
+    if row is not None:
+        parts.append(f"Row: {row}")
+
+    sheet = meta.get("sheet") or ""
+    if sheet:
+        parts.append(f"Sheet: {sheet}")
+
+    headers = meta.get("headers") or {}
+    if headers:
+        h_str = " > ".join(
+            f"{v}" for v in headers.values() if v
+        )
+        if h_str:
+            parts.append(f"Heading: {h_str}")
+
+    doc_type = meta.get("type") or ""
+    if doc_type:
+        parts.append(f"Type: {doc_type}")
+
+    if not parts:
+        return ""
+
+    return "[" + " | ".join(parts) + "]"
+
+
+def prepend_header(chunk: str, meta: dict) -> str:
+    """Return chunk text with its context header prepended."""
+    header = build_chunk_header(meta)
+    if not header:
+        return chunk
+    return f"{header}\n{chunk}"
+
+
+# =========================
 # EMBEDDING WRAPPER
 # =========================
 class OllamaEmbeddingWrapper:
@@ -310,42 +378,42 @@ def chunk_file(path: Path) -> Tuple[List[str], List[dict]]:
 
     # PDF
     if ext == ".pdf":
-        return chunk_pdf(path)
+        chunks, metas = chunk_pdf(path)
 
     # TABLE
-    if ext in [".csv", ".xlsx"]:
-        return structured_table_chunks(path)
+    elif ext in [".csv", ".xlsx"]:
+        chunks, metas = structured_table_chunks(path)
 
-    # TEXT
-    if ext == ".docx":
-        text = read_docx(path)
     else:
-        text = path.read_text(encoding="utf-8", errors="ignore")
-
-    # MARKDOWN
-    if ext == ".md":
-        return split_markdown(text, path.name)
-
-    # SECTION + SEMANTIC
-    sections = split_by_sections(text)
-
-    chunks, metas = [], []
-
-    for sec in sections:
-        # if bullet block, keep as is; else try semantic chunking
-        if is_bullet_block(sec["content"]):
-            sub_chunks = [sec["content"]]
+        # TEXT
+        if ext == ".docx":
+            text = read_docx(path)
         else:
-            sub_chunks = semantic_chunk_text(sec["content"])
+            text = path.read_text(encoding="utf-8", errors="ignore")
 
-        for i, chunk in enumerate(sub_chunks):
-            chunks.append(chunk)
-            metas.append({
-                "source": path.name,
-                "section": sec["title"],
-                "chunk_index": i,
-                "type": "semantic",
-            })
+        # MARKDOWN
+        if ext == ".md":
+            chunks, metas = split_markdown(text, path.name)
+
+        else:
+            # SECTION + SEMANTIC (txt, docx, and any other text format)
+            sections = split_by_sections(text)
+            chunks, metas = [], []
+
+            for sec in sections:
+                if is_bullet_block(sec["content"]):
+                    sub_chunks = [sec["content"]]
+                else:
+                    sub_chunks = semantic_chunk_text(sec["content"])
+
+                for i, chunk in enumerate(sub_chunks):
+                    chunks.append(chunk)
+                    metas.append({
+                        "source": path.name,
+                        "section": sec["title"],
+                        "chunk_index": i,
+                        "type": "semantic",
+                    })
 
     return chunks, metas
 
