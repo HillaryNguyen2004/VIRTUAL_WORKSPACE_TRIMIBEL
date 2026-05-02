@@ -34,9 +34,10 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI'),
-        'chatbot' => [
-            'base_url' => env('CHATBOT_BASE_URL', 'http://localhost:8080'), // FastAPI URL
-        ],
+    ],
+
+    'chatbot' => [
+        'base_url' => env('CHATBOT_BASE_URL', 'http://127.0.0.1:8002'),
     ],
     'metered' => [
         'domain' => env('METERED_DOMAIN'),
@@ -48,8 +49,6 @@ return [
 
     'rag' => [
         'python_binary' => env('RAG_PYTHON_BIN'),
-        'ingest_process_timeout' => (float) env('RAG_INGEST_PROCESS_TIMEOUT', 300),
-        'ingest_max_execution_time' => (int) env('RAG_INGEST_MAX_EXECUTION_TIME', 300),
     ],
 
     'node_binary' => env('NODE_BINARY', 'node'),

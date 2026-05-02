@@ -397,8 +397,8 @@ class ChatController extends Controller
     public function sendFile(Request $request, Conversation $conversation)
     {
         $request->validate([
-            'file' => 'required|file|max:10240', // 10MB max
-            'content' => 'nullable|string|max:500' // Optional message with file
+            'file' => 'required|file|max:40960', // 40MB max
+            'content' => 'nullable|string|max:500'
         ]);
 
         try {
@@ -461,8 +461,8 @@ class ChatController extends Controller
     public function sendImage(Request $request, Conversation $conversation)
     {
         $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240', // 10MB max
-            'content' => 'nullable|string|max:500' // Optional caption
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:40960', // 40MB max
+            'content' => 'nullable|string|max:500'
         ]);
 
         try {
