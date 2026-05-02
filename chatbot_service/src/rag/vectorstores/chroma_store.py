@@ -33,7 +33,7 @@ def _get_client(chroma_path: str) -> PersistentClient:
         settings=ChromaSettings(anonymized_telemetry=False),
     )
 
-def get_collection(workspace_id: str | None = None, user_role: str | None = None):
+def get_collection(workspace_id: str | None = None):
     chroma_path = resolve_chroma_path(workspace_id)
     client = _get_client(chroma_path)
     return client.get_or_create_collection(settings.collection)
@@ -44,18 +44,16 @@ def add_chunks(
     metas: List[Dict[str, Any]],
     embeddings: List[List[float]],
     workspace_id: str | None = None,
-    user_role: str | None = None,
 ) -> None:
-    coll = get_collection(workspace_id=workspace_id, user_role=user_role)
+    coll = get_collection(workspace_id=workspace_id)
     coll.add(ids=ids, documents=docs, metadatas=metas, embeddings=embeddings)
 
 def delete_by_storage_file(
     storage_file: str,
     workspace_id: str | None = None,
-    user_role: str | None = None,
 ) -> int:
     """Delete all chunks for a specific storage file. Returns number of deleted chunks."""
-    coll = get_collection(workspace_id=workspace_id, user_role=user_role)
+    coll = get_collection(workspace_id=workspace_id)
     if coll.count() == 0:
         return 0
     where = {"storage_file": {"$eq": storage_file}}
@@ -67,7 +65,7 @@ def delete_by_storage_file(
         coll.delete(where=where)
     return count
 
-def delete_collection(workspace_id: str | None = None, user_role: str | None = None) -> None:
+def delete_collection(workspace_id: str | None = None) -> None:
     chroma_path = resolve_chroma_path(workspace_id)
     client = _get_client(chroma_path)
     try:
@@ -80,10 +78,9 @@ def query_by_vector(
     vec: List[float],
     k: int,
     workspace_id: str | None = None,
-    user_role: str | None = None,
     where: dict | None = None,
 ) -> List[Dict[str, Any]]:
-    coll = get_collection(workspace_id=workspace_id, user_role=user_role)
+    coll = get_collection(workspace_id=workspace_id)
     
     count = coll.count()
     if count == 0:

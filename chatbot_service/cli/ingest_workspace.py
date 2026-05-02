@@ -45,7 +45,6 @@ def ingest_workspace_directory(
     workspace_dir: str,
     target_file: Optional[str] = None,
     workspace_id: Optional[str] = None,
-    user_role: Optional[str] = None,
     original_name: Optional[str] = None,
     storage_file_name: Optional[str] = None,
 ) -> dict:
@@ -56,7 +55,6 @@ def ingest_workspace_directory(
         workspace_dir: Path to the workspace data directory
         target_file: Optional specific file to ingest within the workspace (defaults to all files)
         workspace_id: Optional workspace ID for scoping in vector store (defaults to sanitized directory name)
-        user_role: Optional user role for metadata (defaults to env RAG_USER_ROLE or '
         
     Returns:
         Dictionary with ingest results
@@ -71,8 +69,7 @@ def ingest_workspace_directory(
         }
 
     workspace_scope = normalize_workspace_id(workspace_id or data_dir.name)
-    role_scope = (user_role or os.getenv('RAG_USER_ROLE', 'user')).strip() or 'user'
-    print(f"Ingest scope -> workspace: {workspace_scope}, role: {role_scope}", flush=True)
+    print(f"Ingest scope -> workspace: {workspace_scope}", flush=True)
     
     results = []
     total_chunks = 0
@@ -133,7 +130,6 @@ def ingest_workspace_directory(
                 m["storage_file"] = storage_key
                 m["locale"] = locale
                 m["workspace_id"] = workspace_scope
-                m["role_scope"] = role_scope
 
             # Embed texts
             vectors = embed_texts(chunks)
@@ -146,7 +142,6 @@ def ingest_workspace_directory(
                 metas=metas,
                 embeddings=vectors,
                 workspace_id=workspace_scope,
-                user_role=role_scope,
             )
             
             total_chunks += len(chunks)
@@ -215,14 +210,12 @@ def fetch_productivity_predictions(api_base_url: str) -> dict:
 
 def refresh_productivity_vectordb_from_predict_all(
     api_base_url: Optional[str] = None,
-    user_role: Optional[str] = None,
 ) -> dict:
     """
     Refresh the productivity vector database by fetching predictions from the Flask API and re-indexing.
     
     Args:
         api_base_url: Optional base URL for the Flask API (defaults to env PRODUCTIVITY_API_BASE_URL)
-        user_role: Optional user role for metadata (defaults to env RAG_USER_ROLE or 'user')
     
     Returns:
         dict: Result of the refresh operation, including success status and any error messages.
@@ -288,7 +281,6 @@ def refresh_productivity_vectordb_from_predict_all(
             "trend": trend,
             "level": level,
             "record_type": "employee_snapshot",
-            "role_scope": (user_role or "admin"),
             "snapshot_date": date_str,
             "month": month_str,
             "year": year,
@@ -332,7 +324,6 @@ def refresh_productivity_vectordb_from_predict_all(
     metas.append({
         "workspace_id": "productivity",
         "record_type": "team_summary",
-        "role_scope": (user_role or "admin"),
         "snapshot_date": date_str,
         "month": month_str,
         "year": year,
@@ -349,7 +340,6 @@ def refresh_productivity_vectordb_from_predict_all(
         metas=metas,
         embeddings=vectors,
         workspace_id="productivity",
-        user_role=user_role,
     )
 
     return {
@@ -368,7 +358,6 @@ def main():
     parser.add_argument("workspace_dir", nargs="?", help="Workspace directory path (legacy mode).")
     parser.add_argument("target_file", nargs="?", help="Target file path inside workspace (legacy mode).")
     parser.add_argument("workspace_id", nargs="?", help="Workspace id/scope (legacy mode).")
-    parser.add_argument("user_role", nargs="?", help="User role (legacy mode).")
     parser.add_argument("original_name", nargs="?", help="Original display filename (legacy mode, optional).")
     parser.add_argument("storage_file_name", nargs="?", help="Canonical storage filename for vectordb metadata (e.g. S3 UUID filename).")
     parser.add_argument(
@@ -385,7 +374,7 @@ def main():
     args = parser.parse_args()
 
     if args.refresh_productivity:
-        result = refresh_productivity_vectordb_from_predict_all(args.api_base_url, args.user_role)
+        result = refresh_productivity_vectordb_from_predict_all(args.api_base_url)
     else:
         if not args.workspace_dir:
             parser.print_help()
@@ -394,7 +383,6 @@ def main():
             args.workspace_dir,
             args.target_file,
             args.workspace_id,
-            args.user_role,
             args.original_name,
             args.storage_file_name,
         )

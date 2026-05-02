@@ -19,6 +19,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\User::class => \App\Policies\UserPolicy::class,
         \App\Models\Document::class => \App\Policies\DocumentPolicy::class,
         \App\Models\AIWorkspace::class => \App\Policies\AIWorkspacePolicy::class,
+        \App\Models\AIWorkspaceFile::class => \App\Policies\AIWorkspaceFilePolicy::class,
     ];
 
     /**

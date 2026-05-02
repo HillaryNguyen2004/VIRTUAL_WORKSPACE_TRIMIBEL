@@ -18,7 +18,7 @@
             $dashRoute = 'substaff.dashboard';
         }
     @endphp
-    <div class="min-h-[70vh] flex items-center justify-center px-4 py-10">
+    <div class="min-h-[70vh] flex items-center justify-center px-4 py-10 animate-fade-in-up">
         <div class="w-full max-w-xl bg-white border border-muted-300 rounded-2xl shadow-lg shadow-main/5 p-8 text-center">
             <div class="mx-auto mb-5 w-16 h-16 rounded-full bg-danger/10 text-danger flex items-center justify-center">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">

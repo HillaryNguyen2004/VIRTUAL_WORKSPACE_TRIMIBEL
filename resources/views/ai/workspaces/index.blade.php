@@ -67,18 +67,20 @@
                     placeholder="{{ __('ai.search_placeholder') }}" />
 
                 {{-- Visibility Filter --}}
-                <x-form.select name="visibility" :value="request('visibility')" :options="[
-            '' => __('ai.all_visibility'),
-            'private' => 'Private',
-            'team' => 'Team',
-            'public' => 'Public',
-        ]" :showChevron="true" />
+                <x-form.select name="visibility" :value="request('visibility')" 
+                :options="[
+                    '' => __('ai.all_visibility'),
+                    'private' => __('ai.visibility_private'),
+                    'team' => __('ai.visibility_team'),
+                    'public' => __('ai.visibility_public'),
+                ]" :showChevron="true" />
 
                 {{-- Sort --}}
-                <x-form.select name="sort" :value="request('sort', 'desc')" :options="[
-            'desc' => __('ai.newest_first'),
-            'asc' => __('ai.oldest_first'),
-        ]" :showChevron="true" />
+                <x-form.select name="sort" :value="request('sort', 'desc')" 
+                :options="[
+                    'desc' => __('ai.newest_first'),
+                    'asc' => __('ai.oldest_first'),
+                ]" :showChevron="true" />
 
                 <div class="flex gap-2">
                     <button type="submit"
@@ -182,7 +184,12 @@
                                 <td class="py-4 px-3 text-center text-sm">
                                     <span
                                         class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium {{ $visibilityClass }}">
-                                        {{ ucfirst($workspace->visibility) }}
+                                        {{ match ($workspace->visibility) {
+                                            'private' => __('ai.visibility_private'),
+                                            'team' => __('ai.visibility_team'),
+                                            'public' => __('ai.visibility_public'),
+                                            default => ucfirst($workspace->visibility),
+                                        } }}
                                     </span>
                                 </td>
 
@@ -195,7 +202,7 @@
 
                                 {{-- Storage --}}
                                 <td class="py-4 px-3 text-center text-sm text-muted-500">
-                                    {{ number_format($storageMb, 1) }} MB
+                                    {{ formatBytes($workspace->storage_size, 2) }}
                                 </td>
 
                                 {{-- Status --}}
@@ -208,66 +215,8 @@
 
                                 {{-- Created --}}
                                 <td class="py-4 pr-6 text-center text-sm text-muted-500">
-                                    {{ $workspace->created_at ? $workspace->created_at->format('d/m/Y') : 'N/A' }}
+                                    {{ $workspace->created_at ? $workspace->created_at->format('d/m/Y') : __('ai.not_available') }}
                                 </td>
-
-                                {{-- ACTIONS --}}
-                                <!-- <td class="py-4 pr-6 text-right relative">
-                                                    <div class="relative flex justify-end">
-                                                        <button onclick="toggleActionMenu(event, 'menu-{{ $workspace->id }}')"
-                                                            class="p-2 rounded-lg text-muted-400 hover:bg-muted-100 hover:text-main transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                                                fill="none" stroke="currentColor" stroke-width="2">
-                                                                <circle cx="12" cy="12" r="1"></circle>
-                                                                <circle cx="19" cy="12" r="1"></circle>
-                                                                <circle cx="5" cy="12" r="1"></circle>
-                                                            </svg>
-                                                        </button>
-
-                                                        <div id="menu-{{ $workspace->id }}"
-                                                            class="dropdown-menu hidden absolute right-0 top-full mt-2 w-44 bg-white border border-muted-200 rounded-xl shadow-xl shadow-main/10 z-50 flex-col py-1.5 origin-top-right">
-
-                                                            <a href="{{ route('ai-workspaces.show', $workspace) }}"
-                                                                class="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-muted-600 hover:bg-muted-50 hover:text-main transition-colors">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-muted-400"
-                                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                                </svg>
-                                                                {{ __('ai.view') }}
-                                                            </a>
-
-                                                            <a href="{{ route('ai-workspaces.edit', $workspace) }}"
-                                                                class="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-muted-600 hover:bg-muted-50 hover:text-main transition-colors">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-muted-400"
-                                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                                </svg>
-                                                                {{ __('ai.edit') }}
-                                                            </a>
-
-                                                            <div class="h-px bg-muted-100 my-1 mx-2"></div>
-
-                                                            <form action="{{ route('ai-workspaces.destroy', $workspace) }}" method="POST"
-                                                                onsubmit="return confirm('{{ __('ai.confirm_delete') }}')">
-                                                                @csrf
-                                                                @method('DELETE')
-                                                                <button
-                                                                    class="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-danger hover:bg-danger/5 transition-colors">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
-                                                                        viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                                    </svg>
-                                                                    {{ __('ai.delete') }}
-                                                                </button>
-                                                            </form>
-                                                        </div>
-                                                    </div>
-                                                </td> -->
                             </tr>
                         @empty
                             <tr>
@@ -296,33 +245,4 @@
             @endif
         </div>
     </div>
-
-    <script>
-        function toggleActionMenu(event, menuId) {
-            event.stopPropagation();
-            const menu = document.getElementById(menuId);
-            const isHidden = menu.classList.contains('hidden');
-
-            closeAllMenus();
-
-            if (isHidden) {
-                menu.classList.remove('hidden');
-            }
-        }
-
-        function closeAllMenus() {
-            document.querySelectorAll('.dropdown-menu').forEach(menu => {
-                menu.classList.add('hidden');
-            });
-        }
-
-        document.addEventListener('click', function (event) {
-            const isClickInsideDropdown = event.target.closest('.dropdown-menu');
-            const isClickInsideButton = event.target.closest('button[onclick^="toggleActionMenu"]');
-
-            if (!isClickInsideDropdown && !isClickInsideButton) {
-                closeAllMenus();
-            }
-        });
-    </script>
 @endsection

@@ -188,7 +188,7 @@ class AIWorkspaceService
     /**
      * Upload files to workspace
      */
-    public function uploadFiles(AIWorkspace $workspace, array $files): array
+    public function uploadFiles(AIWorkspace $workspace, array $files, ?int $uploadedBy = null): array
     {
         $uploaded = [];
         $errors = [];
@@ -207,7 +207,7 @@ class AIWorkspaceService
                     throw new \Exception("Invalid file object");
                 }
 
-                $workspaceFile = $this->storeFile($workspace, $file);
+                $workspaceFile = $this->storeFile($workspace, $file, $uploadedBy);
                 $uploaded[] = $workspaceFile;
             } catch (\Exception $e) {
                 $errors[] = [
@@ -237,7 +237,7 @@ class AIWorkspaceService
     /**
      * Store a single file to AWS S3
      */
-    private function storeFile(AIWorkspace $workspace, UploadedFile $file): AIWorkspaceFile
+    private function storeFile(AIWorkspace $workspace, UploadedFile $file, ?int $uploadedBy = null): AIWorkspaceFile
     {
         $extension = strtolower($file->getClientOriginalExtension());
         $originalName = $file->getClientOriginalName();
@@ -319,6 +319,7 @@ class AIWorkspaceService
         try {
             return AIWorkspaceFile::create([
                 'workspace_id' => $workspace->id,
+                'uploaded_by' => $uploadedBy,
                 'file_name' => $fileName,
                 'original_name' => $originalName,
                 'file_path' => $s3Path,  // Store S3 path
@@ -380,6 +381,16 @@ class AIWorkspaceService
     }
 
     /**
+     * Ingest a single file by ID (for per-file retry from UI)
+     */
+    public function ingestSingleFile(AIWorkspace $workspace, AIWorkspaceFile $file): array
+    {
+        $result = $this->ingestFile($workspace, $file);
+        $workspace->update(['last_ingested_at' => now()]);
+        return $result;
+    }
+
+    /**
      * Ingest a single file from S3 using Python script
      */
     private function ingestFile(AIWorkspace $workspace, AIWorkspaceFile $file): array
@@ -402,18 +413,14 @@ class AIWorkspaceService
             $targetFile = $tempFilePath;  // Temporary local copy
             $originalName = (string) ($file->original_name ?? $file->file_name ?? basename((string) $s3Path));
             $workspaceScope = $this->resolveWorkspaceVectorScope($workspace);
-            $workspaceRole = $this->normalizeRoleForRag(
-                optional($workspace->user?->roles()->first())->name
-            );
             $processEnv = [
                 'PYTHONPATH' => base_path('chatbot_service'),
-                'RAG_USER_ROLE' => $workspaceRole,
             ];
 
             // Run the ingest process inside chatbot_service so relative imports/config work.
             // Use temp directory instead of S3 path for workspace directory
             $process = new Process(
-                [$pythonBinary, $pythonScript, sys_get_temp_dir(), $targetFile, $workspaceScope, $workspaceRole, $originalName, $file->file_name],
+                [$pythonBinary, $pythonScript, sys_get_temp_dir(), $targetFile, $workspaceScope, $originalName, $file->file_name],
                 base_path('chatbot_service'),
                 $processEnv
             );
@@ -488,8 +495,8 @@ class AIWorkspaceService
         }
 
         $venvCandidates = [
-            base_path('.venv/bin/python'),
             base_path('chatbot_service/.venv/bin/python'),
+            base_path('.venv/bin/python'),
             '/opt/homebrew/bin/python3',
             '/usr/bin/python3',
         ];
@@ -641,12 +648,11 @@ class AIWorkspaceService
 
         return [
             'total_files' => $files->count(),
-            'total_size' => $files->sum('file_size'),
+            'storage_size' => $workspace->storage_size,
             'ingested_files' => $files->where('ingest_status', 'completed')->count(),
             'pending_files' => $files->where('ingest_status', 'pending')->count(),
             'failed_files' => $files->where('ingest_status', 'failed')->count(),
             'total_chunks' => $files->sum('chunk_count'),
-            'storage_used_mb' => round($files->sum('file_size') / (1024 * 1024), 2),
         ];
     }
 
