@@ -1,0 +1,210 @@
+{
+  "k": 5,
+  "workspace": "productivity",
+  "avg_f1": 0.5918650793650795,
+  "avg_groundedness": 0.9199999999999999,
+  "avg_latency": 23.188318848609924,
+  "details": [
+    {
+      "question": "Which employees are declining?",
+      "answer": "Bot Bot can identify employees that are declining based on the provided knowledge. To determine which employees are declining, Bot Bot will look at each entry and check if it indicates a decline in productivity.\n\nHere are the employees who are declining:\n\n1. Do Dat (ID 8) - Productivity is predicted to be 56.79%, indicating a decline.\n2. Ho Nam (ID 13) - Productivity is predicted to be 55.42%, indicating a decline.\n3. Do Dung (ID 14) - Productivity is predicted to be 40.31%, indicating a decline.\n4. Bui Bao (ID 19) - Although productivity is predicted to be slightly lower, it's still considered a declining trend.\n5. Do Phuc (ID 15) - Productivity is actually predicted to increase, not decrease.\n6. Do Chi (ID 4) - Although productivity is predicted to be slightly lower, it's still considered a declining trend.\n7. Pham Anh (ID 24) - Productivity is predicted to be 54.3%, indicating a decline.\n8. Pham Dung (ID 18) - Productivity is predicted to be 54.53%, indicating a decline.\n9. Dang Binh (ID 5) - Although productivity is trending downward, it's not considered a significant decline.\n10. Vu Linh (ID 20) - Despite strong performance, productivity is trending downward.\n11. Pham Hieu (ID 27) - Productivity is predicted to be 48.07%, indicating a decline.\n12. Ho An (ID 7) - Although productivity is trending downward, it's not considered a significant decline.\n13. Dang Dung (ID 12) - Although productivity is trending downward, it's not considered a significant decline.\n14. Nguyen Anh (ID 25) - Despite strong performance, productivity is trending downward.\n15. Dang Anh (ID 10) - Despite strong performance, productivity is trending downward.\n16. Hoang Minh (ID 2) - Productivity is predicted to be 71.84%, indicating a decline.\n17. Le Dung (ID 3) - Although productivity is trending downward, it's not considered a significant decline.\n18. Do Minh (ID 22) - Despite strong performance, productivity is trending downward.\n19. Nguyen Minh (ID 17) - Productivity is predicted to be 60.82%, indicating a decline.\n20. Dang Mai (ID 30) - Despite strong performance, productivity is trending downward.\n21. Tran An (ID 1) - Although productivity is predicted to decrease slightly, it's still considered a declining trend.\n22. Tran Linh (ID 26) - Despite strong performance, productivity is trending downward.\n23. Tran Linh (ID 6) - Productivity is predicted to be 67.6%, indicating a decline.\n24. Pham Anh (ID 11) - Although productivity is trending downward, it's not considered a significant decline.\n\nAs an admin user, Bot Bot can only view the information provided in the knowledge section and cannot provide further analysis or intervention for these employees.",
+      "score": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_ids": [
+          "3",
+          "14",
+          "19",
+          "18",
+          "25",
+          "2",
+          "5",
+          "17",
+          "12",
+          "4",
+          "7",
+          "27",
+          "26",
+          "6",
+          "22",
+          "20",
+          "13",
+          "8",
+          "11",
+          "24",
+          "10",
+          "15",
+          "30",
+          "1"
+        ]
+      },
+      "groundedness": 1.0,
+      "latency": 51.9730498790741,
+      "num_citations": 24
+    },
+    {
+      "question": "Which employees are improving?",
+      "answer": "You can view the employees who are improving in a few ways:\n\n1. From entry [2], Dang Nam (ID 23) is on an improving trajectory, but current productivity is lower than some others.\n2. From entry [3], Tran Nhi (ID 21) and Do Long (ID 29) are both on an improving trend.\n\nNote: Bot Bot cannot determine all employees improving without further information.",
+      "score": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_ids": [
+          "21",
+          "23",
+          "29"
+        ]
+      },
+      "groundedness": 1.0,
+      "latency": 15.704373836517334,
+      "num_citations": 6
+    },
+    {
+      "question": "Which employees are high performers?",
+      "answer": "To find which employees are high performers, the admin can check the provided Knowledge:\n\n1. Employee Ho Nam (ID 9) has current productivity of 90.83% and is predicted to be 88.84%, indicating an improving trend.\n2. Employee Dang Mai (ID 30) has current productivity of 91.25% but is trending downward, despite being a high performer.\n3. Employee Dang Anh (ID 10) has current productivity of 95.4% but is also trending downward, despite being a high performer.\n4. Employee Nguyen Anh (ID 25) has current productivity of 99.27% and is trending downward, despite being a high performer.\n5. Employee Tran Nhi (ID 21) has current productivity of 66.67% but is predicted to be 91.11%, indicating an improving trend.\n\nThe admin can see that all employees in the Knowledge are considered high performers.",
+      "score": {
+        "precision": 1.0,
+        "recall": 0.45454545454545453,
+        "f1": 0.625,
+        "predicted_ids": [
+          "21",
+          "10",
+          "30",
+          "25",
+          "9"
+        ]
+      },
+      "groundedness": 1.0,
+      "latency": 20.313329935073853,
+      "num_citations": 5
+    },
+    {
+      "question": "Who are average?",
+      "answer": "The concept of \"average\" isn't directly related to the provided Knowledge text, but it seems to be referring to the productivity levels mentioned in the entries.\n\nTo determine who are average, we can look for entries where the performance level is explicitly stated as Average. Here's what Bot Bot found:\n\n* Employee Do Dat (ID 8) has a current productivity of 62.5% and predicts a decline.\n* Employee Ho Nam (ID 13) has a current productivity of 73.41%, but this isn't described as average, it's actually above the others.\n* Employee Do Dung (ID 14) has a current productivity of 46.04%.\n* Employee Bui Bao (ID 19) has a current productivity of 57.5%.\n* Employee Do Phuc (ID 15) has a current productivity of 54.44%.\n* Employee Do Chi (ID 4) has a current productivity of 57.48%.\n* Employee Pham Anh (ID 24) has a current productivity of 56.94%.\n* Employee Pham Dung (ID 18) has a current productivity of 57.27%.\n* Employee Pham Hieu (ID 27) has a current productivity of 53.26%.\n\nFrom these entries, we can see that the following employees have their performance level explicitly stated as Average:\n\n1. Do Dat (ID 8)\n2. Do Dung (ID 14)\n3. Bui Bao (ID 19)\n4. Do Phuc (ID 15)\n5. Do Chi (ID 4)\n6. Pham Anh (ID 24)\n7. Pham Dung (ID 18)\n8. Pham Hieu (ID 27)",
+      "score": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "predicted_ids": [
+          "27",
+          "14",
+          "24",
+          "19",
+          "15",
+          "18",
+          "4",
+          "13",
+          "8"
+        ]
+      },
+      "groundedness": 1.0,
+      "latency": 29.43942093849182,
+      "num_citations": 9
+    },
+    {
+      "question": "Which excellent employees are declining?",
+      "answer": "You can see which employees are declining by looking at their current and predicted productivities.\n\n1. Employee Vu Linh (ID 20) has a current productivity of 100.0% and predicted productivity of 91.69%, indicating a declining trend.\n2. Employee Nguyen Anh (ID 25) has a current productivity of 99.27% and predicted productivity of 89.75%, indicating a declining trend.\n3. Employee Dang Anh (ID 10) has a current productivity of 95.4% and predicted productivity of 85.35%, indicating a declining trend.\n4. Employee Do Minh (ID 22) has a current productivity of 94.86% and predicted productivity of 85.47%, indicating a declining trend.\n5. Employee Dang Mai (ID 30) has a current productivity of 91.25% and predicted productivity of 83.2%, indicating a declining trend.\n6. Employee Tran An (ID 1) has a current productivity of 89.69% and predicted productivity of 89.73%, indicating a declining trend, but with almost identical values.\n\nNote: These are the only employees mentioned in the Knowledge section as having declining productivities.",
+      "score": {
+        "precision": 1.0,
+        "recall": 0.75,
+        "f1": 0.8571428571428571,
+        "predicted_ids": [
+          "10",
+          "30",
+          "22",
+          "25",
+          "20",
+          "1"
+        ]
+      },
+      "groundedness": 1.0,
+      "latency": 24.157132863998413,
+      "num_citations": 8
+    },
+    {
+      "question": "Give team overview",
+      "answer": "You can view the current team overview by looking at the Team Productivity Overview Report. This report provides a summary of the team's performance, including:\n\n1. Total employees: 30\n2. Declining employees: 24 (80% of the team)\n3. Improving employees: 6 (20% of the team)\n4. High performers (Excellent level): 11\n\nThe overall team health is critical, indicating that a majority of employees are declining in productivity.",
+      "score": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "groundedness": 0.2,
+      "latency": 14.116483926773071,
+      "num_citations": 1
+    },
+    {
+      "question": "Ai \u0111ang t\u0103ng n\u0103ng su\u1ea5t?",
+      "answer": "Bot Bot kh\u00f4ng c\u00f3 th\u00f4ng tin v\u1ec1 n\u0103ng su\u1ea5t t\u1ed5ng th\u1ec3 c\u1ee7a h\u1ec7 th\u1ed1ng. Tuy nhi\u00ean, d\u1ef1a tr\u00ean d\u1eef li\u1ec7u trong Knowledge, c\u00f3 m\u1ed9t s\u1ed1 nh\u00e2n vi\u00ean \u0111ang t\u0103ng n\u0103ng su\u1ea5t:\n\n- Dang Nam (ID 23): N\u0103ng su\u1ea5t d\u1ef1 \u0111o\u00e1n s\u1ebd l\u00e0 69.53%, ch\u1ec9 cao h\u01a1n 6% so v\u1edbi m\u1ee9c hi\u1ec7n t\u1ea1i.\n- Do Long (ID 29): N\u0103ng su\u1ea5t d\u1ef1 \u0111o\u00e1n s\u1ebd l\u00e0 79.09%, ch\u1ec9 cao h\u01a1n 9.12% so v\u1edbi m\u1ee9c hi\u1ec7n t\u1ea1i.\n- Ho Nam (ID 9): N\u0103ng su\u1ea5t d\u1ef1 \u0111o\u00e1n s\u1ebd l\u00e0 88.84%, ch\u1ec9 th\u1ea5p h\u01a1n 2% so v\u1edbi m\u1ee9c hi\u1ec7n t\u1ea1i.\n- Tran Nhi (ID 21): N\u0103ng su\u1ea5t d\u1ef1 \u0111o\u00e1n s\u1ebd l\u00e0 91.11%, cao h\u01a1n 24.44% so v\u1edbi m\u1ee9c hi\u1ec7n t\u1ea1i.\n- Le Nam (ID 28): N\u0103ng su\u1ea5t d\u1ef1 \u0111o\u00e1n s\u1ebd l\u00e0 69.91%, ch\u1ec9 cao h\u01a1n 5.27% so v\u1edbi m\u1ee9c hi\u1ec7n t\u1ea1i.\n\nBot Bot kh\u00f4ng th\u1ec3 cung c\u1ea5p th\u00f4ng tin v\u1ec1 n\u0103ng su\u1ea5t t\u1ed5ng th\u1ec3 c\u1ee7a h\u1ec7 th\u1ed1ng v\u00ec d\u1eef li\u1ec7u kh\u00f4ng \u0111\u01b0\u1ee3c cung c\u1ea5p trong Knowledge.",
+      "score": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "predicted_ids": [
+          "28",
+          "29",
+          "21",
+          "23",
+          "9"
+        ]
+      },
+      "groundedness": 1.0,
+      "latency": 21.87937617301941,
+      "num_citations": 5
+    },
+    {
+      "question": "Nh\u1eefng nh\u00e2n vi\u00ean n\u00e0o \u0111ang gi\u1ea3m n\u0103ng su\u1ea5t?",
+      "answer": "B\u1ea1n c\u00f3 th\u1ec3 xem danh s\u00e1ch nh\u00e2n vi\u00ean \u0111ang gi\u1ea3m n\u0103ng su\u1ea5t nh\u01b0 sau:\n\n1. Do Dat (ID 8)\n2. Ho Nam (ID 13)\n3. Do Dung (ID 14)\n4. Bui Bao (ID 19)\n5. Do Phuc (ID 15)\n6. Do Chi (ID 4)\n7. Pham Anh (ID 24)\n8. Pham Dung (ID 18)\n\nNh\u1eefng nh\u00e2n vi\u00ean n\u00e0y \u0111ang c\u00f3 xu h\u01b0\u1edbng gi\u1ea3m n\u0103ng su\u1ea5t, nh\u01b0ng Bot Bot kh\u00f4ng th\u1ec3 x\u00e1c \u0111\u1ecbnh m\u1ee9c \u0111\u1ed9 gi\u1ea3m n\u0103ng su\u1ea5t c\u1ee5 th\u1ec3 v\u00ec th\u00f4ng tin v\u1ec1 t\u0103ng tr\u01b0\u1edfng kh\u00f4ng \u0111\u01b0\u1ee3c cung c\u1ea5p trong Knowledge.",
+      "score": {
+        "precision": 1.0,
+        "recall": 0.3333333333333333,
+        "f1": 0.5,
+        "predicted_ids": [
+          "14",
+          "24",
+          "19",
+          "15",
+          "18",
+          "4",
+          "13",
+          "8"
+        ]
+      },
+      "groundedness": 1.0,
+      "latency": 24.617915868759155,
+      "num_citations": 24
+    },
+    {
+      "question": "Who needs intervention?",
+      "answer": "Based on the provided Knowledge, employees who are at risk and may need intervention are:\n\n1. Do Dung (ID 14)\n2. Do Phuc (ID 15)\n3. Do Chi (ID 4)\n4. Bui Bao (ID 19)\n5. Ho Nam (ID 13)\n\nThese employees have a declining trend in their productivity, and according to the model, they are at risk of needing intervention.\n\nAs an admin user, you can monitor these employees' productivity trends and take necessary actions if required.\n\nNote: The knowledge does not specify what kind of intervention is needed or who should perform it.",
+      "score": {
+        "precision": 1.0,
+        "recall": 0.5555555555555556,
+        "f1": 0.7142857142857143,
+        "predicted_ids": [
+          "14",
+          "19",
+          "15",
+          "4",
+          "13"
+        ]
+      },
+      "groundedness": 1.0,
+      "latency": 16.941723108291626,
+      "num_citations": 5
+    },
+    {
+      "question": "Which employees got promoted?",
+      "answer": "It is not covered in the Knowledge section whether any employees got promoted or not. The provided information only includes current and predicted productivity levels, performance levels, and trajectories for specific employees, but it does not mention promotions.",
+      "score": {
+        "precision": 0.2222222222222222,
+        "recall": 0.2222222222222222,
+        "f1": 0.2222222222222222
+      },
+      "groundedness": 1.0,
+      "latency": 12.740381956100464,
+      "num_citations": 5
+    }
+  ]
+}
