@@ -1,0 +1,93 @@
+{
+  "seed": 46,
+  "training_cutoff": "2026-04-29",
+  "split_dates": {
+    "train_end": "2025-10-31",
+    "val_end": "2026-01-31"
+  },
+  "set_sizes": {
+    "train": 59010,
+    "val": 1770,
+    "test": 1890
+  },
+  "lookback": 14,
+  "n_features": 27,
+  "features": [
+    "user_id_norm",
+    "score_vs_baseline",
+    "hours_worked",
+    "is_late",
+    "checked_in",
+    "had_day_off",
+    "tasks_completed",
+    "avg_task_score",
+    "avg_task_percentage",
+    "is_late_rate_7d",
+    "is_late_rate_14d",
+    "checked_in_rate_7d",
+    "checked_in_rate_14d",
+    "had_day_off_rate_7d",
+    "had_day_off_rate_14d",
+    "has_task_signal",
+    "task_workload",
+    "checkin_streak",
+    "score_yesterday",
+    "score_3d_ago",
+    "score_7d_ago",
+    "score_delta_1d",
+    "score_delta_7d",
+    "score_avg_7d",
+    "score_avg_14d",
+    "score_std_7d",
+    "day_of_week"
+  ],
+  "class_thresholds": {
+    "low_max": 50,
+    "high_min": 80
+  },
+  "model": {
+    "layers": [
+      "LSTM(64)",
+      "Dropout(0.3)",
+      "LSTM(32)",
+      "Dropout(0.3)",
+      "Dense(16, relu)",
+      "Dense(3, softmax)"
+    ],
+    "n_params": 36547
+  },
+  "optimizer": {
+    "name": "Adam",
+    "lr": 0.0005,
+    "clipnorm": 1.0
+  },
+  "loss": "sparse_categorical_crossentropy",
+  "batch_size": 128,
+  "max_epochs": 120,
+  "callbacks": [
+    "EarlyStopping(patience=15)",
+    "ReduceLROnPlateau(factor=0.5, patience=5)"
+  ],
+  "class_weights": {
+    "0": 3.3537936913895994,
+    "1": 0.8463855421686747,
+    "2": 0.6577495402106671
+  },
+  "training_results": {
+    "epochs_ran": 53,
+    "best_val_loss": 0.6966345310211182,
+    "best_val_acc": 0.709039568901062,
+    "best_train_acc": 0.7499746084213257,
+    "test_accuracy": 0.7058200836181641,
+    "test_loss": 0.6914335489273071,
+    "elapsed_seconds": 759.9
+  },
+  "environment": {
+    "python": "3.10.12",
+    "tensorflow": "2.15.0",
+    "numpy": "1.26.4",
+    "pandas": "2.3.3",
+    "platform": "Linux-6.8.0-110-generic-x86_64-with-glibc2.35"
+  },
+  "timestamp": "2026-05-02T08:49:43.899196Z"
+}
