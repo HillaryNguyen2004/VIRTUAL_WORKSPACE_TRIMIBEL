@@ -1,67 +1,98 @@
 """
-LSTM Productivity Predictor — NEXT-DAY FORECAST
-================================================
+LSTM Productivity Predictor — NEXT-DAY FORECAST (Thesis logging version)
+========================================================================
 
-  • Window: features from days [t-13 .. t]   (14 days, ending today)
-  • Target: TOMORROW's class   (Low / Medium / High)
-  • Use:    "Given the past two weeks of behavior including today,
-             forecast tomorrow's productivity level."
+Adds to the standard training script:
+  • Command-line --seed argument (deterministic runs)
+  • Per-epoch history saved as CSV (for learning-curve figure)
+  • Configuration snapshot saved as JSON
+  • Wall-clock time tracked
 
-Thesis story:
-  This is a true forecasting model — the productivity score for the
-  prediction date is unknown to the model at training time.
-  Random Forest ceiling on this dataset: ~69% accuracy.
-  Naive baseline ("tomorrow's class = today's class"): ~66%.
-  LSTM target: 67-72%. The small uplift over naive is the genuine
-  learnable signal in the time series.
+Usage:
+    python3 train_lstm_nextday_logged.py --seed 42
 
-Stability fixes vs prior version:
-  • Flat learning rate + ReduceLROnPlateau (was cyclical LR)
-  • No artificial Low-class weight boost
-  • Larger batch (128) for smoother gradients
-  • ARIMA features replaced with rolling-mean rates
+All artefacts for one run are written to:
+    runs/seed_{SEED}/
+        ├── lstm_productivity.keras
+        ├── scaler.pkl
+        ├── baseline.pkl
+        ├── history.csv          # per-epoch loss, accuracy, lr
+        └── config.json          # all hyperparameters + environment info
 """
+
+import argparse
+import json
+import os
+import platform
+import random
+import sys
+import time
+from datetime import date, datetime
 
 import numpy as np
 import pandas as pd
 import psycopg2
 import joblib
-import os
-import sys
-from datetime import date
-
+import tensorflow as tf
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.utils.class_weight import compute_class_weight
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout, Input
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, CSVLogger
 from tensorflow.keras.optimizers import Adam
 
 sys.path.append('../etl')
 from config import PG_CONFIG
 
-os.makedirs("models", exist_ok=True)
+# ════════════════════════════════════════════════════════════
+# CLI
+# ════════════════════════════════════════════════════════════
+parser = argparse.ArgumentParser()
+parser.add_argument('--seed', type=int, default=42, help='Random seed')
+parser.add_argument('--cutoff', type=str, default='2026-04-29',
+                    help='Training data cutoff date (YYYY-MM-DD). Locked for reproducibility.')
+args = parser.parse_args()
+
+SEED            = args.seed
+TRAINING_CUTOFF = date.fromisoformat(args.cutoff)
+
+# Output directory for this run
+RUN_DIR = f"runs/seed_{SEED}"
+os.makedirs(RUN_DIR, exist_ok=True)
 
 # ════════════════════════════════════════════════════════════
-# SEED — canonical model seed (must match thesis tables & dashboard)
+# Determinism
 # ════════════════════════════════════════════════════════════
-import random, tensorflow as tf
-SEED = 43
-random.seed(SEED); np.random.seed(SEED); tf.random.set_seed(SEED)
+random.seed(SEED)
+np.random.seed(SEED)
+tf.random.set_seed(SEED)
+os.environ['PYTHONHASHSEED'] = str(SEED)
+
+print(f"=" * 60)
+print(f"  RUN — seed={SEED} | cutoff={TRAINING_CUTOFF}")
+print(f"=" * 60)
+
+start_time = time.time()
 
 # ════════════════════════════════════════════════════════════
-# 1. PULL DATA
+# 1. PULL DATA FROM POSTGRESQL
 # ════════════════════════════════════════════════════════════
-print("Fetching data from DW...")
-TRAINING_CUTOFF = date.today()
-print(f"Training cutoff: {TRAINING_CUTOFF}")
-
+print("\n[1/9] Fetching data from DW...")
 pg_conn = psycopg2.connect(**PG_CONFIG)
+
 df = pd.read_sql("""
-    SELECT e.user_id, d.full_date,
-           f.hours_worked, f.is_late, f.checked_in, f.had_day_off,
-           f.tasks_completed, f.avg_task_score, f.avg_task_percentage,
-           f.productivity_score
+    SELECT
+        e.user_id,
+        e.name          AS employee_name,
+        d.full_date,
+        f.hours_worked,
+        f.is_late,
+        f.checked_in,
+        f.had_day_off,
+        f.tasks_completed,
+        f.avg_task_score,
+        f.avg_task_percentage,
+        f.productivity_score
     FROM fact_employee_productivity f
     JOIN dim_employee e ON f.employee_sk = e.employee_sk
     JOIN dim_date     d ON f.date_sk     = d.date_sk
@@ -69,13 +100,14 @@ df = pd.read_sql("""
     ORDER BY e.user_id, d.full_date ASC
 """, pg_conn, params={"cutoff": TRAINING_CUTOFF})
 pg_conn.close()
-print(f"Loaded {len(df)} rows for {df['user_id'].nunique()} employees.")
+print(f"   Loaded {len(df)} rows for {df['user_id'].nunique()} employees.")
 
 df['full_date'] = pd.to_datetime(df['full_date'])
 
 # ════════════════════════════════════════════════════════════
-# 1.5  PERSONAL BASELINE
+# 2. PERSONAL BASELINE
 # ════════════════════════════════════════════════════════════
+print("\n[2/9] Computing personal baselines...")
 train_baseline_cutoff = pd.Timestamp('2025-10-31')
 baseline = (
     df[df['full_date'] <= train_baseline_cutoff]
@@ -92,13 +124,12 @@ df['score_vs_baseline'] = (
 user_ids = sorted(df['user_id'].unique())
 uid_map  = {uid: i / len(user_ids) for i, uid in enumerate(user_ids)}
 df['user_id_norm'] = df['user_id'].map(uid_map)
-
-joblib.dump(baseline, "models/baseline_nextday.pkl")
-print("Baseline saved → models/baseline_nextday.pkl")
+joblib.dump(baseline, f"{RUN_DIR}/baseline.pkl")
 
 # ════════════════════════════════════════════════════════════
-# 2.  FEATURE ENGINEERING
+# 3. FEATURE ENGINEERING
 # ════════════════════════════════════════════════════════════
+print("\n[3/9] Engineering features...")
 LOOKBACK = 14
 TARGET   = 'productivity_score'
 
@@ -107,6 +138,7 @@ df['checked_in']  = df['checked_in'].astype(int)
 df['had_day_off'] = df['had_day_off'].astype(int)
 
 g = df.groupby('user_id', group_keys=False)
+
 for col in ['is_late', 'checked_in', 'had_day_off']:
     df[f'{col}_rate_7d']  = g[col].transform(lambda x: x.shift(1).rolling(7,  min_periods=1).mean())
     df[f'{col}_rate_14d'] = g[col].transform(lambda x: x.shift(1).rolling(14, min_periods=1).mean())
@@ -148,22 +180,21 @@ FEATURES = [
     'score_avg_7d', 'score_avg_14d', 'score_std_7d',
     'day_of_week',
 ]
-print(f"Features: {len(FEATURES)}")
+print(f"   {len(FEATURES)} features prepared.")
 
 # ════════════════════════════════════════════════════════════
-# 3.  SCALE
+# 4. SCALE
 # ════════════════════════════════════════════════════════════
+print("\n[4/9] Scaling features...")
 scaler = MinMaxScaler()
 all_cols = FEATURES + [TARGET]
 df[all_cols] = scaler.fit_transform(df[all_cols])
-joblib.dump(scaler, "models/scaler_nextday.pkl")
-print("Scaler saved → models/scaler_nextday.pkl")
+joblib.dump(scaler, f"{RUN_DIR}/scaler.pkl")
 
 # ════════════════════════════════════════════════════════════
-# 4.  BUILD SEQUENCES — NEXT-DAY TARGET
-#       Window: days [i-LOOKBACK+1 .. i]   (last day = today)
-#       Target: productivity_score on day i+1 (tomorrow)
+# 5. BUILD SEQUENCES — NEXT-DAY TARGET
 # ════════════════════════════════════════════════════════════
+print("\n[5/9] Building sequences (next-day target)...")
 X_list, y_list, date_list = [], [], []
 for user_id, group in df.groupby('user_id'):
     group = group.sort_values('full_date').reset_index(drop=True)
@@ -175,16 +206,13 @@ for user_id, group in df.groupby('user_id'):
     for i in range(LOOKBACK - 1, len(group) - 1):
         X_list.append(feat_vals[i - LOOKBACK + 1 : i + 1, :])
         y_list.append(targ_vals[i + 1])
-        date_list.append(dates[i + 1])  # date of the target
+        date_list.append(dates[i + 1])
 
 X = np.array(X_list)
 y_scaled = np.array(y_list)
 date_idx = pd.Series([pd.Timestamp(d) for d in date_list])
-print(f"Sequences → X: {X.shape}, y: {y_scaled.shape}")
 
-# ════════════════════════════════════════════════════════════
-# 5.  CONVERT y → CLASS INDICES
-# ════════════════════════════════════════════════════════════
+# Convert y → class indices
 def to_class_idx(score):
     if score >= 80: return 2
     if score >= 50: return 1
@@ -195,11 +223,14 @@ score_min  = scaler.data_min_[target_idx]
 score_max  = scaler.data_max_[target_idx]
 y_raw = y_scaled * (score_max - score_min) + score_min
 y     = np.array([to_class_idx(s) for s in y_raw])
-print(f"Class dist: Low={int((y==0).sum())} | Med={int((y==1).sum())} | High={int((y==2).sum())}")
+
+print(f"   X: {X.shape} | y: {y.shape}")
+print(f"   Class dist — Low:{int((y==0).sum())} Med:{int((y==1).sum())} High:{int((y==2).sum())}")
 
 # ════════════════════════════════════════════════════════════
-# 6.  TIME-BASED SPLIT
+# 6. SPLIT
 # ════════════════════════════════════════════════════════════
+print("\n[6/9] Splitting (time-based)...")
 train_end = pd.Timestamp('2025-10-31')
 val_end   = pd.Timestamp('2026-01-31')
 train_mask = date_idx <= train_end
@@ -209,18 +240,16 @@ test_mask  = date_idx > val_end
 X_train, y_train = X[train_mask], y[train_mask]
 X_val,   y_val   = X[val_mask],   y[val_mask]
 X_test,  y_test  = X[test_mask],  y[test_mask]
-print(f"Train: {len(X_train)} | Val: {len(X_val)} | Test: {len(X_test)}")
+print(f"   Train: {len(X_train)} | Val: {len(X_val)} | Test: {len(X_test)}")
 
-# ════════════════════════════════════════════════════════════
-# 7.  CLASS WEIGHTS
-# ════════════════════════════════════════════════════════════
+# Class weights (balanced)
 weights = compute_class_weight('balanced', classes=np.array([0,1,2]), y=y_train)
 class_weight_dict = {0: weights[0], 1: weights[1], 2: weights[2]}
-print(f"Class weights: Low={weights[0]:.2f} | Med={weights[1]:.2f} | High={weights[2]:.2f}")
 
 # ════════════════════════════════════════════════════════════
-# 8.  MODEL
+# 7. MODEL
 # ════════════════════════════════════════════════════════════
+print("\n[7/9] Building model...")
 model = Sequential([
     Input(shape=(LOOKBACK, len(FEATURES))),
     LSTM(64, return_sequences=True),
@@ -230,70 +259,89 @@ model = Sequential([
     Dense(16, activation='relu'),
     Dense(3,  activation='softmax'),
 ])
-
 model.compile(
     optimizer=Adam(learning_rate=5e-4, clipnorm=1.0),
     loss='sparse_categorical_crossentropy',
     metrics=['accuracy'],
 )
-model.summary()
-
-early_stop = EarlyStopping(
-    monitor='val_loss',
-    patience=15,
-    restore_best_weights=True,
-    verbose=1,
-)
-reduce_lr = ReduceLROnPlateau(
-    monitor='val_loss',
-    factor=0.5,
-    patience=5,
-    min_lr=1e-6,
-    verbose=1,
-)
+n_params = model.count_params()
+print(f"   Total parameters: {n_params:,}")
 
 # ════════════════════════════════════════════════════════════
-# 9.  TRAIN
+# 8. TRAIN
 # ════════════════════════════════════════════════════════════
-print("\nTraining LSTM (next-day forecast)...")
+print("\n[8/9] Training...")
+early_stop = EarlyStopping(monitor='val_loss', patience=15, restore_best_weights=True, verbose=1)
+reduce_lr  = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=1e-6, verbose=1)
+csv_log    = CSVLogger(f"{RUN_DIR}/history.csv", append=False)
+
 history = model.fit(
     X_train, y_train,
     validation_data=(X_val, y_val),
     epochs=120,
     batch_size=128,
-    callbacks=[early_stop, reduce_lr],
+    callbacks=[early_stop, reduce_lr, csv_log],
     # class_weight=class_weight_dict,
-    verbose=1,
+    verbose=2,
 )
 
-if len(X_test) > 0:
-    test_loss, test_acc = model.evaluate(X_test, y_test, verbose=0)
-    print(f"\n📊 Test set performance:")
-    print(f"   Test loss:     {test_loss:.4f}")
-    print(f"   Test accuracy: {test_acc*100:.2f}%")
-
 # ════════════════════════════════════════════════════════════
-# 10. SAVE + REPORT
+# 9. SAVE + REPORT
 # ════════════════════════════════════════════════════════════
-model.save("models/lstm_productivity_nextday.keras")
+print("\n[9/9] Saving artefacts...")
+model.save(f"{RUN_DIR}/lstm_productivity.keras")
 
-best_val_loss = min(history.history['val_loss'])
-best_val_acc  = max(history.history['val_accuracy'])
-train_acc     = max(history.history['accuracy'])
-epochs_ran    = len(history.history['loss'])
+test_loss, test_acc = model.evaluate(X_test, y_test, verbose=0)
+elapsed = time.time() - start_time
 
-print(f"\n✅ Model saved → models/lstm_productivity_nextday.keras")
-print(f"   Epochs run     : {epochs_ran}")
-print(f"   Best val_loss  : {best_val_loss:.4f}")
-print(f"   Best train_acc : {train_acc*100:.2f}%")
-print(f"   Best val_acc   : {best_val_acc*100:.2f}%")
+config_dump = {
+    "seed": SEED,
+    "training_cutoff": str(TRAINING_CUTOFF),
+    "split_dates": {
+        "train_end": "2025-10-31",
+        "val_end":   "2026-01-31",
+    },
+    "set_sizes": {
+        "train": int(len(X_train)),
+        "val":   int(len(X_val)),
+        "test":  int(len(X_test)),
+    },
+    "lookback": LOOKBACK,
+    "n_features": len(FEATURES),
+    "features": FEATURES,
+    "class_thresholds": {"low_max": 50, "high_min": 80},
+    "model": {
+        "layers": ["LSTM(64)", "Dropout(0.3)", "LSTM(32)", "Dropout(0.3)",
+                   "Dense(16, relu)", "Dense(3, softmax)"],
+        "n_params": int(n_params),
+    },
+    "optimizer": {"name": "Adam", "lr": 5e-4, "clipnorm": 1.0},
+    "loss": "sparse_categorical_crossentropy",
+    "batch_size": 128,
+    "max_epochs": 120,
+    "callbacks": ["EarlyStopping(patience=15)", "ReduceLROnPlateau(factor=0.5, patience=5)"],
+    "class_weights": {str(k): float(v) for k, v in class_weight_dict.items()},
+    "training_results": {
+        "epochs_ran":  len(history.history['loss']),
+        "best_val_loss": float(min(history.history['val_loss'])),
+        "best_val_acc":  float(max(history.history['val_accuracy'])),
+        "best_train_acc": float(max(history.history['accuracy'])),
+        "test_accuracy": float(test_acc),
+        "test_loss": float(test_loss),
+        "elapsed_seconds": round(elapsed, 1),
+    },
+    "environment": {
+        "python":     platform.python_version(),
+        "tensorflow": tf.__version__,
+        "numpy":      np.__version__,
+        "pandas":     pd.__version__,
+        "platform":   platform.platform(),
+    },
+    "timestamp": datetime.utcnow().isoformat() + "Z",
+}
 
-overfit_gap = train_acc - best_val_acc
-print(f"   Overfit gap    : {overfit_gap*100:.2f}%")
-if overfit_gap > 0.10:
-    print("   ⚠️  Overfit detected.")
-else:
-    print("   ✅ No significant overfit.")
+with open(f"{RUN_DIR}/config.json", "w") as f:
+    json.dump(config_dump, f, indent=2)
 
-print("\nNote: The next-day forecast ceiling on this dataset is ~70% (RF baseline).")
-print("Naive 'tomorrow = today' baseline is ~66%. Anything in 67-72% is meaningful.")
+print(f"\n✅ DONE — seed={SEED} | test_acc={test_acc*100:.2f}% | epochs={len(history.history['loss'])} | {elapsed:.1f}s")
+print(f"   Artefacts → {RUN_DIR}/")
