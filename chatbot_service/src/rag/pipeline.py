@@ -264,17 +264,22 @@ def retrieve_passages(
     plan: RetrievalPlan,
     workspace_id: Optional[str],
     should_cancel: Optional[Callable[[], bool]] = None,
+    src_lang: Optional[str] = None,
+    history: Optional[List[Dict[str, Any]]] = None,
 ) -> List[Dict[str, Any]]:
     if plan.mode == "none":
         return []
 
-    # aggregation already pre-expanded k
+    is_aggregation = plan.mode == "aggregation"
     return retrieve(
-        user_q if plan.mode != "aggregation" else "",
+        "" if is_aggregation else user_q,
         k=plan.k,
         workspace_id=workspace_id,
         where=plan.where or {},
         should_cancel=should_cancel,
+        expand=not is_aggregation,
+        src_lang=None if is_aggregation else src_lang,
+        history=None if is_aggregation else (history or []),
     )
 
 def summarize_passages(passages, lang, should_cancel: Optional[Callable[[], bool]] = None):
@@ -542,6 +547,8 @@ def answer(
         plan,
         workspace_id,
         should_cancel=should_cancel,
+        src_lang=analysis.lang,
+        history=memory.get_history(),
     )
     ensure_not_cancelled()
 

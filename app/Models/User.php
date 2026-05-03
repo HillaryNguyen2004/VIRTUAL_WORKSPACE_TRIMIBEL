@@ -159,6 +159,13 @@ class User extends Authenticatable implements MustVerifyEmail
             ->withTimestamps();
     }
 
+    public function sharedFolders()
+    {
+        return $this->belongsToMany(PersonalFolder::class, 'personal_folder_shares', 'user_id', 'folder_id')
+            ->withPivot(['permission', 'shared_by'])
+            ->withTimestamps();
+    }
+
     public function delegatablePermissionNames(): array
     {
         return $this->getAllPermissions()->pluck('name')->values()->all();

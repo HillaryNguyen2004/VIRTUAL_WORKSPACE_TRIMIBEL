@@ -25,9 +25,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.rag.chunking import SUPPORTED_EXTENSIONS, iter_data_files, chunk_file
+from src.rag.chunking import SUPPORTED_EXTENSIONS, iter_data_files, chunk_file, prepend_header
 from src.rag.embeddings.ollama import embed_texts
-from src.rag.vectorstores.chroma_store import add_chunks, normalize_workspace_id
+from src.rag.vectorstores.chroma_store import add_chunks, normalize_workspace_id, count_legacy_chunks
 
 os.environ.setdefault("ANONYMIZED_TELEMETRY", "True")
 
@@ -109,9 +109,6 @@ def ingest_workspace_directory(
             # temp path basename only when not provided (e.g. CLI / batch ingest).
             storage_key = (storage_file_name.strip() if storage_file_name and target_file else path.name) or path.name
 
-            # Include user-facing file name in chunk text to improve file-specific retrieval.
-            chunks = [f"File: {display_name}\n{chunk}" for chunk in chunks]
-
             if not chunks:
                 print(f"  Skipped empty: {path.name}", flush=True)
                 results.append({
@@ -130,6 +127,11 @@ def ingest_workspace_directory(
                 m["storage_file"] = storage_key
                 m["locale"] = locale
                 m["workspace_id"] = workspace_scope
+
+            # Rebuild chunk headers now that metadata has the final display_name.
+            # chunk_file() already injected headers using path.name; we replace
+            # them here so the header says "HR Policy.pdf" not "tmp_abc123.pdf".
+            chunks = [prepend_header(chunk, meta) for chunk, meta in zip(chunks, metas)]
 
             # Embed texts
             vectors = embed_texts(chunks)
@@ -167,7 +169,22 @@ def ingest_workspace_directory(
             })
     
     print(f"Done. Total chunks: {total_chunks}", flush=True)
-    
+
+    # Warn if the collection still contains legacy chunks (ingested before the
+    # chunk-header upgrade). Those chunks lack provenance headers and will give
+    # weaker retrieval results. Re-ingest the affected files to fix this.
+    try:
+        legacy = count_legacy_chunks(workspace_id=workspace_scope)
+        if legacy > 0:
+            print(
+                f"\n[WARNING] {legacy} sampled chunk(s) in workspace '{workspace_scope}' "
+                "do not have contextual headers (legacy format). "
+                "Re-ingest those files to improve retrieval accuracy.",
+                flush=True,
+            )
+    except Exception:
+        pass  # never let the notice crash the ingest result
+
     if failed_files > 0:
         return {
             'success': False,
