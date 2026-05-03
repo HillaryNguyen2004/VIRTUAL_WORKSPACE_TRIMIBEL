@@ -1,0 +1,49 @@
+Epoch 98: early stopping
+
+📊 Test set performance (after 2026-01-31):
+   Test loss:     0.8442
+   Test accuracy: 0.6581  (65.8%)
+
+✅ Model saved → models/lstm_productivity.keras
+   Epochs run     : 98
+   Best val_loss  : 0.8495
+   Best train_acc : 0.6878  (68.8%)
+   Best val_acc   : 0.6441  (64.4%)
+   Overfit gap    : 0.0437 (train − val accuracy)
+   ✅ No significant overfit detected.
+   Quality        : POOR — review data or features
+
+(venv) ry@ry-Inspiron-5584:/opt/lampp/htdocs/DO_AN_CHUYEN_NGANH/ml$ python3 evaluate_classifier.py
+2026-04-28 17:44:16.411349: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+Evaluating on 1860 test sequences (target date > 2026-01-31)
+
+==================================================
+CONFUSION MATRIX
+==================================================
+              Pred Low Pred Medium   Pred High
+   Act Low         143          53          30
+Act Medium         183         410         215
+  Act High          64          91         671
+
+==================================================
+PER-CLASS METRICS  (β = 1, balanced F1)
+==================================================
+Class       Precision     Recall         F1    Support
+--------------------------------------------------
+Low             0.367      0.633      0.464        226
+Medium          0.740      0.507      0.602        808
+High            0.733      0.812      0.770        826
+
+==================================================
+SUMMARY
+==================================================
+  Accuracy : 0.658  (65.8%)
+  Macro F1 : 0.612
+
+==================================================
+TRUSTWORTHINESS VERDICT
+==================================================
+  Macro F1 = 0.612  →  POOR — retrain or review data before using
+  Accuracy = 65.8%
+(venv) ry@ry-Inspiron-5584:/opt/lampp/htdocs/DO_AN_CHUYEN_NGANH/ml$ 
