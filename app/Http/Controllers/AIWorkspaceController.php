@@ -126,10 +126,18 @@ class AIWorkspaceController extends Controller
     {
         $this->authorize('upload', $workspace);
 
-        $allowedMimes = implode(',', AIWorkspaceFile::supportedFormats());
-
-        $validated = $request->validate([
-            'files.*' => 'required|file|mimes:' . $allowedMimes . '|max:524288', // 512MB max file size
+        $request->validate([
+            'files.*' => [
+                'required',
+                'file',
+                'max:524288',
+                function ($attribute, $value, $fail) {
+                    $ext = strtolower($value->getClientOriginalExtension());
+                    if (!AIWorkspaceFile::isSupportedFormat($ext)) {
+                        $fail("File type '{$ext}' is not supported. Supported: " . implode(', ', AIWorkspaceFile::supportedFormats()));
+                    }
+                },
+            ],
         ]);
 
         $files = $request->file('files', []);
@@ -139,7 +147,7 @@ class AIWorkspaceController extends Controller
             $files = [$files];
         }
 
-        $result = $this->workspaceService->uploadFiles($workspace, $files);
+        $result = $this->workspaceService->uploadFiles($workspace, $files, auth()->id());
 
         $message = __(
             'ai.files_uploaded',
@@ -173,7 +181,7 @@ class AIWorkspaceController extends Controller
     /**
      * Ingest files in workspace
      */
-    public function ingestFiles(Request $request, AIWorkspace $workspace)
+    public function ingestFiles(AIWorkspace $workspace)
     {
         $this->authorize('ingest', $workspace);
 
@@ -194,12 +202,38 @@ class AIWorkspaceController extends Controller
     }
 
     /**
+     * Re-ingest a single file (retry for pending/failed files)
+     */
+    public function ingestSingleFile(AIWorkspaceFile $file)
+    {
+        $workspace = $file->workspace;
+        $this->authorize('ingest', $workspace);
+
+        if (!in_array($file->ingest_status, ['pending', 'failed'])) {
+            return back()->with('warning', __('ai.file_not_eligible_for_ingest'));
+        }
+
+        @set_time_limit(self::INGEST_MAX_EXECUTION_TIME);
+
+        try {
+            $result = $this->workspaceService->ingestSingleFile($workspace, $file);
+            $message = $result['status'] === 'completed'
+                ? __('ai.ingest_completed', ['count' => 1])
+                : __('ai.ingest_failed_single', ['name' => $file->original_name]);
+
+            $sessionKey = $result['status'] === 'completed' ? 'success' : 'warning';
+            return back()->with($sessionKey, $message);
+        } catch (\Exception $e) {
+            return back()->with('warning', __('ai.ingest_failed_single', ['name' => $file->original_name]));
+        }
+    }
+
+    /**
      * Delete a file from workspace
      */
     public function deleteFile(AIWorkspaceFile $file)
     {
-        $workspace = $file->workspace;
-        $this->authorize('update', $workspace);
+        $this->authorize('delete', $file);
 
         $this->workspaceService->deleteFile($file);
 

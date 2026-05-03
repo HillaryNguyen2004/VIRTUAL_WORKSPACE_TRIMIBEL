@@ -31,6 +31,7 @@ class AIWorkspaceFile extends Model
 
     protected $fillable = [
         'workspace_id',
+        'uploaded_by',
         'file_name',
         'original_name',
         'file_path',
@@ -54,6 +55,14 @@ class AIWorkspaceFile extends Model
     public function workspace(): BelongsTo
     {
         return $this->belongsTo(AIWorkspace::class);
+    }
+
+    /**
+     * Relationship: The user who uploaded this file
+     */
+    public function uploader(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'uploaded_by');
     }
 
     /**

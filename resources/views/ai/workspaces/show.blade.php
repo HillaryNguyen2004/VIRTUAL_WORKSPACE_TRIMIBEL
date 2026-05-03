@@ -67,15 +67,25 @@
             </div>
         @endif
 
+        @if($errors->any())
+            <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-red-800 text-sm">
+                <ul class="space-y-1">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <!-- Statistics -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in-up">
             <div class="rounded-lg border border-muted-200 bg-white p-4">
                 <div class="text-xs text-muted-600 mb-1">{{ __('ai.total_files') }}</div>
                 <div class="text-2xl font-bold text-main">{{ $stats['total_files'] }}</div>
             </div>
             <div class="rounded-lg border border-muted-200 bg-white p-4">
                 <div class="text-xs text-muted-600 mb-1">{{ __('ai.storage_used') }}</div>
-                <div class="text-2xl font-bold text-main">{{ $stats['storage_used_mb'] }} MB</div>
+                <div class="text-2xl font-bold text-main">{{ formatBytes($stats['storage_size'], 2) }}</div>
             </div>
             <div class="rounded-lg border border-muted-200 bg-white p-4">
                 <div class="text-xs text-muted-600 mb-1">{{ __('ai.total_chunks') }}</div>
@@ -83,7 +93,7 @@
             </div>
             <div class="rounded-lg border border-muted-200 bg-white p-4">
                 <div class="text-xs text-muted-600 mb-1">{{ __('ai.last_ingested') }}</div>
-                <div class="text-sm font-medium text-main">
+                <div class="text-2xl font-medium text-main">
                     @if($workspace->last_ingested_at)
                         {{ $workspace->last_ingested_at->diffForHumans() }}
                     @else
@@ -94,7 +104,7 @@
         </div>
 
         <!-- Upload Section -->
-        <div class="bg-white rounded-2xl border border-muted-200 shadow-sm p-6 md:p-8">
+        <div class="bg-white rounded-2xl border border-muted-200 shadow-sm p-6 md:p-8 animate-fade-in-up [animation-delay:100ms]">
             <h2 class="text-lg md:text-xl font-semibold text-main mb-2">{{ __('ai.upload_files') }}</h2>
             <p class="text-muted-600 text-sm mb-6">{{ __('ai.upload_files_desc') }}</p>
 
@@ -109,8 +119,8 @@
                                 <svg class="mx-auto h-12 w-12 text-muted-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
                                 </svg>
-                                <p class="text-sm font-medium text-muted-700">Kéo thả hoặc bấm để chọn nhiều file</p>
-                                <p class="text-xs text-muted-500 mt-1">{{ __('ai.supported_formats') }}: PDF, TXT, MD, DOCX, PPTX, XLSX, CSV</p>
+                                <p class="text-sm font-medium text-muted-700">{{ __('ai.drag_files') }}</p>
+                                <p class="text-xs text-muted-500 mt-1">{{ __('ai.supported_formats') }}: PDF, TXT, MD, DOCX, XLSX, CSV</p>
                             </div>
                             <input
                                 type="file"
@@ -141,19 +151,43 @@
                     </div>
                 @endif
             @else
-                <p class="text-sm text-muted-600">Bạn chỉ có thể xem và tải file trong workspace này. Chỉ chủ workspace mới được upload và ingest file.</p>
+                <p class="text-sm text-muted-600">
+                    @if($workspace->visibility === 'private')
+                        Workspace này ở chế độ riêng tư. Chỉ chủ workspace mới có thể upload file.
+                    @elseif($workspace->visibility === 'team')
+                        Chỉ thành viên trong team mới có thể upload file vào workspace này.
+                    @else
+                        Bạn không có quyền upload file vào workspace này.
+                    @endif
+                </p>
             @endcan
         </div>
 
         <!-- Ingest Section -->
         @can('ingest', $workspace)
         @if($stats['pending_files'] > 0 || $stats['failed_files'] > 0)
-            <div class="bg-blue-50 rounded-2xl border border-blue-200 p-6 md:p-8">
+            @php
+                $reingestCount = $stats['pending_files'] + $stats['failed_files'];
+            @endphp
+            <div class="bg-blue-50 rounded-2xl border border-blue-200 p-6 md:p-8 animate-fade-in-up [animation-delay:200ms]">
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <h2 class="text-lg font-semibold text-blue-900">{{ __('ai.ingest_required') }}</h2>
                         <p class="text-blue-700 text-sm mt-2">
-                            {{ __('ai.files_pending_ingest', ['count' => $stats['pending_files']]) }}
+                            {{ __('ai.reingest_ready', ['count' => $reingestCount]) }}
+                            @if($stats['pending_files'] > 0 && $stats['failed_files'] > 0)
+                                <span class="block mt-1 text-blue-600">
+                                    {{ $stats['pending_files'] }} {{ __('ai.pending') }}, {{ $stats['failed_files'] }} {{ __('ai.failed') }}
+                                </span>
+                            @elseif($stats['pending_files'] > 0)
+                                <span class="block mt-1 text-blue-600">
+                                    {{ $stats['pending_files'] }} {{ __('ai.pending') }}
+                                </span>
+                            @else
+                                <span class="block mt-1 text-blue-600">
+                                    {{ $stats['failed_files'] }} {{ __('ai.failed') }}
+                                </span>
+                            @endif
                         </p>
                     </div>
                     <form id="ingest-form" action="{{ route('ai-workspaces.ingest', $workspace) }}" method="POST" class="flex-shrink-0">
@@ -173,7 +207,7 @@
         @endcan
 
         <!-- Files List -->
-        <div class="bg-white rounded-2xl border border-muted-200 shadow-sm overflow-hidden">
+        <div class="bg-white rounded-2xl border border-muted-200 shadow-sm overflow-hidden animate-fade-in-up [animation-delay:200ms]">
             <div class="px-6 md:px-8 py-6 border-b border-muted-200">
                 <h2 class="text-lg md:text-xl font-semibold text-main">{{ __('ai.workspace_files') }}</h2>
             </div>
@@ -204,20 +238,21 @@
                                     <td class="px-6 py-4">
                                         <div class="flex items-center gap-3">
                                             <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-muted-100 flex items-center justify-center">
-                                                @if(str_ends_with(strtolower($file->file_name), '.pdf'))
+                                                @if (str_ends_with(strtolower($file->file_name), '.pdf'))
                                                     <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
-                                                @else
+                                                @elseif (str_ends_with(strtolower($file->file_name), '.docx') || str_ends_with(strtolower($file->file_name), '.doc') || str_ends_with(strtolower($file->file_name), '.txt') || str_ends_with(strtolower($file->file_name), '.md'))
                                                     <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
+                                                @elseif (str_ends_with(strtolower($file->file_name), '.xlsx') || str_ends_with(strtolower($file->file_name), '.xls') || str_ends_with(strtolower($file->file_name), '.csv'))
+                                                    <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
                                                 @endif
                                             </div>
                                             <div class="min-w-0">
                                                 <p class="font-medium text-main truncate">{{ $file->original_name }}</p>
-                                                <p class="text-xs text-muted-500">{{ $file->file_name }}</p>
                                             </div>
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 text-muted-600">
-                                        {{ round($file->file_size / 1024, 2) }} KB
+                                        {{ formatBytes($file->file_size, 2) }}
                                     </td>
                                     <td class="px-6 py-4">
                                         @if($file->ingest_status === 'pending')
@@ -234,12 +269,27 @@
                                         {{ $file->chunk_count > 0 ? $file->chunk_count : '-' }}
                                     </td>
                                     <td class="px-6 py-4 text-muted-600 text-xs">
-                                        {{ $file->created_at->format('M d, H:i') }}
+                                        {{ $file->created_at->format('d/m/Y, H:i') }}
                                     </td>
                                     <td class="px-6 py-4 text-right">
                                         <div class="inline-flex items-center gap-3">
                                             {{-- <a href="{{ route('workspace-files.preview', $file) }}" target="_blank"
                                                 class="text-blue-600 hover:text-blue-700 text-xs font-medium">Preview</a> --}}
+                                            @can('ingest', $workspace)
+                                                @if(in_array($file->ingest_status, ['pending', 'failed']))
+                                                    <form action="{{ route('workspace-files.ingest', $file) }}" method="POST" class="inline">
+                                                        @csrf
+                                                        <button type="submit"
+                                                            title="{{ __('ai.retry_ingest') }}"
+                                                            class="p-1.5 rounded-lg text-muted-400 hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+                                                                <polyline points="1 4 1 10 7 10"></polyline>
+                                                                <path d="M3.51 15a9 9 0 1 0 .49-3.86L1 10"></path>
+                                                            </svg>
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                            @endcan
                                             <a href="{{ route('workspace-files.download', $file) }}"
                                                 class="p-1.5 rounded-lg text-muted-400 hover:bg-primary/10 hover:text-primary transition-colors">
                                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
@@ -247,7 +297,7 @@
                                                     <path d="M352 96C352 78.3 337.7 64 320 64C302.3 64 288 78.3 288 96L288 306.7L246.6 265.3C234.1 252.8 213.8 252.8 201.3 265.3C188.8 277.8 188.8 298.1 201.3 310.6L297.3 406.6C309.8 419.1 330.1 419.1 342.6 406.6L438.6 310.6C451.1 298.1 451.1 277.8 438.6 265.3C426.1 252.8 405.8 252.8 393.3 265.3L352 306.7L352 96zM160 384C124.7 384 96 412.7 96 448L96 480C96 515.3 124.7 544 160 544L480 544C515.3 544 544 515.3 544 480L544 448C544 412.7 515.3 384 480 384L433.1 384L376.5 440.6C345.3 471.8 294.6 471.8 263.4 440.6L206.9 384L160 384zM464 440C477.3 440 488 450.7 488 464C488 477.3 477.3 488 464 488C450.7 488 440 477.3 440 464C440 450.7 450.7 440 464 440z"/>
                                                 </svg>
                                             </a>
-                                            @can('update', $workspace)
+                                            @can('delete', $file)
                                                 <form action="{{ route('workspace-files.delete', $file) }}" method="POST" class="inline">
                                                     @csrf
                                                     @method('DELETE')
@@ -281,7 +331,7 @@
 
         <div id="ingest-loading-overlay" class="ingest-loading-overlay hidden" aria-live="polite" aria-busy="true">
             <div class="ingest-spinner"></div>
-            <p class="text-sm font-medium text-slate-700">Loading ingest…</p>
+            <p class="text-sm font-medium text-slate-700">{{ __('ai.loading_ingest') }}</p>
         </div>
     </div>
 
