@@ -296,6 +296,8 @@ def refresh_productivity_vectordb_from_predict_all(
     improving = 0
     stable = 0
     high = 0
+    low = 0
+    at_risk = 0
 
     for item in predictions:
         user_id = str(item.get("user_id") or "")
@@ -305,20 +307,51 @@ def refresh_productivity_vectordb_from_predict_all(
         predicted = item.get("predicted_productivity")
         trend = item.get("trend")
         level = item.get("level") or item.get("predicted_level")
+        predicted_level = item.get("predicted_level")
         confidence = item.get("confidence") or item.get("confidence_score")
         model_version = item.get("model_version")
-        predicted_level = item.get("predicted_level")
         predicted_class = item.get("predicted_class")
         productivity_score = item.get("productivity_score")
         class_probs = item.get("class_probabilities")
         based_on = item.get("based_on_data_through")
         lookback = item.get("lookback")
 
-        # Human-readable doc: concise, consistent structure for retrieval previews
+        # ── New fields from updated predict/all ──
+        behavior_summary   = item.get("behavior_summary") or ""
+        notable_signals    = item.get("notable_signals") or []
+        prediction_rationale = item.get("prediction_rationale") or ""
+
+        # ── Metrics ──
+        metrics      = item.get("metrics") or {}
+        attendance   = metrics.get("attendance") or {}
+        scores       = metrics.get("scores") or {}
+        hours        = metrics.get("hours") or {}
+        tasks        = metrics.get("tasks") or {}
+
+        late_rate_7d        = attendance.get("late_rate_7d")
+        attendance_rate_7d  = attendance.get("attendance_rate_7d")
+        checkin_streak      = attendance.get("checkin_streak")
+        avg_hours_7d        = hours.get("avg_hours_7d")
+        score_trend_slope   = scores.get("score_trend_slope")
+        score_mean_7d       = scores.get("score_mean_7d")
+        avg_task_score_7d   = tasks.get("avg_task_score_7d")
+        avg_task_completion = tasks.get("avg_task_completion_7d")
+        tasks_completed_7d  = tasks.get("tasks_completed_7d")
+
+        # ── Build doc_text ──
+        signals_text = ""
+        if notable_signals:
+            signals_text = " Alerts: " + "; ".join(notable_signals) + "."
+
+        rationale_text = f" {prediction_rationale}" if prediction_rationale else ""
+
         doc_text = (
-            f"{name} (User ID: {user_id}) has a current productivity of {current} "
-            f"and is predicted to reach {predicted} (level: {predicted_level}). "
-            f"Trend: {trend}. Snapshot date: {snapshot_date}."
+            f"{name} (User ID: {user_id}). "
+            f"{behavior_summary}"
+            f"{signals_text}"
+            f" Predicted level: {predicted_level} with {round((confidence or 0) * 100)}% confidence."
+            f"{rationale_text}"
+            f" Snapshot date: {snapshot_date}."
         )
         docs.append(doc_text)
 
@@ -334,9 +367,6 @@ def refresh_productivity_vectordb_from_predict_all(
             "predicted_class": predicted_class,
             "productivity_score": productivity_score,
             "confidence": confidence,
-            # Chroma metadata values must be primitive types. Serialize
-            # complex structures like dicts/lists to JSON strings.
-            "class_probabilities": json.dumps(class_probs) if class_probs is not None else None,
             "trend": trend,
             "model_version": model_version,
             "based_on_data_through": based_on,
@@ -344,6 +374,21 @@ def refresh_productivity_vectordb_from_predict_all(
             "snapshot_date": snapshot_date,
             "month": month_str,
             "year": year,
+            # ── Metrics for filtering ──
+            "attendance_rate_7d": attendance_rate_7d,
+            "late_rate_7d": late_rate_7d,
+            "checkin_streak": checkin_streak,
+            "avg_hours_7d": avg_hours_7d,
+            "score_trend_slope": score_trend_slope,
+            "score_mean_7d": score_mean_7d,
+            "avg_task_score_7d": avg_task_score_7d,
+            "avg_task_completion_7d": avg_task_completion,
+            "tasks_completed_7d": tasks_completed_7d,
+            "has_alerts": len(notable_signals) > 0,
+            "alert_count": len(notable_signals),
+            # ── Serialized complex fields ──
+            "class_probabilities": json.dumps(class_probs) if class_probs is not None else None,
+            "notable_signals": json.dumps(notable_signals) if notable_signals else None,
         }
 
         metas.append(meta)
@@ -351,15 +396,23 @@ def refresh_productivity_vectordb_from_predict_all(
         # Use the prediction target date in the ID so each snapshot is uniquely
         # addressable by user + target date.
         ids.append(f"productivity-{user_id}-{snapshot_date}")
+        
+        t = item.get("trend")
+        l = item.get("level") or item.get("predicted_level")
+        signals = item.get("notable_signals") or []
 
-        if trend == "declining":
+        if t == "declining":
             declining += 1
-        if trend == "improving":
+        if t == "improving":
             improving += 1
-        if trend == "stable":
+        if t == "stable":
             stable += 1
-        if (level or "") == "High":
+        if l == "High":
             high += 1
+        if l == "Low":
+            low += 1
+        if t == "declining" and signals:
+            at_risk += 1
 
     # ===== Team summary =====
     total = len(predictions)
@@ -368,8 +421,13 @@ def refresh_productivity_vectordb_from_predict_all(
     pct_stable = round(stable / total * 100) if total else 0
 
     summary_text = (
-        f"Team productivity overview report. Date: {snapshot_date}.\n"
-        f"Total employees: {total}. Declining: {declining} ({pct_declining}%). Improving: {improving} ({pct_improving}%). Stable: {stable} ({pct_stable}%). High performers (High): {high}."
+        f"Team productivity overview report. Snapshot date: {snapshot_date}. "
+        f"Total employees: {total}. "
+        f"By trend — Declining: {declining} ({pct_declining}%), "
+        f"Improving: {improving} ({pct_improving}%), "
+        f"Stable: {stable} ({pct_stable}%). "
+        f"By level — High performers: {high}, Low performers: {low}. "
+        f"At-risk employees (declining with alerts): {at_risk}."
     )
 
     docs.append(summary_text)
