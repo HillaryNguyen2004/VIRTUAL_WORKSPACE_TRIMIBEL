@@ -7,4 +7,6 @@ return [
     'online_now' => 'Đang hoạt động',
     'type_message' => 'Nhập tin nhắn của bạn...',
     'try_one_of_these' => 'Thử một trong những câu hỏi sau:',
+    'public' => 'Công khai',
+    'productivity_insights' => 'Thông tin năng suất',
 ];

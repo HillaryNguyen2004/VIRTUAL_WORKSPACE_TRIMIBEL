@@ -34,6 +34,8 @@ return [
     'visibility_team_desc' => 'Share with your team members.',
     'visibility_public' => 'Public',
     'visibility_public_desc' => 'Anyone can view this workspace.',
+    'allow_others_upload' => 'Allow others to upload files',
+    'allow_others_upload_desc' => 'When enabled, non-owner users who can access this workspace can upload files.',
 
     // Files & Upload
     'upload_files' => 'Upload files',

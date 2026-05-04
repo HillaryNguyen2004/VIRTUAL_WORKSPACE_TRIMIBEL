@@ -7,4 +7,6 @@ return [
     'online_now' => 'Online now',
     'type_message' => 'Type your message...',
     'try_one_of_these' => 'Try one of these prompts:',
+    'public' => 'Public',
+    'productivity_insights' => 'Productivity insights',
 ];

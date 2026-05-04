@@ -15,7 +15,10 @@ class UserImportService
         $count = 0;
 
         try {
-            $header = fgetcsv($handle); // skip header
+            fgetcsv($handle); // skip header
+
+            // Pre-load all existing emails in one query to avoid N+1 exists() per row
+            $existingEmails = User::pluck('email')->flip()->all();
 
             while (($row = fgetcsv($handle)) !== false) {
                 if (count($row) < 4) continue;
@@ -26,7 +29,7 @@ class UserImportService
                     continue;
                 }
 
-                if (User::where('email', $email)->exists()) {
+                if (isset($existingEmails[$email])) {
                     continue;
                 }
 
@@ -42,6 +45,7 @@ class UserImportService
                     $user->assignRole($roles);
                 }
 
+                $existingEmails[$email] = true; // prevent duplicates within same CSV
                 $count++;
             }
         } finally {
