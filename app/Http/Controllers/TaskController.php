@@ -108,8 +108,7 @@ class TaskController extends Controller
         $defaultLeaderId = null;
 
         if ($parentId) {
-            // Chỉ cần assignee_id
-            $parentTask = Task::find($parentId);
+            $parentTask = Task::with('assignedUsers:id')->find($parentId);
 
             if ($parentTask) {
                 foreach ($parentTask->assignedUsers as $user) {
@@ -285,8 +284,7 @@ class TaskController extends Controller
         $defaultLeaderId = null;
 
         if ($parentId) {
-            // Chỉ cần assignee_id
-            $parentTask = Task::find($parentId);
+            $parentTask = Task::with('assignedUsers:id')->find($parentId);
 
             if ($parentTask) {
                 foreach ($parentTask->assignedUsers as $user) {

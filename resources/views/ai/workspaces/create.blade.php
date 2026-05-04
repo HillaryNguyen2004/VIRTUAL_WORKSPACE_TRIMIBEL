@@ -92,6 +92,23 @@
                             <p class="mt-2 text-sm text-danger">{{ $message }}</p>
                         @enderror
                     </div>
+
+                    {{-- Upload Permission Field --}}
+                    <label class="relative block rounded-xl border border-muted-200 bg-white p-4 md:p-5 cursor-pointer transition-all hover:bg-muted-50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:ring-2 has-[:checked]:ring-primary/20">
+                        <input type="hidden" name="allow_others_upload" value="0">
+                        <div class="flex items-start gap-4">
+                            <input
+                                type="checkbox"
+                                name="allow_others_upload"
+                                value="1"
+                                class="mt-1 h-5 w-5 rounded border-muted-300 text-primary focus:ring-primary accent-primary"
+                                {{ old('allow_others_upload') ? 'checked' : '' }}>
+                            <div class="min-w-0">
+                                <span class="block text-sm font-semibold text-main">{{ __('ai.allow_others_upload') }}</span>
+                                <p class="mt-1 text-xs leading-relaxed text-muted-500">{{ __('ai.allow_others_upload_desc') }}</p>
+                            </div>
+                        </div>
+                    </label>
                 </div>
 
                 {{-- Footer / Submit --}}

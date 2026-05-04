@@ -20,6 +20,7 @@ class AIWorkspace extends Model
         'description',
         'slug',
         'visibility',
+        'allow_others_upload',
         'folder_path',
         'file_count',
         'storage_size',
@@ -28,6 +29,7 @@ class AIWorkspace extends Model
     ];
 
     protected $casts = [
+        'allow_others_upload' => 'boolean',
         'last_ingested_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

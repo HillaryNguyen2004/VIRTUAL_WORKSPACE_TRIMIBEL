@@ -50,6 +50,8 @@ class AIWorkspaceController extends Controller
             'visibility' => 'required|in:private,team,public',
         ]);
 
+        $validated['allow_others_upload'] = $request->boolean('allow_others_upload');
+
         $validated['user_id'] = auth()->id();
 
         $workspace = $this->workspaceService->createWorkspace($validated);
@@ -97,6 +99,8 @@ class AIWorkspaceController extends Controller
             'description' => 'nullable|string|max:1000',
             'visibility' => 'required|in:private,team,public',
         ]);
+
+        $validated['allow_others_upload'] = $request->boolean('allow_others_upload');
 
         $this->workspaceService->updateWorkspace($workspace, $validated);
 

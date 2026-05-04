@@ -1,0 +1,38 @@
+[Unit]
+Description=LSTM Productivity ML API (Flask) — port 5001
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/html/ml
+
+# Load the application's .env (PG_URL, DB credentials, etc.)
+EnvironmentFile=/var/www/html/.env
+
+# TensorFlow CPU-only — suppress warnings
+Environment=TF_CPP_MIN_LOG_LEVEL=2
+Environment=PYTHONPATH=/var/www/html/etl:/var/www/html/ml
+
+ExecStart=/var/www/html/ml/.venv/bin/gunicorn \
+    --bind 127.0.0.1:5001 \
+    --workers 2 \
+    --timeout 120 \
+    --worker-class sync \
+    "api:app"
+
+Restart=always
+RestartSec=15s
+
+# Allow extra time for Keras/TF model loading on startup
+TimeoutStartSec=180
+TimeoutStopSec=30
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ml-api
+
+[Install]
+WantedBy=multi-user.target

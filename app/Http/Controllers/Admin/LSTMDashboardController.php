@@ -452,6 +452,8 @@ class LSTMDashboardController extends Controller
 
     public function exportExcel(Request $request)
     {
+        @set_time_limit(600);
+
         try {
             if (!class_exists('PhpOffice\PhpSpreadsheet\Spreadsheet')) {
                 return response()->json([
@@ -501,25 +503,46 @@ class LSTMDashboardController extends Controller
         if ($employees->isEmpty())
             return [];
 
+        // Single HTTP call for all predictions instead of 2 calls per employee
+        $allPredictions = [];
+        try {
+            $flaskResponse = Http::timeout(60)->post("{$this->lstmApiUrl}/predict/all");
+            if ($flaskResponse->successful()) {
+                foreach ($flaskResponse->json()['predictions'] ?? [] as $pred) {
+                    $allPredictions[$pred['user_id']] = $pred;
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('LSTM batch predict failed during export: ' . $e->getMessage());
+        }
+
+        $now = Carbon::now()->format('Y-m-d H:i:s');
         $result = [];
+
         foreach ($employees as $emp) {
             try {
-                $prediction = $this->getLSTMPredictionForEmployee($emp->id);
-                $currentScore = $this->getCurrentProductivityScore($emp->id);
+                $pred = $allPredictions[$emp->id] ?? [];
+                $currentScore = round((float) ($pred['current_productivity'] ?? 0), 1);
+                $predScore    = round((float) ($pred['predicted_productivity'] ?? 0), 1);
+                $prediction   = [
+                    'score'           => $predScore,
+                    'confidence'      => (float) ($pred['confidence_score'] ?? 0.85),
+                    'predicted_level' => $pred['predicted_level'] ?? 'Medium',
+                ];
+
                 $metrics = $this->getEmployeeMetricsFromDataWarehouse($emp->id);
-                $predScore = $prediction['score'] ?? 0;
 
                 $result[] = [
                     'id' => $emp->id,
                     'name' => $emp->name,
                     'department' => $emp->department ?? 'Unknown',
-                    'currentScore' => round($currentScore, 1),
+                    'currentScore' => $currentScore,
                     'currentScore30d' => round($metrics['score30d'] ?? $currentScore, 1),
                     'scoreVolatility' => round($metrics['volatility'] ?? 0, 2),
                     'daysOfData' => $metrics['daysOfData'] ?? 0,
-                    'predictedScore' => round($predScore, 1),
-                    'predictedClass' => $prediction['predicted_level'] ?? 'Medium',
-                    'predictionConfidence' => round(($prediction['confidence'] ?? 0.85) * 100, 1),
+                    'predictedScore' => $predScore,
+                    'predictedClass' => $prediction['predicted_level'],
+                    'predictionConfidence' => round($prediction['confidence'] * 100, 1),
                     'scoreChange' => round($predScore - $currentScore, 1),
                     'trend' => $this->calculateTrend($currentScore, $predScore),
                     'tasksCompleted7d' => $metrics['tasks7d'] ?? 0,
@@ -534,8 +557,8 @@ class LSTMDashboardController extends Controller
                     'engagementScore' => round($metrics['engagementScore'] ?? 0, 1),
                     'performanceTier' => $this->getPerformanceTier($predScore),
                     'lastActivityDate' => $metrics['lastActivityDate'] ?? 'N/A',
-                    'lastScoreUpdate' => Carbon::now()->format('Y-m-d H:i:s'),
-                    'predictionGeneratedAt' => Carbon::now()->format('Y-m-d H:i:s'),
+                    'lastScoreUpdate' => $now,
+                    'predictionGeneratedAt' => $now,
                 ];
             } catch (\Exception $e) {
                 Log::warning("Failed export data for {$emp->id}: " . $e->getMessage());

@@ -104,11 +104,11 @@
         </div>
 
         <!-- Upload Section -->
-        <div class="bg-white rounded-2xl border border-muted-200 shadow-sm p-6 md:p-8 animate-fade-in-up [animation-delay:100ms]">
-            <h2 class="text-lg md:text-xl font-semibold text-main mb-2">{{ __('ai.upload_files') }}</h2>
-            <p class="text-muted-600 text-sm mb-6">{{ __('ai.upload_files_desc') }}</p>
+        @can('upload', $workspace)
+            <div class="bg-white rounded-2xl border border-muted-200 shadow-sm p-6 md:p-8 animate-fade-in-up [animation-delay:100ms]">
+                <h2 class="text-lg md:text-xl font-semibold text-main mb-2">{{ __('ai.upload_files') }}</h2>
+                <p class="text-muted-600 text-sm mb-6">{{ __('ai.upload_files_desc') }}</p>
 
-            @can('upload', $workspace)
                 <form action="{{ route('ai-workspaces.upload-files', $workspace) }}" method="POST" enctype="multipart/form-data">
                     @csrf
 
@@ -150,18 +150,8 @@
                         @endforeach
                     </div>
                 @endif
-            @else
-                <p class="text-sm text-muted-600">
-                    @if($workspace->visibility === 'private')
-                        Workspace này ở chế độ riêng tư. Chỉ chủ workspace mới có thể upload file.
-                    @elseif($workspace->visibility === 'team')
-                        Chỉ thành viên trong team mới có thể upload file vào workspace này.
-                    @else
-                        Bạn không có quyền upload file vào workspace này.
-                    @endif
-                </p>
-            @endcan
-        </div>
+            </div>
+        @endcan
 
         <!-- Ingest Section -->
         @can('ingest', $workspace)
@@ -277,11 +267,12 @@
                                                 class="text-blue-600 hover:text-blue-700 text-xs font-medium">Preview</a> --}}
                                             @can('ingest', $workspace)
                                                 @if(in_array($file->ingest_status, ['pending', 'failed']))
-                                                    <form action="{{ route('workspace-files.ingest', $file) }}" method="POST" class="inline">
+                                                    <form action="{{ route('workspace-files.ingest', $file) }}" method="POST" class="inline" data-ingest-file-form>
                                                         @csrf
                                                         <button type="submit"
                                                             title="{{ __('ai.retry_ingest') }}"
-                                                            class="p-1.5 rounded-lg text-muted-400 hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                                                            class="p-1.5 rounded-lg text-muted-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                                            data-ingest-file-button>
                                                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
                                                                 <polyline points="1 4 1 10 7 10"></polyline>
                                                                 <path d="M3.51 15a9 9 0 1 0 .49-3.86L1 10"></path>
@@ -384,6 +375,26 @@
                 ingestOverlay.classList.remove('hidden');
             });
         }
+
+        document.querySelectorAll('[data-ingest-file-form]').forEach((form) => {
+            form.addEventListener('submit', () => {
+                const button = form.querySelector('[data-ingest-file-button]');
+                const buttonIcon = button ? button.querySelector('svg') : null;
+
+                if (button) {
+                    button.disabled = true;
+                    button.classList.add('opacity-70', 'cursor-not-allowed');
+                }
+
+                if (buttonIcon) {
+                    buttonIcon.classList.add('animate-spin');
+                }
+
+                if (ingestOverlay) {
+                    ingestOverlay.classList.remove('hidden');
+                }
+            });
+        });
     </script>
 
     <style>
