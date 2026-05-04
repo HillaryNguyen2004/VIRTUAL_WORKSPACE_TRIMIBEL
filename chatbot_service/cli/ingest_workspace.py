@@ -27,9 +27,28 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.rag.chunking import SUPPORTED_EXTENSIONS, iter_data_files, chunk_file, prepend_header
 from src.rag.embeddings.ollama import embed_texts
-from src.rag.vectorstores.chroma_store import add_chunks, normalize_workspace_id, count_legacy_chunks
+from src.rag.vectorstores.chroma_store import (
+    add_chunks,
+    count_legacy_chunks,
+    delete_collection,
+    normalize_workspace_id,
+    reload_chroma_clients,
+)
 
 os.environ.setdefault("ANONYMIZED_TELEMETRY", "True")
+
+CHATBOT_API_BASE = os.getenv("CHATBOT_API_URL", "http://127.0.0.1:8002")
+
+def _notify_chroma_reload() -> None:
+    """Tell the running chatbot API to clear its stale ChromaDB client cache."""
+    try:
+        url = CHATBOT_API_BASE.rstrip("/") + "/reload-chroma"
+        req = urlrequest.Request(url=url, method="POST", data=b"")
+        with urlrequest.urlopen(req, timeout=10):
+            pass
+        print("ChromaDB cache cleared on API server.", flush=True)
+    except Exception as exc:
+        print(f"Warning: could not notify API to reload ChromaDB: {exc}", flush=True)
 
 def infer_locale_from_path(path: Path, default_locale: str = "en-US") -> str:
     """Infer locale from filename or path."""
@@ -39,7 +58,6 @@ def infer_locale_from_path(path: Path, default_locale: str = "en-US") -> str:
     if ".en." in name or "/en/" in str(path.as_posix()).lower():
         return "en-US"
     return default_locale
-
 
 def ingest_workspace_directory(
     workspace_dir: str,
@@ -201,12 +219,12 @@ def ingest_workspace_directory(
             'files': results,
         }
 
+    _notify_chroma_reload()
     return {
         'success': True,
         'total_chunks': total_chunks,
         'files': results,
     }
-
 
 def fetch_productivity_predictions(api_base_url: str) -> dict:
     """
@@ -245,108 +263,131 @@ def refresh_productivity_vectordb_from_predict_all(
     if not predictions:
         return {"success": False, "error": "No predictions"}
 
+    # Rebuild the productivity workspace from scratch so stale vectors do not
+    # remain after a refresh. Keep deletion idempotent; the caller (Laravel)
+    # may already remove on-disk files before invoking this CLI.
+    delete_collection(workspace_id="productivity")
+    reload_chroma_clients()
+
     docs, metas, ids = [], [], []
 
-    now = datetime.utcnow()
-    date_str = now.strftime("%Y-%m-%d")
-    month_str = now.strftime("%Y-%m")
-    year = now.year
+    # Determine a canonical snapshot/prediction target date. Prefer the
+    # prediction_target_date field from the payload when available so IDs and
+    # snapshot dates align with the model's target day.
+    target_dates = set()
+    for it in predictions:
+        dt = it.get("prediction_target_date")
+        if dt:
+            target_dates.add(dt)
 
+    if len(target_dates) == 1:
+        snapshot_date = list(target_dates)[0]
+    else:
+        snapshot_date = datetime.utcnow().strftime("%Y-%m-%d")
+
+    month_str = snapshot_date[:7]
+    try:
+        year = int(snapshot_date.split("-")[0])
+    except Exception:
+        year = datetime.utcnow().year
+
+    # Counters for team summary
     declining = 0
     improving = 0
+    stable = 0
     high = 0
 
     for item in predictions:
-        user_id = str(item.get("user_id"))
-        name = item.get("employee_name") or f"user_{user_id}"
+        user_id = str(item.get("user_id") or "")
+        name = item.get("employee_name") or item.get("name") or f"user_{user_id}"
 
         current = item.get("current_productivity")
         predicted = item.get("predicted_productivity")
         trend = item.get("trend")
-        level = item.get("level")
-        confidence = item.get("confidence")
+        level = item.get("level") or item.get("predicted_level")
+        confidence = item.get("confidence") or item.get("confidence_score")
+        model_version = item.get("model_version")
+        predicted_level = item.get("predicted_level")
+        predicted_class = item.get("predicted_class")
+        productivity_score = item.get("productivity_score")
+        class_probs = item.get("class_probabilities")
+        based_on = item.get("based_on_data_through")
+        lookback = item.get("lookback")
 
-        if trend == "declining" and level not in ("Excellent", "Good"):
-            performance_note = "This employee is at risk and may need intervention."
-        elif trend == "declining" and level in ("Excellent", "Good"):
-            performance_note = "Despite strong performance, productivity is trending downward. Monitor for early burnout signs."
-        elif trend == "improving":
-            performance_note = "This employee is on an improving trajectory."
-        else:
-            performance_note = ""
-
-        level_note = "This employee is a high performer." if level == "Excellent" else ""
-
-        text = (
-            f"On {date_str}, employee {name} (ID {user_id}) "
-            f"has current productivity of {current}%.\n"
-            f"The model predicts productivity will be {predicted}%, "
-            f"indicating a {trend} trend.\n"
-            f"Performance level is {level} with confidence {confidence}.\n"
+        # Human-readable doc: concise, consistent structure for retrieval previews
+        doc_text = (
+            f"{name} (User ID: {user_id}) has a current productivity of {current} "
+            f"and is predicted to reach {predicted} (level: {predicted_level}). "
+            f"Trend: {trend}. Snapshot date: {snapshot_date}."
         )
-        if performance_note:
-            text += f"{performance_note}\n"
-        if level_note:
-            text += f"{level_note}\n"
+        docs.append(doc_text)
 
-        docs.append(text.strip())
-
-        metas.append({
+        meta = {
             "workspace_id": "productivity",
+            "record_type": "employee_snapshot",
             "user_id": user_id,
             "employee_name": name,
-            "trend": trend,
             "level": level,
-            "record_type": "employee_snapshot",
-            "snapshot_date": date_str,
+            "current_productivity": current,
+            "predicted_productivity": predicted,
+            "predicted_level": predicted_level,
+            "predicted_class": predicted_class,
+            "productivity_score": productivity_score,
+            "confidence": confidence,
+            # Chroma metadata values must be primitive types. Serialize
+            # complex structures like dicts/lists to JSON strings.
+            "class_probabilities": json.dumps(class_probs) if class_probs is not None else None,
+            "trend": trend,
+            "model_version": model_version,
+            "based_on_data_through": based_on,
+            "lookback": lookback,
+            "snapshot_date": snapshot_date,
             "month": month_str,
             "year": year,
-        })
+        }
 
-        ids.append(f"productivity-{user_id}-{date_str}")
+        metas.append(meta)
+
+        # Use the prediction target date in the ID so each snapshot is uniquely
+        # addressable by user + target date.
+        ids.append(f"productivity-{user_id}-{snapshot_date}")
 
         if trend == "declining":
             declining += 1
         if trend == "improving":
             improving += 1
-        if level == "Excellent":
+        if trend == "stable":
+            stable += 1
+        if (level or "") == "High":
             high += 1
 
     # ===== Team summary =====
     total = len(predictions)
-
     pct_declining = round(declining / total * 100) if total else 0
     pct_improving = round(improving / total * 100) if total else 0
+    pct_stable = round(stable / total * 100) if total else 0
 
     summary_text = (
-        f"Team productivity overview report. Date: {date_str}.\n"
-        f"Summary type: productivity overview, team performance, overall productivity.\n"
-        f"Total employees: {total}.\n"
-        f"Declining employees: {declining} ({pct_declining}% of team).\n"
-        f"Improving employees: {improving} ({pct_improving}% of team).\n"
-        f"High performers (Excellent level): {high}.\n"
-        f"Overall team health: "
-        + (
-            "critical — majority of employees are declining."
-            if pct_declining >= 60
-            else "moderate — some employees need attention."
-            if pct_declining >= 30
-            else "good — most employees are stable or improving."
-        )
-        + "\nThis report summarizes overall team productivity status.\n"
+        f"Team productivity overview report. Date: {snapshot_date}.\n"
+        f"Total employees: {total}. Declining: {declining} ({pct_declining}%). Improving: {improving} ({pct_improving}%). Stable: {stable} ({pct_stable}%). High performers (High): {high}."
     )
 
-    docs.append(summary_text.strip())
+    docs.append(summary_text)
 
     metas.append({
         "workspace_id": "productivity",
         "record_type": "team_summary",
-        "snapshot_date": date_str,
+        "snapshot_date": snapshot_date,
         "month": month_str,
         "year": year,
+        "total_employees": total,
+        "declining": declining,
+        "improving": improving,
+        "stable": stable,
+        "high_performers": high,
     })
 
-    ids.append(f"productivity-team-summary-{month_str}")
+    ids.append(f"productivity-team-summary-{snapshot_date}")
 
     # ===== Embed & store =====
     vectors = embed_texts(docs)
@@ -359,10 +400,11 @@ def refresh_productivity_vectordb_from_predict_all(
         workspace_id="productivity",
     )
 
+    _notify_chroma_reload()
     return {
         "success": True,
         "total_indexed": len(docs),
-        "snapshot_date": date_str,
+        "snapshot_date": snapshot_date,
         "month": month_str,
         "year": year,
     }

@@ -155,6 +155,8 @@ class ChatbotController extends Controller
         $workspaceScope = $this->resolveWorkspaceScope($data['workspace_id'] ?? null);
 
         return response()->stream(function () use ($data, $normalizedRole, $workspaceScope) {
+            ignore_user_abort(false);
+
             while (ob_get_level() > 0) {
                 @ob_end_flush();
             }
@@ -187,18 +189,36 @@ class ChatbotController extends Controller
                 CURLOPT_FOLLOWLOCATION => false,
                 CURLOPT_CONNECTTIMEOUT => 10,
                 CURLOPT_TIMEOUT => self::CHATBOT_REQUEST_TIMEOUT,
+                CURLOPT_NOPROGRESS => false,
+                CURLOPT_XFERINFOFUNCTION => function () {
+                    if (connection_aborted()) {
+                        return 1;
+                    }
+
+                    return 0;
+                },
                 CURLOPT_WRITEFUNCTION => function ($ch, string $chunk): int {
+                    if (connection_aborted()) {
+                        return 0;
+                    }
+
                     echo $chunk;
                     @flush();
                     return strlen($chunk);
                 },
             ]);
 
-            curl_exec($ch);
+            $result = curl_exec($ch);
 
             if (curl_errno($ch)) {
                 Log::warning('Chatbot stream proxy error', [
                     'error' => curl_error($ch),
+                    'request_id' => $data['request_id'] ?? null,
+                ]);
+            }
+
+            if ($result === false && connection_aborted()) {
+                Log::info('Chatbot stream aborted by client', [
                     'request_id' => $data['request_id'] ?? null,
                 ]);
             }

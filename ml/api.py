@@ -23,7 +23,7 @@ from sqlalchemy.engine import URL
 from tensorflow.keras.models import load_model
 import sys
 sys.path.append('../etl')
-from config import PG_CONFIG
+from config import PG_URL
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -33,15 +33,15 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-pg_url = URL.create(
-    drivername="postgresql+psycopg2",
-    username=PG_CONFIG["user"],
-    password=PG_CONFIG["password"],
-    host=PG_CONFIG["host"],
-    port=PG_CONFIG["port"],
-    database=PG_CONFIG["dbname"],
-)
-pg_engine = create_engine(pg_url, pool_pre_ping=True)
+# pg_url = URL.create(
+#     drivername="postgresql+psycopg2",
+#     username=PG_CONFIG["user"],
+#     password=PG_CONFIG["password"],
+#     host=PG_CONFIG["host"],
+#     port=PG_CONFIG["port"],
+#     database=PG_CONFIG["dbname"],
+# )
+pg_engine = create_engine(PG_URL, pool_pre_ping=True)
 
 model    = load_model("models/lstm_productivity_nextday.keras")
 scaler   = joblib.load("models/scaler_nextday.pkl")

@@ -102,7 +102,7 @@ Example for Ollama + productivity workflow:
 
 ```env
 OLLAMA_BASE_URL=http://localhost:11434
-MODEL_NAME=llama3.2:latest
+MODEL_NAME=deepseek-r1:latest
 EMBED_MODEL=qwen3-embedding:latest
 EMBED_DIM=768
 CHROMA_DIR=var/chroma_db

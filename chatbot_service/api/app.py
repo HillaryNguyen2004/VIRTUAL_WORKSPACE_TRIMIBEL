@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse
 from .schemas import ChatRequest, CancelRequest
 from src.rag.pipeline import answer
 from src.rag.ollama_generate import GenerationCancelled
+from src.rag.vectorstores.chroma_store import reload_chroma_clients
 
 app = FastAPI(title="OLLAMA RAG API", version="1.0")
 logger = logging.getLogger("uvicorn.error")
@@ -58,6 +59,13 @@ def configure_logging() -> None:
 @app.get("/health")
 def healthz():
     return {"status": "ok"}
+
+@app.post("/reload-chroma")
+def reload_chroma():
+    """Clear cached ChromaDB clients so the next query reloads from disk.
+    Call this after ingest_workspace.py finishes to make new documents visible."""
+    reload_chroma_clients()
+    return {"ok": True, "message": "ChromaDB client cache cleared"}
 
 @app.post("/chat/cancel")
 def cancel_chat(req: CancelRequest):
