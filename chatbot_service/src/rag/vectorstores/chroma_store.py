@@ -1,5 +1,6 @@
 from __future__ import annotations
 import os
+import shutil
 from typing import List, Dict, Any
 from functools import lru_cache
 from pathlib import Path
@@ -73,7 +74,23 @@ def delete_collection(workspace_id: str | None = None) -> None:
     except Exception:
         # Collection may not exist yet; ignore and recreate on next write.
         pass
+
+def delete_workspace_storage(workspace_id: str | None = None) -> None:
+    """Remove the entire persisted Chroma workspace directory."""
+    chroma_path = Path(resolve_chroma_path(workspace_id))
+    _get_client.cache_clear()
+    if chroma_path.exists():
+        shutil.rmtree(chroma_path)
     
+def reload_chroma_clients() -> None:
+    """Clear the LRU-cached PersistentClient instances so the next request
+    creates fresh clients that reload the HNSW index from disk.
+
+    Call this after an external process (e.g. ingest_workspace.py) has written
+    new vectors to the ChromaDB files so the API server sees the updated index.
+    """
+    _get_client.cache_clear()
+
 def count_legacy_chunks(workspace_id: str | None = None, sample: int = 50) -> int:
     """
     Sample up to `sample` documents from the collection and count how many
@@ -90,6 +107,42 @@ def count_legacy_chunks(workspace_id: str | None = None, sample: int = 50) -> in
     docs = results.get("documents") or []
     legacy = sum(1 for d in docs if d and not d.lstrip().startswith("[File:"))
     return legacy
+
+def get_chunks(
+    k: int,
+    workspace_id: str | None = None,
+    where: dict | None = None,
+) -> List[Dict[str, Any]]:
+    """Fetch up to k documents without vector similarity (for aggregation/list queries)."""
+    coll = get_collection(workspace_id=workspace_id)
+    count = coll.count()
+    if count == 0:
+        return []
+
+    safe_k = min(k, count)
+    get_kwargs: dict = {"limit": safe_k, "include": ["documents", "metadatas"]}
+    if where:
+        get_kwargs["where"] = where
+
+    try:
+        res = coll.get(**get_kwargs)
+    except Exception as e:
+        print(f"[ERROR] ChromaDB get failed: {e}")
+        return []
+
+    docs = res.get("documents") or []
+    ids = res.get("ids") or []
+    metas = res.get("metadatas") or []
+
+    return [
+        {
+            "id": ids[i],
+            "content": docs[i],
+            "metadata": metas[i] if i < len(metas) else {},
+        }
+        for i in range(len(docs))
+        if docs[i] is not None
+    ]
 
 
 def query_by_vector(

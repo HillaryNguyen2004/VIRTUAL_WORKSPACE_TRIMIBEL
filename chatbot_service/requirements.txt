@@ -15,6 +15,11 @@ langchain-experimental==0.0.65
 # LLM / Embedding
 ollama==0.4.0
 
+# Data analysis / visualization
+matplotlib==3.9.2
+pandas==2.2.3
+ipykernel
+
 # Document parsing
 pdfminer.six==20240706
 pypdf==6.10.2

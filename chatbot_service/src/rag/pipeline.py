@@ -1,11 +1,13 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Tuple, List, Dict, Any, Optional, Callable
+from typing import List, Dict, Any, Optional, Callable
 import logging
 import re
 import unicodedata
+from .snapshot import get_latest_snapshot_date
 
 from .retrieval import retrieve
+from .vectorstores.chroma_store import get_chunks
 from .prompting import build_rag_prompt, build_general_prompt, build_summary_prompt, build_chitchat_prompt
 from .ollama_generate import generate_answer, stream_answer as ollama_stream_answer, GenerationCancelled
 from .lang import detect_lang
@@ -46,7 +48,7 @@ INTENT_QA = "qa"
 
 MAX_CONTEXT_PASSAGES = 20
 SUMMARY_BATCH_SIZE = 10
-SUMMARY_MAX_PASSAGES = 200
+SUMMARY_MAX_PASSAGES = 100
 
 # =========================
 # QUERY ANALYSIS CLASS
@@ -56,6 +58,7 @@ class QueryAnalysis:
     intent: str
     filters: Optional[dict]
     is_aggregation: bool
+    is_file_content: bool
     lang: str
 
 # =========================
@@ -123,6 +126,13 @@ def is_comparison_query(q: str) -> bool:
         r"\b(larger|more|less|compare|which group|higher|lower)\b",
         normalize_text(q)
     ))
+    
+def is_file_content_query(q: str) -> bool:
+    text = normalize_text(q)
+    return bool(re.search(
+        r"\b(content of|all content|full content|noi dung|toan bo noi dung)\b",
+        text
+    ))
 
 def is_aggregation_query(q: str) -> bool:
     text = normalize_text(q)
@@ -135,6 +145,9 @@ def is_aggregation_query(q: str) -> bool:
     
     if is_comparison_query(q):
         return False
+    
+    if is_file_content_query(q):
+        return False
 
     return bool(re.search(
         r"\b(list|all|enumerate|find all|nhung nhan vien|cac nhan vien)\b",
@@ -144,13 +157,16 @@ def is_aggregation_query(q: str) -> bool:
 def classify_intent(q: str) -> str:
     if is_chitchat(q):
         return INTENT_CHITCHAT
-    
+
     if is_analytics_query(q):
         return INTENT_ANALYTICS
-    
+
     if is_summarize_query(q):
         return INTENT_SUMMARIZE
-    
+
+    if is_aggregation_query(q):
+        return INTENT_ANALYTICS
+
     return INTENT_QA
 
 # =========================
@@ -163,8 +179,23 @@ def extract_productivity_filters(q: str, workspace_id: str = None) -> dict | Non
     text = normalize_text(q)
 
     trends = []
-    levels = []
-    filters = []
+    levels = []    
+    filters = [{"record_type": {"$eq": "employee_snapshot"}}]
+    
+    # overview
+    if re.search(r"\b(overview|summary|summarize|tong quan|tong quat)\b", text):
+        summary_filters = [{"record_type": {"$eq": "team_summary"}}]
+        latest_snapshot = get_latest_snapshot_date(workspace_id)
+        if latest_snapshot:
+            summary_filters.append({"snapshot_date": {"$eq": latest_snapshot}})
+
+        if len(summary_filters) == 1:
+            return summary_filters[0]
+        return {"$and": summary_filters}
+    
+    latest_snapshot = get_latest_snapshot_date(workspace_id)
+    if latest_snapshot:
+        filters.append({"snapshot_date": {"$eq": latest_snapshot}})
 
     # trends (multi-value)
     if re.search(r"\b(declining|giam|sut giam)\b", text):
@@ -199,10 +230,6 @@ def extract_productivity_filters(q: str, workspace_id: str = None) -> dict | Non
     if re.search(r"\b(risk|intervention|nguy co)\b", text):
         filters.append({"trend": {"$eq": "declining"}})
 
-    # overview
-    if re.search(r"\b(overview|summary|summarize|tong quan|tong quat)\b", text):
-        return {"record_type": "team_summary"}
-
     if not filters:
         return None
 
@@ -211,6 +238,19 @@ def extract_productivity_filters(q: str, workspace_id: str = None) -> dict | Non
 
     return {"$and": filters}
 
+def extract_file_filter(q: str) -> dict | None:
+    """If the query mentions a specific filename, filter retrieval to that file."""
+    # Match common file extensions
+    match = re.search(
+        r"([\w\-]+\.(pdf|docx|xlsx|csv|txt|md))",
+        q,
+        re.IGNORECASE
+    )
+    if match:
+        filename = match.group(1)
+        return {"source": {"$eq": filename}}
+    return None
+
 # =========================
 # QUERY ANALYSIS
 # =========================
@@ -218,13 +258,14 @@ def analyze_query(user_q: str, lang_hint: Optional[str], workspace_id: str = Non
     lang = lang_hint or detect_lang(user_q) or "en"
 
     intent = classify_intent(user_q)
-    filters = extract_productivity_filters(user_q, workspace_id)
+    filters = extract_file_filter(user_q) or extract_productivity_filters(user_q, workspace_id)
     is_agg = is_aggregation_query(user_q)
 
     return QueryAnalysis(
         intent=intent,
         filters=filters,
         is_aggregation=is_agg,
+        is_file_content=is_file_content_query(user_q),
         lang=lang,
     )
 
@@ -243,16 +284,20 @@ def build_retrieval_plan(
         return RetrievalPlan("none", 0, None)
         
     base_k = k if k is not None else 5
-    
+
     filters = analysis.filters if workspace_id == "productivity" else None
-    
-    # summarize = full scan
+
+    # summarize = full scan (only for explicit summarize queries, not file-content)
     if analysis.intent == INTENT_SUMMARIZE:
         return RetrievalPlan("summarize", SUMMARY_MAX_PASSAGES, filters)
 
     # analytics = aggregation
     if analysis.is_aggregation:
         return RetrievalPlan("aggregation", 100, filters)
+
+    # file content queries get more passages but stream normally
+    if analysis.is_file_content:
+        return RetrievalPlan("normal", 20, filters)
 
     return RetrievalPlan("normal", base_k, filters)
 
@@ -270,16 +315,18 @@ def retrieve_passages(
     if plan.mode == "none":
         return []
 
-    is_aggregation = plan.mode == "aggregation"
+    if plan.mode == "aggregation":
+        return get_chunks(plan.k, workspace_id=workspace_id, where=plan.where or None)
+
     return retrieve(
-        "" if is_aggregation else user_q,
+        user_q,
         k=plan.k,
         workspace_id=workspace_id,
         where=plan.where or {},
         should_cancel=should_cancel,
-        expand=not is_aggregation,
-        src_lang=None if is_aggregation else src_lang,
-        history=None if is_aggregation else (history or []),
+        expand=True,
+        src_lang=src_lang,
+        history=history or [],
     )
 
 def summarize_passages(passages, lang, should_cancel: Optional[Callable[[], bool]] = None):

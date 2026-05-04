@@ -332,20 +332,60 @@ def structured_table_chunks(path: Path):
 
     chunks, metas = [], []
 
+    # Individual row chunks
     for i, row in enumerate(rows):
-        content = " | ".join(
-            f"{k}: {v}"
-            for k, v in row.items()
-            if not k.startswith("_") and v
-        )
-
-        chunks.append(f"Record {i+1}: {content}")
+        parts = []
+        for k, v in row.items():
+            if not k.startswith("_") and v:
+                parts.append(f"{k}: {v}")
+        
+        content = "\n".join(parts)
+        chunks.append(f"Record {i+1}:\n{content}")
 
         metas.append({
             "source": path.name,
             "row_index": i,
             "sheet": row.get("_sheet") or "",
-            "type": "table"
+            "type": "table",
+            "record_type": "row",
+        })
+
+    # Summary chunk — NEW
+    if rows:
+        summary_lines = [f"File: {path.name}", f"Total records: {len(rows)}"]
+
+        # Lấy tên các cột từ row đầu tiên
+        col_names = [k for k in rows[0].keys() if not k.startswith("_")]
+        if col_names:
+            summary_lines.append(f"Columns: {', '.join(col_names)}")
+
+        # Lấy giá trị row đầu (thường là title/header của Excel báo cáo)
+        first_row_vals = [
+            v for k, v in rows[0].items()
+            if not k.startswith("_") and v
+        ]
+        if first_row_vals:
+            summary_lines.append(f"Report header: {' | '.join(first_row_vals[:5])}")
+
+        # Tổng hợp tất cả nội dung thành 1 đoạn ngắn để LLM có context
+        all_content_preview = []
+        for row in rows[:5]:  # preview 5 rows đầu
+            vals = [v for k, v in row.items() if not k.startswith("_") and v]
+            if vals:
+                all_content_preview.append(" | ".join(vals[:3]))
+
+        if all_content_preview:
+            summary_lines.append("Content preview:")
+            summary_lines.extend(f"  - {line}" for line in all_content_preview)
+
+        summary_text = "\n".join(summary_lines)
+        chunks.append(summary_text)
+        metas.append({
+            "source": path.name,
+            "row_index": -1,           # -1 = summary chunk
+            "sheet": "summary",
+            "type": "table_summary",   # type riêng để filter được
+            "record_type": "file_summary",
         })
 
     return chunks, metas
