@@ -17,7 +17,7 @@ from sqlalchemy import create_engine
 from tensorflow.keras.models import load_model
 
 sys.path.append('../etl')
-from config import PG_CONFIG
+from config import PG_URL
 
 # ─────────────────────────────────────────────────────────
 # 1.  Load model + scaler + baseline
@@ -46,10 +46,7 @@ LOOKBACK = 14
 # 2.  Pull data
 # ─────────────────────────────────────────────────────────
 TRAINING_CUTOFF = date.today()
-engine = create_engine(
-    f"postgresql://{PG_CONFIG['user']}:{PG_CONFIG['password']}"
-    f"@{PG_CONFIG['host']}:{PG_CONFIG['port']}/{PG_CONFIG['dbname']}"
-)
+engine = create_engine(PG_URL)
 df = pd.read_sql("""
     SELECT e.user_id, d.full_date,
            f.hours_worked, f.is_late, f.checked_in, f.had_day_off,

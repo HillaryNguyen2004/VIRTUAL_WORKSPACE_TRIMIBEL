@@ -25,7 +25,7 @@ from sqlalchemy import create_engine
 from tensorflow.keras.models import load_model
 
 sys.path.append('../etl')
-from config import PG_CONFIG
+from config import PG_URL
 
 # ════════════════════════════════════════════════════════════
 # CLI
@@ -72,10 +72,7 @@ CLASS_MIDPOINTS = np.array([25.0, 65.0, 90.0])
 # ════════════════════════════════════════════════════════════
 # 2. Load + prepare data (mirrors training exactly)
 # ════════════════════════════════════════════════════════════
-engine = create_engine(
-    f"postgresql://{PG_CONFIG['user']}:{PG_CONFIG['password']}"
-    f"@{PG_CONFIG['host']}:{PG_CONFIG['port']}/{PG_CONFIG['dbname']}"
-)
+engine = create_engine(PG_URL)
 df = pd.read_sql("""
     SELECT e.user_id, d.full_date,
            f.hours_worked, f.is_late, f.checked_in, f.had_day_off,
