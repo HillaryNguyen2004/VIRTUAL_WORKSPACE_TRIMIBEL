@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os
 import shutil
+import json
 from typing import List, Dict, Any
 from functools import lru_cache
 from pathlib import Path
@@ -39,6 +40,30 @@ def get_collection(workspace_id: str | None = None):
     client = _get_client(chroma_path)
     return client.get_or_create_collection(settings.collection)
 
+def _sanitize_metadata_value(value: Any) -> Any:
+    if value is None:
+        return None
+    if isinstance(value, (str, int, float, bool)):
+        return value
+    if hasattr(value, "item"):
+        try:
+            native = value.item()
+            if isinstance(native, (str, int, float, bool)):
+                return native
+        except Exception:
+            pass
+    if isinstance(value, (list, tuple, set, dict)):
+        return json.dumps(value, ensure_ascii=False, default=str)
+    return str(value)
+
+def _sanitize_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
+    cleaned: Dict[str, Any] = {}
+    for key, value in metadata.items():
+        sanitized = _sanitize_metadata_value(value)
+        if sanitized is not None:
+            cleaned[key] = sanitized
+    return cleaned
+
 def add_chunks(
     ids: List[str],
     docs: List[str],
@@ -47,7 +72,8 @@ def add_chunks(
     workspace_id: str | None = None,
 ) -> None:
     coll = get_collection(workspace_id=workspace_id)
-    coll.add(ids=ids, documents=docs, metadatas=metas, embeddings=embeddings)
+    safe_metas = [_sanitize_metadata(meta) for meta in metas]
+    coll.add(ids=ids, documents=docs, metadatas=safe_metas, embeddings=embeddings)
 
 def delete_by_storage_file(
     storage_file: str,
