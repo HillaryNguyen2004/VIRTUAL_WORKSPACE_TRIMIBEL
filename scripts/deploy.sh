@@ -7,7 +7,7 @@ set -euo pipefail
 
 # ── Config ────────────────────────────────────────────────────────────────────
 DEPLOY_PATH="${EC2_DEPLOY_PATH:-/var/www/html}"
-PHP="php8.2"
+PHP="php8.5"
 COMPOSER=$(which composer || echo "/usr/local/bin/composer")
 WEB_USER="www-data"
 
@@ -43,7 +43,7 @@ chown -R "$WEB_USER:$WEB_USER" storage bootstrap/cache public/build 2>/dev/null 
 
 # ── 4. Restart PHP-FPM ────────────────────────────────────────────────────────
 echo "▶ [4/8] Restarting PHP-FPM..."
-sudo systemctl restart php8.2-fpm
+sudo systemctl restart php8.5-fpm
 
 # ── 5. Restart Laravel queue worker ──────────────────────────────────────────
 echo "▶ [5/8] Restarting Laravel queue worker..."
