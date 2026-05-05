@@ -54,9 +54,11 @@ class Kernel extends ConsoleKernel
                  ->name('lstm-predictions-daily')
                  ->withoutOverlapping();
 
-        // 3. Retrain the model once a month (1st of each month at 2:00 AM)
-        //    Only retrain monthly — retraining daily is wasteful and unstable
-        $schedule->exec('python3 /opt/lampp/htdocs/DO_AN_CHUYEN_NGANH/ml/train_lstm.py')
+        // 3. Rolling-window LSTM retraining (1st of each month at 2:00 AM)
+        //    Recomputes train/val/test splits based on current date to avoid future-leakage.
+        //    Outputs timestamped models to models/runs/YYYY-MM-DD/ for monthly comparison.
+        //    Does NOT auto-update the production symlink; manual promotion required after review.
+        $schedule->exec('python3 /opt/lampp/htdocs/DO_AN_CHUYEN_NGANH/ml/train_lstm_rolling.py')
                  ->monthlyOn(1, '02:00')
                  ->appendOutputTo(storage_path('logs/lstm_retrain.log'))
                  ->name('lstm-retrain-monthly')
