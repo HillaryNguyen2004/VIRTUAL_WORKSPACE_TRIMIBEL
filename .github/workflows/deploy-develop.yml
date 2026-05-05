@@ -80,6 +80,11 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
+          VITE_PUSHER_APP_KEY: ${{ secrets.PUSHER_APP_KEY }}
+          VITE_PUSHER_APP_CLUSTER: ${{ secrets.PUSHER_APP_CLUSTER }}
+          VITE_PUSHER_HOST: ${{ secrets.PUSHER_HOST }}
+          VITE_PUSHER_PORT: ${{ secrets.PUSHER_PORT }}
+          VITE_PUSHER_SCHEME: ${{ secrets.PUSHER_SCHEME }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
