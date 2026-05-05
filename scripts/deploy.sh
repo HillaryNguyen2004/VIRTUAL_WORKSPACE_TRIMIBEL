@@ -26,6 +26,7 @@ $COMPOSER install \
   --no-interaction \
   --prefer-dist \
   --optimize-autoloader \
+  --ignore-platform-reqs \
   --quiet
 
 # ── 2. Laravel optimizations ──────────────────────────────────────────────────
