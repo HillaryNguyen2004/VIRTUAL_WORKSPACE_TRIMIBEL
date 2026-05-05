@@ -8,7 +8,7 @@ set -euo pipefail
 # ── Config ────────────────────────────────────────────────────────────────────
 DEPLOY_PATH="${EC2_DEPLOY_PATH:-/var/www/html}"
 PHP="php8.2"
-COMPOSER="/usr/local/bin/composer"
+COMPOSER=$(which composer || echo "/usr/local/bin/composer")
 WEB_USER="www-data"
 
 cd "$DEPLOY_PATH"
