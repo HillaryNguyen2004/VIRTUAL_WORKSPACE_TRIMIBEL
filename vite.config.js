@@ -51,10 +51,14 @@ export default defineConfig({
                 "resources/js/settings/upload_image.js",
                 "resources/js/settings/update_detail.js",
 
+                // Video chat
+                "resources/js/video-chat.js",
+
                 // Online docs
                 "resources/js/online_docs/storage.js",
                 "resources/js/online_docs/editor.js",
                 "resources/js/online_docs/excel.js",
+                "resources/js/online_docs/chunked-uploader.js",
 
                 // Utils (auto-scanned)
                 ...fg.sync("resources/utils/**/*.js"),

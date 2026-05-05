@@ -248,7 +248,7 @@ After=network.target
 [Service]
 User=ubuntu
 WorkingDirectory=/var/www/html/chatbot_service
-ExecStart=/var/www/html/chatbot_service/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8002
+ExecStart=/var/www/html/chatbot_service/.venv/bin/uvicorn api.app:app --host 0.0.0.0 --port 8002
 Restart=always
 RestartSec=5
 
@@ -267,7 +267,7 @@ After=network.target
 [Service]
 User=ubuntu
 WorkingDirectory=/var/www/html/ml
-ExecStart=/var/www/html/ml/.venv/bin/python app.py
+ExecStart=/var/www/html/ml/.venv/bin/python api.py
 Restart=always
 RestartSec=5
 
