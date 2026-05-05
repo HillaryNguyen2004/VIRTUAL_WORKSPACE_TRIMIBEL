@@ -86,7 +86,7 @@ return [
 
         'pgsql_dw' => [
             'driver' => 'pgsql',
-            'url' => env('DW_DATABASE_URL'),
+            'url' => env('PG_URL'),
             'host' => env('DW_DB_HOST', 'localhost'),
             'port' => env('DW_DB_PORT', '5432'),
             'database' => env('DW_DB_DATABASE', 'dw_productivity'),
@@ -96,7 +96,7 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'schema' => 'public',
-            'sslmode' => 'prefer',
+            'sslmode' => 'require',
         ],
 
         'sqlsrv' => [
