@@ -10,6 +10,8 @@ DEPLOY_PATH="${EC2_DEPLOY_PATH:-/var/www/html}"
 PHP="php8.5"
 COMPOSER=$(which composer || echo "/usr/local/bin/composer")
 WEB_USER="www-data"
+PYTHON_CHATBOT="python3.11"
+PYTHON_ML="python3.10"
 
 cd "$DEPLOY_PATH"
 
@@ -60,7 +62,7 @@ if [ -d "chatbot_service/.venv" ]; then
     -r chatbot_service/requirements.txt \
     --quiet
 else
-  python3 -m venv chatbot_service/.venv
+  $PYTHON_CHATBOT -m venv chatbot_service/.venv
   chatbot_service/.venv/bin/pip install \
     -r chatbot_service/requirements.txt --quiet
 fi
@@ -75,7 +77,7 @@ if [ -d "ml/.venv" ]; then
   ml/.venv/bin/pip install \
     -r ml/requirements.txt --quiet
 else
-  python3 -m venv ml/.venv
+  $PYTHON_ML -m venv ml/.venv
   ml/.venv/bin/pip install -r ml/requirements.txt --quiet
 fi
 sudo systemctl restart ml-api
@@ -84,10 +86,12 @@ sudo systemctl restart ml-api
 echo "▶ [8/8] Running incremental ETL sync..."
 (
   cd etl
-  if [ -d "../chatbot_service/.venv" ]; then
-    ../chatbot_service/.venv/bin/python incremental_etl.py
+  if [ -d ".venv" ]; then
+    .venv/bin/python incremental_etl.py
   else
-    python3 incremental_etl.py
+    $PYTHON_ML -m venv .venv
+    .venv/bin/pip install -r requirements.txt --quiet
+    .venv/bin/python incremental_etl.py
   fi
 ) || echo "⚠  ETL run failed — check etl/logs. Not blocking deploy."
 
