@@ -170,25 +170,25 @@ class CheckInController extends Controller
             }
         }
 
-        // Get attendance report data for all users for the selected month
+        // Get attendance report data for the selected month
         $month = $request->input('month', Carbon::now()->format('Y-m'));
         [$year, $monthNum] = explode('-', $month);
 
         $availableMonths = $this->attendanceReportService->getAvailableMonths();
+
+        // Only generate attendance reports for users visible on the current page
+        // (prevents O(N*D) queries when many users exist)
         $attendanceReports = [];
+        $userIdsOnPage = collect($checkIns->items())->pluck('user.id')->filter()->unique()->values()->all();
 
-        // Get all users with check-ins
-        $usersWithCheckIns = User::whereHas('checkIns', function($q) use ($year, $monthNum) {
-            $q->whereYear('date', $year)
-              ->whereMonth('date', $monthNum);
-        })->get();
-
-        // Generate attendance report for each user
-        foreach ($usersWithCheckIns as $user) {
-            $attendanceReports[] = array_merge(
-                $this->attendanceReportService->getMonthlyAttendanceReport($user, $year, $monthNum),
-                ['user' => $user]
-            );
+        if (!empty($userIdsOnPage)) {
+            $usersOnPage = User::whereIn('id', $userIdsOnPage)->get();
+            foreach ($usersOnPage as $user) {
+                $attendanceReports[] = array_merge(
+                    $this->attendanceReportService->getMonthlyAttendanceReport($user, $year, $monthNum),
+                    ['user' => $user]
+                );
+            }
         }
 
         return view('users.checkin_index', compact(
@@ -202,6 +202,8 @@ class CheckInController extends Controller
 
     public function export(Request $request, CheckInExportService $exportService)
     {
+        @ini_set('max_execution_time', '600');
+        @set_time_limit(600);
         $checkIns = $exportService->getFilteredCheckIns($request)->get(); // ✅ Now we get all results
         $excelFile = $exportService->generateExcel($checkIns);
 
