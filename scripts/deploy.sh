@@ -57,17 +57,16 @@ sudo systemctl restart laravel-queue
 # ── 6. Python Chatbot service (FastAPI/uvicorn on :8002) ─────────────────────
 echo "▶ [6/8] Updating & restarting chatbot service..."
 (
-  if [ -d "chatbot_service/.venv" ]; then
-    chatbot_service/.venv/bin/pip install \
-      -r chatbot_service/requirements.txt \
-      --quiet --no-deps 2>/dev/null || \
-    chatbot_service/.venv/bin/pip install \
-      -r chatbot_service/requirements.txt \
-      --quiet
+  REQ_HASH_FILE="chatbot_service/.venv/.req_hash"
+  REQ_HASH=$(md5sum chatbot_service/requirements.txt | cut -d' ' -f1)
+  if [ -d "chatbot_service/.venv" ] && [ -f "$REQ_HASH_FILE" ] && [ "$(cat $REQ_HASH_FILE)" = "$REQ_HASH" ]; then
+    echo "  chatbot deps unchanged, skipping pip install"
   else
-    $PYTHON_CHATBOT -m venv chatbot_service/.venv
-    chatbot_service/.venv/bin/pip install \
-      -r chatbot_service/requirements.txt --quiet
+    if [ ! -d "chatbot_service/.venv" ]; then
+      $PYTHON_CHATBOT -m venv chatbot_service/.venv
+    fi
+    chatbot_service/.venv/bin/pip install -r chatbot_service/requirements.txt --quiet
+    echo "$REQ_HASH" > "$REQ_HASH_FILE"
   fi
   sudo systemctl restart chatbot
 ) || echo "⚠  Chatbot service update failed — not blocking deploy."
@@ -75,30 +74,35 @@ echo "▶ [6/8] Updating & restarting chatbot service..."
 # ── 7. ML API service (Flask on :5001) ───────────────────────────────────────
 echo "▶ [7/8] Updating & restarting ML API..."
 (
-  if [ -d "ml/.venv" ]; then
-    ml/.venv/bin/pip install \
-      -r ml/requirements.txt \
-      --quiet --no-deps 2>/dev/null || \
-    ml/.venv/bin/pip install \
-      -r ml/requirements.txt --quiet
+  REQ_HASH_FILE="ml/.venv/.req_hash"
+  REQ_HASH=$(md5sum ml/requirements.txt | cut -d' ' -f1)
+  if [ -d "ml/.venv" ] && [ -f "$REQ_HASH_FILE" ] && [ "$(cat $REQ_HASH_FILE)" = "$REQ_HASH" ]; then
+    echo "  ml deps unchanged, skipping pip install"
   else
-    $PYTHON_ML -m venv ml/.venv
+    if [ ! -d "ml/.venv" ]; then
+      $PYTHON_ML -m venv ml/.venv
+    fi
     ml/.venv/bin/pip install -r ml/requirements.txt --quiet
+    echo "$REQ_HASH" > "$REQ_HASH_FILE"
   fi
   sudo systemctl restart ml-api
 ) || echo "⚠  ML API update failed — not blocking deploy."
 
-# ── 9. Run incremental ETL ────────────────────────────────────────────────────
+# ── 8. Run incremental ETL ────────────────────────────────────────────────────
 echo "▶ [8/8] Running incremental ETL sync..."
 (
   cd etl
-  if [ -d ".venv" ]; then
-    .venv/bin/python incremental_etl.py
-  else
+  REQ_HASH_FILE=".venv/.req_hash"
+  REQ_HASH=$(md5sum requirements.txt | cut -d' ' -f1)
+  if [ ! -d ".venv" ]; then
     $PYTHON_ML -m venv .venv
     .venv/bin/pip install -r requirements.txt --quiet
-    .venv/bin/python incremental_etl.py
+    echo "$REQ_HASH" > "$REQ_HASH_FILE"
+  elif [ ! -f "$REQ_HASH_FILE" ] || [ "$(cat $REQ_HASH_FILE)" != "$REQ_HASH" ]; then
+    .venv/bin/pip install -r requirements.txt --quiet
+    echo "$REQ_HASH" > "$REQ_HASH_FILE"
   fi
+  .venv/bin/python incremental_etl.py
 ) || echo "⚠  ETL run failed — check etl/logs. Not blocking deploy."
 
 echo ""
