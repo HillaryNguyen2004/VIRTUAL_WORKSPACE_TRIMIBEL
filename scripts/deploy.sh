@@ -54,33 +54,37 @@ sudo systemctl restart laravel-queue
 
 # ── 6. Python Chatbot service (FastAPI/uvicorn on :8002) ─────────────────────
 echo "▶ [6/8] Updating & restarting chatbot service..."
-if [ -d "chatbot_service/.venv" ]; then
-  chatbot_service/.venv/bin/pip install \
-    -r chatbot_service/requirements.txt \
-    --quiet --no-deps 2>/dev/null || \
-  chatbot_service/.venv/bin/pip install \
-    -r chatbot_service/requirements.txt \
-    --quiet
-else
-  $PYTHON_CHATBOT -m venv chatbot_service/.venv
-  chatbot_service/.venv/bin/pip install \
-    -r chatbot_service/requirements.txt --quiet
-fi
-sudo systemctl restart chatbot
+(
+  if [ -d "chatbot_service/.venv" ]; then
+    chatbot_service/.venv/bin/pip install \
+      -r chatbot_service/requirements.txt \
+      --quiet --no-deps 2>/dev/null || \
+    chatbot_service/.venv/bin/pip install \
+      -r chatbot_service/requirements.txt \
+      --quiet
+  else
+    $PYTHON_CHATBOT -m venv chatbot_service/.venv
+    chatbot_service/.venv/bin/pip install \
+      -r chatbot_service/requirements.txt --quiet
+  fi
+  sudo systemctl restart chatbot
+) || echo "⚠  Chatbot service update failed — not blocking deploy."
 
-# ── 8. ML API service (Flask on :5001) ───────────────────────────────────────
+# ── 7. ML API service (Flask on :5001) ───────────────────────────────────────
 echo "▶ [7/8] Updating & restarting ML API..."
-if [ -d "ml/.venv" ]; then
-  ml/.venv/bin/pip install \
-    -r ml/requirements.txt \
-    --quiet --no-deps 2>/dev/null || \
-  ml/.venv/bin/pip install \
-    -r ml/requirements.txt --quiet
-else
-  $PYTHON_ML -m venv ml/.venv
-  ml/.venv/bin/pip install -r ml/requirements.txt --quiet
-fi
-sudo systemctl restart ml-api
+(
+  if [ -d "ml/.venv" ]; then
+    ml/.venv/bin/pip install \
+      -r ml/requirements.txt \
+      --quiet --no-deps 2>/dev/null || \
+    ml/.venv/bin/pip install \
+      -r ml/requirements.txt --quiet
+  else
+    $PYTHON_ML -m venv ml/.venv
+    ml/.venv/bin/pip install -r ml/requirements.txt --quiet
+  fi
+  sudo systemctl restart ml-api
+) || echo "⚠  ML API update failed — not blocking deploy."
 
 # ── 9. Run incremental ETL ────────────────────────────────────────────────────
 echo "▶ [8/8] Running incremental ETL sync..."
