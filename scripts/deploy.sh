@@ -33,16 +33,17 @@ $COMPOSER install \
 
 # ── 2. Laravel optimizations ──────────────────────────────────────────────────
 echo "▶ [2/8] Optimizing Laravel (config, routes, views, events)..."
-sudo -u "$WEB_USER" $PHP artisan config:cache
-sudo -u "$WEB_USER" $PHP artisan route:cache
-sudo -u "$WEB_USER" $PHP artisan view:cache
-sudo -u "$WEB_USER" $PHP artisan event:cache
+$PHP artisan config:cache
+$PHP artisan route:cache
+$PHP artisan view:cache
+$PHP artisan event:cache
 
 # ── 3. Storage & permissions ──────────────────────────────────────────────────
 echo "▶ [3/8] Fixing permissions..."
-sudo -u "$WEB_USER" $PHP artisan storage:link --force 2>/dev/null || true
-chmod -R 775 storage bootstrap/cache
-chown -R "$WEB_USER:$WEB_USER" storage bootstrap/cache public/build 2>/dev/null || true
+$PHP artisan storage:link --force 2>/dev/null || true
+sudo chown -R ubuntu:"$WEB_USER" storage bootstrap/cache
+sudo chmod -R 775 storage bootstrap/cache
+sudo chown -R "$WEB_USER:$WEB_USER" public/build 2>/dev/null || true
 
 # ── 4. Restart PHP-FPM ────────────────────────────────────────────────────────
 echo "▶ [4/8] Restarting PHP-FPM..."
