@@ -239,10 +239,14 @@ class OnlineDocumentController extends Controller
         $user = auth()->user();
 
         if ($folder->user_id !== $user->id) {
-            PersonalFolderShare::updateOrCreate(
-                ['folder_id' => $folder->id, 'user_id' => $user->id],
-                ['shared_by' => $folder->user_id, 'permission' => 'view']
-            );
+            $hasAccess = PersonalFolderShare::where('folder_id', $folder->id)
+                ->where('user_id', $user->id)
+                ->exists();
+
+            if (!$hasAccess) {
+                return redirect()->route('online-docs.home')
+                    ->with('storage_error', __('online_docs.folder_share_link_opened'));
+            }
         }
 
         return redirect()->route('online-docs.home', ['folder' => $folder->id])
@@ -652,7 +656,12 @@ class OnlineDocumentController extends Controller
     {
         $user = auth()->user();
         if ($file->user_id !== $user->id) {
-            abort(403);
+            $hasAccess = $file->folder_id !== null && PersonalFolderShare::where('folder_id', $file->folder_id)
+                ->where('user_id', $user->id)
+                ->exists();
+            if (!$hasAccess) {
+                abort(403);
+            }
         }
 
         if (!Storage::disk('local')->exists($file->stored_path)) {
