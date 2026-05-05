@@ -7,9 +7,7 @@ use App\Services\ProductivityCalculatorService;
 use App\Models\User;
 use App\Models\CheckIn;
 use App\Models\Task;
-use App\Models\DayOffRequest;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Carbon\Carbon;
 
 /**
@@ -18,7 +16,7 @@ use Carbon\Carbon;
  */
 class ProductivityCalculatorTest extends TestCase
 {
-    use RefreshDatabase, WithFaker;
+    use DatabaseTransactions;
 
     private ProductivityCalculatorService $service;
 

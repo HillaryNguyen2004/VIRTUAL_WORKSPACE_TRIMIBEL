@@ -42,13 +42,24 @@ class ProductivityCalculatorService
                 return round($score, 2);
             }
 
-            Log::warning("Flask API failed for employee {$employeeId}: HTTP " . $response->status());
-            return 0.0;
-
+            Log::warning("Flask API failed for employee {$employeeId}: HTTP " . $response->status() . ' — falling back to local computation');
         } catch (\Exception $e) {
-            Log::error("Flask API unreachable for employee {$employeeId}: " . $e->getMessage());
-            return 0.0;
+            Log::error("Flask API unreachable for employee {$employeeId}: " . $e->getMessage() . ' — falling back to local computation');
         }
+
+        return $this->calculateLocalAverageScore($employeeId, $days);
+    }
+
+    private function calculateLocalAverageScore(int $employeeId, int $days): float
+    {
+        $scores = [];
+        for ($i = 0; $i < $days; $i++) {
+            $score = $this->calculateDailyProductivityScore($employeeId, Carbon::today()->subDays($i));
+            if ($score !== null) {
+                $scores[] = $score;
+            }
+        }
+        return count($scores) > 0 ? round(array_sum($scores) / count($scores), 2) : 0.0;
     }
 
     /**
