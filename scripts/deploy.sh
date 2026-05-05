@@ -34,7 +34,9 @@ $COMPOSER install \
 # ── 2. Laravel optimizations ──────────────────────────────────────────────────
 echo "▶ [2/8] Optimizing Laravel (config, routes, views, events)..."
 $PHP artisan config:cache
-$PHP artisan route:cache
+# route:cache is intentionally skipped: web.php contains Closure routes that
+# cannot be serialized. Routes load from files (~5 ms overhead, negligible).
+$PHP artisan route:clear
 $PHP artisan view:cache
 $PHP artisan event:cache
 
