@@ -91,10 +91,42 @@ sudo systemctl enable nginx
 sudo systemctl start nginx
 ```
 
-### Python 3 + venv
+### Python 3.11.14 (chatbot) and 3.10.15 (ml/etl) via pyenv
+
+> PPAs (deadsnakes, ondrej) are blocked on this EC2 — use pyenv instead.
+> Ubuntu resolute only provides Python 3.13 by default.
+
 ```bash
-sudo apt-get install -y python3 python3-venv
+# Build dependencies
+sudo apt-get install -y --fix-missing build-essential libssl-dev zlib1g-dev libbz2-dev \
+  libreadline-dev libsqlite3-dev curl libffi-dev liblzma-dev
+
+# Install pyenv
+curl https://pyenv.run | bash
+
+# Add to PATH for current session
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
+
+# Install exact Python versions matching local dev
+pyenv install 3.11.14
+pyenv install 3.10.20
+
+# Symlink so deploy.sh can find them
+sudo ln -sf ~/.pyenv/versions/3.11.14/bin/python3.11 /usr/local/bin/python3.11
+sudo ln -sf ~/.pyenv/versions/3.10.20/bin/python3.10 /usr/local/bin/python3.10
+
+# Verify
+python3.11 --version   # should print Python 3.11.14
+python3.10 --version   # should print Python 3.10.20
 ```
+
+> **Note**: Also remove broken PPA sources to keep apt-get update clean:
+> ```bash
+> sudo rm /etc/apt/sources.list.d/ondrej-ubuntu-php-resolute.sources \
+>         /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-resolute.sources 2>/dev/null || true
+> ```
 
 ---
 
