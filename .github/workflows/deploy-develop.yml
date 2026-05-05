@@ -118,12 +118,13 @@ jobs:
       - name: Sync application files to EC2
         run: |
           rsync -az --delete \
+            --omit-dir-times \
             --exclude='.git' \
             --exclude='.github' \
             --exclude='node_modules' \
-            --exclude='storage/app/public' \
-            --exclude='storage/logs' \
-            --exclude='storage/framework/cache' \
+            --exclude='vendor/' \
+            --exclude='storage/' \
+            --exclude='bootstrap/cache/' \
             --exclude='.env' \
             --exclude='etl/.env' \
             --exclude='chatbot_service/.env' \
