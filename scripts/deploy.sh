@@ -33,14 +33,14 @@ $COMPOSER install \
 
 # ── 2. Laravel optimizations ──────────────────────────────────────────────────
 echo "▶ [2/8] Optimizing Laravel (config, routes, views, events)..."
-$PHP artisan config:cache
-$PHP artisan route:cache
-$PHP artisan view:cache
-$PHP artisan event:cache
+sudo -u "$WEB_USER" $PHP artisan config:cache
+sudo -u "$WEB_USER" $PHP artisan route:cache
+sudo -u "$WEB_USER" $PHP artisan view:cache
+sudo -u "$WEB_USER" $PHP artisan event:cache
 
 # ── 3. Storage & permissions ──────────────────────────────────────────────────
 echo "▶ [3/8] Fixing permissions..."
-$PHP artisan storage:link --force 2>/dev/null || true
+sudo -u "$WEB_USER" $PHP artisan storage:link --force 2>/dev/null || true
 chmod -R 775 storage bootstrap/cache
 chown -R "$WEB_USER:$WEB_USER" storage bootstrap/cache public/build 2>/dev/null || true
 
