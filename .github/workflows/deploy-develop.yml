@@ -125,6 +125,8 @@ jobs:
             --exclude='storage/logs' \
             --exclude='storage/framework/cache' \
             --exclude='.env' \
+            --exclude='etl/.env' \
+            --exclude='chatbot_service/.env' \
             --exclude='chatbot_service/.venv' \
             --exclude='chatbot_service/var/chroma_db' \
             --exclude='ml/.venv' \
