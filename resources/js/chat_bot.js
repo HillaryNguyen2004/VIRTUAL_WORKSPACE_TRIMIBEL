@@ -1,3 +1,5 @@
+import { marked } from "marked";
+
 $(function () {
     const $box = $("#chatbot-chatbox");
     const $btn = $("#chatbot-btn");

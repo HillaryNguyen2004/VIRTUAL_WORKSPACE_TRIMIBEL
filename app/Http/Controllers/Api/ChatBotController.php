@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-class ChatbotController extends Controller
+class ChatBotController extends Controller
 {
     private const CHATBOT_MAX_EXECUTION_TIME = 600;
     private const CHATBOT_REQUEST_TIMEOUT = 590;

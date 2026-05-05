@@ -226,14 +226,18 @@ nano /var/www/html/etl/.env
 ```
 
 ```env
-PG_URL=postgresql://postgres:your_password@db.your_project.supabase.co:5432/postgres
-
 MYSQL_DB_HOST=your-rds-host.amazonaws.com
 MYSQL_DB_PORT=3306
 MYSQL_DB_USERNAME=your_username
 MYSQL_DB_PASSWORD=your_password
 MYSQL_DB_DATABASE=your_database
+
+PG_URL=postgresql://postgres.YOUR_PROJECT_REF:YOUR_PASSWORD@aws-0-REGION.pooler.supabase.com:6543/postgres
 ```
+
+> **Critical**: `PG_URL` must point to Supabase (the pooler URL), NOT `localhost`. The ML API
+> (`ml/api.py`) imports this value directly from the ETL config — if `PG_URL` is wrong the LSTM
+> dashboard will silently return no predictions. Copy the exact URL from your local `etl/.env`.
 
 ### Chatbot .env
 ```bash
@@ -486,6 +490,18 @@ ML API is not running. Check:
 sudo journalctl -u ml-api -n 50 --no-pager
 sudo systemctl restart ml-api
 ```
+
+### LSTM dashboard shows no data — ML API fatal "connection refused to localhost:5432"
+The `etl/.env` on the server has `PG_URL` pointing to `localhost` instead of Supabase.
+Fix:
+```bash
+nano /var/www/html/etl/.env
+# Set PG_URL to the Supabase pooler URL (copy from your local etl/.env)
+# PG_URL=postgresql://postgres.YOUR_PROJECT_REF:YOUR_PASSWORD@aws-0-REGION.pooler.supabase.com:6543/postgres
+sudo systemctl restart ml-api
+curl -X POST http://localhost:5001/predict/all | python3 -m json.tool | head -20
+```
+The `etl/.env` is excluded from rsync and must be set manually on the server.
 
 ### 502 Bad Gateway
 PHP-FPM is not running or socket path is wrong:
