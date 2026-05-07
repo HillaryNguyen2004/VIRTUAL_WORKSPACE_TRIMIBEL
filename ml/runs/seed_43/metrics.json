@@ -5,57 +5,57 @@
     "target_date_min": "2026-02-02",
     "target_date_max": "2026-04-29"
   },
-  "accuracy": 70.16,
-  "macroF1": 0.6211,
-  "f1Low": 0.4034,
-  "f1Med": 0.6818,
-  "f1High": 0.778,
+  "accuracy": 71.43,
+  "macroF1": 0.6657,
+  "f1Low": 0.4933,
+  "f1Med": 0.7225,
+  "f1High": 0.7812,
   "perClass": {
     "Low": {
-      "precision": 0.5772,
-      "recall": 0.31,
-      "f1": 0.4034,
-      "support": 229
+      "precision": 0.6615,
+      "recall": 0.3933,
+      "f1": 0.4933,
+      "support": 328
     },
     "Medium": {
-      "precision": 0.689,
-      "recall": 0.6748,
-      "f1": 0.6818,
-      "support": 824
+      "precision": 0.7233,
+      "recall": 0.7216,
+      "f1": 0.7225,
+      "support": 873
     },
     "High": {
-      "precision": 0.7281,
-      "recall": 0.8351,
-      "f1": 0.778,
-      "support": 837
+      "precision": 0.7172,
+      "recall": 0.8578,
+      "f1": 0.7812,
+      "support": 689
     }
   },
   "confusionMatrix": [
     [
-      71,
-      126,
-      32
+      129,
+      156,
+      43
     ],
     [
-      39,
-      556,
-      229
+      53,
+      630,
+      190
     ],
     [
       13,
-      125,
-      699
+      85,
+      591
     ]
   ],
-  "mae": 13.65,
-  "rmse": 19.09,
-  "mae_midpoint": 14.04,
-  "rmse_midpoint": 20.52,
-  "naiveAccuracy": 64.87,
-  "naiveMacroF1": 0.5846,
-  "uplift_accuracy": 5.29,
-  "uplift_macroF1": 0.0364,
+  "mae": 13.12,
+  "rmse": 18.63,
+  "mae_midpoint": 14.25,
+  "rmse_midpoint": 20.82,
+  "naiveAccuracy": 65.56,
+  "naiveMacroF1": 0.6233,
+  "uplift_accuracy": 5.87,
+  "uplift_macroF1": 0.0424,
   "lookback": 14,
-  "n_features": 27,
-  "evaluatedAt": "2026-05-02T08:00:42.688769Z"
+  "n_features": 45,
+  "evaluatedAt": "2026-05-07T05:10:02.102607Z"
 }

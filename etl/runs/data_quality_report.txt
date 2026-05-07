@@ -1,0 +1,43 @@
+======================================================================
+DATA QUALITY AUDIT — fact_employee_productivity
+======================================================================
+Generated: 2026-05-07T05:56:52.698161Z
+Total rows audited: 66,300
+Overall quality: GOOD
+Issues found: 3 (0 high / 1 medium / 2 low)
+
+──────────────────────────────────────────────────────────────────────
+1. CURRENCY (Tính hiện hành)
+──────────────────────────────────────────────────────────────────────
+Checks run:   3
+Issues found: 1
+
+  [LOW] 1. missing_weekdays
+        72 weekdays in range have no records (could be holidays).
+
+──────────────────────────────────────────────────────────────────────
+2. CONSISTENCY (Tính nhất quán)
+──────────────────────────────────────────────────────────────────────
+Checks run:   7
+Issues found: 0
+
+  ✓ No issues detected.
+
+──────────────────────────────────────────────────────────────────────
+3. INTEGRITY (Tính toàn vẹn)
+──────────────────────────────────────────────────────────────────────
+Checks run:   5
+Issues found: 0
+
+  ✓ No issues detected.
+
+──────────────────────────────────────────────────────────────────────
+4. CLEANLINESS (Làm sạch)
+──────────────────────────────────────────────────────────────────────
+Checks run:   4
+Issues found: 2
+
+  [LOW] 1. personal_baseline_outliers
+        952 rows are >3.0 std-devs from the employee's personal mean.
+  [MEDIUM] 2. stuck_value_sequences
+        Found 264 runs of ≥7 days with identical non-zero productivity scores. May indicate a stuck data source.

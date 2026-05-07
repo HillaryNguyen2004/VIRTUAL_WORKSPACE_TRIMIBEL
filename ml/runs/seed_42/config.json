@@ -11,7 +11,7 @@
     "test": 1890
   },
   "lookback": 14,
-  "n_features": 27,
+  "n_features": 45,
   "features": [
     "user_id_norm",
     "score_vs_baseline",
@@ -19,9 +19,16 @@
     "is_late",
     "checked_in",
     "had_day_off",
+    "time_at_office_h",
+    "minutes_late",
     "tasks_completed",
     "avg_task_score",
     "avg_task_percentage",
+    "active_task_count",
+    "overdue_task_count",
+    "high_priority_task_count",
+    "days_to_nearest_deadline",
+    "total_estimated_hours",
     "is_late_rate_7d",
     "is_late_rate_14d",
     "checked_in_rate_7d",
@@ -31,6 +38,8 @@
     "has_task_signal",
     "task_workload",
     "checkin_streak",
+    "dow_sin",
+    "dow_cos",
     "score_yesterday",
     "score_3d_ago",
     "score_7d_ago",
@@ -39,7 +48,16 @@
     "score_avg_7d",
     "score_avg_14d",
     "score_std_7d",
-    "day_of_week"
+    "is_half_day_off",
+    "is_holiday",
+    "is_day_before_holiday",
+    "is_day_after_holiday",
+    "checkin_hour",
+    "checkout_hour",
+    "has_checkout",
+    "is_deployment_phase",
+    "is_research_phase",
+    "is_planning_phase"
   ],
   "class_thresholds": {
     "low_max": 50,
@@ -54,7 +72,7 @@
       "Dense(16, relu)",
       "Dense(3, softmax)"
     ],
-    "n_params": 36547
+    "n_params": 41155
   },
   "optimizer": {
     "name": "Adam",
@@ -69,18 +87,18 @@
     "ReduceLROnPlateau(factor=0.5, patience=5)"
   ],
   "class_weights": {
-    "0": 3.3537936913895994,
-    "1": 0.8463855421686747,
-    "2": 0.6577495402106671
+    "0": 2.644172603844603,
+    "1": 0.8107328332371609,
+    "2": 0.7202753670950969
   },
   "training_results": {
-    "epochs_ran": 68,
-    "best_val_loss": 0.6943033337593079,
-    "best_val_acc": 0.714124321937561,
-    "best_train_acc": 0.7530079483985901,
-    "test_accuracy": 0.6952381134033203,
-    "test_loss": 0.6964476108551025,
-    "elapsed_seconds": 967.1
+    "epochs_ran": 52,
+    "best_val_loss": 0.6692111492156982,
+    "best_val_acc": 0.7169491648674011,
+    "best_train_acc": 0.7514997720718384,
+    "test_accuracy": 0.7153438925743103,
+    "test_loss": 0.6815932989120483,
+    "elapsed_seconds": 680.1
   },
   "environment": {
     "python": "3.10.12",
@@ -89,5 +107,5 @@
     "pandas": "2.3.3",
     "platform": "Linux-6.8.0-110-generic-x86_64-with-glibc2.35"
   },
-  "timestamp": "2026-05-02T07:42:25.712245Z"
+  "timestamp": "2026-05-07T04:57:28.809674Z"
 }

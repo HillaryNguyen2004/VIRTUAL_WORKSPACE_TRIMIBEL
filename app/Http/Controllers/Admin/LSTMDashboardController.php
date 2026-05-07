@@ -13,11 +13,20 @@ use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Symfony\Component\Process\Process;
 
+#pp danh gia chat luong du lieu
+# tieu chi danh gia chat luong: hien hanh nhat quan toan ven lam sach
+# talk about how it works (the model) not how to use it,how it is design, sliding doors etc
 /**
- * LSTM Dashboard Controller — v3.0
+ * LSTM Dashboard Controller — v3.0 + ETL v2
  *
  * Updated to match:
- *   • train_lstm_nextday.py (next-day forecast, 27 features, LOOKBACK=14)
+ *   • train_lstm_nextday.py (next-day forecast, 45 features: 27 original + 18 new/derived)
+ *   • ETL v2 features (13 new): checkin_hour, checkout_hour, minutes_late, time_at_office_h,
+ *     active_task_count, high_priority_task_count, days_to_nearest_deadline, overdue_task_count,
+ *     total_estimated_hours, is_half_day_off, is_holiday, is_day_before_holiday, is_day_after_holiday
+ *   • Derived features (6): has_checkout, is_deployment_phase, is_research_phase, is_planning_phase,
+ *     dow_sin, dow_cos
+ *   • Task normalization: log1p applied to prevent dominant variance in scaler
  *   • Class thresholds: Low <50, Medium 50-79, High >=80
  *   • Redesigned dashboard (4 tiers: snapshot, action, context, trust)
  *
