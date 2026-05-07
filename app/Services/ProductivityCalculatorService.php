@@ -211,6 +211,13 @@ class ProductivityCalculatorService
         $completedTasks = $tasks->where('percentage', 100)->count();
         $totalTasks = $tasks->count();
 
+        // NEW: Count overdue tasks (not completed AND due_date < today)
+        $overdueTasks = $tasks->filter(function ($task) use ($date) {
+            $isNotCompleted = ($task->percentage ?? 0) < 100;
+            $isOverdue = $task->due_date && Carbon::parse($task->due_date)->lt($date);
+            return $isNotCompleted && $isOverdue;
+        })->count();
+
         // Handle tasks with percentage but no score (common issue in database)
         $tasksWithScore = $tasks->where('score', '>', 0);
         $tasksWithoutScore = $tasks->where('score', '<=', 0)->where('percentage', '>', 0);
@@ -243,6 +250,7 @@ class ProductivityCalculatorService
         Log::info("Task query results for employee {$employeeId} on {$date->format('Y-m-d')}", [
             'total_tasks' => $tasks->count(),
             'completed_tasks' => $completedTasks,
+            'overdue_tasks' => $overdueTasks,
             'tasks_with_score' => $tasksWithScore->count(),
             'tasks_without_score' => $tasksWithoutScore->count(),
             'avg_percentage' => round($avgPercentage, 1),

@@ -51,17 +51,34 @@ scaler   = joblib.load(f"{RUN_DIR}/scaler.pkl")
 baseline = joblib.load(f"{RUN_DIR}/baseline.pkl")
 
 FEATURES = [
+    # User context (2)
     'user_id_norm', 'score_vs_baseline',
+    # Attendance basics (6)
     'hours_worked', 'is_late', 'checked_in', 'had_day_off',
+    'time_at_office_h', 'minutes_late',
+    # Task basics (5)
     'tasks_completed', 'avg_task_score', 'avg_task_percentage',
+    'active_task_count', 'overdue_task_count',
+    # Task pressure (3)
+    'high_priority_task_count', 'days_to_nearest_deadline', 'total_estimated_hours',
+    # Attendance rates (6)
     'is_late_rate_7d', 'is_late_rate_14d',
     'checked_in_rate_7d', 'checked_in_rate_14d',
     'had_day_off_rate_7d', 'had_day_off_rate_14d',
-    'has_task_signal', 'task_workload', 'checkin_streak',
+    # Task signals (2)
+    'has_task_signal', 'task_workload',
+    # Streaks & context + cyclical day-of-week (2 + 2)
+    'checkin_streak', 'dow_sin', 'dow_cos',
+    # Historical scores (8)
     'score_yesterday', 'score_3d_ago', 'score_7d_ago',
     'score_delta_1d', 'score_delta_7d',
     'score_avg_7d', 'score_avg_14d', 'score_std_7d',
-    'day_of_week',
+    # Calendar context (4) — NEW ETL v2
+    'is_half_day_off', 'is_holiday', 'is_day_before_holiday', 'is_day_after_holiday',
+    # Timing signals (3) — NEW ETL v2 + has_checkout flag
+    'checkin_hour', 'checkout_hour', 'has_checkout',
+    # Phase type encoding (3) — NEW: structured phase signal
+    'is_deployment_phase', 'is_research_phase', 'is_planning_phase',
 ]
 TARGET   = 'productivity_score'
 LOOKBACK = 14
@@ -76,8 +93,15 @@ engine = create_engine(PG_URL)
 df = pd.read_sql("""
     SELECT e.user_id, d.full_date,
            f.hours_worked, f.is_late, f.checked_in, f.had_day_off,
-           f.tasks_completed, f.avg_task_score, f.avg_task_percentage,
-           f.productivity_score
+           f.tasks_completed, f.tasks_in_progress, f.avg_task_score, f.avg_task_percentage,
+           f.productivity_score,
+           -- NEW ETL v2 features (13 new columns)
+           f.checkin_hour, f.checkout_hour, f.minutes_late, f.time_at_office_h,
+           f.active_task_count, f.high_priority_task_count,
+           f.days_to_nearest_deadline, f.overdue_task_count,
+           f.total_estimated_hours,
+           f.is_half_day_off, f.is_holiday, f.is_day_before_holiday, f.is_day_after_holiday,
+           f.active_phase_title
     FROM fact_employee_productivity f
     JOIN dim_employee e ON f.employee_sk = e.employee_sk
     JOIN dim_date     d ON f.date_sk     = d.date_sk
@@ -126,8 +150,48 @@ df['score_std_7d']  = g['productivity_score'].transform(lambda x: x.shift(1).rol
 df['checkin_streak'] = df.groupby('user_id')['checked_in'].transform(
     lambda x: x.groupby((x != x.shift()).cumsum()).cumcount() + 1
 ) * df['checked_in']
-df['day_of_week'] = df['full_date'].dt.dayofweek
+
+# -- Cyclical encoding for day-of-week (captures weekly periodicity) ----
+df['dow_sin'] = np.sin(2 * np.pi * df['full_date'].dt.dayofweek / 7)
+df['dow_cos'] = np.cos(2 * np.pi * df['full_date'].dt.dayofweek / 7)
+
+# -- Semantic NULL handling for ETL v2 columns --
+# checkout_hour: -1 means no checkout recorded + flag for model
+df['checkout_hour'] = df['checkout_hour'].fillna(-1)
+df['has_checkout']  = (df['checkout_hour'] >= 0).astype(int)
+
+# days_to_nearest_deadline: 999 = no deadline, clip to 90 (max planning horizon)
+df['days_to_nearest_deadline'] = df['days_to_nearest_deadline'].fillna(999).clip(upper=90)
+
+# Timing signals: 0 = didn't record
+df['checkin_hour']     = df['checkin_hour'].fillna(0)
+df['minutes_late']     = df['minutes_late'].fillna(0)
+df['time_at_office_h'] = df['time_at_office_h'].fillna(0)
+df['score_std_7d']     = df['score_std_7d'].fillna(0)
+
+# Historical scores: use employee's personal mean when missing (individual baseline)
+employee_means = df.groupby('user_id')['productivity_score'].transform('mean')
+for col in ['score_yesterday', 'score_3d_ago', 'score_7d_ago',
+            'score_avg_7d', 'score_avg_14d']:
+    df[col] = df[col].fillna(employee_means)
+
+# Catch remaining NaNs with fallback
 df.fillna(0, inplace=True)
+
+# -- Log-normalize task counts (raw counts dominate scaler) --
+for col in ['tasks_completed', 'tasks_in_progress',
+            'active_task_count', 'overdue_task_count',
+            'high_priority_task_count', 'total_estimated_hours']:
+    if col in df.columns:
+        df[col] = np.log1p(df[col])
+
+# -- Encode phase type from active_phase_title --
+if 'active_phase_title' not in df.columns:
+    df['active_phase_title'] = ''
+df['active_phase_title'] = df['active_phase_title'].fillna('')
+df['is_deployment_phase'] = df['active_phase_title'].str.contains('Deployment', case=False, na=False).astype(int)
+df['is_research_phase']   = df['active_phase_title'].str.contains('Research',   case=False, na=False).astype(int)
+df['is_planning_phase']   = df['active_phase_title'].str.contains('Planning',   case=False, na=False).astype(int)
 
 # Keep unscaled today-score table for naive baseline lookup
 unscaled_today_score = df[['user_id', 'full_date', 'productivity_score']].copy()

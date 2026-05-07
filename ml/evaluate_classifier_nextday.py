@@ -27,17 +27,32 @@ scaler   = joblib.load("models/scaler_nextday.pkl")
 baseline = joblib.load("models/baseline_nextday.pkl")
 
 FEATURES = [
+    # User context (2)
     'user_id_norm', 'score_vs_baseline',
+    # Attendance basics (6)
     'hours_worked', 'is_late', 'checked_in', 'had_day_off',
+    'time_at_office_h', 'minutes_late',
+    # Task basics (5)
     'tasks_completed', 'avg_task_score', 'avg_task_percentage',
+    'active_task_count', 'overdue_task_count',
+    # Task pressure (3)
+    'high_priority_task_count', 'days_to_nearest_deadline', 'total_estimated_hours',
+    # Attendance rates (6)
     'is_late_rate_7d', 'is_late_rate_14d',
     'checked_in_rate_7d', 'checked_in_rate_14d',
     'had_day_off_rate_7d', 'had_day_off_rate_14d',
-    'has_task_signal', 'task_workload', 'checkin_streak',
+    # Task signals (2)
+    'has_task_signal', 'task_workload',
+    # Streaks & context (2)
+    'checkin_streak', 'day_of_week',
+    # Historical scores (8)
     'score_yesterday', 'score_3d_ago', 'score_7d_ago',
     'score_delta_1d', 'score_delta_7d',
     'score_avg_7d', 'score_avg_14d', 'score_std_7d',
-    'day_of_week',
+    # Calendar context (4) — NEW ETL v2
+    'is_half_day_off', 'is_holiday', 'is_day_before_holiday', 'is_day_after_holiday',
+    # Timing signal (1) — NEW ETL v2
+    'checkin_hour',
 ]
 TARGET   = 'productivity_score'
 LOOKBACK = 14
@@ -51,7 +66,13 @@ df = pd.read_sql("""
     SELECT e.user_id, d.full_date,
            f.hours_worked, f.is_late, f.checked_in, f.had_day_off,
            f.tasks_completed, f.avg_task_score, f.avg_task_percentage,
-           f.productivity_score
+           f.productivity_score,
+           -- NEW ETL v2 features (12 new columns)
+           f.checkin_hour, f.minutes_late, f.time_at_office_h,
+           f.active_task_count, f.high_priority_task_count,
+           f.days_to_nearest_deadline, f.overdue_task_count,
+           f.total_estimated_hours,
+           f.is_half_day_off, f.is_holiday, f.is_day_before_holiday, f.is_day_after_holiday
     FROM fact_employee_productivity f
     JOIN dim_employee e ON f.employee_sk = e.employee_sk
     JOIN dim_date     d ON f.date_sk     = d.date_sk
@@ -105,6 +126,16 @@ df['checkin_streak'] = df.groupby('user_id')['checked_in'].transform(
     lambda x: x.groupby((x != x.shift()).cumsum()).cumcount() + 1
 ) * df['checked_in']
 df['day_of_week'] = df['full_date'].dt.dayofweek
+
+# Fill missing ETL v2 columns with 0 (in case they're NULL in DB)
+for col in ['checkin_hour', 'minutes_late', 'time_at_office_h',
+            'active_task_count', 'high_priority_task_count',
+            'days_to_nearest_deadline', 'overdue_task_count',
+            'total_estimated_hours', 'is_half_day_off',
+            'is_holiday', 'is_day_before_holiday', 'is_day_after_holiday']:
+    if col in df.columns:
+        df[col] = df[col].fillna(0).astype(float)
+
 df.fillna(0, inplace=True)
 
 # Keep an unscaled copy of today's score for the naive baseline
