@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 class PersonalFileSearchService
 {
     /**
-     * Rank personal files by BM25-like relevance to a query.
+     * Rank personal files by BM25 relevance to a query.
      */
     public function rankFiles(Collection $files, string $query): Collection
     {
@@ -17,12 +17,25 @@ class PersonalFileSearchService
         }
 
         $tokens = $this->tokenize($query);
+        if (empty($tokens)) {
+            return $files;
+        }
 
-        return $files->map(function ($file) use ($tokens) {
-            $text = strtolower((string) ($file->searchable_text ?? $file->original_name ?? ''));
-            $score = $this->bm25Score($text, $tokens);
-            $file->bm25_score = $score;
-            return $file;
+        // Pre-tokenize all docs and compute true average document length
+        $docData = $files->map(function ($file) {
+            $text = mb_strtolower((string) ($file->searchable_text ?? $file->original_name ?? ''));
+            preg_match_all('/\w+/u', $text, $m);
+            return ['file' => $file, 'tokens' => $m[0]];
+        });
+
+        $totalTokens = $docData->sum(fn ($d) => count($d['tokens']));
+        $avgDl = $totalTokens > 0 ? $totalTokens / max(1, $docData->count()) : 300;
+
+        return $docData->map(function ($d) use ($tokens, $avgDl) {
+            $score = $this->bm25Score($d['tokens'], $tokens, $avgDl);
+            $d['file']->bm25_score  = $score;
+            $d['file']->search_score = $score;
+            return $d['file'];
         })
         ->filter(fn ($f) => $f->bm25_score > 0)
         ->sortByDesc('bm25_score')
@@ -77,14 +90,11 @@ class PersonalFileSearchService
         return array_filter($matches[0], fn ($t) => mb_strlen($t) >= 2);
     }
 
-    private function bm25Score(string $doc, array $queryTokens): float
+    private function bm25Score(array $docTokens, array $queryTokens, float $avgDl): float
     {
         $k1 = 1.5;
         $b  = 0.75;
-        $avgDl = 300;
 
-        preg_match_all('/\w+/u', $doc, $m);
-        $docTokens = $m[0];
         $dl = count($docTokens);
         if ($dl === 0) return 0.0;
 
@@ -107,16 +117,51 @@ class PersonalFileSearchService
 
     private function readPdf(UploadedFile $file): string
     {
-        $raw = file_get_contents($file->getRealPath()) ?: '';
-        preg_match_all('/BT\s*(.*?)\s*ET/s', $raw, $blocks);
-        $parts = [];
-        foreach ($blocks[1] as $block) {
-            preg_match_all('/\(([^)]*)\)\s*Tj/', $block, $strings);
-            foreach ($strings[1] as $s) {
-                $parts[] = $s;
+        $src = $file->getRealPath();
+        if (!$src || !file_exists($src)) {
+            return '';
+        }
+
+        // Try pdftotext (poppler) — handles compressed/CID PDFs better
+        $pdftotextBin = $this->findPdfToText();
+        if ($pdftotextBin) {
+            $tmp = tempnam(sys_get_temp_dir(), 'pdftxt_') . '.txt';
+            $cmd = escapeshellarg($pdftotextBin) . ' -enc UTF-8 '
+                . escapeshellarg($src) . ' '
+                . escapeshellarg($tmp);
+            exec($cmd, $out, $ret);
+            if ($ret === 0 && file_exists($tmp)) {
+                $text = (string) file_get_contents($tmp);
+                @unlink($tmp);
+                if (trim($text) !== '') {
+                    return $text;
+                }
+            }
+            @unlink($tmp);
+        }
+
+        // Fallback: smalot/pdfparser (pure PHP)
+        try {
+            $parser = new \Smalot\PdfParser\Parser();
+            $pdf    = $parser->parseFile($src);
+            return $pdf->getText();
+        } catch (\Throwable) {
+            return '';
+        }
+    }
+
+    private function findPdfToText(): ?string
+    {
+        foreach (['pdftotext', 'C:\\Program Files\\Git\\mingw64\\bin\\pdftotext.exe'] as $candidate) {
+            if (@is_executable($candidate)) {
+                return $candidate;
+            }
+            $which = shell_exec('where ' . escapeshellarg($candidate) . ' 2>nul');
+            if ($which && trim($which) !== '') {
+                return trim(strtok($which, "\n"));
             }
         }
-        return implode(' ', $parts);
+        return null;
     }
 
     private function readDocx(UploadedFile $file): string

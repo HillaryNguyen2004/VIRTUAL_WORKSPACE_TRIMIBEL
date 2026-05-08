@@ -74,6 +74,8 @@ Route::middleware(['auth'])->prefix('online-docs')->name('online-docs.')->group(
     Route::post('/files', [OnlineDocumentController::class, 'uploadPersonalFile'])->name('files.store');
     Route::put('/files/{file}', [OnlineDocumentController::class, 'renameFile'])->name('files.update');
     Route::delete('/files/{file}', [OnlineDocumentController::class, 'deleteFile'])->name('files.delete');
+    Route::post('/files/{file}/ingest', [OnlineDocumentController::class, 'ingestPersonalFile'])->name('files.ingest');
+    Route::post('/files/ingest-all', [OnlineDocumentController::class, 'ingestAllPersonalFiles'])->name('files.ingest-all');
     Route::get('/files/{file}/download', [OnlineDocumentController::class, 'downloadPersonalFile'])->name('files.download');
     Route::get('/files/{file}/preview', [OnlineDocumentController::class, 'previewPersonalFile'])->name('files.preview');
     Route::get('/files/{file}/open', [OnlineDocumentController::class, 'openPersonalFile'])->name('files.open');

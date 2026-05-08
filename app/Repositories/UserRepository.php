@@ -95,9 +95,9 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         $extension = $file->getClientOriginalExtension();
         $filename = $cleanName . '_' . $timestamp . '.' . $extension;
 
-        $file->move(public_path('img/user_avatar/'), $filename);
+        $path = $file->storeAs('avatars', $filename, config('filesystems.default'));
 
-        $user->user_profile_photo = $filename;
+        $user->user_profile_photo = $path;
         $user->save();
     }
 

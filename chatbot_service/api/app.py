@@ -2,12 +2,25 @@ from __future__ import annotations
 import logging
 from threading import Event, Lock
 from uuid import uuid4
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
-from .schemas import ChatRequest, CancelRequest
+from .schemas import (
+    ChatRequest, CancelRequest, IngestS3Request, DeleteChunksRequest,
+    IngestResult, ChatResponse, Citation, Usage, Confidence,
+    SearchRequest, SearchResponse, PassageResult,
+    AgentAnswerRequest, AgentAnswerResponse,
+    BatchIngestRequest, BatchIngestResult,
+)
 from src.rag.pipeline import answer
 from src.rag.ollama_generate import GenerationCancelled
-from src.rag.vectorstores.chroma_store import reload_chroma_clients
+from src.rag.vectorstores.chroma_store import reload_chroma_clients, delete_by_storage_file
+from src.rag.search_agent import (
+    index_s3_document,
+    index_documents_batch,
+    remove_document,
+    search as agent_search,
+    answer as agent_answer,
+)
 
 app = FastAPI(title="OLLAMA RAG API", version="1.0")
 logger = logging.getLogger("uvicorn.error")
@@ -66,6 +79,37 @@ def reload_chroma():
     Call this after ingest_workspace.py finishes to make new documents visible."""
     reload_chroma_clients()
     return {"ok": True, "message": "ChromaDB client cache cleared"}
+
+
+@app.post("/ingest-s3", response_model=IngestResult)
+def ingest_s3(req: IngestS3Request):
+    """
+    Download a file from S3 and index it into ChromaDB.
+    Laravel calls this instead of copying the file locally.
+    """
+    try:
+        total_chunks = index_s3_document(
+            s3_key=req.s3_key,
+            workspace_id=req.workspace_id,
+            original_name=req.original_name,
+            storage_file_name=req.storage_file_name,
+            user_id=req.user_id,
+        )
+        reload_chroma_clients()
+        return IngestResult(success=True, total_chunks=total_chunks)
+    except Exception as e:
+        logger.error("ingest-s3 failed: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/delete-chunks")
+def delete_chunks(req: DeleteChunksRequest):
+    """
+    Remove all ChromaDB chunks for a specific file (by storage_file metadata key).
+    """
+    count = delete_by_storage_file(req.storage_file, workspace_id=req.workspace_id)
+    reload_chroma_clients()
+    return {"ok": True, "deleted": count}
 
 @app.post("/chat/cancel")
 def cancel_chat(req: CancelRequest):
@@ -133,6 +177,140 @@ def cancel_chat(req: CancelRequest):
 #         raise HTTPException(status_code=500, detail=f"error: {e}")
 #     finally:
 #         _unregister_request(request_id)
+
+@app.post("/agent/search", response_model=SearchResponse)
+def agent_search_endpoint(req: SearchRequest):
+    try:
+        passages = agent_search(
+            query=req.query,
+            workspace_id=req.workspace_id,
+            k=req.k,
+            src_lang=req.lang,
+            history=req.history,
+            where=req.where,
+            user_id=req.user_id,
+        )
+        results = [
+            PassageResult(
+                id=p["id"],
+                content=p["content"],
+                metadata=p.get("metadata", {}),
+                rrf_score=p.get("rrf_score", 0.0),
+                final_score=p.get("_final_score", 0.0),
+            )
+            for p in passages
+        ]
+        return SearchResponse(passages=results, total=len(results))
+    except Exception as e:
+        logger.error("agent/search failed: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/agent/answer", response_model=AgentAnswerResponse)
+def agent_answer_endpoint(req: AgentAnswerRequest):
+    request_id = (req.request_id or str(uuid4())).strip()
+    cancel_flag = _register_request(request_id)
+
+    try:
+        result = agent_answer(
+            query=req.query,
+            workspace_id=req.workspace_id,
+            user_role=req.user_role,
+            k=req.k,
+            src_lang=req.lang,
+            history=req.history,
+            history_text=req.history_text,
+            where=req.where,
+            should_cancel=cancel_flag.is_set,
+            stream=False,
+            user_id=req.user_id,
+        )
+        if cancel_flag.is_set():
+            raise GenerationCancelled("Request canceled")
+
+        passages = [
+            PassageResult(
+                id=p["id"],
+                content=p["content"],
+                metadata=p.get("metadata", {}),
+                rrf_score=p.get("rrf_score", 0.0),
+                final_score=p.get("_final_score", 0.0),
+            )
+            for p in result.get("passages", [])
+        ]
+        return AgentAnswerResponse(answer=result.get("text", ""), passages=passages)
+    except GenerationCancelled:
+        logger.info("agent/answer canceled request_id=%s", request_id)
+        raise HTTPException(status_code=499, detail="request canceled")
+    except Exception as e:
+        logger.error("agent/answer failed: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        _unregister_request(request_id)
+
+
+@app.post("/agent/answer/stream")
+def agent_answer_stream(req: AgentAnswerRequest):
+    request_id = (req.request_id or str(uuid4())).strip()
+    cancel_flag = _register_request(request_id)
+
+    def event_stream():
+        try:
+            result = agent_answer(
+                query=req.query,
+                workspace_id=req.workspace_id,
+                user_role=req.user_role,
+                k=req.k,
+                src_lang=req.lang,
+                history=req.history,
+                history_text=req.history_text,
+                where=req.where,
+                should_cancel=cancel_flag.is_set,
+                stream=True,
+                user_id=req.user_id,
+            )
+            gen = result.get("stream")
+            if gen is None:
+                return
+            yield from gen
+        except GenerationCancelled:
+            logger.info("agent/answer/stream canceled request_id=%s", request_id)
+        except Exception as e:
+            logger.error("agent/answer/stream error request_id=%s: %s", request_id, e)
+        finally:
+            _unregister_request(request_id)
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/plain; charset=utf-8",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@app.post("/agent/ingest-batch", response_model=BatchIngestResult)
+def agent_ingest_batch(req: BatchIngestRequest):
+    try:
+        result = index_documents_batch(items=req.items, workspace_id=req.workspace_id, user_id=req.user_id)
+        reload_chroma_clients()
+        return BatchIngestResult(**result)
+    except Exception as e:
+        logger.error("agent/ingest-batch failed: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/agent/document")
+def agent_remove_document(storage_file: str, workspace_id: str, user_id: str | None = None):
+    try:
+        count = remove_document(storage_file=storage_file, workspace_id=workspace_id, user_id=user_id)
+        reload_chroma_clients()
+        return {"ok": True, "deleted": count}
+    except Exception as e:
+        logger.error("agent/document DELETE failed: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/chat/stream")
 def chat_stream(req: ChatRequest):

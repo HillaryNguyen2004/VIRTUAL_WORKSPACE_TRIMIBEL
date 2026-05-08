@@ -33,5 +33,9 @@ class Settings:
     langfuse_secret_key: str = os.getenv("LANGFUSE_SECRET_KEY", "")
     langfuse_base_url: str = os.getenv("LANGFUSE_BASE_URL", "https://cloud.langfuse.com")
     anonymized_telemetry: bool = os.getenv("ANONYMIZED_TELEMETRY", "False").lower() in ("true", "1", "yes")
+    aws_access_key_id: str = os.getenv("AWS_ACCESS_KEY_ID", "")
+    aws_secret_access_key: str = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+    aws_region: str = os.getenv("AWS_DEFAULT_REGION", "ap-southeast-1")
+    aws_bucket: str = os.getenv("AWS_BUCKET", "")
 
 settings = Settings()

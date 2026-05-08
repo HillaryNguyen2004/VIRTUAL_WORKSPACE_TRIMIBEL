@@ -1,6 +1,9 @@
 from __future__ import annotations
 from typing import List, Dict, Any
 
+# =========================
+# PASSAGE SERIALISER
+# =========================
 def _serialize_passages(passages: List[Dict[str, Any]]) -> str:
     """
     Format retrieved passages for injection into the RAG prompt.
@@ -10,8 +13,8 @@ def _serialize_passages(passages: List[Dict[str, Any]]) -> str:
         <chunk body>
 
     The chunk body already contains a contextual header injected at ingest
-    time (by chunking.py:prepend_header), so the LLM sees provenance both
-    in the passage label AND inside the text itself — double-grounding.
+    time (chunking.py:prepend_header), so the LLM sees provenance both
+    in the label AND inside the text itself — double-grounded.
     """
     blocks = []
     for i, p in enumerate(passages, start=1):
@@ -50,12 +53,34 @@ def _serialize_passages(passages: List[Dict[str, Any]]) -> str:
 
     return "\n\n".join(blocks)
 
+
+def _confidence_band(passages: List[Dict[str, Any]]) -> str:
+    """
+    Derive a simple confidence label from passage scores so the LLM can
+    calibrate its hedging language.
+      high   → top passage _final_score ≥ 0.3
+      medium → top passage _final_score ≥ 0.1
+      low    → below that
+    """
+    if not passages:
+        return "low"
+    top = passages[0].get("_final_score", 0.0)
+    if top >= 0.3:
+        return "high"
+    if top >= 0.1:
+        return "medium"
+    return "low"
+
+
+# =========================
+# RAG PROMPT
+# =========================
 def build_rag_prompt(
     user_q: str,
     user_role: str,
-    passages: List[Dict[str, Any]], 
-    target_lang: str = "en", 
-    history: str = ""
+    passages: List[Dict[str, Any]],
+    target_lang: str = "en",
+    history: str = "",
 ) -> str:
     kb = _serialize_passages(passages)
     
@@ -66,6 +91,24 @@ def build_rag_prompt(
     </history>
 
     """ if history else ""
+
+    confidence = _confidence_band(passages)
+
+    confidence_instruction = {
+        "high": (
+            "The retrieved Knowledge strongly supports this topic. "
+            "Answer confidently and thoroughly."
+        ),
+        "medium": (
+            "The retrieved Knowledge partially covers this topic. "
+            "Answer what is clearly supported; flag anything uncertain."
+        ),
+        "low": (
+            "The retrieved Knowledge has limited coverage. "
+            "Only state what is explicitly in the text; do not infer. "
+            "If the answer is not present, say so clearly."
+        ),
+    }[confidence]
     
     return f"""
         SYSTEM INSTRUCTIONS:
@@ -108,12 +151,20 @@ def build_rag_prompt(
         - Answer in {target_lang}.
         </language>
 
-        ANSWERING STYLE:
+        RETRIEVAL CONFIDENCE: {confidence.upper()}
+        <confidence>
+        {confidence_instruction}
+        </confidence>
+
+        PROFESSIONAL ANSWER STYLE:
         <style>
-        - Go directly to the instructions without any opener.
-        - Explain only the features / permissions that are supported by Knowledge AND allowed for the user's role.
-        - If the user's role is not mentioned in Knowledge for this feature, do NOT assume access; say it is not covered.
-        - Be clear and concise. Give short explanations where helpful.
+        - Begin directly with the answer — no filler openers ("Sure!", "Of course!", "Great question!").
+        - Structure complex answers with numbered steps or bullet points.
+        - For procedures, use numbered steps in order.
+        - For feature lists, use bullet points.
+        - For comparisons, use a short table or paired bullets.
+        - End with a short closing sentence only if the user's question implies they need next steps.
+        - Keep answers concise: prioritise depth over length. Do not pad.
         </style>
 
         FORMATTING RULES (VERY IMPORTANT):
@@ -140,47 +191,54 @@ def build_rag_prompt(
         Answer:
     """
 
-def build_general_prompt(user_q: str, target_lang: str = "en", history: str = "",) -> str:
-    """
-    Fallback when we have no (or clearly insufficient) knowledge.
-    """
-    # Inject conversation history if available
-    history_block = f"""CONVERSATION HISTORY:
-    <history>
-    {history}
-    </history>
 
-    """ if history else ""
-    
-    return f"""
-        SYSTEM INSTRUCTIONS:
+# =========================
+# GENERAL FALLBACK PROMPT
+# =========================
+def build_general_prompt(
+    user_q: str,
+    target_lang: str = "en",
+    history: str = "",
+) -> str:
+    """Used when no relevant passages were retrieved."""
+    history_block = (
+        f"CONVERSATION HISTORY:\n<history>\n{history}\n</history>\n\n"
+        if history else ""
+    )
+
+    return f"""\
+        SYSTEM:
         <system>
-        Your name is Bot Bot.
-        You are a careful assistant. Answer using general knowledge only.
-        You are Bot Bot.
-
-        You can use:
-        - Conversation history (for context like user name)
-        - General knowledge
+        You are Bot Bot, a professional assistant.
+        No document Knowledge is available for this question.
 
         Rules:
-        - Prefer history for personal questions
-        - If unsure, say briefly
+        - Answer using only general knowledge or the Conversation History.
+        - Use Conversation History for personal context (e.g. user's name).
+        - If the question requires specific system/policy knowledge you do not have,
+        say clearly that you do not have that information and suggest the user
+        consult the relevant documentation or contact support.
+        - Never hallucinate facts, policies, or features.
+        - You are Bot Bot. Do NOT mention being an AI model or being trained by any company.
         </system>
 
-        {history_block}
-        Answer in {target_lang}. Be concise, step-by-step when helpful.
+        {history_block}\
+        Answer in {target_lang}. Be concise and professional.
 
         Question:
         {user_q}
 
         Answer:
-    """
-    
+"""
+
+
+# =========================
+# CHITCHAT PROMPT
+# =========================
 def build_chitchat_prompt(
     user_q: str,
     target_lang: str = "en",
-    history: str = ""
+    history: str = "",
 ) -> str:
 
     history_block = f"""CONVERSATION HISTORY:
@@ -193,35 +251,33 @@ def build_chitchat_prompt(
     return f"""
         SYSTEM:
         <system>
-        You are Bot Bot, a friendly and natural conversational assistant.
-
-        You are NOT the user.
-        Do NOT pretend to be the user.
+        You are Bot Bot, a friendly and professional conversational assistant.
 
         Guidelines:
-        - Be natural, friendly, and concise
-        - Do NOT mention employees, productivity, analytics
-        - Use conversation history when relevant (e.g., user's name)
-        - Respond like a human conversation (not formal documentation)
-        - If the user introduces themselves, acknowledge it politely
-        - Do NOT repeat the user's sentence as your identity
-        - Do NOT mention being an AI model
+        - Be warm, natural, and concise — like a knowledgeable colleague, not a chatbot.
+        - Use Conversation History when relevant (e.g. the user's name).
+        - Do NOT mention employees, productivity metrics, or analytics unless the user asks.
+        - Do NOT pretend to be the user or repeat their words as your own identity.
+        - Do NOT mention being an AI model, a language model, or being trained by any company.
+        - If the user introduces themselves, acknowledge them naturally and remember their name.
         </system>
 
-        {history_block}
+        {history_block}\
+        Language: {target_lang}
 
-        LANGUAGE:
-        - Answer in {target_lang}
+        User: {user_q}
 
-        User:
-        {user_q}
+        Bot Bot:
+"""
 
-        Assistant:
-    """
 
+# =========================
+# SUMMARY PROMPT
+# =========================
 def build_summary_prompt(passages: List[Dict[str, Any]], lang: str) -> str:
     """
-    For summarization, we want to encourage more abstraction and insight extraction, rather than just listing facts.
+    Multi-batch summarisation prompt. Encourages insight extraction,
+    not just fact listing.
     """
     
     context = "\n\n".join(
@@ -230,16 +286,18 @@ def build_summary_prompt(passages: List[Dict[str, Any]], lang: str) -> str:
         if (p.get("content") or p.get("document"))
     )
 
-    return f"""
-        You are a data analyst.
-
-        Summarize the following knowledge.
+    return f"""\
+        SYSTEM:
+        You are a professional analyst. Your task is to summarise the following knowledge
+        into a clear, structured executive summary.
 
         Requirements:
-        - Extract key insights
-        - Identify trends if any
-        - Be concise
-        - Do NOT list raw records
+        - Lead with the most important insight or conclusion.
+        - Use bullet points for supporting facts.
+        - Identify trends, patterns, or anomalies if present.
+        - Do NOT copy raw records verbatim — paraphrase and synthesise.
+        - Do NOT fabricate data not present in the text.
+        - Be concise: aim for 150–300 words.
 
         Language: {lang}
 
@@ -247,4 +305,4 @@ def build_summary_prompt(passages: List[Dict[str, Any]], lang: str) -> str:
         {context}
 
         Summary:
-    """
+"""

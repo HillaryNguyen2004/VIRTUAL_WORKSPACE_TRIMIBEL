@@ -276,7 +276,7 @@
                                                 @endphp
 
                                                 @if($photoData)
-                                                    <img src="{{ str_starts_with($photoData, 'http') ? $photoData : asset('storage/' . $photoData) }}" 
+                                                    <img src="{{ storageUrl($photoData) }}" 
                                                         alt="{{ $userName }}" 
                                                         class="h-10 w-10 rounded-full object-cover flex-shrink-0">
                                                 @else
@@ -541,7 +541,7 @@
 
                                             <div class="relative z-10 mt-0.5 flex-shrink-0 w-8 h-8 bg-white rounded-full">
                                                 @if($actPhotoData)
-                                                    <img src="{{ str_starts_with($actPhotoData, 'http') ? $actPhotoData : asset('storage/' . $actPhotoData) }} " 
+                                                    <img src="{{ storageUrl($actPhotoData) }}" 
                                                         alt="{{ $actUserName }}" 
                                                         class="w-8 h-8 rounded-full object-cover ring-4 ring-white">
                                                 @else
@@ -649,6 +649,16 @@
                 }
 
                 const usersToDisplay = currentOnlineUsers.slice(0, 10);
+                @php
+                    $storageBaseUrl = rtrim(
+                        \Illuminate\Support\Str::beforeLast(
+                            \Illuminate\Support\Facades\Storage::disk()->url('storage-base'),
+                            '/storage-base'
+                        ),
+                        '/'
+                    );
+                @endphp
+                const storageBaseUrl = @json($storageBaseUrl);
                 let htmlString = '';
 
                 usersToDisplay.forEach(user => {
@@ -664,7 +674,7 @@
 
                     if (photoData) {
                         // Has photo: Check if it's already a full URL, otherwise append /storage/
-                        const photoUrl = photoData.startsWith('http') ? photoData : `/storage/${photoData}`;
+                        const photoUrl = photoData.startsWith('http') ? photoData : `${storageBaseUrl}/${photoData}`;
                         avatarHtml = `
                             <div class="relative flex-shrink-0">
                                 <img src="${photoUrl}" alt="${user.name}" class="w-12 h-12 rounded-full object-cover">

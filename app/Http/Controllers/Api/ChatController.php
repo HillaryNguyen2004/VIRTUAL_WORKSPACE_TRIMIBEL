@@ -657,7 +657,7 @@ class ChatController extends Controller
                     return [
                         'id' => $user->id,
                         'name' => $user->name,
-                        'user_profile_photo' => $user->user_profile_photo, // <-- Update this line!
+                        'user_profile_photo' => storageUrl($user->user_profile_photo),
                         'role_name' => $roleName,
                         'department_name' => $departmentName,
                         'task_completion' => $taskCompletion,

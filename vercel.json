@@ -29,6 +29,6 @@
         "QUEUE_CONNECTION": "sync",
         "LOG_CHANNEL": "stderr",
 
-        "FILESYSTEM_DISK": "public"
+        "FILESYSTEM_DISK": "s3"
     }
 }

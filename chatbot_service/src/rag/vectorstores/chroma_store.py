@@ -23,11 +23,29 @@ def normalize_workspace_id(workspace_id: str | None) -> str:
     clean = "".join(ch if (ch.isalnum() or ch in "-_") else "_" for ch in raw)
     return clean or "global"
 
-def resolve_chroma_path(workspace_id: str | None) -> str:
-    workspace_scope = normalize_workspace_id(workspace_id)
-    return str(_resolve_base_chroma_dir() / "workspaces" / workspace_scope)
+def normalize_user_id(user_id: str | int | None) -> str | None:
+    """Return a safe directory-name segment for the user, or None if absent."""
+    if user_id is None:
+        return None
+    raw = str(user_id).strip()
+    clean = "".join(ch if (ch.isalnum() or ch in "-_") else "_" for ch in raw)
+    return clean or None
 
-@lru_cache(maxsize=128)
+def resolve_chroma_path(workspace_id: str | None, user_id: str | int | None = None) -> str:
+    """
+    Disk layout
+    -----------
+    With user_id  : <base>/documents/<user_id>/<workspace_id>/
+    Without       : <base>/workspaces/<workspace_id>/
+    """
+    workspace_scope = normalize_workspace_id(workspace_id)
+    safe_user = normalize_user_id(user_id)
+    base = _resolve_base_chroma_dir()
+    if safe_user:
+        return str(base / "documents" / safe_user / workspace_scope)
+    return str(base / "workspaces" / workspace_scope)
+
+@lru_cache(maxsize=256)
 def _get_client(chroma_path: str) -> PersistentClient:
     Path(chroma_path).mkdir(parents=True, exist_ok=True)
     return PersistentClient(
@@ -35,8 +53,8 @@ def _get_client(chroma_path: str) -> PersistentClient:
         settings=ChromaSettings(anonymized_telemetry=False),
     )
 
-def get_collection(workspace_id: str | None = None):
-    chroma_path = resolve_chroma_path(workspace_id)
+def get_collection(workspace_id: str | None = None, user_id: str | int | None = None):
+    chroma_path = resolve_chroma_path(workspace_id, user_id=user_id)
     client = _get_client(chroma_path)
     return client.get_or_create_collection(settings.collection)
 
@@ -70,17 +88,19 @@ def add_chunks(
     metas: List[Dict[str, Any]],
     embeddings: List[List[float]],
     workspace_id: str | None = None,
+    user_id: str | int | None = None,
 ) -> None:
-    coll = get_collection(workspace_id=workspace_id)
+    coll = get_collection(workspace_id=workspace_id, user_id=user_id)
     safe_metas = [_sanitize_metadata(meta) for meta in metas]
     coll.add(ids=ids, documents=docs, metadatas=safe_metas, embeddings=embeddings)
 
 def delete_by_storage_file(
     storage_file: str,
     workspace_id: str | None = None,
+    user_id: str | int | None = None,
 ) -> int:
     """Delete all chunks for a specific storage file. Returns number of deleted chunks."""
-    coll = get_collection(workspace_id=workspace_id)
+    coll = get_collection(workspace_id=workspace_id, user_id=user_id)
     if coll.count() == 0:
         return 0
     where = {"storage_file": {"$eq": storage_file}}
@@ -92,8 +112,8 @@ def delete_by_storage_file(
         coll.delete(where=where)
     return count
 
-def delete_collection(workspace_id: str | None = None) -> None:
-    chroma_path = resolve_chroma_path(workspace_id)
+def delete_collection(workspace_id: str | None = None, user_id: str | int | None = None) -> None:
+    chroma_path = resolve_chroma_path(workspace_id, user_id=user_id)
     client = _get_client(chroma_path)
     try:
         client.delete_collection(settings.collection)
@@ -101,9 +121,9 @@ def delete_collection(workspace_id: str | None = None) -> None:
         # Collection may not exist yet; ignore and recreate on next write.
         pass
 
-def delete_workspace_storage(workspace_id: str | None = None) -> None:
+def delete_workspace_storage(workspace_id: str | None = None, user_id: str | int | None = None) -> None:
     """Remove the entire persisted Chroma workspace directory."""
-    chroma_path = Path(resolve_chroma_path(workspace_id))
+    chroma_path = Path(resolve_chroma_path(workspace_id, user_id=user_id))
     _get_client.cache_clear()
     if chroma_path.exists():
         shutil.rmtree(chroma_path)
@@ -117,13 +137,13 @@ def reload_chroma_clients() -> None:
     """
     _get_client.cache_clear()
 
-def count_legacy_chunks(workspace_id: str | None = None, sample: int = 50) -> int:
+def count_legacy_chunks(workspace_id: str | None = None, user_id: str | int | None = None, sample: int = 50) -> int:
     """
     Sample up to `sample` documents from the collection and count how many
     do NOT start with a contextual header (i.e. ingested before the
     chunk-header upgrade). Returns the count of legacy chunks found.
     """
-    coll = get_collection(workspace_id=workspace_id)
+    coll = get_collection(workspace_id=workspace_id, user_id=user_id)
     total = coll.count()
     if total == 0:
         return 0
@@ -137,10 +157,11 @@ def count_legacy_chunks(workspace_id: str | None = None, sample: int = 50) -> in
 def get_chunks(
     k: int,
     workspace_id: str | None = None,
+    user_id: str | int | None = None,
     where: dict | None = None,
 ) -> List[Dict[str, Any]]:
     """Fetch up to k documents without vector similarity (for aggregation/list queries)."""
-    coll = get_collection(workspace_id=workspace_id)
+    coll = get_collection(workspace_id=workspace_id, user_id=user_id)
     count = coll.count()
     if count == 0:
         return []
@@ -175,9 +196,10 @@ def query_by_vector(
     vec: List[float],
     k: int,
     workspace_id: str | None = None,
+    user_id: str | int | None = None,
     where: dict | None = None,
 ) -> List[Dict[str, Any]]:
-    coll = get_collection(workspace_id=workspace_id)
+    coll = get_collection(workspace_id=workspace_id, user_id=user_id)
     
     count = coll.count()
     if count == 0:

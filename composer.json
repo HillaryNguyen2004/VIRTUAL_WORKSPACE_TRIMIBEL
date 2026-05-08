@@ -24,6 +24,7 @@
         "nguyen_nguyen/company-hour": "*",
         "phpoffice/phpspreadsheet": "^1.3",
         "pusher/pusher-php-server": "^7.2",
+        "smalot/pdfparser": "*",
         "spatie/laravel-permission": "^6.20",
         "tymon/jwt-auth": "^2.2"
     },

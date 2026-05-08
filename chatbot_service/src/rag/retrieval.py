@@ -26,6 +26,7 @@ def retrieve(
     query_text: str,
     k: int | None = None,
     workspace_id: str | None = None,
+    user_id: str | int | None = None,
     where: dict | None = None,
     should_cancel: Optional[Callable[[], bool]] = None,
     **kwargs,                          # absorb old expand/src_lang/history args
@@ -55,7 +56,7 @@ def retrieve(
         raise GenerationCancelled("Retrieval canceled after embed")
 
     # 2. Fetch candidates
-    raw = query_by_vector(qv, fetch_k, workspace_id=workspace_id, where=where)
+    raw = query_by_vector(qv, fetch_k, workspace_id=workspace_id, user_id=user_id, where=where)
 
     if not raw:
         return []
@@ -66,7 +67,9 @@ def retrieve(
         dist = doc.get("distance", 1.0)
         # Lower distance = better. Convert to similarity score then boost with keyword.
         similarity = 1.0 - min(dist, 1.0)
-        doc["_final_score"] = similarity * (1.0 + kw)
+        final = similarity * (1.0 + kw)
+        doc["rrf_score"] = round(similarity, 6)
+        doc["_final_score"] = final
 
     raw.sort(key=lambda d: d["_final_score"], reverse=True)
 

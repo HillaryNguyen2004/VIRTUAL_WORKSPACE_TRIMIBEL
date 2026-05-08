@@ -465,9 +465,9 @@ class OnlineDocsSearchService
         $line = 1;
 
         $html = '';
-        if ($document->html_path && Storage::disk('local')->exists($document->html_path)) {
+        if ($document->html_path && Storage::disk()->exists($document->html_path)) {
             try {
-                $html = (string) Storage::disk('local')->get($document->html_path);
+                $html = (string) Storage::disk()->get($document->html_path);
             } catch (\Throwable $error) {
                 $html = '';
             }
