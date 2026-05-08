@@ -13,26 +13,24 @@ _client = httpx.Client(timeout=httpx.Timeout(connect=10, read=120, write=30, poo
 
 def _embed(inputs: List[str], should_cancel: Optional[Callable[[], bool]] = None) -> List[List[float]]:
     """
-    Ollama embeddings.
-    POST /api/embed
-    Body: { model, input: [..], dimensions, truncate }
-    Returns: { embeddings: [[...], ...], model: ..., ... }
+    Ollama embeddings — calls /api/embeddings once per input (legacy endpoint,
+    compatible with all Ollama versions). Falls back to /api/embed batch if the
+    legacy endpoint returns an unexpected shape.
     """
-    payload = {
-        "model": EMBED_MODEL,
-        "input": inputs,
-        "truncate": True,
-        "dimensions": EMBED_DIM,
-    }
     if should_cancel and should_cancel():
         raise RuntimeError("Embedding canceled before request dispatch")
-    r = _client.post(f"{OLLAMA_BASE_URL}/api/embed", json=payload)
-    r.raise_for_status()
-    data = r.json()
-    embs = data.get("embeddings")
-    if not isinstance(embs, list) or not embs:
-        raise ValueError(f"Unexpected embed response: {data}")
-    return embs
+
+    # Try legacy /api/embeddings (prompt per request) — works on all Ollama versions
+    results: List[List[float]] = []
+    for text in inputs:
+        r = _client.post(f"{OLLAMA_BASE_URL}/api/embeddings", json={"model": EMBED_MODEL, "prompt": text})
+        r.raise_for_status()
+        data = r.json()
+        emb = data.get("embedding")
+        if not isinstance(emb, list) or not emb:
+            raise ValueError(f"Unexpected embed response: {data}")
+        results.append(emb)
+    return results
 
 def embed_texts(texts: List[str], sleep: float = 0.0, should_cancel: Optional[Callable[[], bool]] = None) -> List[List[float]]:
     # sleep ignored (kept for compatibility)

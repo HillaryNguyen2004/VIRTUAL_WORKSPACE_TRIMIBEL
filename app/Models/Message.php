@@ -54,7 +54,7 @@ class Message extends Model
             return null;
         }
         
-        return asset('storage/' . $this->file_path);
+        return storageUrl($this->file_path);
     }
 
     /**

@@ -40,7 +40,7 @@ class ChatFileService
         
         // Store file in chat uploads directory
         $directory = 'chat/files/' . date('Y/m');
-        $path = $file->storeAs($directory, $filename, 'public');
+        $path = $file->storeAs($directory, $filename, config('filesystems.default'));
 
         return [
             'file_name' => $originalName,
@@ -65,7 +65,7 @@ class ChatFileService
         
         // Store image in chat images directory
         $directory = 'chat/images/' . date('Y/m');
-        $path = $file->storeAs($directory, $filename, 'public');
+        $path = $file->storeAs($directory, $filename, config('filesystems.default'));
 
         return [
             'file_name' => $originalName,
@@ -85,7 +85,7 @@ class ChatFileService
         }
 
         if ($file->getSize() > $this->maxFileSize) {
-            throw new \InvalidArgumentException('File size exceeds maximum limit of 10MB');
+            throw new \InvalidArgumentException('File size exceeds maximum limit of 40MB');
         }
 
         if (!in_array($file->getMimeType(), $this->allowedTypes)) {
@@ -103,7 +103,7 @@ class ChatFileService
         }
 
         if ($file->getSize() > $this->maxFileSize) {
-            throw new \InvalidArgumentException('Image size exceeds maximum limit of 10MB');
+            throw new \InvalidArgumentException('Image size exceeds maximum limit of 40MB');
         }
 
         $imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
@@ -123,8 +123,8 @@ class ChatFileService
      */
     public function deleteFile($filePath)
     {
-        if ($filePath && Storage::disk('public')->exists($filePath)) {
-            return Storage::disk('public')->delete($filePath);
+        if ($filePath && Storage::disk()->exists($filePath)) {
+            return Storage::disk()->delete($filePath);
         }
         return false;
     }
@@ -150,6 +150,6 @@ class ChatFileService
      */
     public function getMaxFileSizeFormatted()
     {
-        return '10MB';
+        return '40MB';
     }
 }

@@ -104,7 +104,9 @@
                             @endif
                         </div>
                     @empty
-                        <p class="text-sm text-muted-400">{{ __('online_docs.global_search_empty') }}</p>
+                        @if($personalSearchResults->isEmpty())
+                            <p class="text-sm text-muted-400">{{ __('online_docs.global_search_empty') }}</p>
+                        @endif
                     @endforelse
 
                     @foreach($personalSearchResults as $file)
@@ -302,6 +304,44 @@
                     {{ session('storage_success') }}
                 </div>
             @endif
+            @if(session('storage_warning'))
+                <div class="mb-4 rounded-lg bg-warning/10 text-warning text-xs px-3 py-2">
+                    {{ session('storage_warning') }}
+                </div>
+            @endif
+
+            {{-- Ingest banner: shown when there are pending/failed files --}}
+            @if($pendingIngestCount > 0)
+                <div class="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-4">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="text-sm font-semibold text-blue-900">{{ __('online_docs.ingest_panel_title') }}</p>
+                            <p class="text-xs text-blue-700 mt-1">
+                                {{ __('online_docs.ingest_panel_desc', ['count' => $pendingIngestCount]) }}
+                                @if($failedIngestCount > 0)
+                                    <span class="ml-1 text-red-600">
+                                        ({{ __('online_docs.ingest_failed_count_label', ['count' => $failedIngestCount]) }})
+                                    </span>
+                                @endif
+                            </p>
+                        </div>
+                        <form id="ingest-all-form"
+                              action="{{ route('online-docs.files.ingest-all') }}"
+                              method="POST"
+                              class="flex-shrink-0">
+                            @csrf
+                            <button id="ingest-all-btn" type="submit"
+                                class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white text-xs font-medium hover:bg-blue-700 transition-colors">
+                                <svg id="ingest-all-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                </svg>
+                                {{ __('online_docs.start_ingest') }}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            @endif
+
             <div
                 id="storage-root"
                 class="flex flex-col gap-4"
@@ -596,7 +636,41 @@
                                     </div>
                                 </div>
                                 <a href="{{ $openUrl }}" class="mt-3 block text-sm font-semibold text-main truncate hover:text-primary">{{ $file->original_name }}</a>
-                                <p class="text-xs text-muted-400 mt-1">{{ number_format($file->size / 1024, 1) }} KB</p>
+                                <div class="mt-1 flex items-center justify-between gap-2">
+                                    <p class="text-xs text-muted-400">{{ number_format($file->size / 1024, 1) }} KB</p>
+                                    @php $ingestStatus = $file->ingest_status ?? 'pending'; @endphp
+                                    <div class="flex items-center gap-1.5">
+                                        @if($ingestStatus === 'pending')
+                                            <span class="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-medium text-yellow-800">{{ __('online_docs.ingest_status_pending') }}</span>
+                                        @elseif($ingestStatus === 'processing')
+                                            <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-800">{{ __('online_docs.ingest_status_processing') }}</span>
+                                        @elseif($ingestStatus === 'completed')
+                                            <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-800">{{ __('online_docs.ingest_status_completed') }}</span>
+                                            @if($file->chunk_count > 0)
+                                                <span class="text-[10px] text-muted-400">{{ $file->chunk_count }} {{ __('online_docs.ingest_chunks') }}</span>
+                                            @endif
+                                        @elseif($ingestStatus === 'failed')
+                                            <span class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-800">{{ __('online_docs.ingest_status_failed') }}</span>
+                                        @endif
+                                        @if(in_array($ingestStatus, ['pending', 'failed']))
+                                            <form method="POST"
+                                                  action="{{ route('online-docs.files.ingest', $file) }}"
+                                                  class="inline"
+                                                  data-ingest-file-form>
+                                                @csrf
+                                                <button type="submit"
+                                                    title="{{ __('online_docs.retry_ingest') }}"
+                                                    class="inline-flex items-center justify-center rounded p-0.5 text-muted-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                                    data-ingest-file-button>
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                                        <polyline points="1 4 1 10 7 10"/>
+                                                        <path d="M3.51 15a9 9 0 1 0 .49-3.86L1 10"/>
+                                                    </svg>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                </div>
                             </div>
                         @endforeach
 
@@ -755,11 +829,40 @@
                                             @endif
                                             <a href="{{ $openUrl }}" class="text-sm font-medium text-main truncate hover:text-primary">{{ $file->original_name }}</a>
                                         </div>
-                                        <div class="col-span-2 text-xs text-muted-400">{{ __('online_docs.file') }}</div>
+                                        <div class="col-span-2 flex items-center gap-1.5">
+                                            <span class="text-xs text-muted-400">{{ __('online_docs.file') }}</span>
+                                            @php $ingestStatus = $file->ingest_status ?? 'pending'; @endphp
+                                            @if($ingestStatus === 'pending')
+                                                <span class="inline-flex rounded-full bg-yellow-100 px-1.5 py-0.5 text-[10px] font-medium text-yellow-800">{{ __('online_docs.ingest_status_pending') }}</span>
+                                            @elseif($ingestStatus === 'processing')
+                                                <span class="inline-flex rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-800">{{ __('online_docs.ingest_status_processing') }}</span>
+                                            @elseif($ingestStatus === 'completed')
+                                                <span class="inline-flex rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-800">{{ __('online_docs.ingest_status_completed') }}</span>
+                                            @elseif($ingestStatus === 'failed')
+                                                <span class="inline-flex rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-800">{{ __('online_docs.ingest_status_failed') }}</span>
+                                            @endif
+                                        </div>
                                         <div class="col-span-2 text-xs text-muted-400">{{ $file->updated_at?->diffForHumans() }}</div>
                                         <div class="col-span-2 flex items-center justify-end gap-2">
                                             <a href="{{ $openUrl }}" class="text-xs text-primary hover:text-primary-hover">{{ __('online_docs.preview') }}</a>
                                             <a href="{{ route('online-docs.files.download', $file) }}" class="text-xs text-primary hover:text-primary-hover">{{ __('online_docs.download') }}</a>
+                                            @if(in_array($ingestStatus, ['pending', 'failed']))
+                                                <form method="POST"
+                                                      action="{{ route('online-docs.files.ingest', $file) }}"
+                                                      class="inline"
+                                                      data-ingest-file-form>
+                                                    @csrf
+                                                    <button type="submit"
+                                                        title="{{ __('online_docs.retry_ingest') }}"
+                                                        class="inline-flex items-center justify-center rounded p-0.5 text-muted-400 hover:text-blue-600 transition-colors"
+                                                        data-ingest-file-button>
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                                            <polyline points="1 4 1 10 7 10"/>
+                                                            <path d="M3.51 15a9 9 0 1 0 .49-3.86L1 10"/>
+                                                        </svg>
+                                                    </button>
+                                                </form>
+                                            @endif
                                             <div class="relative" data-menu>
                                                 <button type="button" data-menu-trigger class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-muted-200 text-muted-600 hover:bg-muted-100" aria-label="{{ __('online_docs.more_actions') }}">
                                                     <svg viewBox="0 0 20 20" class="h-4 w-4" fill="currentColor" aria-hidden="true">
@@ -1030,4 +1133,80 @@
         input.addEventListener('keydown', e => { if (e.key === 'Enter') ask(); });
     })();
     </script>
+
+    {{-- Ingest loading overlay + handlers (mirrors AI Workspace behaviour) --}}
+    <div id="ingest-loading-overlay" class="ingest-loading-overlay hidden" aria-live="polite" aria-busy="true">
+        <div class="ingest-spinner"></div>
+        <p class="text-sm font-medium text-slate-700">{{ __('online_docs.loading_ingest') }}</p>
+    </div>
+
+    <script>
+        const ingestForm    = document.getElementById('ingest-all-form');
+        const ingestBtn     = document.getElementById('ingest-all-btn');
+        const ingestIcon    = document.getElementById('ingest-all-icon');
+        const ingestOverlay = document.getElementById('ingest-loading-overlay');
+
+        if (ingestForm && ingestBtn && ingestOverlay) {
+            ingestForm.addEventListener('submit', () => {
+                ingestBtn.disabled = true;
+                ingestBtn.classList.add('opacity-70', 'cursor-not-allowed');
+                if (ingestIcon) {
+                    ingestIcon.classList.add('animate-spin');
+                }
+                ingestOverlay.classList.remove('hidden');
+            });
+        }
+
+        document.querySelectorAll('[data-ingest-file-form]').forEach((form) => {
+            form.addEventListener('submit', () => {
+                const button     = form.querySelector('[data-ingest-file-button]');
+                const buttonIcon = button ? button.querySelector('svg') : null;
+
+                if (button) {
+                    button.disabled = true;
+                    button.classList.add('opacity-70', 'cursor-not-allowed');
+                }
+                if (buttonIcon) {
+                    buttonIcon.classList.add('animate-spin');
+                }
+                if (ingestOverlay) {
+                    ingestOverlay.classList.remove('hidden');
+                }
+            });
+        });
+    </script>
+
+    <style>
+        .ingest-loading-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(4px);
+        }
+
+        .ingest-loading-overlay.hidden {
+            display: none !important;
+        }
+
+        .ingest-spinner {
+            width: 30px;
+            height: 30px;
+            border-radius: 9999px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #2563eb;
+            animation: ingest-spin 0.7s linear infinite;
+        }
+
+        @keyframes ingest-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
 @endpush

@@ -37,8 +37,8 @@ class FaceRegisterController extends Controller
 
             // Create directory if it doesn't exist
             $directory = 'faces/' . $user->id;
-            if (!Storage::disk('public')->exists($directory)) {
-                Storage::disk('public')->makeDirectory($directory);
+            if (!Storage::disk()->exists($directory)) {
+                Storage::disk()->makeDirectory($directory);
             }
 
             // Generate filename using user's name
@@ -46,7 +46,7 @@ class FaceRegisterController extends Controller
             $filename = $sanitizedName . '.jpg';
 
             // Save the file
-            $path = $file->storeAs($directory, $filename, 'public');
+            $path = $file->storeAs($directory, $filename, config('filesystems.default'));
 
             if (!$path) {
                 throw new \Exception('Failed to save image');
@@ -67,7 +67,7 @@ class FaceRegisterController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Face registered successfully!',
-                'face_path' => asset('storage/' . $path),
+                'face_path' => storageUrl($path),
             ]);
 
         } catch (\Exception $e) {

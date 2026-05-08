@@ -37,7 +37,7 @@ class DocumentService
         ]);
 
         $contentPath = "documents/{$document->id}/content.html";
-        Storage::disk('local')->put($contentPath, $initialContent);
+        Storage::disk()->put($contentPath, $initialContent);
         $document->update(['html_path' => $contentPath]);
 
         return $document;
@@ -50,11 +50,11 @@ class DocumentService
     {
         if (!$document->html_path) {
             $contentPath = "documents/{$document->id}/content.html";
-            Storage::disk('local')->makeDirectory("documents/{$document->id}");
+            Storage::disk()->makeDirectory("documents/{$document->id}");
             $document->update(['html_path' => $contentPath]);
         }
 
-        Storage::disk('local')->put($document->html_path, $data['content'] ?? '');
+        Storage::disk()->put($document->html_path, $data['content'] ?? '');
 
         $document->update([
             'title' => $data['title'],
@@ -70,8 +70,8 @@ class DocumentService
      */
     public function getDocumentContent(Document $document): string
     {
-        if ($document->html_path && Storage::disk('local')->exists($document->html_path)) {
-            return Storage::disk('local')->get($document->html_path);
+        if ($document->html_path && Storage::disk()->exists($document->html_path)) {
+            return Storage::disk()->get($document->html_path);
         }
 
         return '';
@@ -82,28 +82,26 @@ class DocumentService
      */
     public function importDocx(Document $document, User $user, $file): Document
     {
-        $importPath = $file->store("documents/{$document->id}/imports");
+        $importPath = $file->store("documents/{$document->id}/imports", config('filesystems.default'));
         $contentPath = $document->html_path ?: "documents/{$document->id}/content.html";
-        $tempPath = "documents/{$document->id}/imports/converted_" . now()->format('YmdHis') . ".html";
+        [$tempDocxRelative, $tempDocxPath] = $this->copyStoredToLocal($importPath);
+        [$tempHtmlRelative, $tempHtmlPath] = $this->createLocalTempPath('html');
 
-        Storage::disk('local')->makeDirectory("documents/{$document->id}");
+        $this->converter->importDocxToHtml($tempDocxPath, $tempHtmlPath);
 
-        $this->converter->importDocxToHtml(
-            Storage::disk('local')->path($importPath),
-            Storage::disk('local')->path($tempPath)
-        );
-
-        $html = Storage::disk('local')->exists($tempPath)
-            ? Storage::disk('local')->get($tempPath)
+        $html = Storage::disk('local')->exists($tempHtmlRelative)
+            ? Storage::disk('local')->get($tempHtmlRelative)
             : '';
 
         if (trim($html) === '') {
-            Storage::disk('local')->delete($tempPath);
+            Storage::disk('local')->delete($tempDocxRelative);
+            Storage::disk('local')->delete($tempHtmlRelative);
             throw new \RuntimeException(__('online_docs.import_empty'));
         }
 
-        Storage::disk('local')->put($contentPath, $html);
-        Storage::disk('local')->delete($tempPath);
+        Storage::disk()->put($contentPath, $html);
+        Storage::disk('local')->delete($tempDocxRelative);
+        Storage::disk('local')->delete($tempHtmlRelative);
 
         $document->update([
             'html_path' => $contentPath,
@@ -120,31 +118,36 @@ class DocumentService
      */
     public function exportDocx(Document $document): string
     {
-        if ($document->docx_path && Storage::disk('local')->exists($document->docx_path)) {
-            return Storage::disk('local')->path($document->docx_path);
+        if ($document->docx_path && Storage::disk()->exists($document->docx_path)) {
+            return $document->docx_path;
         }
 
         if (!$document->html_path) {
             $contentPath = "documents/{$document->id}/content.html";
-            Storage::disk('local')->makeDirectory("documents/{$document->id}");
-            Storage::disk('local')->put($contentPath, '');
+            Storage::disk()->makeDirectory("documents/{$document->id}");
+            Storage::disk()->put($contentPath, '');
             $document->update(['html_path' => $contentPath]);
         }
 
         $exportDir = "documents/{$document->id}/exports";
-        Storage::disk('local')->makeDirectory($exportDir);
+        Storage::disk()->makeDirectory($exportDir);
 
         $exportPath = $exportDir . '/' . now()->format('YmdHis') . '.docx';
-        $htmlPath = Storage::disk('local')->path($document->html_path);
-        $docxPath = Storage::disk('local')->path($exportPath);
+        [$tempHtmlRelative, $tempHtmlPath] = $this->createLocalTempPath('html');
+        Storage::disk('local')->put($tempHtmlRelative, Storage::disk()->get($document->html_path));
+        [$tempDocxRelative, $tempDocxPath] = $this->createLocalTempPath('docx');
 
-        $this->converter->exportHtmlToDocx($htmlPath, $docxPath);
+        $this->converter->exportHtmlToDocx($tempHtmlPath, $tempDocxPath);
+
+        Storage::disk()->put($exportPath, fopen($tempDocxPath, 'rb'));
+        Storage::disk('local')->delete($tempHtmlRelative);
+        Storage::disk('local')->delete($tempDocxRelative);
 
         $document->update([
             'docx_path' => $exportPath,
         ]);
 
-        return $docxPath;
+        return $exportPath;
     }
 
     /**
@@ -152,8 +155,8 @@ class DocumentService
      */
     public function ensureDocxPath(Document $document): string
     {
-        if ($document->docx_path && Storage::disk('local')->exists($document->docx_path)) {
-            $existingSize = Storage::disk('local')->size($document->docx_path);
+        if ($document->docx_path && Storage::disk()->exists($document->docx_path)) {
+            $existingSize = Storage::disk()->size($document->docx_path);
             if ($existingSize > 0) {
                 return $document->docx_path;
             }
@@ -161,29 +164,34 @@ class DocumentService
 
         if (!$document->html_path) {
             $contentPath = "documents/{$document->id}/content.html";
-            Storage::disk('local')->makeDirectory("documents/{$document->id}");
-            Storage::disk('local')->put($contentPath, '');
+            Storage::disk()->makeDirectory("documents/{$document->id}");
+            Storage::disk()->put($contentPath, '');
             $document->update(['html_path' => $contentPath]);
         }
 
         $docxPath = "documents/{$document->id}/document.docx";
-        Storage::disk('local')->makeDirectory("documents/{$document->id}");
+        Storage::disk()->makeDirectory("documents/{$document->id}");
 
-        $currentHtml = Storage::disk('local')->exists($document->html_path)
-            ? Storage::disk('local')->get($document->html_path)
+        $currentHtml = Storage::disk()->exists($document->html_path)
+            ? Storage::disk()->get($document->html_path)
             : '';
 
         if (trim($currentHtml) === '') {
-            Storage::disk('local')->put(
+            Storage::disk()->put(
                 $document->html_path,
                 '<!doctype html><html><body><p></p></body></html>'
             );
         }
 
-        $this->converter->exportHtmlToDocx(
-            Storage::disk('local')->path($document->html_path),
-            Storage::disk('local')->path($docxPath)
-        );
+        [$tempHtmlRelative, $tempHtmlPath] = $this->createLocalTempPath('html');
+        Storage::disk('local')->put($tempHtmlRelative, Storage::disk()->get($document->html_path));
+        [$tempDocxRelative, $tempDocxPath] = $this->createLocalTempPath('docx');
+
+        $this->converter->exportHtmlToDocx($tempHtmlPath, $tempDocxPath);
+        Storage::disk()->put($docxPath, fopen($tempDocxPath, 'rb'));
+
+        Storage::disk('local')->delete($tempHtmlRelative);
+        Storage::disk('local')->delete($tempDocxRelative);
 
         $document->update([
             'docx_path' => $docxPath,
@@ -204,30 +212,26 @@ class DocumentService
         }
 
         $docxPath = $this->ensureDocxPath($document);
-        if (!Storage::disk('local')->exists($docxPath)) {
+        if (!Storage::disk()->exists($docxPath)) {
             return;
         }
 
         $contentPath = $document->html_path ?: "documents/{$document->id}/content.html";
-        $tempPath = "documents/{$document->id}/imports/reindex_" . now()->format('YmdHisv') . '.html';
+        [$tempDocxRelative, $tempDocxPath] = $this->copyStoredToLocal($docxPath);
+        [$tempHtmlRelative, $tempHtmlPath] = $this->createLocalTempPath('html');
 
         try {
-            Storage::disk('local')->makeDirectory("documents/{$document->id}/imports");
+            $this->converter->importDocxToHtml($tempDocxPath, $tempHtmlPath);
 
-            $this->converter->importDocxToHtml(
-                Storage::disk('local')->path($docxPath),
-                Storage::disk('local')->path($tempPath)
-            );
-
-            $html = Storage::disk('local')->exists($tempPath)
-                ? (string) Storage::disk('local')->get($tempPath)
+            $html = Storage::disk('local')->exists($tempHtmlRelative)
+                ? (string) Storage::disk('local')->get($tempHtmlRelative)
                 : '';
 
             if (trim($html) === '') {
                 return;
             }
 
-            Storage::disk('local')->put($contentPath, $html);
+            Storage::disk()->put($contentPath, $html);
 
             $document->update([
                 'html_path' => $contentPath,
@@ -239,9 +243,8 @@ class DocumentService
                 'message' => $error->getMessage(),
             ]);
         } finally {
-            if (Storage::disk('local')->exists($tempPath)) {
-                Storage::disk('local')->delete($tempPath);
-            }
+            Storage::disk('local')->delete($tempDocxRelative);
+            Storage::disk('local')->delete($tempHtmlRelative);
         }
     }
 
@@ -250,17 +253,20 @@ class DocumentService
          */
         public function ensurePptxPath(Document $document): string
         {
-                if ($document->pptx_path && Storage::disk('local')->exists($document->pptx_path)) {
-                        $existingSize = Storage::disk('local')->size($document->pptx_path);
+                if ($document->pptx_path && Storage::disk()->exists($document->pptx_path)) {
+                    $existingSize = Storage::disk()->size($document->pptx_path);
                     if ($existingSize > 0) {
                                 return $document->pptx_path;
                         }
                 }
 
                 $pptxPath = "documents/{$document->id}/presentation.pptx";
-                Storage::disk('local')->makeDirectory("documents/{$document->id}");
+                Storage::disk()->makeDirectory("documents/{$document->id}");
+                [$tempPptxRelative, $tempPptxPath] = $this->createLocalTempPath('pptx');
 
-                $this->createMinimalPptx(Storage::disk('local')->path($pptxPath), (string) $document->title);
+                $this->createMinimalPptx($tempPptxPath, (string) $document->title);
+                Storage::disk()->put($pptxPath, fopen($tempPptxPath, 'rb'));
+                Storage::disk('local')->delete($tempPptxRelative);
 
                 $document->update([
                         'pptx_path' => $pptxPath,
@@ -268,6 +274,32 @@ class DocumentService
 
                 return $pptxPath;
         }
+
+    private function createLocalTempPath(string $extension): array
+    {
+        $normalized = ltrim($extension, '.');
+        $relative = 'tmp/online-docs/' . Str::uuid() . ($normalized !== '' ? '.' . $normalized : '');
+        Storage::disk('local')->makeDirectory(dirname($relative));
+
+        return [$relative, Storage::disk('local')->path($relative)];
+    }
+
+    private function copyStoredToLocal(string $storedPath): array
+    {
+        [$tempRelative, $tempPath] = $this->createLocalTempPath(pathinfo($storedPath, PATHINFO_EXTENSION));
+
+        $stream = Storage::disk()->readStream($storedPath);
+        if ($stream !== false) {
+            Storage::disk('local')->put($tempRelative, $stream);
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        } else {
+            Storage::disk('local')->put($tempRelative, Storage::disk()->get($storedPath));
+        }
+
+        return [$tempRelative, $tempPath];
+    }
 
             private function extractSearchableText(string $html): string
             {
