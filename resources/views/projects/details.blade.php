@@ -36,7 +36,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-4 h-4 fill-current">
                         <path d="M3 4h6v8H3V4zm8 0h6v8h-6V4zm8 0h6v8h-6V4zM3 14h6v8H3v-8zm8 0h6v8h-6v-8zm8 0h6v8h-6v-8z" />
                     </svg>
-                    {{ __('projects.kanban_view') ?? 'Kanban' }}
+                    {{ __('projects.kanban_board') ?? 'Kanban' }}
                 </a>
                 @can('admin.projects.edit')
                     <a href="{{ route('projects.edit', $project->id) }}"

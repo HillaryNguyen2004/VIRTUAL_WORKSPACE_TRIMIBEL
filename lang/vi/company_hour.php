@@ -13,4 +13,5 @@ return [
     'save' => 'Lưu',
     'update_title' => 'Chỉnh sửa giờ làm việc',
     'back_to_company_hour' => 'Quay lại giờ làm việc',
+    'working_days' => 'Ngày làm việc',
 ];
