@@ -33,6 +33,8 @@ return [
     'update' => 'Cập nhật dự án',
     'create' => 'Tạo dự án',
 
+    'kanban_board' => 'Bảng Kanban',
+
     'project_created' => 'Tạo dự án thành công.',
     'project_updated' => 'Cập nhật dự án thành công.',
     'project_deleted' => 'Xóa dự án thành công.',

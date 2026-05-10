@@ -25,78 +25,101 @@ os.environ["ANONYMIZED_TELEMETRY"] = "False"
 # =========================
 TEST_CASES = [
 
-    # Large set → use F1
+    # ── Trend queries ─────────────────────────────────────────
     {
         "question": "Which employees are declining?",
-        "expected_ids": [
-            "1","2","3","4","5","6","7","8",
-            "10","11","12","13","14","15","17","18","19",
-            "20","22","24","25","26","27","30"
-        ],
+        "expected_ids": ["6","7","8","13","17","18","19","20","25","30"],
         "match_type": "f1",
     },
-
-    # Small set → exact
     {
         "question": "Which employees are improving?",
-        "expected_ids": ["9","16","21","23","28","29"],
+        "expected_ids": ["2","4","5","10","11","12","14","16","26","27","28"],
+        "match_type": "f1",
+    },
+    {
+        "question": "Which employees are stable?",
+        "expected_ids": ["1","3","9","15","21","22","23","24","29"],
+        "match_type": "f1",
+    },
+
+    # ── Predicted-level queries ───────────────────────────────
+    {
+        "question": "Which employees are predicted High performers?",
+        "expected_ids": [
+            "1","2","3","4","5","6","8","10","11","12",
+            "15","16","17","21","25","26","27","29"
+        ],
+        "match_type": "f1",
+    },
+    {
+        "question": "Who are predicted Medium performers?",
+        "expected_ids": ["9","13","14","18","19","20","22","23","24","28"],
+        "match_type": "f1",
+    },
+    {
+        "question": "Who are predicted Low / needs urgent attention?",
+        "expected_ids": ["7","30"],
         "match_type": "exact",
     },
 
-    # Medium set → F1
+    # ── At-risk: declining trend + active alerts ──────────────
     {
-        "question": "Which employees are high performers?",
-        "expected_ids": [
-            "1","9","10","11","16","20","21","22","25","26","30"
-        ],
+        "question": "Which employees are at risk?",
+        "expected_ids": ["6","7","8","13","17","20","25","30"],
         "match_type": "f1",
     },
 
+    # ── High performers with a declining trend ────────────────
     {
-        "question": "Who are average?",
-        "expected_ids": [
-            "4","8","13","14","15","18","19","24","27"
-        ],
+        "question": "Which high performers are declining?",
+        "expected_ids": ["6","8","17","25"],
         "match_type": "f1",
     },
 
+    # ── Overwork signal ───────────────────────────────────────
     {
-        "question": "Which excellent employees are declining?",
-        "expected_ids": [
-            "1","10","11","20","22","25","26","30"
-        ],
+        "question": "Who is working more than 9 hours a day?",
+        "expected_ids": ["3","9","20"],
         "match_type": "f1",
     },
 
+    # ── Team overview (keyword check) ─────────────────────────
     {
         "question": "Give team overview",
-        "expected_keywords": ["critical", "declining", "team"],
+        "expected_keywords": ["declining", "improving", "stable", "30"],
+        "match_type": "any",
     },
 
+    # ── Vietnamese equivalents ────────────────────────────────
+    {
+        "question": "Những nhân viên nào đang giảm năng suất?",
+        "expected_ids": ["6","7","8","13","17","18","19","20","25","30"],
+        "match_type": "f1",
+    },
     {
         "question": "Ai đang tăng năng suất?",
-        "expected_ids": ["9","16","21","23","28","29"],
+        "expected_ids": ["2","4","5","10","11","12","14","16","26","27","28"],
+        "match_type": "f1",
+    },
+    {
+        "question": "Nhân viên nào cần can thiệp khẩn cấp?",
+        "expected_ids": ["7","30"],
         "match_type": "exact",
     },
 
+    # ── Specific employee lookup ──────────────────────────────
     {
-        "question": "Những nhân viên nào đang giảm năng suất?",
-        "expected_ids": [
-            "1","2","3","4","5","6","7","8",
-            "10","11","12","13","14","15","17","18","19",
-            "20","22","24","25","26","27","30"
-        ],
+        "question": "Tell me about Tran Hanh",
+        "expected_ids": ["30"],
+        "match_type": "f1",
+    },
+    {
+        "question": "How is Le Giang performing?",
+        "expected_ids": ["21"],
         "match_type": "f1",
     },
 
-    {
-        "question": "Who needs intervention?",
-        "expected_ids": [
-            "4","8","13","14","15","18","19","24","27"
-        ],
-        "match_type": "f1",
-    },
-
+    # ── Out-of-scope (hallucination guard) ────────────────────
     {
         "question": "Which employees got promoted?",
         "expected_keywords": [

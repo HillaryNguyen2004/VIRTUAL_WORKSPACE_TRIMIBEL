@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from typing import List, Dict, Any, Optional, Callable
 import logging
 import re
-import unicodedata
 from .snapshot import get_latest_snapshot_date
 
 from .retrieval import retrieve
@@ -12,6 +11,7 @@ from .prompting import build_rag_prompt, build_general_prompt, build_summary_pro
 from .ollama_generate import generate_answer, stream_answer as ollama_stream_answer, GenerationCancelled
 from .lang import detect_lang
 from .memory import get_memory
+from .utils import normalize_text, is_chitchat, is_analytics_query, is_summarize_query, is_aggregation_query, is_file_content_query
 
 log = logging.getLogger(__name__)
 
@@ -50,6 +50,45 @@ MAX_CONTEXT_PASSAGES = 20
 SUMMARY_BATCH_SIZE = 10
 SUMMARY_MAX_PASSAGES = 100
 
+INJECTION_PATTERNS = [
+    # =========================
+    # ENGLISH
+    # =========================
+    r"ignore\s+(all\s+)?(previous|prior|earlier)\s+instructions?",
+    r"disregard\s+(the\s+)?above",
+    r"reveal\s+(your|the)\s+(system|hidden)\s+prompt",
+    r"show\s+(your|the)\s+instructions?",
+    r"you\s+are\s+now",
+    r"pretend\s+to\s+be",
+    r"act\s+as",
+    r"developer\s+mode",
+    r"jailbreak",
+    r"bypass\s+(policy|restriction|guardrail)",
+    r"do\s+anything\s+now",
+    r"execute\s+tool",
+    r"tool\s+call",
+    r"function\s+call",
+    r"print\s+hidden\s+prompt",
+
+    # =========================
+    # VIETNAMESE
+    # =========================
+    r"bo\s+qua\s+(tat\s+ca\s+)?huong\s+dan",
+    r"bo\s+qua\s+(chi\s+dan|instruction)",
+    r"khong\s+can\s+tuan\s+theo",
+    r"phot\s+lo\s+huong\s+dan",
+    r"tiet\s+lo\s+(prompt|he\s+thong|system)",
+    r"cho\s+toi\s+xem\s+(prompt|huong\s+dan)",
+    r"ban\s+bay\s+gio\s+la",
+    r"hay\s+gia\s+vo\s+la",
+    r"dong\s+vai",
+    r"che\s+do\s+developer",
+    r"vuot\s+qua\s+(bao\s+ve|kiem\s+duyet|guardrail)",
+    r"thuc\s+thi\s+tool",
+    r"goi\s+ham",
+    r"hien\s+thi\s+prompt\s+an",
+]
+
 # =========================
 # QUERY ANALYSIS CLASS
 # =========================
@@ -60,6 +99,7 @@ class QueryAnalysis:
     is_aggregation: bool
     is_file_content: bool
     lang: str
+    top_n: Optional[int] = None
 
 # =========================
 # RETRIEVAL PLAN CLASS
@@ -69,90 +109,6 @@ class RetrievalPlan:
     mode: str            # normal | aggregation | fallback
     k: int
     where: Optional[dict]
-
-# =========================
-# NORMALIZATION
-# =========================
-def normalize_text(text: str) -> str:
-    text = text.lower().strip()
-    text = unicodedata.normalize("NFD", text)
-    text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
-    return re.sub(r"\s+", " ", text)
-
-# =========================
-# INTENT DETECTION
-# =========================
-def is_chitchat(q: str) -> bool:
-    text = normalize_text(q)
-
-    if re.search(r"\b(employee|productivity|nhan vien)\b", text):
-        return False
-
-    # greeting
-    if re.search(r"\b(hi|hello|hey|xin chao|chao)\b", text):
-        return True
-
-    # identity / capability
-    if re.search(r"\b(who are you|ban la ai)\b", text):
-        return True
-
-    # capability-specific
-    if re.search(r"\b(what can you do|ban lam duoc gi|your capabilities)\b", text):
-        return True
-
-    # small talk
-    if re.search(r"\b(how are you|khoe khong)\b", text):
-        return True
-    
-    if re.search(r"\b(thank you|cam on|thanks)\b", text):
-        return True
-    
-    if re.search(r"\b(sorry|xin loi)\b", text):
-        return True
-    
-    if re.search(r"\b(nice to meet you)\b", text):
-        return True
-
-    return False
-
-def is_analytics_query(q: str) -> bool:
-    return bool(re.search(r"\b(overview|tinh hinh|tong the)\b", normalize_text(q)))
-
-def is_summarize_query(q: str) -> bool:
-    return bool(re.search(r"\b(summarize|summary|tom tat)\b", normalize_text(q)))
-
-def is_comparison_query(q: str) -> bool:
-    return bool(re.search(
-        r"\b(larger|more|less|compare|which group|higher|lower)\b",
-        normalize_text(q)
-    ))
-    
-def is_file_content_query(q: str) -> bool:
-    text = normalize_text(q)
-    return bool(re.search(
-        r"\b(content of|all content|full content|noi dung|toan bo noi dung)\b",
-        text
-    ))
-
-def is_aggregation_query(q: str) -> bool:
-    text = normalize_text(q)
-
-    if is_chitchat(q):
-        return False
-    
-    if is_summarize_query(q):
-        return False
-    
-    if is_comparison_query(q):
-        return False
-    
-    if is_file_content_query(q):
-        return False
-
-    return bool(re.search(
-        r"\b(list|all|enumerate|find all|nhung nhan vien|cac nhan vien)\b",
-        text
-    ))
 
 def classify_intent(q: str) -> str:
     if is_chitchat(q):
@@ -198,11 +154,14 @@ def extract_productivity_filters(q: str, workspace_id: str = None) -> dict | Non
         filters.append({"snapshot_date": {"$eq": latest_snapshot}})
 
     # trends (multi-value)
-    if re.search(r"\b(declining|giam|sut giam)\b", text):
+    if re.search(r"\b(declining|giam|sut giam|decrease)\b", text):
         trends.append("declining")
 
-    if re.search(r"\b(improving|tang|cai thien)\b", text):
+    if re.search(r"\b(improving|tang|cai thien|increase)\b", text):
         trends.append("improving")
+
+    if re.search(r"\b(stable|on dinh|duy tri)\b", text):
+        trends.append("stable")
 
     if trends:
         if len(trends) == 1:
@@ -210,25 +169,26 @@ def extract_productivity_filters(q: str, workspace_id: str = None) -> dict | Non
         else:
             filters.append({"trend": {"$in": trends}})
 
-    # levels (multi-value)
-    if re.search(r"\b(excellent|xuat sac|top)\b", text):
-        levels.append("Excellent")
+    # predicted levels (multi-value) — field is predicted_level, values are High/Medium/Low
+    if re.search(r"\b(high|cao|excellent|xuat sac|top performer)\b", text):
+        levels.append("High")
 
-    if re.search(r"\b(good|kha|tot)\b", text):
-        levels.append("Good")
+    if re.search(r"\b(medium|trung binh|average|kha)\b", text):
+        levels.append("Medium")
 
-    if re.search(r"\b(average|trung binh)\b", text):
-        levels.append("Average")
+    if re.search(r"\b(low|thap|urgent|khan cap|can thiep|needs urgent|needs attention)\b", text):
+        levels.append("Low")
 
     if levels:
         if len(levels) == 1:
-            filters.append({"level": {"$eq": levels[0]}})
+            filters.append({"predicted_level": {"$eq": levels[0]}})
         else:
-            filters.append({"level": {"$in": levels}})
+            filters.append({"predicted_level": {"$in": levels}})
 
-    # risk
-    if re.search(r"\b(risk|intervention|nguy co)\b", text):
-        filters.append({"trend": {"$eq": "declining"}})
+    # at-risk = declining trend (model infers active alerts from chunk content)
+    if re.search(r"\b(risk|at.risk|nguy co|rui ro)\b", text):
+        if not trends:  # avoid duplicate trend filter
+            filters.append({"trend": {"$eq": "declining"}})
 
     if not filters:
         return None
@@ -252,6 +212,26 @@ def extract_file_filter(q: str) -> dict | None:
     return None
 
 # =========================
+# TOP-N EXTRACTION
+# =========================
+def extract_top_n(q: str) -> Optional[int]:
+    text = normalize_text(q)
+
+    patterns = [
+        r"\btop\s*(\d+)\b",
+        r"\b(\d+)\s*(best|top|highest|lowest)\b",
+        r"\b(\d+)\s*(employees|people)\b",
+        r"\b(\d+)\s*(nhan vien|nguoi)\b",
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, text)
+        if match:
+            return int(match.group(1))
+
+    return None
+
+# =========================
 # QUERY ANALYSIS
 # =========================
 def analyze_query(user_q: str, lang_hint: Optional[str], workspace_id: str = None) -> QueryAnalysis:
@@ -260,6 +240,7 @@ def analyze_query(user_q: str, lang_hint: Optional[str], workspace_id: str = Non
     intent = classify_intent(user_q)
     filters = extract_file_filter(user_q) or extract_productivity_filters(user_q, workspace_id)
     is_agg = is_aggregation_query(user_q)
+    top_n = extract_top_n(user_q)
 
     return QueryAnalysis(
         intent=intent,
@@ -267,6 +248,7 @@ def analyze_query(user_q: str, lang_hint: Optional[str], workspace_id: str = Non
         is_aggregation=is_agg,
         is_file_content=is_file_content_query(user_q),
         lang=lang,
+        top_n=top_n,
     )
 
 # =========================
@@ -286,12 +268,20 @@ def build_retrieval_plan(
     base_k = k if k is not None else 5
 
     filters = analysis.filters if workspace_id == "productivity" else None
+    
+    # If the query explicitly asks for top N items, prioritize that over intent-based heuristics for k and retrieval mode
+    if analysis.top_n:
+        return RetrievalPlan(
+            "aggregation",
+            max(analysis.top_n * 3, 20),  # buffer
+            filters,
+        )
 
     # summarize = full scan (only for explicit summarize queries, not file-content)
     if analysis.intent == INTENT_SUMMARIZE:
         return RetrievalPlan("summarize", SUMMARY_MAX_PASSAGES, filters)
 
-    # analytics = aggregation
+    # analytics = aggregation (list-all style questions need more passages)
     if analysis.is_aggregation:
         return RetrievalPlan("aggregation", 100, filters)
 
@@ -309,24 +299,26 @@ def retrieve_passages(
     plan: RetrievalPlan,
     workspace_id: Optional[str],
     should_cancel: Optional[Callable[[], bool]] = None,
-    src_lang: Optional[str] = None,
-    history: Optional[List[Dict[str, Any]]] = None,
 ) -> List[Dict[str, Any]]:
     if plan.mode == "none":
         return []
 
-    if plan.mode == "aggregation":
-        return get_chunks(plan.k, workspace_id=workspace_id, where=plan.where or None)
+    # if plan.mode == "aggregation":
+    #     # return get_chunks(plan.k, workspace_id=workspace_id, where=plan.where or None)
+    #     return retrieve(
+    #         user_q,
+    #         k=plan.k,
+    #         workspace_id=workspace_id,
+    #         where=plan.where or {},
+    #         should_cancel=should_cancel,
+    #     )
 
     return retrieve(
         user_q,
         k=plan.k,
         workspace_id=workspace_id,
         where=plan.where or {},
-        should_cancel=should_cancel,
-        expand=True,
-        src_lang=src_lang,
-        history=history or [],
+        should_cancel=should_cancel
     )
 
 def summarize_passages(passages, lang, should_cancel: Optional[Callable[[], bool]] = None):
@@ -351,6 +343,36 @@ def summarize_passages(passages, lang, should_cancel: Optional[Callable[[], bool
     )
 
     return generate_answer(final_prompt, should_cancel=should_cancel)
+
+def sort_passages(passages: List[Dict[str, Any]], key: str, reverse: bool = True):
+    def get_value(p):
+        return (p.get("metadata") or {}).get(key, 0)
+
+    return sorted(passages, key=get_value, reverse=reverse)
+
+def detect_sort_key(q: str) -> str:
+    text = normalize_text(q)
+
+    if re.search(r"\b(productivity|hieu suat)\b", text):
+        return "current_productivity"
+
+    if re.search(r"\b(predicted|du doan)\b", text):
+        return "predicted_productivity"
+
+    return None
+
+def sanitize_retrieved_context(text: str) -> str:
+    sanitized = text
+
+    for pattern in INJECTION_PATTERNS:
+        sanitized = re.sub(
+            pattern,
+            "[BLOCKED_PROMPT_INJECTION]",
+            sanitized,
+            flags=re.IGNORECASE,
+        )
+
+    return sanitized
 
 # =========================
 # MAIN ANSWER
@@ -565,9 +587,12 @@ def answer(
         for chunk in ollama_stream_answer(prompt, should_cancel=should_cancel, on_usage=usage.update):
             accumulated_text += chunk
             yield chunk
+            
+        safe_user_q = sanitize_retrieved_context(user_q)
+        safe_answer = sanitize_retrieved_context(accumulated_text)
 
-        memory.add("user", user_q)
-        memory.add("assistant", accumulated_text)
+        memory.add("user", safe_user_q)
+        memory.add("assistant", safe_answer)
         _log_final_response(
             active_logger,
             "STREAM",
@@ -594,8 +619,6 @@ def answer(
         plan,
         workspace_id,
         should_cancel=should_cancel,
-        src_lang=analysis.lang,
-        history=memory.get_history(),
     )
     ensure_not_cancelled()
 
@@ -611,9 +634,12 @@ def answer(
         for chunk in ollama_stream_answer(prompt, should_cancel=should_cancel, on_usage=usage.update):
             accumulated_text += chunk
             yield chunk
+            
+        safe_user_q = sanitize_retrieved_context(user_q)
+        safe_answer = sanitize_retrieved_context(accumulated_text)
         
-        memory.add("user", user_q)
-        memory.add("assistant", accumulated_text)
+        memory.add("user", safe_user_q)
+        memory.add("assistant", safe_answer)
         _log_final_response(
             active_logger,
             "STREAM",
@@ -624,15 +650,28 @@ def answer(
         )
         return
     
+    safe_passages = []
+
+    for p in passages:
+        safe_p = dict(p)
+
+        content = p.get("content", "")
+        safe_p["content"] = sanitize_retrieved_context(content)
+
+        safe_passages.append(safe_p)
+    
     # =========================
     # 5. SUMMARIZE MODE
     # =========================
     if plan.mode == "summarize":
-        active_logger.info("STREAM Summarize mode with %d passages", len(passages))
-        text, usage = summarize_passages(passages, analysis.lang, should_cancel=should_cancel)
+        active_logger.info("STREAM Summarize mode with %d passages", len(safe_passages))
+        text, usage = summarize_passages(safe_passages, analysis.lang, should_cancel=should_cancel)
 
-        memory.add("user", user_q)
-        memory.add("assistant", text)
+        safe_user_q = sanitize_retrieved_context(user_q)
+        safe_text = sanitize_retrieved_context(text)
+
+        memory.add("user", safe_user_q)
+        memory.add("assistant", safe_text)
         _log_final_response(
             active_logger,
             "STREAM",
@@ -648,20 +687,29 @@ def answer(
     # =========================
     # 6. NORMAL RAG
     # =========================
-    if plan.k:
-        passages = passages[:plan.k]
+    if analysis.top_n:
+        sort_key = detect_sort_key(user_q)
+
+        if sort_key:
+            safe_passages = sort_passages(safe_passages, key=sort_key)
+
+        safe_passages = safe_passages[:analysis.top_n]
+    else:
+        if plan.k:
+            safe_passages = safe_passages[:plan.k]
     
     active_logger.info(
         "STREAM RAG mode with %d passages",
-        len(passages),
+        len(safe_passages),
     )
     
     prompt = build_rag_prompt(
         user_q,
         user_role,
-        passages,
+        safe_passages,
         target_lang,
         history=memory.get_context_text(),
+        include_confidence=False,
     )
 
     accumulated_text = ""
@@ -670,23 +718,29 @@ def answer(
         accumulated_text += chunk
         yield chunk
 
-    memory.add("user", user_q)
-    memory.add("assistant", accumulated_text)
+    safe_user_q = sanitize_retrieved_context(user_q)
+    safe_answer = sanitize_retrieved_context(accumulated_text)
+
+    memory.add("user", safe_user_q)
+    memory.add("assistant", safe_answer)
 
     citations = [
         {
             "rank": i + 1,
             "id": p.get("id"),
             "source": (p.get("metadata") or {}).get("source", "unknown"),
+            "content": sanitize_retrieved_context(
+                str(p.get("content") or p.get("document") or "")
+            ),
         }
-        for i, p in enumerate(passages)
+        for i, p in enumerate(safe_passages)
     ]
 
     _log_final_response(
         active_logger,
         "STREAM",
         f"{user_id}_{workspace_id}",
-        accumulated_text,
+        safe_answer,
         citations,
         usage,
     )

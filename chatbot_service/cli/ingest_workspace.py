@@ -346,7 +346,8 @@ def refresh_productivity_vectordb_from_predict_all(
         rationale_text = f" {prediction_rationale}" if prediction_rationale else ""
 
         doc_text = (
-            f"{name} (User ID: {user_id}). "
+            f"{name} (ID: {user_id}). "
+            f"Trend: {trend}. "
             f"{behavior_summary}"
             f"{signals_text}"
             f" Predicted level: {predicted_level} with {round((confidence or 0) * 100)}% confidence."

@@ -339,6 +339,7 @@ def answer(
             passages=passages,
             target_lang=target_lang,
             history=history_text,
+            include_confidence=True,
         )
     else:
         prompt = build_general_prompt(

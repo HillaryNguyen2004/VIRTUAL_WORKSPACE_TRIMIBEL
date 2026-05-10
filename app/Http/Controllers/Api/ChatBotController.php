@@ -145,7 +145,14 @@ class ChatBotController extends Controller
             'request_id' => 'nullable|string|max:128',
         ]);
 
-        $userRole = strtolower((string) ($data['user_role'] ?? 'user'));
+        $user = auth()->user();
+
+        $userRole = match ($user->role) {
+            'admin', 'subadmin' => 'admin',
+            'staff', 'substaff' => 'staff',
+            default => 'user',
+        };
+        
         $normalizedRole = match ($userRole) {
             'admin', 'subadmin' => 'admin',
             'staff', 'substaff' => 'staff',
@@ -166,8 +173,16 @@ class ChatBotController extends Controller
             @ini_set('implicit_flush', '1');
             @ob_implicit_flush(true);
 
+            $message = $this->sanitizePrompt($data['message']);
+
+            if ($this->containsPromptInjection($message)) {
+                abort(response()->json([
+                    'error' => 'Unsafe prompt detected.'
+                ], 400));
+            }
+
             $payload = json_encode([
-                'message' => $data['message'],
+                'message' => $message,
                 'k' => $data['k'] ?? 5,
                 'lang' => $data['lang'] ?? 'en',
                 'user_id' => $data['user_id'] ?? null,
@@ -251,5 +266,41 @@ class ChatBotController extends Controller
         }
 
         return (string) $workspace->id;
+    }
+
+    private function sanitizePrompt(string $input): string
+    {
+        // Remove null bytes/control chars
+        $input = preg_replace('/[\x00-\x1F\x7F]/u', '', $input);
+
+        // Normalize whitespace
+        $input = preg_replace('/\s+/', ' ', $input);
+
+        return trim($input);
+    }
+
+    private function containsPromptInjection(string $text): bool
+    {
+        $patterns = [
+            '/ignore\s+(all|previous)\s+instructions/i',
+            '/reveal\s+(system|prompt)/i',
+            '/you\s+are\s+now/i',
+            '/act\s+as/i',
+            '/developer\s+mode/i',
+            '/jailbreak/i',
+            '/DAN/i',
+            '/bypass/i',
+            '/disable\s+safety/i',
+            '/print\s+your\s+instructions/i',
+            '/show\s+hidden\s+prompt/i',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $text)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
