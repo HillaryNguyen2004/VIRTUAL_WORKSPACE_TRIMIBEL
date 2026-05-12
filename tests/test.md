@@ -1,0 +1,1 @@
+php artisan test 2>&1 | tee storage/logs/all-tests.log

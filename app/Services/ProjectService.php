@@ -40,7 +40,7 @@ class ProjectService
 
         $query = Project::query()->with('staffUser');
 
-        if (!$user->hasRole('admin')) {
+        if ($user && !$user->hasRole('admin')) {
             // Staff can only see their own projects
             $query->where('staff_id', $user->id);
         }
