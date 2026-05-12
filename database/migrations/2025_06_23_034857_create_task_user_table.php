@@ -9,10 +9,10 @@ class CreateTaskUserTable extends Migration
     public function up()
     {
         Schema::create('task_user', function (Blueprint $table) {
+            $table->id();
             $table->unsignedBigInteger('task_id');
             $table->unsignedBigInteger('user_id');
-
-            $table->primary(['task_id', 'user_id']); // Composite primary key
+            $table->timestamps();
 
             $table->foreign('task_id')->references('id')->on('tasks')->onDelete('cascade');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
