@@ -12,6 +12,14 @@
             <directory suffix="Test.php">./tests/Feature</directory>
         </testsuite>
     </testsuites>
+    <logging>
+        <junit outputFile="storage/logs/phpunit-results.xml"/>
+    </logging>
+
+    <listeners>
+        <listener class="Tests\TestResultLogger"/>
+    </listeners>
+
     <coverage processUncoveredFiles="true">
         <include>
             <directory suffix=".php">./app</directory>

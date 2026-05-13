@@ -31,8 +31,8 @@ use Illuminate\Http\Request;
 //     include_once 'admin/user.php';
 // });
 
-require_once __DIR__ . '/admin/user.php';
-require_once __DIR__ . '/staff/user.php';
+require __DIR__ . '/admin/user.php';
+require __DIR__ . '/staff/user.php';
 
 // Redirect root to login
 Route::get('/', [AuthController::class, 'redirectToLogin']);
@@ -310,29 +310,33 @@ Route::get('/back/tasks/{task}', function (\App\Models\Task $task) {
 })->name('back.tasks.details');
 
 Route::get('/projects', [ProjectController::class, 'index'])
+    ->middleware('auth')
     ->name('projects.index');
 
 Route::get('/projects/create', [ProjectController::class, 'create'])
-    ->middleware('admin_or_permission:admin.projects.create')
+    ->middleware(['auth', 'admin_or_permission:admin.projects.create'])
     ->name('projects.create');
 
 Route::post('/projects/store', [ProjectController::class, 'store'])
+    ->middleware('auth')
     ->name('projects.store');
 
 Route::get('/projects/{id}/edit', [ProjectController::class, 'edit'])
-    ->middleware('admin_or_permission:admin.projects.edit')
+    ->middleware(['auth', 'admin_or_permission:admin.projects.edit'])
     ->name('projects.edit');
 
 Route::put('/projects/{id}', [ProjectController::class, 'update'])
-    ->middleware('admin_or_permission:admin.projects.edit')
+    ->middleware(['auth', 'admin_or_permission:admin.projects.edit'])
     ->name('projects.update');
 
 Route::delete('/projects/{id}', [ProjectController::class, 'destroy'])
-    ->middleware('admin_or_permission:admin.projects.delete')
+    ->middleware(['auth', 'admin_or_permission:admin.projects.delete'])
     ->name('projects.destroy');
 
 Route::get('/projects/{id}/details', [ProjectController::class, 'details'])
+    ->middleware('auth')
     ->name('projects.details');
+    // ->name('projects.details');
 
 Route::get('/projects/{id}/kanban', [ProjectController::class, 'kanban'])
     ->name('projects.kanban');

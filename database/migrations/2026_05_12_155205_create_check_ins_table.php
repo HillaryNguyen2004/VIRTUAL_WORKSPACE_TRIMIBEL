@@ -13,12 +13,13 @@ return new class extends Migration
      */
     public function up()
     {
-        if (!Schema::hasTable('check_ins') || Schema::hasColumn('check_ins', 'is_late')) {
-            return;
-        }
-
-        Schema::table('check_ins', function (Blueprint $table) {
-            $table->boolean('is_late')->default(false);
+        Schema::create('check_ins', function (Blueprint $table) {
+            $table->id();
+            $table->string('user_name');
+            $table->date('date');
+            $table->time('check_in_time')->nullable();
+            $table->time('check_out_time')->nullable();
+            $table->timestamps();
         });
     }
 
@@ -29,8 +30,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('check_ins', function (Blueprint $table) {
-            //
-        });
+        Schema::dropIfExists('check_ins');
     }
 };

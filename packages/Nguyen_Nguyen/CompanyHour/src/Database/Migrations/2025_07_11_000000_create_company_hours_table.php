@@ -6,6 +6,10 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up()
     {
+        if (Schema::hasTable('company_hours')) {
+            return;
+        }
+
         Schema::create('company_hours', function (Blueprint $table) {
             $table->id();
             $table->time('start_at');
