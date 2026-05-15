@@ -51,7 +51,9 @@
             @php
                 use Illuminate\Support\Facades\Route;
                 $dashRoute = 'user.dashboard';
-                if (auth()->user()->hasRole('admin') && Route::has('admin.dashboard')) {
+                if (auth()->user()->hasRole('super_admin') && Route::has('super_admin.dashboard')) {
+                    $dashRoute = 'super_admin.dashboard';
+                } elseif (auth()->user()->hasRole('admin') && Route::has('admin.dashboard')) {
                     $dashRoute = 'admin.dashboard';
                 } elseif (auth()->user()->hasRole('subadmin') && Route::has('subadmin.dashboard')) {
                     $dashRoute = 'subadmin.dashboard';

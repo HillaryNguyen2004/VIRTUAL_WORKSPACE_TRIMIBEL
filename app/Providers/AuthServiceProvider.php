@@ -31,6 +31,11 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
+        Gate::define('view-logs', fn($user) => $user->hasRole('super_admin'));
+        Gate::define('manage-database', fn($user) => $user->hasRole('super_admin'));
+        Gate::define('manage-queues', fn($user) => $user->hasRole('super_admin'));
+        Gate::define('view-system-info', fn($user) => $user->hasRole('super_admin'));
+
         Gate::before(function ($user, string $ability) {
             // Only apply to dotted permission strings (e.g. 'staff.substaff.create')
             // Skip policy method names like 'assignRole', 'syncPermissions', etc.
