@@ -71,11 +71,13 @@ class UserManagementTest extends TestCase
         Notification::fake();
 
         Role::firstOrCreate(['name' => 'user', 'guard_name' => 'web']);
+        $department = \App\Models\Department::create(['name' => 'Test Department']);
 
         $response = $this->actingAs($this->adminUser())->post('/admin/users/store', [
-            'name'  => 'New Staff Member',
-            'email' => 'newstaff_test@example.com',
-            'role'  => 'user',
+            'name'          => 'New Staff Member',
+            'email'         => 'newstaff_test@example.com',
+            'roles'         => 'user',
+            'department_id' => $department->id,
         ]);
 
         // Should redirect after successful creation
