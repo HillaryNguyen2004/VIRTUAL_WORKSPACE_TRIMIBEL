@@ -8,21 +8,24 @@
             <div class="flex items-center gap-4">
                 <x-back-btn :route="'ai-workspaces.index'" />
                 <div>
-                    <h1 class="font-bold text-3xl text-main tracking-tight">{{ $workspace->name }}</h1>
+                    <h1 class="font-bold text-3xl text-main tracking-tight">
+                        {{ $workspace->name }}
+                    </h1>
                     @if ($workspace->description)
                         <p class="text-muted-500 text-sm mt-2">{{ $workspace->description }}</p>
                     @endif
+                    <p class="text-muted-500 text-sm mt-2">{{ __('ai.created_by') }} {{ $workspace->user->name }} ({{ $workspace->user->username }})</p>
                 </div>
             </div>
 
             <div class="flex gap-2">
-                <button onclick="openSummaryModal('workspace', null, '{{ $workspace->id }}')"
+                {{-- <button onclick="openSummaryModal('workspace', null, '{{ $workspace->id }}')"
                     class="inline-flex items-center justify-center gap-2 bg-white border border-purple-300 px-4 py-2 rounded-xl text-sm font-medium text-purple-700 hover:bg-purple-50 transition-all shadow-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                     Summarize Workspace
-                </button>
+                </button> --}}
                 @can('update', $workspace)
                     <a href="{{ route('ai-workspaces.edit', $workspace) }}"
                         class="inline-flex items-center justify-center gap-2 bg-white border border-blue-600/30 px-4 py-2 rounded-xl text-sm font-medium text-blue-600 hover:bg-blue-50 transition-all shadow-sm">
@@ -469,8 +472,8 @@
                             <option value="20">20</option>
                         </select>
                     </div>
-                    <button onclick="runSummary()" class="ml-auto text-xs font-semibold px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                        Regenerate
+                    <button id="summary-run-btn" onclick="runSummary()" class="ml-auto text-xs font-semibold px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                        Summarize
                     </button>
                 </div>
                 {{-- Body --}}
@@ -510,8 +513,24 @@
 
             document.getElementById('summary-copy-btn').classList.add('hidden');
             document.getElementById('summary-modal-footer').style.display = 'none';
+            document.getElementById('summary-modal-body').innerHTML = `
+                <div class="flex flex-col items-center justify-center py-14 gap-4 text-center">
+                    <svg class="w-10 h-10 text-purple-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <p class="text-sm text-muted-400">Choose your options above, then click <strong class="text-main">Summarize</strong>.</p>
+                    <div class="flex items-center gap-3 mt-1">
+                        <button onclick="runSummary()"
+                            class="px-5 py-2 text-sm font-semibold bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors">
+                            Summarize
+                        </button>
+                        <button onclick="closeSummaryModal()"
+                            class="px-5 py-2 text-sm font-medium text-muted-500 border border-muted-200 rounded-xl hover:bg-muted-50 transition-colors">
+                            Cancel
+                        </button>
+                    </div>
+                </div>`;
             document.getElementById('summaryModal').classList.remove('hidden');
-            runSummary();
         }
 
         function closeSummaryModal() {
@@ -552,10 +571,12 @@
             const body     = document.getElementById('summary-modal-body');
             const footer   = document.getElementById('summary-modal-footer');
             const copyBtn  = document.getElementById('summary-copy-btn');
+            const runBtn   = document.getElementById('summary-run-btn');
             const style    = document.getElementById('ws-summary-style').value;
             const lang     = document.getElementById('ws-summary-lang').value;
             const clusters = parseInt(document.getElementById('ws-summary-clusters').value, 10);
 
+            if (runBtn) { runBtn.disabled = true; runBtn.textContent = 'Running…'; }
             _summaryPlainText = '';
             copyBtn.classList.add('hidden');
             footer.style.display = 'none';
@@ -569,22 +590,113 @@
                     <span class="text-sm font-medium">Generating summary&hellip;</span>
                 </div>`;
 
-            const endpoint = _summaryMode === 'workspace'
-                ? '/api/ai/summarize-workspace'
-                : '/api/ai/summarize-document';
-
             const payload = {
                 lang,
                 style,
                 n_clusters:   clusters,
                 workspace_id: _summaryWorkspaceId,
             };
-            if (_summaryMode === 'document') {
-                payload.s3_key = _summaryS3Key;
+
+            // --- Streaming path for workspace summaries ---
+            if (_summaryMode === 'workspace') {
+                try {
+                    const res = await fetch('/api/ai/summarize-workspace/stream', {
+                        method:  'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).content || '',
+                            'Accept':       'text/plain',
+                        },
+                        body: JSON.stringify(payload),
+                    });
+
+                    if (!res.ok) {
+                        const txt = await res.text();
+                        body.innerHTML = `<p class="text-sm text-red-600 text-center py-6">${txt || 'Summary service returned an error.'}</p>`;
+                        return;
+                    }
+
+                    const reader  = res.body.getReader();
+                    const decoder = new TextDecoder();
+                    let   buffer  = '';
+                    let   rawText = '';
+                    let   started = false;
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop();
+
+                        for (const line of lines) {
+                            if (!line.trim()) continue;
+                            let evt;
+                            try { evt = JSON.parse(line); } catch { continue; }
+
+                            if (evt.type === 'progress') {
+                                if (!started) {
+                                    body.innerHTML = `
+                                        <div id="summary-stream-progress" class="text-xs text-muted-400 mb-3 flex items-center gap-2">
+                                            <svg class="animate-spin w-3 h-3 text-purple-400 shrink-0" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                                            </svg>
+                                            <span id="summary-progress-label"></span>
+                                        </div>
+                                        <div id="summary-stream-content" class="flex flex-col gap-2"></div>`;
+                                    started = true;
+                                }
+                                const label = document.getElementById('summary-progress-label');
+                                if (label) label.textContent = `Processing file ${evt.current}/${evt.total}: ${evt.file}`;
+
+                            } else if (evt.type === 'token') {
+                                rawText += evt.text;
+                                const progress = document.getElementById('summary-stream-progress');
+                                if (progress) progress.remove();
+                                if (!document.getElementById('summary-stream-content')) {
+                                    body.innerHTML = `<div id="summary-stream-content" class="flex flex-col gap-2"></div>`;
+                                }
+                                document.getElementById('summary-stream-content').innerHTML = renderSummaryText(rawText);
+
+                            } else if (evt.type === 'done') {
+                                _summaryPlainText = rawText;
+                                copyBtn.classList.remove('hidden');
+
+                                const clusterText = evt.n_clusters  ? `${evt.n_clusters} clusters`  : '';
+                                const chunkText   = evt.total_chunks ? `${evt.total_chunks} chunks` : '';
+                                const fileText    = evt.file_name    ? evt.file_name                 : '';
+
+                                document.getElementById('summary-stat-clusters-text').textContent = clusterText;
+                                document.getElementById('summary-stat-chunks-text').textContent   = chunkText;
+                                document.getElementById('summary-stat-source').textContent        = fileText;
+
+                                if (clusterText || chunkText) footer.style.display = 'flex';
+
+                            } else if (evt.type === 'error') {
+                                body.innerHTML = `<p class="text-sm text-red-600 text-center py-6">${evt.message}</p>`;
+                            }
+                        }
+                    }
+
+                    if (!rawText && !body.querySelector('.text-red-600')) {
+                        body.innerHTML = `<p class="text-sm text-muted-400 text-center py-6">No content to summarise yet. Make sure documents are ingested.</p>`;
+                    }
+                } catch (err) {
+                    body.innerHTML = `<p class="text-sm text-red-600 text-center py-6">Network error — could not reach the summary service.</p>`;
+                    console.error('summary stream error', err);
+                } finally {
+                    if (runBtn) { runBtn.disabled = false; runBtn.textContent = 'Regenerate'; }
+                }
+                return;
             }
 
+            // --- Non-streaming path for document summaries ---
+            payload.s3_key = _summaryS3Key;
+
             try {
-                const res  = await fetch(endpoint, {
+                const res  = await fetch('/api/ai/summarize-document', {
                     method:  'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -615,22 +727,20 @@
                 body.innerHTML = renderSummaryText(data.summary);
                 copyBtn.classList.remove('hidden');
 
-                // Footer stats
                 const clusterText = data.n_clusters  ? `${data.n_clusters} clusters`  : '';
                 const chunkText   = data.total_chunks ? `${data.total_chunks} chunks`  : '';
-                const sourceText  = data.source       ? data.source                    : '';
                 const fileText    = data.file_name    ? data.file_name                 : '';
 
                 document.getElementById('summary-stat-clusters-text').textContent = clusterText;
                 document.getElementById('summary-stat-chunks-text').textContent   = chunkText;
-                document.getElementById('summary-stat-source').textContent        = fileText || sourceText;
+                document.getElementById('summary-stat-source').textContent        = fileText || data.source;
 
-                if (clusterText || chunkText) {
-                    footer.style.display = 'flex';
-                }
+                if (clusterText || chunkText) footer.style.display = 'flex';
             } catch (err) {
                 body.innerHTML = `<p class="text-sm text-red-600 text-center py-6">Network error — could not reach the summary service.</p>`;
                 console.error('summary error', err);
+            } finally {
+                if (runBtn) { runBtn.disabled = false; runBtn.textContent = 'Regenerate'; }
             }
         }
     </script>

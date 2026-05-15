@@ -162,7 +162,11 @@ def get_chunks(
 ) -> List[Dict[str, Any]]:
     """Fetch up to k documents without vector similarity (for aggregation/list queries)."""
     coll = get_collection(workspace_id=workspace_id, user_id=user_id)
-    count = coll.count()
+    try:
+        count = coll.count()
+    except Exception as e:
+        print(f"[ERROR] ChromaDB count failed: {e}")
+        return []
     if count == 0:
         return []
 
@@ -201,7 +205,11 @@ def query_by_vector(
 ) -> List[Dict[str, Any]]:
     coll = get_collection(workspace_id=workspace_id, user_id=user_id)
     
-    count = coll.count()
+    try:
+        count = coll.count()
+    except Exception as e:
+        print(f"[ERROR] ChromaDB count failed: {e}")
+        return []
     if count == 0:
         return []
     safe_k = min(k, count)
