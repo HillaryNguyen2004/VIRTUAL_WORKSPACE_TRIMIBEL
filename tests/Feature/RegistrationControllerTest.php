@@ -4,11 +4,19 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Notification;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class RegistrationControllerTest extends TestCase
 {
     use DatabaseTransactions;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->app->make(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        Role::firstOrCreate(['name' => 'user', 'guard_name' => 'web']);
+    }
 
     public function test_register_page_is_accessible(): void
     {
@@ -24,13 +32,13 @@ class RegistrationControllerTest extends TestCase
         $response = $this->post(route('register.post'), [
             'first_name'            => 'Tuan',
             'last_name'             => 'Nguyen',
-            'email'                 => 'tuannguyen_test@example.com',
-            'password'              => 'password123',
-            'password_confirmation' => 'password123',
+            'email'                 => 'tuannguyen@example.com',
+            'password'              => 'P@ssword123',
+            'password_confirmation' => 'P@ssword123',
         ]);
 
         $response->assertRedirect(route('verification.notice'));
-        $this->assertDatabaseHas('users', ['email' => 'tuannguyen_test@example.com']);
+        $this->assertDatabaseHas('users', ['email' => 'tuannguyen@example.com']);
     }
 
     public function test_register_with_mismatched_passwords_returns_validation_errors(): void
@@ -39,8 +47,8 @@ class RegistrationControllerTest extends TestCase
             'first_name'            => 'Tuan',
             'last_name'             => 'Nguyen',
             'email'                 => 'another@example.com',
-            'password'              => 'password123',
-            'password_confirmation' => 'different456',
+            'password'              => 'P@ssword123',
+            'password_confirmation' => 'Different456!',
         ]);
 
         $response->assertSessionHasErrors('password');
@@ -52,8 +60,8 @@ class RegistrationControllerTest extends TestCase
             'first_name'            => 'Tuan',
             'last_name'             => 'Nguyen',
             'email'                 => '',
-            'password'              => 'password123',
-            'password_confirmation' => 'password123',
+            'password'              => 'P@ssword123',
+            'password_confirmation' => 'P@ssword123',
         ]);
 
         $response->assertSessionHasErrors('email');
@@ -68,8 +76,8 @@ class RegistrationControllerTest extends TestCase
             'first_name'            => 'First',
             'last_name'             => 'User',
             'email'                 => 'duplicate@example.com',
-            'password'              => 'password123',
-            'password_confirmation' => 'password123',
+            'password'              => 'P@ssword123',
+            'password_confirmation' => 'P@ssword123',
         ]);
 
         // Attempt with same email
@@ -77,8 +85,8 @@ class RegistrationControllerTest extends TestCase
             'first_name'            => 'Second',
             'last_name'             => 'User',
             'email'                 => 'duplicate@example.com',
-            'password'              => 'password123',
-            'password_confirmation' => 'password123',
+            'password'              => 'P@ssword123',
+            'password_confirmation' => 'P@ssword123',
         ]);
 
         $response->assertSessionHasErrors('email');

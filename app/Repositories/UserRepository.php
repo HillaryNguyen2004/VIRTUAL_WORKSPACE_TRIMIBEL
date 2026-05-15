@@ -63,7 +63,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         $data = Validator::make($request->all(), [
             'first_name' => ['required', 'string', 'max:255'],
             'last_name'  => ['required', 'string', 'max:255'],
-            'email'      => ['required', 'email:rfc,dns', 'unique:users,email'],
+            'email'      => ['required', 'email:rfc', 'unique:users,email'],
             'password'   => ['required', 'confirmed', Password::min(8)->numbers()->symbols()],
         ])->validate(); // throws on failure
 

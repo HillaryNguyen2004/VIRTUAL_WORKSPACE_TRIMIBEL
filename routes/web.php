@@ -384,8 +384,8 @@ Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('
 Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
 
 // Profile and Settings
-Route::get('/profile', [ProfileController::class, 'showProfile'])->name('profile');
-Route::get('/settings', [ProfileController::class, 'showSettings'])->name('settings');
+Route::get('/profile', [ProfileController::class, 'showProfile'])->middleware('auth')->name('profile');
+Route::get('/settings', [ProfileController::class, 'showSettings'])->middleware('auth')->name('settings');
 Route::post('/profile/register-face', [ProfileController::class, 'registerFace'])->name('profile.register.face');
 Route::put('/settings/update-name', [SettingsController::class, 'updateName'])->name('settings.update.name');
 Route::put('/settings/update-avatar', [SettingsController::class, 'updateAvatar'])->name('settings.update.avatar');
