@@ -211,6 +211,51 @@
         </div>
     </div>
 
+    {{-- Summary Modal --}}
+    <div id="summaryModal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-black/50" onclick="document.getElementById('summaryModal').classList.add('hidden')"></div>
+        <div class="fixed inset-0 z-10 flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl animate-fade-in-up flex flex-col max-h-[80vh]">
+                {{-- Header --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-muted-200 shrink-0">
+                    <div class="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-primary">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z" />
+                        </svg>
+                        <h3 class="font-bold text-main text-base">Conversation Summary</h3>
+                    </div>
+                    <button onclick="document.getElementById('summaryModal').classList.add('hidden')" class="p-1.5 rounded-full text-muted-400 hover:text-primary hover:bg-muted-100 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                {{-- Options --}}
+                <div class="flex items-center gap-3 px-6 py-3 bg-muted-50 border-b border-muted-200 shrink-0">
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-medium text-muted-500">Style</label>
+                        <select id="summary-style" class="text-xs border border-muted-200 rounded-lg px-2 py-1.5 bg-white text-main focus:outline-none focus:ring-2 focus:ring-primary/20">
+                            <option value="bullet">Bullet points</option>
+                            <option value="paragraph">Paragraph</option>
+                            <option value="short">Short (TL;DR)</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-medium text-muted-500">Language</label>
+                        <select id="summary-lang" class="text-xs border border-muted-200 rounded-lg px-2 py-1.5 bg-white text-main focus:outline-none focus:ring-2 focus:ring-primary/20">
+                            <option value="auto">Auto</option>
+                            <option value="en">English</option>
+                            <option value="vi">Vietnamese</option>
+                        </select>
+                    </div>
+                    <button onclick="chatApp.summarizeConversation()" class="ml-auto text-xs font-semibold px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+                        Regenerate
+                    </button>
+                </div>
+                {{-- Body --}}
+                <div id="summary-body" class="flex-1 overflow-y-auto px-6 py-5 custom-scrollbar"></div>
+            </div>
+        </div>
+    </div>
+
     {{-- New Conversation Modal --}}
     <div id="newConversationModal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         {{-- Backdrop --}}
@@ -865,6 +910,59 @@ class RealtimeChatApp {
         pane.classList.add('translate-x-0');
     }
 
+    async summarizeConversation() {
+        if (!this.currentConversation) return;
+
+        const modal = document.getElementById('summaryModal');
+        const body  = document.getElementById('summary-body');
+        const style = document.getElementById('summary-style');
+        const lang  = document.getElementById('summary-lang');
+
+        body.innerHTML = `<div class="flex items-center justify-center py-10 gap-3 text-muted-400">
+            <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+            </svg>
+            <span class="text-sm font-medium">Generating summary…</span>
+        </div>`;
+        modal.classList.remove('hidden');
+
+        try {
+            const res = await axios.post(`/api/chat-bot/summarize/${this.currentConversation.id}`, {
+                lang:  lang.value,
+                style: style.value,
+                limit: 100,
+            });
+            const data = res.data;
+
+            if (!data.summary) {
+                body.innerHTML = `<p class="text-sm text-muted-400 text-center py-6">No messages to summarise.</p>`;
+                return;
+            }
+
+            // Render markdown-style bullet points
+            const lines = data.summary.split('\n').filter(l => l.trim());
+            const html  = lines.map(line => {
+                const clean = line.replace(/^[-•*]\s*/, '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                return line.trim().startsWith('-') || line.trim().startsWith('•') || line.trim().startsWith('*')
+                    ? `<li class="flex gap-2 text-sm text-main leading-relaxed"><span class="text-primary mt-0.5 shrink-0">•</span><span>${clean}</span></li>`
+                    : `<p class="text-sm text-main leading-relaxed">${line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
+            }).join('');
+
+            const isList = lines.some(l => l.trim().startsWith('-') || l.trim().startsWith('•') || l.trim().startsWith('*'));
+            body.innerHTML = isList
+                ? `<ul class="flex flex-col gap-2">${html}</ul>`
+                : `<div class="flex flex-col gap-2">${html}</div>`;
+
+            if (data.truncated) {
+                body.innerHTML += `<p class="mt-3 text-xs text-muted-400 italic">Note: conversation was truncated to fit the context window.</p>`;
+            }
+        } catch (err) {
+            body.innerHTML = `<p class="text-sm text-danger text-center py-6">Failed to generate summary. Please try again.</p>`;
+            console.error('summarize error', err);
+        }
+    }
+
     closeMobileChat() {
         const pane = document.getElementById('chat-pane');
         pane.classList.remove('translate-x-0');
@@ -905,17 +1003,22 @@ class RealtimeChatApp {
                 </div>
             </div>
             <div class="flex gap-2">
+                <button class="p-2 text-muted-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors" title="Summarize conversation" onclick="chatApp.summarizeConversation()">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z" />
+                    </svg>
+                </button>
                 <button class="p-2 text-muted-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors" onclick="chatApp.showConversationInfo()">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
                     </svg>
                 </button>
-                ${this.currentConversation && this.currentConversation.type === 'group' ? 
+                ${this.currentConversation && this.currentConversation.type === 'group' ?
                 `<button id="add-members-btn" type="button" class="p-2 text-muted-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors" title="Add members" aria-label="Add members" onclick="chatApp.openAddMembersModal()">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
                     </svg>
-                </button>` 
+                </button>`
                 : ''
                 }
             </div>

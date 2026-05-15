@@ -75,6 +75,9 @@ Route::middleware(['auth:sanctum'])->prefix('chat')->group(function () {
 Route::post('/chat-bot', [ChatBotController::class, 'chatBot']);
 Route::post('/chat-bot/stream', [ChatBotController::class, 'chatBotStream']);
 Route::post('/chat-bot/stop', [ChatBotController::class, 'stopChatBot']);
+Route::middleware('auth:sanctum')->post('/chat-bot/summarize/{conversation}', [ChatBotController::class, 'summarizeConversation']);
+Route::middleware('auth:sanctum')->post('/ai/summarize-workspace', [ChatBotController::class, 'summarizeWorkspace']);
+Route::middleware('auth:sanctum')->post('/ai/summarize-document',  [ChatBotController::class, 'summarizeDocument']);
 
 Route::post('/agent/answer', [SearchAgentController::class, 'answer']);
 Route::post('/agent/answer/stream', [SearchAgentController::class, 'answerStream']);

@@ -37,7 +37,7 @@ class DocumentService
         ]);
 
         $contentPath = "documents/{$document->id}/content.html";
-        Storage::disk()->put($contentPath, $initialContent);
+        $this->putToDefaultDisk($contentPath, $initialContent);
         $document->update(['html_path' => $contentPath]);
 
         return $document;
@@ -50,11 +50,11 @@ class DocumentService
     {
         if (!$document->html_path) {
             $contentPath = "documents/{$document->id}/content.html";
-            Storage::disk()->makeDirectory("documents/{$document->id}");
+            $this->ensureDirectory("documents/{$document->id}");
             $document->update(['html_path' => $contentPath]);
         }
 
-        Storage::disk()->put($document->html_path, $data['content'] ?? '');
+        $this->putToDefaultDisk($document->html_path, $data['content'] ?? '');
 
         $document->update([
             'title' => $data['title'],
@@ -99,7 +99,7 @@ class DocumentService
             throw new \RuntimeException(__('online_docs.import_empty'));
         }
 
-        Storage::disk()->put($contentPath, $html);
+        $this->putToDefaultDisk($contentPath, $html);
         Storage::disk('local')->delete($tempDocxRelative);
         Storage::disk('local')->delete($tempHtmlRelative);
 
@@ -124,13 +124,13 @@ class DocumentService
 
         if (!$document->html_path) {
             $contentPath = "documents/{$document->id}/content.html";
-            Storage::disk()->makeDirectory("documents/{$document->id}");
-            Storage::disk()->put($contentPath, '');
+            $this->ensureDirectory("documents/{$document->id}");
+            $this->putToDefaultDisk($contentPath, '');
             $document->update(['html_path' => $contentPath]);
         }
 
         $exportDir = "documents/{$document->id}/exports";
-        Storage::disk()->makeDirectory($exportDir);
+        $this->ensureDirectory($exportDir);
 
         $exportPath = $exportDir . '/' . now()->format('YmdHis') . '.docx';
         [$tempHtmlRelative, $tempHtmlPath] = $this->createLocalTempPath('html');
@@ -139,7 +139,7 @@ class DocumentService
 
         $this->converter->exportHtmlToDocx($tempHtmlPath, $tempDocxPath);
 
-        Storage::disk()->put($exportPath, fopen($tempDocxPath, 'rb'));
+        $this->putToDefaultDisk($exportPath, fopen($tempDocxPath, 'rb'));
         Storage::disk('local')->delete($tempHtmlRelative);
         Storage::disk('local')->delete($tempDocxRelative);
 
@@ -164,20 +164,20 @@ class DocumentService
 
         if (!$document->html_path) {
             $contentPath = "documents/{$document->id}/content.html";
-            Storage::disk()->makeDirectory("documents/{$document->id}");
-            Storage::disk()->put($contentPath, '');
+            $this->ensureDirectory("documents/{$document->id}");
+            $this->putToDefaultDisk($contentPath, '');
             $document->update(['html_path' => $contentPath]);
         }
 
         $docxPath = "documents/{$document->id}/document.docx";
-        Storage::disk()->makeDirectory("documents/{$document->id}");
+        $this->ensureDirectory("documents/{$document->id}");
 
         $currentHtml = Storage::disk()->exists($document->html_path)
             ? Storage::disk()->get($document->html_path)
             : '';
 
         if (trim($currentHtml) === '') {
-            Storage::disk()->put(
+            $this->putToDefaultDisk(
                 $document->html_path,
                 '<!doctype html><html><body><p></p></body></html>'
             );
@@ -188,7 +188,7 @@ class DocumentService
         [$tempDocxRelative, $tempDocxPath] = $this->createLocalTempPath('docx');
 
         $this->converter->exportHtmlToDocx($tempHtmlPath, $tempDocxPath);
-        Storage::disk()->put($docxPath, fopen($tempDocxPath, 'rb'));
+        $this->putToDefaultDisk($docxPath, fopen($tempDocxPath, 'rb'));
 
         Storage::disk('local')->delete($tempHtmlRelative);
         Storage::disk('local')->delete($tempDocxRelative);
@@ -231,7 +231,7 @@ class DocumentService
                 return;
             }
 
-            Storage::disk()->put($contentPath, $html);
+            $this->putToDefaultDisk($contentPath, $html);
 
             $document->update([
                 'html_path' => $contentPath,
@@ -261,11 +261,11 @@ class DocumentService
                 }
 
                 $pptxPath = "documents/{$document->id}/presentation.pptx";
-                Storage::disk()->makeDirectory("documents/{$document->id}");
+                $this->ensureDirectory("documents/{$document->id}");
                 [$tempPptxRelative, $tempPptxPath] = $this->createLocalTempPath('pptx');
 
                 $this->createMinimalPptx($tempPptxPath, (string) $document->title);
-                Storage::disk()->put($pptxPath, fopen($tempPptxPath, 'rb'));
+                $this->putToDefaultDisk($pptxPath, fopen($tempPptxPath, 'rb'));
                 Storage::disk('local')->delete($tempPptxRelative);
 
                 $document->update([
@@ -274,6 +274,57 @@ class DocumentService
 
                 return $pptxPath;
         }
+
+    private function putToDefaultDisk(string $path, $contents): void
+    {
+        $diskName = config('filesystems.default');
+        $diskConfig = config("filesystems.disks.{$diskName}", []);
+        $driver = $diskConfig['driver'] ?? null;
+
+        if ($driver === 's3') {
+            $disk = Storage::disk($diskName);
+            if (method_exists($disk, 'getClient')) {
+                $bucket = $diskConfig['bucket'] ?? null;
+                if ($bucket) {
+                    $key = $this->applyDiskPrefix($diskConfig, $path);
+                    $disk->getClient()->putObject([
+                        'Bucket' => $bucket,
+                        'Key' => $key,
+                        'Body' => $contents,
+                    ]);
+                    return;
+                }
+            }
+        }
+
+        Storage::disk($diskName)->put($path, $contents);
+    }
+
+    private function ensureDirectory(string $path): void
+    {
+        $diskName = config('filesystems.default');
+        $diskConfig = config("filesystems.disks.{$diskName}", []);
+
+        if (($diskConfig['driver'] ?? null) === 's3') {
+            return;
+        }
+
+        Storage::disk($diskName)->makeDirectory($path);
+    }
+
+    private function applyDiskPrefix(array $diskConfig, string $path): string
+    {
+        $prefix = $diskConfig['root'] ?? '';
+        if ($prefix === '' && isset($diskConfig['prefix'])) {
+            $prefix = $diskConfig['prefix'];
+        }
+
+        if ($prefix === '') {
+            return ltrim($path, '/');
+        }
+
+        return rtrim($prefix, '/') . '/' . ltrim($path, '/');
+    }
 
     private function createLocalTempPath(string $extension): array
     {

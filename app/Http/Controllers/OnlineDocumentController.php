@@ -8,6 +8,7 @@ use App\Http\Requests\ShareDocumentRequest;
 use App\Http\Requests\StoreDocumentRequest;
 use App\Http\Requests\UpdateDocumentRequest;
 use App\Http\Requests\UpdateShareRequest;
+use App\Jobs\IndexPersonalFileJob;
 use App\Models\Document;
 use App\Models\PersonalDocumentLink;
 use App\Models\PersonalFile;
@@ -32,6 +33,8 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class OnlineDocumentController extends Controller
 {
+    private const PROCESSING_STALE_MINUTES = 30;
+
     public function __construct(
         private DocumentRepository $repository,
         private DocumentService $service,
@@ -280,23 +283,27 @@ class OnlineDocumentController extends Controller
             return response()->json(['error' => __('online_docs.ai_summary_error')], 503);
         }
 
-        try {
-            $prompt = "Summarize the following document in a clear, concise way. "
-                . "Provide: 1) A 2-3 sentence overview, 2) Key points as bullet points (max 6), 3) Main conclusions if any. "
-                . "Return plain text only, no JSON.\n\nDocument:\n"
-                . mb_substr($plainText, 0, 6000);
+        $locale = app()->getLocale();
+        $lang = in_array($locale, ['vi', 'en']) ? $locale : 'auto';
 
-            $response = Http::timeout(60)->post($chatbotUrl . '/chat', [
-                'message' => $prompt,
-                'k' => 1,
-                'lang' => app()->getLocale(),
+        try {
+            $response = Http::timeout(120)->post($chatbotUrl . '/summary/text', [
+                'text'       => mb_substr($plainText, 0, 50000),
+                'lang'       => $lang,
+                'style'      => 'bullet',
+                'n_clusters' => 8,
             ]);
 
             if (!$response->successful()) {
                 return response()->json(['error' => __('online_docs.ai_summary_error')], 500);
             }
 
-            $summary = (string) ($response->json('answer') ?? '');
+            $data    = $response->json();
+            $summary = (string) ($data['summary'] ?? '');
+
+            if ($summary === '' && isset($data['error'])) {
+                return response()->json(['error' => $data['error']], 500);
+            }
 
             return response()->json(['summary' => $summary]);
         } catch (\Throwable $e) {
@@ -359,10 +366,9 @@ class OnlineDocumentController extends Controller
             'query' => ['required', 'string', 'min:2', 'max:500'],
         ]);
 
-        $user = auth()->user();
+        $user  = auth()->user();
         $query = trim($data['query']);
 
-        // Try the RAG chatbot first; fall back to built-in BM25 search if unavailable.
         $chatbotUrl = rtrim((string) (config('services.chatbot.base_url') ?: ''), '/');
         if ($chatbotUrl !== '') {
             try {
@@ -373,39 +379,60 @@ class OnlineDocumentController extends Controller
                     default             => 'user',
                 };
 
-                $response = Http::timeout(45)->post($chatbotUrl . '/agent/answer', [
+                // Build the list of workspace IDs that belong to this user.
+                // Each online doc is indexed under its own workspace: "online_doc_{id}".
+                // Each personal file is indexed under: "personal_file_{id}".
+                $docWorkspaces = Document::query()
+                    ->where('owner_id', $user->id)
+                    ->pluck('id')
+                    ->map(fn($id) => 'online_doc_' . $id)
+                    ->values()
+                    ->all();
+
+                $fileWorkspaces = PersonalFile::query()
+                    ->where('user_id', $user->id)
+                    ->pluck('id')
+                    ->map(fn($id) => 'personal_file_' . $id)
+                    ->values()
+                    ->all();
+
+                $workspaceIds = array_merge($docWorkspaces, $fileWorkspaces);
+
+                // Nothing indexed yet — go straight to BM25 fallback.
+                if (empty($workspaceIds)) {
+                    return $this->searchAgentBm25Fallback($user, $query);
+                }
+
+                $response = Http::timeout(45)->post($chatbotUrl . '/agent/answer/multi', [
                     'query'        => $query,
-                    'workspace_id' => 'global',
+                    'workspace_ids' => $workspaceIds,
                     'user_role'    => $normalizedRole,
-                    'k'            => 12,
+                    'k'            => 8,
                     'lang'         => app()->getLocale(),
                     'history'      => [],
                     'history_text' => '',
-                    'where'        => null,
                 ]);
 
                 if ($response->successful()) {
                     $answer   = (string) ($response->json('answer') ?? '');
                     $passages = $response->json('passages') ?? [];
 
-                    $citations  = $this->passagesToCitations($passages);
-                    $confidence = $this->inferConfidence($passages);
-
+                    $citations         = $this->passagesToCitations($passages);
+                    $confidence        = $this->inferConfidence($passages);
                     $enrichedCitations = $this->enrichCitations($citations, $user);
 
                     return response()->json([
-                        'answer'     => $answer,
-                        'citations'  => $enrichedCitations,
+                        'answer'    => $answer,
+                        'citations' => $enrichedCitations,
                         'confidence' => $confidence,
-                        'source'     => 'rag',
+                        'source'    => 'rag',
                     ]);
                 }
             } catch (\Throwable) {
-                // Chatbot unavailable — fall through to BM25 fallback below.
+                // Chatbot unavailable — fall through to BM25 fallback.
             }
         }
 
-        // BM25 fallback: use the existing ranked search pipeline.
         return $this->searchAgentBm25Fallback($user, $query);
     }
 
@@ -418,11 +445,11 @@ class OnlineDocumentController extends Controller
         foreach ($passages as $i => $p) {
             $meta    = $p['metadata'] ?? [];
             $source  = $meta['source'] ?? $meta['file_name'] ?? $meta['storage_file'] ?? '';
-            $docId   = $meta['doc_id'] ?? $meta['workspace_id'] ?? '';
 
-            // Extract numeric document ID if workspace is "online_doc_{id}"
+            // Chunks store workspace_id like "online_doc_42" — extract the numeric doc ID from it.
+            $workspaceId = $meta['workspace_id'] ?? '';
             $numericId = '';
-            if (preg_match('/^online_doc_(\d+)$/', (string) $docId, $m)) {
+            if (preg_match('/^online_doc_(\d+)$/', (string) $workspaceId, $m)) {
                 $numericId = $m[1];
             }
 
@@ -446,7 +473,7 @@ class OnlineDocumentController extends Controller
             return ['level' => 'low', 'score' => 0.0, 'reason' => 'No matching documents found.'];
         }
 
-        $topScore = (float) ($passages[0]['final_score'] ?? $passages[0]['rrf_score'] ?? 0.0);
+        $topScore = (float) ($passages[0]['final_score'] ?? $passages[0]['_final_score'] ?? $passages[0]['rrf_score'] ?? 0.0);
 
         if ($topScore >= 0.7) {
             $level  = 'high';
@@ -1001,88 +1028,50 @@ class OnlineDocumentController extends Controller
             abort(403);
         }
 
-        if (!in_array($file->ingest_status, ['pending', 'failed'])) {
+        $staleAt = now()->subMinutes(self::PROCESSING_STALE_MINUTES);
+        if ($file->ingest_status === 'processing' && $file->updated_at && $file->updated_at->greaterThan($staleAt)) {
+            return back()->with('storage_warning', __('online_docs.ingest_processing_active'));
+        }
+
+        if (!in_array($file->ingest_status, ['pending', 'failed', 'processing'], true)) {
             return back()->with('storage_warning', __('online_docs.file_not_eligible_for_ingest'));
         }
 
-        @set_time_limit(600);
-
         $file->update(['ingest_status' => 'processing', 'ingest_error' => null]);
 
-        try {
-            $chunkCount = $this->ragIndex->indexFile(
-                storedPath: $file->stored_path,
-                workspaceId: 'personal_file_' . $file->id,
-                originalName: $file->original_name,
-                userId: (string) $user->id,
-            );
+        IndexPersonalFileJob::dispatch($file->id, (string) $user->id);
 
-            $file->update([
-                'ingest_status' => 'completed',
-                'chunk_count'   => $chunkCount,
-                'ingested_at'   => now(),
-                'ingest_error'  => null,
-            ]);
-
-            return back()->with('storage_success', __('online_docs.ingest_completed_single', ['name' => $file->original_name]));
-        } catch (\Throwable $e) {
-            $file->update([
-                'ingest_status' => 'failed',
-                'ingest_error'  => $e->getMessage(),
-            ]);
-
-            return back()->with('storage_warning', __('online_docs.ingest_failed_single', ['name' => $file->original_name]));
-        }
+        return back()->with('storage_success', __('online_docs.ingest_queued_single', ['name' => $file->original_name]));
     }
 
     public function ingestAllPersonalFiles(Request $request)
     {
         $user = auth()->user();
 
-        @set_time_limit(600);
-
+        $staleAt = now()->subMinutes(self::PROCESSING_STALE_MINUTES);
         $pending = PersonalFile::where('user_id', $user->id)
-            ->whereIn('ingest_status', ['pending', 'failed'])
+            ->where(function ($query) use ($staleAt) {
+                $query->whereIn('ingest_status', ['pending', 'failed'])
+                    ->orWhere(function ($query) use ($staleAt) {
+                        $query->where('ingest_status', 'processing')
+                            ->where('updated_at', '<=', $staleAt);
+                    });
+            })
             ->get();
 
         if ($pending->isEmpty()) {
             return back()->with('storage_warning', __('online_docs.no_files_to_ingest'));
         }
 
-        $success = 0;
-        $failed  = 0;
+        $queued = 0;
 
         foreach ($pending as $file) {
             $file->update(['ingest_status' => 'processing', 'ingest_error' => null]);
-            try {
-                $chunkCount = $this->ragIndex->indexFile(
-                    storedPath: $file->stored_path,
-                    workspaceId: 'personal_file_' . $file->id,
-                    originalName: $file->original_name,
-                    userId: (string) $user->id,
-                );
-                $file->update([
-                    'ingest_status' => 'completed',
-                    'chunk_count'   => $chunkCount,
-                    'ingested_at'   => now(),
-                    'ingest_error'  => null,
-                ]);
-                $success++;
-            } catch (\Throwable $e) {
-                $file->update([
-                    'ingest_status' => 'failed',
-                    'ingest_error'  => $e->getMessage(),
-                ]);
-                $failed++;
-            }
+            IndexPersonalFileJob::dispatch($file->id, (string) $user->id);
+            $queued++;
         }
 
-        $message = __('online_docs.ingest_completed', ['count' => $success]);
-        if ($failed > 0) {
-            $message .= ' ' . __('online_docs.ingest_failed_count', ['count' => $failed]);
-        }
-
-        return back()->with('storage_success', $message);
+        return back()->with('storage_success', __('online_docs.ingest_queued', ['count' => $queued]));
     }
 
     public function moveStorageItem(Request $request)
@@ -1345,6 +1334,8 @@ class OnlineDocumentController extends Controller
     public function importDocx(ImportDocxRequest $request, Document $document)
     {
         $this->authorize('update', $document);
+
+        @set_time_limit(600);
 
         try {
             $this->service->importDocx($document, auth()->user(), $request->file('docx'));

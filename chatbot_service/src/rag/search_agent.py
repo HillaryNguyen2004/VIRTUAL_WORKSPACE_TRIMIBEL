@@ -25,6 +25,7 @@ answer(query, workspace_id, user_role, k, src_lang, history, should_cancel)
 """
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
@@ -350,11 +351,23 @@ def answer(
 
     # 3. Generate
     if stream:
+        citations = [
+            {
+                "rank": i + 1,
+                "id": p.get("id", ""),
+                "source": (p.get("metadata") or {}).get("source", "unknown"),
+                "location": (p.get("metadata") or {}).get("section", ""),
+            }
+            for i, p in enumerate(passages)
+        ]
+
         def _gen():
             try:
                 yield from ollama_stream(prompt, should_cancel=should_cancel)
             except GenerationCancelled:
                 return
+            # Sentinel line: caller strips this from display and parses citations
+            yield "\n__CITATIONS__:" + json.dumps(citations, ensure_ascii=False)
 
         return {"text": "", "passages": passages, "stream": _gen()}
 

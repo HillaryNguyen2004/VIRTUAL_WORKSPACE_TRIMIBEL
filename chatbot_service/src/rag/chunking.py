@@ -8,11 +8,18 @@ from xml.etree import ElementTree
 from zipfile import ZipFile
 from pypdf import PdfReader
 
-from langchain_text_splitters import (
-    MarkdownHeaderTextSplitter,
-    RecursiveCharacterTextSplitter
-)
-from langchain_experimental.text_splitter import SemanticChunker
+try:
+    from langchain_text_splitters import (
+        MarkdownHeaderTextSplitter,
+        RecursiveCharacterTextSplitter
+    )
+    from langchain_experimental.text_splitter import SemanticChunker
+    _LANGCHAIN_AVAILABLE = True
+except Exception:
+    MarkdownHeaderTextSplitter = None
+    RecursiveCharacterTextSplitter = None
+    SemanticChunker = None
+    _LANGCHAIN_AVAILABLE = False
 
 # =========================
 # CONFIG
@@ -114,7 +121,9 @@ def make_semantic_splitter():
     """
     Uses a semantic chunker with a custom embedding model to split text into semantically meaningful chunks.
     """
-    
+    if not _LANGCHAIN_AVAILABLE or SemanticChunker is None:
+        raise RuntimeError("LangChain splitters are unavailable")
+
     return SemanticChunker(
         OllamaEmbeddingWrapper(),
         breakpoint_threshold_type="percentile",
@@ -125,11 +134,23 @@ def make_recursive_splitter():
     """
     Fallback splitter that uses a recursive character-based approach to split text into chunks of a specified size with some overlap.
     """
-    
+    if not _LANGCHAIN_AVAILABLE or RecursiveCharacterTextSplitter is None:
+        raise RuntimeError("LangChain splitters are unavailable")
+
     return RecursiveCharacterTextSplitter(
         chunk_size=800,
         chunk_overlap=100
     )
+
+def simple_split_text(text: str, chunk_size: int = 800, overlap: int = 100) -> List[str]:
+    """Minimal splitter used when LangChain splitters are unavailable."""
+    chunks: List[str] = []
+    start = 0
+    while start < len(text):
+        end = min(start + chunk_size, len(text))
+        chunks.append(text[start:end])
+        start += max(1, chunk_size - overlap)
+    return [c for c in chunks if c.strip()]
 
 # =========================
 # SECTION SPLIT
@@ -178,22 +199,28 @@ def is_bullet_block(text: str):
     bullet_lines = [l for l in lines if l.strip().startswith(("-", "*"))]
     return len(bullet_lines) >= 2
 
+_SEMANTIC_CHUNK_CHAR_LIMIT = 8_000  # skip SemanticChunker for texts larger than this
+
 def semantic_chunk_text(text: str) -> List[str]:
-    semantic = make_semantic_splitter()
+    if not _LANGCHAIN_AVAILABLE:
+        return simple_split_text(text)
+
+    # SemanticChunker embeds every sentence — too slow/timeout-prone for large texts
+    if len(text) <= _SEMANTIC_CHUNK_CHAR_LIMIT:
+        try:
+            semantic = make_semantic_splitter()
+            docs = semantic.create_documents([text])
+            chunks = [d.page_content for d in docs]
+            if len(chunks) >= 2:
+                return chunks
+        except Exception:
+            pass
 
     try:
-        docs = semantic.create_documents([text])
-        chunks = [d.page_content for d in docs]
-
-        # fallback nếu semantic không chia được
-        if len(chunks) < 2:
-            raise ValueError("Too few semantic chunks")
-
-        return chunks
-
-    except Exception:
         splitter = make_recursive_splitter()
         return splitter.split_text(text)
+    except Exception:
+        return simple_split_text(text)
 
 # =========================
 # PDF
@@ -394,6 +421,18 @@ def structured_table_chunks(path: Path):
 # MARKDOWN
 # =========================
 def split_markdown(text: str, source: str):
+    if not _LANGCHAIN_AVAILABLE or MarkdownHeaderTextSplitter is None:
+        chunks = simple_split_text(text)
+        return (
+            chunks,
+            [{
+                "source": source,
+                "headers": {},
+                "type": "markdown",
+                "chunk_index": i
+            } for i in range(len(chunks))]
+        )
+
     splitter = MarkdownHeaderTextSplitter([
         ("#", "h1"), ("##", "h2"), ("###", "h3"),
     ])

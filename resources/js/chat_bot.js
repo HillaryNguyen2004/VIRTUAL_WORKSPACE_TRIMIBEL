@@ -268,6 +268,38 @@ $(function () {
             });
     };
 
+    const CITATION_SENTINEL = "\n__CITATIONS__:";
+
+    // Split accumulated stream text into {text, citations}.
+    // The sentinel line is never shown to the user.
+    const parseSentinel = (raw) => {
+        const idx = raw.indexOf(CITATION_SENTINEL);
+        if (idx === -1) return { text: raw, citations: [] };
+        const text = raw.slice(0, idx);
+        try {
+            const citations = JSON.parse(raw.slice(idx + CITATION_SENTINEL.length));
+            return { text, citations: Array.isArray(citations) ? citations : [] };
+        } catch (_) {
+            return { text, citations: [] };
+        }
+    };
+
+    const renderCitationCards = (citations) => {
+        if (!citations || citations.length === 0) return null;
+        const $list = $('<div class="mt-2 flex flex-col gap-1"></div>');
+        citations.forEach((c) => {
+            const label = c.source || c.id || "source";
+            const loc   = c.location ? ` · ${c.location}` : "";
+            $list.append(
+                $(`<div class="flex items-center gap-1.5 text-[11px] text-muted-500 bg-white border border-muted-200 rounded-lg px-2 py-1">
+                    <svg class="w-3 h-3 shrink-0 text-primary/60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span class="truncate font-medium">[${c.rank}] ${label}</span><span class="text-muted-400 shrink-0">${loc}</span>
+                </div>`)
+            );
+        });
+        return $list;
+    };
+
     const createStreamingBubble = () => {
         const $avatar = $(
             '<div class="flex items-center justify-center rounded-full p-2 border bg-white"></div>',
@@ -287,13 +319,27 @@ $(function () {
         return $bubble;
     };
 
-    const updateStreamingBubble = (text) => {
+    const updateStreamingBubble = (rawAccumulated) => {
         if (!$streamingBubble) {
             $streamingBubble = createStreamingBubble();
         }
 
+        const { text } = parseSentinel(rawAccumulated);
         $streamingBubble.html(renderMarkdown(text));
         scrollMessages();
+    };
+
+    const finalizeBubbleWithCitations = (rawAccumulated) => {
+        const { text, citations } = parseSentinel(rawAccumulated);
+        if ($streamingBubble) {
+            $streamingBubble.html(renderMarkdown(text));
+            if (citations.length > 0) {
+                const $cards = renderCitationCards(citations);
+                $streamingBubble.closest(".flex").append(
+                    $('<div class="max-w-[280px] ml-10"></div>').append($cards)
+                );
+            }
+        }
     };
 
     const sendMessage = async (forcedMessage = null) => {
@@ -366,8 +412,11 @@ $(function () {
 
             hideTypingBubble();
 
-            if (!accumulated.trim()) {
+            const { text: finalText } = parseSentinel(accumulated);
+            if (!finalText.trim()) {
                 appendBotMessage("I don't have an answer right now.");
+            } else {
+                finalizeBubbleWithCitations(accumulated);
             }
         } catch (error) {
             console.error(error);
