@@ -17,6 +17,20 @@ jobs:
     name: PHP Tests
     runs-on: ubuntu-latest
 
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: testing
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,21 +60,21 @@ jobs:
       - name: Run database migrations
         env:
           DB_CONNECTION: mysql
-          DB_HOST: ${{ secrets.TEST_DB_HOST }}
-          DB_PORT: ${{ secrets.TEST_DB_PORT }}
-          DB_DATABASE: ${{ secrets.TEST_DB_DATABASE }}
-          DB_USERNAME: ${{ secrets.TEST_DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
-        run: php artisan migrate:refresh --force
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: testing
+          DB_USERNAME: root
+          DB_PASSWORD: root
+        run: php artisan migrate:fresh --force
 
       - name: Run PHPUnit tests
         env:
           DB_CONNECTION: mysql
-          DB_HOST: ${{ secrets.TEST_DB_HOST }}
-          DB_PORT: ${{ secrets.TEST_DB_PORT }}
-          DB_DATABASE: ${{ secrets.TEST_DB_DATABASE }}
-          DB_USERNAME: ${{ secrets.TEST_DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: testing
+          DB_USERNAME: root
+          DB_PASSWORD: root
           CACHE_DRIVER: array
           QUEUE_CONNECTION: sync
           SESSION_DRIVER: array
