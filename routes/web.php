@@ -62,6 +62,23 @@ Route::get('/dashboard', function (UserRoleRedirectService $redirectService) {
 
 Route::get('/user/dashboard', [DashboardController::class, 'user'])->name('user.dashboard')->middleware('auth');
 
+Route::get('/super-admin/dashboard', [App\Http\Controllers\SuperAdminDashboardController::class, 'index'])
+    ->middleware(['auth', 'role:super_admin'])
+    ->name('super_admin.dashboard');
+
+Route::prefix('super-admin')
+    ->middleware(['auth', 'role:super_admin'])
+    ->name('super_admin.')
+    ->group(function () {
+        Route::get('/logs', [App\Http\Controllers\SuperAdminController::class, 'logs'])->name('logs');
+        Route::delete('/logs', [App\Http\Controllers\SuperAdminController::class, 'clearLogs'])->name('logs.clear');
+        Route::get('/database', [App\Http\Controllers\SuperAdminController::class, 'database'])->name('database');
+        Route::get('/queues', [App\Http\Controllers\SuperAdminController::class, 'queues'])->name('queues');
+        Route::post('/queues/retry/{id}', [App\Http\Controllers\SuperAdminController::class, 'retryFailedJob'])->name('queues.retry');
+        Route::post('/queues/retry-all', [App\Http\Controllers\SuperAdminController::class, 'retryAllFailed'])->name('queues.retry-all');
+        Route::get('/health', [App\Http\Controllers\SuperAdminController::class, 'health'])->name('health');
+    });
+
 Route::middleware(['auth'])->prefix('online-docs')->name('online-docs.')->group(function () {
     Route::get('/', [OnlineDocumentController::class, 'landing'])->name('home');
     Route::post('/folders', [OnlineDocumentController::class, 'createFolder'])->name('folders.store');
