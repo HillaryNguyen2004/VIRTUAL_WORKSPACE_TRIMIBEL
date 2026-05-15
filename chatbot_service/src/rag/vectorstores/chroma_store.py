@@ -209,27 +209,29 @@ def query_by_vector(
     query_kwargs = {
         "query_embeddings": [vec],
         "n_results": safe_k,
+        "include": ["documents", "metadatas", "distances"],
     }
     if where:
         query_kwargs["where"] = where
-    
+
     try:
         res = coll.query(**query_kwargs)
     except Exception as e:
         print(f"[ERROR] ChromaDB query failed: {e}")
         return []
-    
+
     docs = res.get("documents", [[]])[0]
     ids = res.get("ids", [[]])[0]
     metas = res.get("metadatas", [[]])[0]
-    
-    # ChromaDB trả về [None] thay vì [] khi không có kết quả
+    dists = res.get("distances", [[]])[0]
+
     return [
         {
             "id":       ids[i],
             "content":  docs[i],
             "metadata": metas[i] if i < len(metas) else {},
+            "distance": dists[i] if i < len(dists) else 1.0,
         }
         for i in range(len(docs))
-        if docs[i] is not None  # lọc kết quả None
+        if docs[i] is not None
     ]

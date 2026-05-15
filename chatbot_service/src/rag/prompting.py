@@ -279,12 +279,13 @@ def build_rag_prompt(
         - Each list item MUST be on its own line.
         - Use line breaks (\\n) between items.
         - Do NOT write bullets inline like: "You can do X: * item1 * item2".
-        - If you list features or steps, use numbered lists or bullet points with line breaks
+        - If you list features or steps, use numbered lists or bullet points with line breaks.
         - Instead, format like:
             You can do X in a few ways:
             1. First way
             2. Second way
-        - Do NOT mention "source", "sources", "citations", or reference markers like "[1]" or "[2]" in your answer.
+        - When a fact comes from a specific Knowledge passage, cite it inline with its number, e.g. [1] or [2].
+        - Do NOT add a "References" or "Sources" section at the end — inline markers only.
         </formatting>
 
         {history_block}
