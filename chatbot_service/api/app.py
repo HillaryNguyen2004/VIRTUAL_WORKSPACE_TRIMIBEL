@@ -29,6 +29,7 @@ from src.rag.summary_agent import (
     summarize_s3_document,
     summarize_messages,
     summarize_workspace,
+    summarize_workspace_stream,
 )
 
 app = FastAPI(title="OLLAMA RAG API", version="1.0")
@@ -477,6 +478,42 @@ def summary_workspace(req: SummaryWorkspaceRequest):
         _unregister_request(request_id)
 
 
+@app.post("/summary/workspace/stream")
+def summary_workspace_stream(req: SummaryWorkspaceRequest):
+    request_id  = (req.request_id or str(uuid4())).strip()
+    cancel_flag = _register_request(request_id)
+
+    def event_stream():
+        try:
+            for chunk in summarize_workspace_stream(
+                workspace_id=req.workspace_id,
+                user_id=req.user_id,
+                lang=req.lang,
+                style=req.style,
+                n_clusters=req.n_clusters,
+                should_cancel=cancel_flag.is_set,
+            ):
+                yield chunk
+        except GenerationCancelled:
+            import json
+            yield json.dumps({"type": "error", "message": "Cancelled."}) + "\n"
+        except Exception as e:
+            import json, traceback
+            logger.error("summary/workspace/stream failed: %s\n%s", e, traceback.format_exc())
+            yield json.dumps({"type": "error", "message": str(e)}) + "\n"
+        finally:
+            _unregister_request(request_id)
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/plain; charset=utf-8",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no"
+        },
+    )
+
+
 @app.post("/summary/messages", response_model=SummaryResponse)
 def summary_messages(req: SummaryMessagesRequest):
     request_id = (req.request_id or str(uuid4())).strip()
@@ -537,6 +574,6 @@ def chat_stream(req: ChatRequest):
         media_type="text/plain; charset=utf-8",
         headers={
             "Cache-Control": "no-cache",
-            "X-Accel-Buffering": "no",
+            "X-Accel-Buffering": "no"
         },
     )

@@ -20,6 +20,7 @@ return [
     'reset' => 'Reset',
     'files_pending_ingest' => ':count file(s) pending ingestion',
     'reingest_ready' => ':count file(s) ready for ingestion',
+    'created_by' => 'Created by',
 
     // Fields
     'name' => 'Name',

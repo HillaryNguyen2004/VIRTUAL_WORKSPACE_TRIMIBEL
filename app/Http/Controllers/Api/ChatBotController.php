@@ -360,6 +360,74 @@ class ChatBotController extends Controller
         }
     }
 
+    public function summarizeWorkspaceStream(Request $request)
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'workspace_id' => 'required|string',
+            'lang'         => 'nullable|string|in:auto,vi,en',
+            'style'        => 'nullable|string|in:bullet,paragraph,short',
+            'n_clusters'   => 'nullable|integer|min:3|max:20',
+        ]);
+
+        $workspaceId = $this->resolveWorkspaceScope($data['workspace_id']);
+
+        $workspace = AIWorkspace::find($data['workspace_id']);
+        if ($workspace && $workspace->user_id !== $user->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        return response()->stream(function () use ($data, $workspaceId) {
+            while (ob_get_level() > 0) { @ob_end_flush(); }
+            @ini_set('output_buffering', 'off');
+            @ini_set('zlib.output_compression', '0');
+            @ini_set('implicit_flush', '1');
+            @ob_implicit_flush(true);
+
+            $payload = json_encode([
+                'workspace_id' => $workspaceId,
+                'lang'         => $data['lang']       ?? 'auto',
+                'style'        => $data['style']       ?? 'bullet',
+                'n_clusters'   => $data['n_clusters']  ?? 10,
+            ]);
+
+            $ch = curl_init('http://127.0.0.1:8002/summary/workspace/stream');
+            curl_setopt_array($ch, [
+                CURLOPT_POST            => true,
+                CURLOPT_POSTFIELDS      => $payload,
+                CURLOPT_HTTPHEADER      => ['Content-Type: application/json', 'Accept: text/plain'],
+                CURLOPT_RETURNTRANSFER  => false,
+                CURLOPT_HEADER          => false,
+                CURLOPT_FOLLOWLOCATION  => false,
+                CURLOPT_CONNECTTIMEOUT  => 10,
+                CURLOPT_TIMEOUT         => self::CHATBOT_REQUEST_TIMEOUT,
+                CURLOPT_NOPROGRESS      => false,
+                CURLOPT_XFERINFOFUNCTION => function () {
+                    return connection_aborted() ? 1 : 0;
+                },
+                CURLOPT_WRITEFUNCTION   => function ($ch, string $chunk): int {
+                    if (connection_aborted()) return 0;
+                    echo $chunk;
+                    @flush();
+                    return strlen($chunk);
+                },
+            ]);
+
+            curl_exec($ch);
+
+            if (curl_errno($ch)) {
+                Log::warning('summarizeWorkspaceStream proxy error', ['error' => curl_error($ch)]);
+            }
+
+            curl_close($ch);
+        }, 200, [
+            'Content-Type'      => 'text/plain; charset=utf-8',
+            'X-Accel-Buffering' => 'no',
+            'Cache-Control'     => 'no-cache',
+        ]);
+    }
+
     public function summarizeDocument(Request $request)
     {
         $user = $request->user();
@@ -493,7 +561,7 @@ class ChatBotController extends Controller
             '/act\s+as/i',
             '/developer\s+mode/i',
             '/jailbreak/i',
-            '/DAN/i',
+            '/\bDAN\b/i',
             '/bypass/i',
             '/disable\s+safety/i',
             '/print\s+your\s+instructions/i',

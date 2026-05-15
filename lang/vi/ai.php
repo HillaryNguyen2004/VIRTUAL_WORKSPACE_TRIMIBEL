@@ -21,6 +21,7 @@ return [
     'files_pending_ingest' => ':count tệp đang chờ nạp dữ liệu',
     'reingest_ready' => ':count tệp sẵn sàng để nạp dữ liệu',
     'not_available' => 'Không có',
+    'created_by' => 'Tạo bởi',
 
     // Fields
     'name' => 'Tên',

@@ -35,12 +35,12 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, Generator, Iterator, List, Optional, Tuple
 
 import numpy as np
 
 from .embeddings.ollama import embed_texts
-from .ollama_generate import generate_answer, GenerationCancelled
+from .ollama_generate import generate_answer, stream_answer, GenerationCancelled
 from .vectorstores.chroma_store import get_collection, normalize_workspace_id
 
 log = logging.getLogger(__name__)
@@ -496,6 +496,134 @@ def summarize_workspace(
              len(grouped), len(triples))
 
     return _map_reduce_summarise(grouped, lang, style, n_clusters, should_cancel)
+
+
+def summarize_workspace_stream(
+    workspace_id: str,
+    user_id: Optional[str] = None,
+    lang: str = "auto",
+    style: str = "bullet",
+    n_clusters: int = 10,
+    should_cancel: Optional[Callable[[], bool]] = None,
+) -> Iterator[str]:
+    """
+    Streaming variant of summarize_workspace.
+    Yields newline-delimited JSON events:
+      {"type":"progress","file":"x.docx","current":1,"total":3}
+      {"type":"token","text":"..."}
+      {"type":"done","n_clusters":10,"total_chunks":60,"citations":[...],"file_name":"...","source":"map_reduce"}
+      {"type":"error","message":"..."}
+    """
+    import json as _json
+
+    def _emit(obj: dict) -> str:
+        return _json.dumps(obj, ensure_ascii=False) + "\n"
+
+    scope = normalize_workspace_id(workspace_id)
+    log.info("summary_agent.summarize_workspace_stream: workspace=%s user=%s", scope, user_id)
+
+    coll  = get_collection(workspace_id=scope, user_id=user_id)
+    total = coll.count()
+    if total == 0:
+        yield _emit({"type": "error", "message": "No documents ingested into this workspace yet."})
+        return
+
+    res        = coll.get(include=["documents", "embeddings", "metadatas"])
+    docs       = res.get("documents") or []
+    raw_embeds = res.get("embeddings")
+    raw_metas  = res.get("metadatas") or [{} for _ in docs]
+
+    if raw_embeds is None:
+        embeds = []
+    elif hasattr(raw_embeds, "tolist"):
+        embeds = raw_embeds.tolist()
+    else:
+        embeds = list(raw_embeds)
+
+    triples = [
+        (d, e, m)
+        for d, e, m in zip(docs, embeds, raw_metas)
+        if bool(d) and _is_valid_embedding(e)
+    ]
+    if not triples:
+        yield _emit({"type": "error", "message": "Chunks found but embeddings missing — please re-ingest."})
+        return
+
+    # Group by source file
+    groups: Dict[str, Tuple[List[str], List, List[dict]]] = defaultdict(
+        lambda: ([], [], [])
+    )
+    for text, emb, meta in triples:
+        fname = (
+            meta.get("storage_file")
+            or meta.get("source")
+            or meta.get("file_name")
+            or "unknown"
+        )
+        groups[fname][0].append(text)
+        groups[fname][1].append(emb)
+        groups[fname][2].append(meta)
+
+    grouped: Dict[str, Tuple[List[str], np.ndarray, List[dict]]] = {}
+    for fname, (texts, embs, metas) in groups.items():
+        vectors = _normalise(np.array(embs, dtype=np.float32))
+        grouped[fname] = (texts, vectors, metas)
+
+    file_names  = list(grouped.keys())
+    total_files = len(file_names)
+    total_chunks = len(triples)
+
+    # --- MAP phase (non-streaming per file, these are intermediate results) ---
+    file_summaries: List[Tuple[str, str]] = []
+    all_citations:  List[List[Dict]]      = []
+    total_k = 0
+
+    for idx, fname in enumerate(file_names):
+        if should_cancel and should_cancel():
+            yield _emit({"type": "error", "message": "Cancelled."})
+            return
+
+        yield _emit({"type": "progress", "file": fname, "current": idx + 1, "total": total_files})
+
+        texts, vectors, metas = grouped[fname]
+        log.info("summary_agent.stream: MAP file=%s chunks=%d", fname, len(texts))
+        fsummary, fcitations, fk = _map_summarise(
+            texts, vectors, metas, lang, style, n_clusters, should_cancel
+        )
+        file_summaries.append((fname, fsummary))
+        all_citations.append(fcitations)
+        total_k += fk
+
+    if should_cancel and should_cancel():
+        yield _emit({"type": "error", "message": "Cancelled."})
+        return
+
+    # --- REDUCE / final streaming phase ---
+    if total_files == 1:
+        fname, _ = file_summaries[0]
+        # Re-stream the single-file map summary token by token
+        texts, vectors, metas = grouped[fname]
+        k    = _auto_k(len(texts), n_clusters)
+        reps = _pick_representatives(texts, vectors, metas, k)
+        prompt = _build_map_prompt(reps, lang, style)
+        citations = all_citations[0]
+    else:
+        prompt    = _build_reduce_prompt(file_summaries, lang, style)
+        citations = _merge_citations(all_citations, file_names)
+        fname     = ", ".join(file_names)
+
+    system = _SYSTEM_PROMPT if total_files == 1 else _REDUCE_SYSTEM_PROMPT
+    for token in stream_answer(prompt, system_prompt=system, should_cancel=should_cancel):
+        yield _emit({"type": "token", "text": token})
+
+    yield _emit({
+        "type":         "done",
+        "n_clusters":   total_k,
+        "total_chunks": total_chunks,
+        "citations":    citations,
+        "file_name":    fname,
+        "source":       "map_reduce",
+    })
 
 
 def summarize_text(
