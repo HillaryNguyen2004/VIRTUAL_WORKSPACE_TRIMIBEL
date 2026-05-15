@@ -14,11 +14,19 @@ langchain-experimental==0.0.65
 
 # LLM / Embedding
 ollama==0.4.0
+sentence-transformers==3.0.1
+torch>=2.2,<3
 
 # Data analysis / visualization
 matplotlib==3.9.2
 pandas==2.2.3
 ipykernel
+
+# Cloud storage
+boto3==1.35.0
+
+# Database
+pymysql==1.1.0
 
 # Document parsing
 pdfminer.six==20240706

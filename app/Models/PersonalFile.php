@@ -16,6 +16,14 @@ class PersonalFile extends Model
         'mime_type',
         'size',
         'searchable_text',
+        'ingest_status',
+        'ingest_error',
+        'chunk_count',
+        'ingested_at',
+    ];
+
+    protected $casts = [
+        'ingested_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

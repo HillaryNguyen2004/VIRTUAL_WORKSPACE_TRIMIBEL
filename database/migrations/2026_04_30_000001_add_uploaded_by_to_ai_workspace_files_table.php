@@ -8,8 +8,10 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('ai_workspace_files', function (Blueprint $table) {
-            $table->unsignedBigInteger('uploaded_by')->nullable()->after('workspace_id');
-            $table->foreign('uploaded_by')->references('id')->on('users')->nullOnDelete();
+            if (!Schema::hasColumn('ai_workspace_files', 'uploaded_by')) {
+                $table->unsignedBigInteger('uploaded_by')->nullable()->after('workspace_id');
+                $table->foreign('uploaded_by')->references('id')->on('users')->nullOnDelete();
+            }
         });
     }
 

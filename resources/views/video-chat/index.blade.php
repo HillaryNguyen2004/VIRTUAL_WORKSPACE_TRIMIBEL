@@ -342,7 +342,7 @@
                                 @endphp
 
                                 @if($photoData)
-                                    <img src="{{ str_starts_with($photoData, 'http') ? $photoData : asset('storage/' . $photoData) }}" 
+                                    <img src="{{ storageUrl($photoData) }}" 
                                         alt="{{ $userName }}" 
                                         class="h-8 w-8 rounded-full object-cover ring-2 ring-white flex-shrink-0">
                                 @else

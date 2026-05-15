@@ -38,27 +38,33 @@ class AdminDashboardController extends Controller
 
         // --- ATTENDANCE STATISTIC: WEEKLY (ROLLING 7 DAYS) ---
         $startDate = Carbon::today()->subDays(6);
+        $endDate   = Carbon::today();
         $weeklyLabels = [];
         $weeklyPresent = [];
         $weeklyAbsent = [];
         $weeklyLeave = [];
 
+        // Two queries for the whole 7-day window instead of 7+7 queries in a loop
+        $weeklyCheckIns = CheckIn::whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->selectRaw('date, COUNT(DISTINCT user_name) as cnt')
+            ->groupBy('date')
+            ->pluck('cnt', 'date');
+
+        $weeklyLeaves = DayOffRequest::whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->where('status', 'APPROVED')
+            ->selectRaw('date, COUNT(*) as cnt')
+            ->groupBy('date')
+            ->pluck('cnt', 'date');
+
         for ($i = 0; $i < 7; $i++) {
             $currentDate = $startDate->copy()->addDays($i);
             $dateStr = $currentDate->format('Y-m-d');
-            
-            $weeklyLabels[] = $currentDate->format('D'); 
 
-            $presentCount = CheckIn::whereDate('date', $dateStr)
-                ->distinct('user_name')
-                ->count('user_name');
+            $weeklyLabels[] = $currentDate->format('D');
 
-            $leaveCount = DayOffRequest::whereDate('date', $dateStr)
-                ->where('status', 'APPROVED')
-                ->count();
-
-            $absentCount = $totalUsersForStats - $presentCount - $leaveCount;
-            if ($absentCount < 0) $absentCount = 0; 
+            $presentCount = (int) ($weeklyCheckIns[$dateStr] ?? 0);
+            $leaveCount   = (int) ($weeklyLeaves[$dateStr] ?? 0);
+            $absentCount  = max(0, $totalUsersForStats - $presentCount - $leaveCount);
 
             $weeklyPresent[] = $presentCount;
             $weeklyLeave[]   = $leaveCount;
@@ -182,20 +188,15 @@ class AdminDashboardController extends Controller
                 $query->where('status', 'in_progress');
             },
             'tasks as todo' => function ($query) {
-                // Adjust 'pending' if your default status is different (e.g., 'open')
                 $query->where('status', 'pending');
-            }
+            },
+            'tasks as overdue_count' => function ($query) {
+                $query->where('due_date', '<', now())
+                      ->where('status', '!=', 'completed');
+            },
         ])
         ->take(3)
         ->get();
-
-        // Calculate Overdue tasks manually
-        foreach ($projectsHealth as $project) {
-            $project->overdue_count = $project->tasks()
-                ->where('due_date', '<', now())
-                ->where('status', '!=', 'completed')
-                ->count();
-        }
 
         // --- 6. CAMPAIGNS ---
         // Scheduled
@@ -277,12 +278,13 @@ class AdminDashboardController extends Controller
     {
         // Replicating the "Combined Logs" logic from your Service
         // 1. Activity Logs
-        $logs = ActivityLog::with('user')->latest()->get();
+        $logs = ActivityLog::with('user')->latest()->limit(500)->get();
         
         // 2. Approved Full Day Offs (mimicking DayOffRepo logic)
         $dayOffs = DayOffRequest::where('status', 'APPROVED')
             ->where('leave_type', 'OFF_FULL')
             ->with('user')
+            ->limit(500)
             ->get()
             ->map(function ($dayOff) {
                 // Map DayOff to a structure similar to ActivityLog for display consistency

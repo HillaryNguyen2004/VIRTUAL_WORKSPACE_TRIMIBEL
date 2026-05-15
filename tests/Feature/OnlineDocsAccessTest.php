@@ -6,12 +6,12 @@ use App\Models\PersonalFile;
 use App\Models\PersonalFolder;
 use App\Models\PersonalFolderShare;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class OnlineDocsAccessTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     public function test_personal_root_file_is_visible_to_owner_only(): void
     {

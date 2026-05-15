@@ -35,6 +35,8 @@ return [
     'update' => 'Update Project',
     'create' => 'Create Project',
 
+    'kanban_board' => 'Kanban Board',
+
     /*
     |--------------------------------------------------------------------------
     | Messages

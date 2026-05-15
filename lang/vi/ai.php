@@ -21,6 +21,7 @@ return [
     'files_pending_ingest' => ':count tệp đang chờ nạp dữ liệu',
     'reingest_ready' => ':count tệp sẵn sàng để nạp dữ liệu',
     'not_available' => 'Không có',
+    'created_by' => 'Tạo bởi',
 
     // Fields
     'name' => 'Tên',
@@ -35,6 +36,8 @@ return [
     'visibility_team_desc' => 'Chia sẻ với các thành viên trong nhóm của bạn.',
     'visibility_public' => 'Công khai',
     'visibility_public_desc' => 'Bất kỳ ai cũng có thể xem không gian làm việc này.',
+    'allow_others_upload' => 'Cho phép người khác tải lên tệp',
+    'allow_others_upload_desc' => 'Khi bật, người dùng không phải chủ sở hữu nhưng có quyền truy cập vào không gian làm việc này vẫn có thể tải lên tệp.',
 
     // Files & Upload
     'upload_files' => 'Tải lên tệp',

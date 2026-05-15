@@ -8,6 +8,7 @@ use App\Http\Requests\ShareDocumentRequest;
 use App\Http\Requests\StoreDocumentRequest;
 use App\Http\Requests\UpdateDocumentRequest;
 use App\Http\Requests\UpdateShareRequest;
+use App\Jobs\IndexPersonalFileJob;
 use App\Models\Document;
 use App\Models\PersonalDocumentLink;
 use App\Models\PersonalFile;
@@ -32,6 +33,8 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class OnlineDocumentController extends Controller
 {
+    private const PROCESSING_STALE_MINUTES = 30;
+
     public function __construct(
         private DocumentRepository $repository,
         private DocumentService $service,
@@ -125,6 +128,13 @@ class OnlineDocumentController extends Controller
             $personalSearchResults = $this->personalFileSearchService->rankFiles($personalSearchResults, $globalSearchQuery);
         }
 
+        $pendingIngestCount = PersonalFile::where('user_id', $user->id)
+            ->whereIn('ingest_status', ['pending', 'failed'])
+            ->count();
+        $failedIngestCount = PersonalFile::where('user_id', $user->id)
+            ->where('ingest_status', 'failed')
+            ->count();
+
         return view('online-docs.docs', compact(
             'recentDocuments',
             'currentFolder',
@@ -136,7 +146,9 @@ class OnlineDocumentController extends Controller
             'storageCanEdit',
             'globalSearchQuery',
             'globalSearchResults',
-            'personalSearchResults'
+            'personalSearchResults',
+            'pendingIngestCount',
+            'failedIngestCount'
         ));
     }
 
@@ -239,10 +251,14 @@ class OnlineDocumentController extends Controller
         $user = auth()->user();
 
         if ($folder->user_id !== $user->id) {
-            PersonalFolderShare::updateOrCreate(
-                ['folder_id' => $folder->id, 'user_id' => $user->id],
-                ['shared_by' => $folder->user_id, 'permission' => 'view']
-            );
+            $hasAccess = PersonalFolderShare::where('folder_id', $folder->id)
+                ->where('user_id', $user->id)
+                ->exists();
+
+            if (!$hasAccess) {
+                return redirect()->route('online-docs.home')
+                    ->with('storage_error', __('online_docs.folder_share_link_opened'));
+            }
         }
 
         return redirect()->route('online-docs.home', ['folder' => $folder->id])
@@ -267,23 +283,27 @@ class OnlineDocumentController extends Controller
             return response()->json(['error' => __('online_docs.ai_summary_error')], 503);
         }
 
-        try {
-            $prompt = "Summarize the following document in a clear, concise way. "
-                . "Provide: 1) A 2-3 sentence overview, 2) Key points as bullet points (max 6), 3) Main conclusions if any. "
-                . "Return plain text only, no JSON.\n\nDocument:\n"
-                . mb_substr($plainText, 0, 6000);
+        $locale = app()->getLocale();
+        $lang = in_array($locale, ['vi', 'en']) ? $locale : 'auto';
 
-            $response = Http::timeout(60)->post($chatbotUrl . '/chat', [
-                'message' => $prompt,
-                'k' => 1,
-                'lang' => app()->getLocale(),
+        try {
+            $response = Http::timeout(120)->post($chatbotUrl . '/summary/text', [
+                'text'       => mb_substr($plainText, 0, 50000),
+                'lang'       => $lang,
+                'style'      => 'bullet',
+                'n_clusters' => 8,
             ]);
 
             if (!$response->successful()) {
                 return response()->json(['error' => __('online_docs.ai_summary_error')], 500);
             }
 
-            $summary = (string) ($response->json('answer') ?? '');
+            $data    = $response->json();
+            $summary = (string) ($data['summary'] ?? '');
+
+            if ($summary === '' && isset($data['error'])) {
+                return response()->json(['error' => $data['error']], 500);
+            }
 
             return response()->json(['summary' => $summary]);
         } catch (\Throwable $e) {
@@ -346,42 +366,127 @@ class OnlineDocumentController extends Controller
             'query' => ['required', 'string', 'min:2', 'max:500'],
         ]);
 
-        $user = auth()->user();
+        $user  = auth()->user();
         $query = trim($data['query']);
 
-        // Try the RAG chatbot first; fall back to built-in BM25 search if unavailable.
         $chatbotUrl = rtrim((string) (config('services.chatbot.base_url') ?: ''), '/');
         if ($chatbotUrl !== '') {
             try {
-                $response = Http::timeout(45)->post($chatbotUrl . '/chat', [
-                    'message'   => $query,
-                    'k'         => 12,
-                    'lang'      => app()->getLocale(),
-                    'user_id'   => (string) $user->id,
-                    'user_role' => $user->role ?? $user->position ?? null,
+                $userRole = strtolower((string) ($user->role ?? $user->position ?? 'user'));
+                $normalizedRole = match ($userRole) {
+                    'admin', 'subadmin' => 'admin',
+                    'staff', 'substaff' => 'staff',
+                    default             => 'user',
+                };
+
+                // Build the list of workspace IDs that belong to this user.
+                // Each online doc is indexed under its own workspace: "online_doc_{id}".
+                // Each personal file is indexed under: "personal_file_{id}".
+                $docWorkspaces = Document::query()
+                    ->where('owner_id', $user->id)
+                    ->pluck('id')
+                    ->map(fn($id) => 'online_doc_' . $id)
+                    ->values()
+                    ->all();
+
+                $fileWorkspaces = PersonalFile::query()
+                    ->where('user_id', $user->id)
+                    ->pluck('id')
+                    ->map(fn($id) => 'personal_file_' . $id)
+                    ->values()
+                    ->all();
+
+                $workspaceIds = array_merge($docWorkspaces, $fileWorkspaces);
+
+                // Nothing indexed yet — go straight to BM25 fallback.
+                if (empty($workspaceIds)) {
+                    return $this->searchAgentBm25Fallback($user, $query);
+                }
+
+                $response = Http::timeout(45)->post($chatbotUrl . '/agent/answer/multi', [
+                    'query'        => $query,
+                    'workspace_ids' => $workspaceIds,
+                    'user_role'    => $normalizedRole,
+                    'k'            => 8,
+                    'lang'         => app()->getLocale(),
+                    'history'      => [],
+                    'history_text' => '',
                 ]);
 
                 if ($response->successful()) {
-                    $answer = (string) ($response->json('answer') ?? '');
-                    $citations = $response->json('citations') ?? [];
-                    $confidence = $response->json('confidence') ?? ['level' => 'low', 'score' => 0.0, 'reason' => ''];
+                    $answer   = (string) ($response->json('answer') ?? '');
+                    $passages = $response->json('passages') ?? [];
 
+                    $citations         = $this->passagesToCitations($passages);
+                    $confidence        = $this->inferConfidence($passages);
                     $enrichedCitations = $this->enrichCitations($citations, $user);
 
                     return response()->json([
-                        'answer' => $answer,
+                        'answer'    => $answer,
                         'citations' => $enrichedCitations,
                         'confidence' => $confidence,
-                        'source' => 'rag',
+                        'source'    => 'rag',
                     ]);
                 }
             } catch (\Throwable) {
-                // Chatbot unavailable — fall through to BM25 fallback below.
+                // Chatbot unavailable — fall through to BM25 fallback.
             }
         }
 
-        // BM25 fallback: use the existing ranked search pipeline.
         return $this->searchAgentBm25Fallback($user, $query);
+    }
+
+    /**
+     * Convert agent passage dicts to the citation shape enrichCitations() expects.
+     */
+    private function passagesToCitations(array $passages): array
+    {
+        $citations = [];
+        foreach ($passages as $i => $p) {
+            $meta    = $p['metadata'] ?? [];
+            $source  = $meta['source'] ?? $meta['file_name'] ?? $meta['storage_file'] ?? '';
+
+            // Chunks store workspace_id like "online_doc_42" — extract the numeric doc ID from it.
+            $workspaceId = $meta['workspace_id'] ?? '';
+            $numericId = '';
+            if (preg_match('/^online_doc_(\d+)$/', (string) $workspaceId, $m)) {
+                $numericId = $m[1];
+            }
+
+            $citations[] = [
+                'rank'   => $i + 1,
+                'id'     => $numericId ?: $source,
+                'source' => $source,
+                'page'   => (int) ($meta['page'] ?? 0),
+                'line'   => (int) ($meta['chunk_index'] ?? 0),
+            ];
+        }
+        return $citations;
+    }
+
+    /**
+     * Derive a confidence dict from the top passage scores.
+     */
+    private function inferConfidence(array $passages): array
+    {
+        if (empty($passages)) {
+            return ['level' => 'low', 'score' => 0.0, 'reason' => 'No matching documents found.'];
+        }
+
+        $topScore = (float) ($passages[0]['final_score'] ?? $passages[0]['_final_score'] ?? $passages[0]['rrf_score'] ?? 0.0);
+
+        if ($topScore >= 0.7) {
+            $level  = 'high';
+            $reason = 'Strong match found in indexed documents.';
+        } elseif ($topScore >= 0.4) {
+            $level  = 'medium';
+            $reason = 'Partial match found in indexed documents.';
+        } else {
+            $level  = 'low';
+            $reason = 'Weak match — answer may be approximate.';
+        }
+
+        return ['level' => $level, 'score' => $topScore, 'reason' => $reason];
     }
 
     private function enrichCitations(array $citations, $user): array
@@ -588,7 +693,7 @@ class OnlineDocumentController extends Controller
             }
 
             if ($conflictStrategy === 'replace') {
-                Storage::disk('local')->delete($existingFile->stored_path);
+                Storage::disk()->delete($existingFile->stored_path);
                 $existingFile->forceDelete();
             } else {
                 // auto_rename - find unique name
@@ -622,7 +727,7 @@ class OnlineDocumentController extends Controller
             $searchableText = $this->personalFileSearchService->withUpdatedFileName($searchableText, $originalName);
         }
 
-        $storedPath = $file->storeAs($baseDir, $filename, 'local');
+        $storedPath = $file->storeAs($baseDir, $filename, config('filesystems.default'));
 
         $personalFile = PersonalFile::create([
             'user_id' => $user->id,
@@ -632,10 +737,8 @@ class OnlineDocumentController extends Controller
             'mime_type' => $file->getMimeType(),
             'size' => $file->getSize(),
             'searchable_text' => $searchableText,
+            'ingest_status' => 'pending',
         ]);
-
-        // Auto-index into ChromaDB for semantic search (non-blocking, best-effort)
-        $this->ragIndex->indexFile($storedPath, 'personal_file_' . $personalFile->id, 'personal_file');
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -652,28 +755,49 @@ class OnlineDocumentController extends Controller
     {
         $user = auth()->user();
         if ($file->user_id !== $user->id) {
-            abort(403);
+            $hasAccess = $file->folder_id !== null && PersonalFolderShare::where('folder_id', $file->folder_id)
+                ->where('user_id', $user->id)
+                ->exists();
+            if (!$hasAccess) {
+                abort(403);
+            }
         }
 
-        if (!Storage::disk('local')->exists($file->stored_path)) {
+        if (!Storage::disk()->exists($file->stored_path)) {
             abort(404);
         }
 
-        return Storage::disk('local')->download($file->stored_path, $file->original_name);
+        return Storage::disk()->download($file->stored_path, $file->original_name);
     }
 
     public function previewPersonalFile(PersonalFile $file)
     {
         $user = auth()->user();
         if ($file->user_id !== $user->id) {
-            abort(403);
+            $hasAccess = $file->folder_id !== null && PersonalFolderShare::where('folder_id', $file->folder_id)
+                ->where('user_id', $user->id)
+                ->exists();
+            if (!$hasAccess) {
+                abort(403);
+            }
         }
 
-        if (!Storage::disk('local')->exists($file->stored_path)) {
+        if (!Storage::disk()->exists($file->stored_path)) {
             abort(404);
         }
 
-        return response()->file(Storage::disk('local')->path($file->stored_path), [
+        $stream = Storage::disk()->readStream($file->stored_path);
+        if (!\is_resource($stream)) {
+            abort(404);
+        }
+
+        return response()->stream(function () use ($stream): void {
+            fpassthru($stream);
+            if (\is_resource($stream)) {
+                fclose($stream);
+            }
+        }, 200, [
+            'Content-Type' => $file->mime_type ?: 'application/octet-stream',
             'Content-Disposition' => 'inline; filename="' . basename($file->original_name) . '"',
         ]);
     }
@@ -682,10 +806,15 @@ class OnlineDocumentController extends Controller
     {
         $user = auth()->user();
         if ($file->user_id !== $user->id) {
-            abort(403);
+            $hasAccess = $file->folder_id !== null && PersonalFolderShare::where('folder_id', $file->folder_id)
+                ->where('user_id', $user->id)
+                ->exists();
+            if (!$hasAccess) {
+                abort(403);
+            }
         }
 
-        if (!Storage::disk('local')->exists($file->stored_path)) {
+        if (!Storage::disk()->exists($file->stored_path)) {
             abort(404);
         }
 
@@ -720,21 +849,21 @@ class OnlineDocumentController extends Controller
 
         if ($type === 'docs') {
             $targetPath = "documents/{$document->id}/document.docx";
-            Storage::disk('local')->put($targetPath, Storage::disk('local')->get($file->stored_path));
+            Storage::disk()->put($targetPath, Storage::disk()->get($file->stored_path));
             $document->update([
                 'docx_path' => $targetPath,
                 'last_edited_by' => $user->id,
             ]);
         } elseif ($type === 'excel') {
             $targetPath = "documents/{$document->id}/sheet.xlsx";
-            Storage::disk('local')->put($targetPath, Storage::disk('local')->get($file->stored_path));
+            Storage::disk()->put($targetPath, Storage::disk()->get($file->stored_path));
             $document->update([
                 'xlsx_path' => $targetPath,
                 'last_edited_by' => $user->id,
             ]);
         } else {
             $targetPath = "documents/{$document->id}/presentation.pptx";
-            Storage::disk('local')->put($targetPath, Storage::disk('local')->get($file->stored_path));
+            Storage::disk()->put($targetPath, Storage::disk()->get($file->stored_path));
             $document->update([
                 'pptx_path' => $targetPath,
                 'last_edited_by' => $user->id,
@@ -876,16 +1005,73 @@ class OnlineDocumentController extends Controller
             abort(403);
         }
 
-        if (Storage::disk('local')->exists($file->stored_path)) {
-            Storage::disk('local')->delete($file->stored_path);
+        if (Storage::disk()->exists($file->stored_path)) {
+            Storage::disk()->delete($file->stored_path);
         }
 
         $folderId = $file->folder_id;
-        $this->ragIndex->deleteDoc('personal_file_' . $file->id, 'personal_file');
+        $this->ragIndex->removeDocument(
+            storageFile: basename($file->stored_path),
+            workspaceId: 'personal_file_' . $file->id,
+            userId: (string) $user->id,
+        );
         $file->delete();
 
         return $this->redirectToStorageFolder($request, $folderId)
             ->with('storage_success', __('online_docs.file_deleted'));
+    }
+
+    public function ingestPersonalFile(Request $request, PersonalFile $file)
+    {
+        $user = auth()->user();
+        if ($file->user_id !== $user->id) {
+            abort(403);
+        }
+
+        $staleAt = now()->subMinutes(self::PROCESSING_STALE_MINUTES);
+        if ($file->ingest_status === 'processing' && $file->updated_at && $file->updated_at->greaterThan($staleAt)) {
+            return back()->with('storage_warning', __('online_docs.ingest_processing_active'));
+        }
+
+        if (!in_array($file->ingest_status, ['pending', 'failed', 'processing'], true)) {
+            return back()->with('storage_warning', __('online_docs.file_not_eligible_for_ingest'));
+        }
+
+        $file->update(['ingest_status' => 'processing', 'ingest_error' => null]);
+
+        IndexPersonalFileJob::dispatch($file->id, (string) $user->id);
+
+        return back()->with('storage_success', __('online_docs.ingest_queued_single', ['name' => $file->original_name]));
+    }
+
+    public function ingestAllPersonalFiles(Request $request)
+    {
+        $user = auth()->user();
+
+        $staleAt = now()->subMinutes(self::PROCESSING_STALE_MINUTES);
+        $pending = PersonalFile::where('user_id', $user->id)
+            ->where(function ($query) use ($staleAt) {
+                $query->whereIn('ingest_status', ['pending', 'failed'])
+                    ->orWhere(function ($query) use ($staleAt) {
+                        $query->where('ingest_status', 'processing')
+                            ->where('updated_at', '<=', $staleAt);
+                    });
+            })
+            ->get();
+
+        if ($pending->isEmpty()) {
+            return back()->with('storage_warning', __('online_docs.no_files_to_ingest'));
+        }
+
+        $queued = 0;
+
+        foreach ($pending as $file) {
+            $file->update(['ingest_status' => 'processing', 'ingest_error' => null]);
+            IndexPersonalFileJob::dispatch($file->id, (string) $user->id);
+            $queued++;
+        }
+
+        return back()->with('storage_success', __('online_docs.ingest_queued', ['count' => $queued]));
     }
 
     public function moveStorageItem(Request $request)
@@ -1130,13 +1316,13 @@ class OnlineDocumentController extends Controller
     {
         $this->authorize('delete', $document);
 
-        Storage::disk('local')->deleteDirectory('documents/' . $document->id);
+        Storage::disk()->deleteDirectory('documents/' . $document->id);
 
-        if ($document->docx_path && Storage::disk('local')->exists($document->docx_path)) {
-            Storage::disk('local')->delete($document->docx_path);
+        if ($document->docx_path && Storage::disk()->exists($document->docx_path)) {
+            Storage::disk()->delete($document->docx_path);
         }
-        if ($document->pptx_path && Storage::disk('local')->exists($document->pptx_path)) {
-            Storage::disk('local')->delete($document->pptx_path);
+        if ($document->pptx_path && Storage::disk()->exists($document->pptx_path)) {
+            Storage::disk()->delete($document->pptx_path);
         }
 
         $this->ragIndex->deleteDocument($document);
@@ -1148,6 +1334,8 @@ class OnlineDocumentController extends Controller
     public function importDocx(ImportDocxRequest $request, Document $document)
     {
         $this->authorize('update', $document);
+
+        @set_time_limit(600);
 
         try {
             $this->service->importDocx($document, auth()->user(), $request->file('docx'));
@@ -1172,8 +1360,8 @@ class OnlineDocumentController extends Controller
 
         try {
             $path = $this->ensureSpreadsheetPath($document);
-            Storage::disk('local')->makeDirectory(dirname($path));
-            Storage::disk('local')->put($path, file_get_contents($data['xlsx']->getRealPath()));
+            Storage::disk()->makeDirectory(dirname($path));
+            Storage::disk()->put($path, file_get_contents($data['xlsx']->getRealPath()));
 
             $document->update([
                 'xlsx_path' => $path,
@@ -1197,8 +1385,8 @@ class OnlineDocumentController extends Controller
 
         try {
             $path = $this->service->ensurePptxPath($document);
-            Storage::disk('local')->makeDirectory(dirname($path));
-            Storage::disk('local')->put($path, file_get_contents($data['pptx']->getRealPath()));
+            Storage::disk()->makeDirectory(dirname($path));
+            Storage::disk()->put($path, file_get_contents($data['pptx']->getRealPath()));
 
             $document->update([
                 'pptx_path' => $path,
@@ -1222,13 +1410,13 @@ class OnlineDocumentController extends Controller
         if ($document->type === 'powerpoint') {
             $path = $this->service->ensurePptxPath($document);
             $filename = Str::slug($document->title ?: 'presentation') . '.pptx';
-            return Storage::disk('local')->download($path, $filename);
+            return Storage::disk()->download($path, $filename);
         }
 
         $docxPath = $this->service->exportDocx($document);
         $filename = Str::slug($document->title ?: 'document') . '.docx';
 
-        return response()->download($docxPath, $filename);
+        return Storage::disk()->download($docxPath, $filename);
     }
 
     public function downloadXlsx(Document $document)
@@ -1236,12 +1424,12 @@ class OnlineDocumentController extends Controller
         $this->authorize('view', $document);
 
         $path = $this->ensureSpreadsheetPath($document);
-        if (!Storage::disk('local')->exists($path)) {
+        if (!Storage::disk()->exists($path)) {
             $this->createEmptySpreadsheet($document);
         }
         $filename = Str::slug($document->title ?: 'spreadsheet') . '.xlsx';
 
-        return Storage::disk('local')->download($path, $filename);
+        return Storage::disk()->download($path, $filename);
     }
 
     public function onlyofficeFile(Document $document)
@@ -1252,11 +1440,11 @@ class OnlineDocumentController extends Controller
             $path = $this->service->ensureDocxPath($document);
         }
 
-        if (!Storage::disk('local')->exists($path)) {
+        if (!Storage::disk()->exists($path)) {
             abort(404);
         }
 
-        return Storage::disk('local')->response($path, basename($path));
+        return Storage::disk()->response($path, basename($path));
     }
 
     public function onlyofficeCallback(Request $request, Document $document)
@@ -1286,7 +1474,7 @@ class OnlineDocumentController extends Controller
         } else {
             $path = $this->service->ensureDocxPath($document);
         }
-        Storage::disk('local')->put($path, $response->body());
+        Storage::disk()->put($path, $response->body());
 
         $document->update([
             'last_edited_by' => auth()->id(),
@@ -1344,11 +1532,12 @@ class OnlineDocumentController extends Controller
         }
 
         $path = $this->ensureSpreadsheetPath($document);
-        $fullPath = Storage::disk('local')->path($path);
-        Storage::disk('local')->makeDirectory(dirname($path));
+        [$tempRelative, $tempPath] = $this->createLocalTempPath('xlsx');
 
         $writer = new Xlsx($spreadsheet);
-        $writer->save($fullPath);
+        $writer->save($tempPath);
+        Storage::disk()->put($path, fopen($tempPath, 'rb'));
+        Storage::disk('local')->delete($tempRelative);
 
         $document->update([
             'last_edited_by' => auth()->id(),
@@ -1520,10 +1709,19 @@ class OnlineDocumentController extends Controller
         }
 
         $path = "documents/{$document->id}/sheet.xlsx";
-        Storage::disk('local')->makeDirectory("documents/{$document->id}");
+        Storage::disk()->makeDirectory("documents/{$document->id}");
         $document->update(['xlsx_path' => $path]);
 
         return $path;
+    }
+
+    private function createLocalTempPath(string $extension): array
+    {
+        $normalized = ltrim($extension, '.');
+        $relative = 'tmp/online-docs/' . Str::uuid() . ($normalized !== '' ? '.' . $normalized : '');
+        Storage::disk('local')->makeDirectory(dirname($relative));
+
+        return [$relative, Storage::disk('local')->path($relative)];
     }
 
     private function createEmptySpreadsheet(Document $document): void
@@ -1532,11 +1730,12 @@ class OnlineDocumentController extends Controller
         $spreadsheet->getActiveSheet()->setTitle('Sheet 1');
 
         $path = $this->ensureSpreadsheetPath($document);
-        $fullPath = Storage::disk('local')->path($path);
-        Storage::disk('local')->makeDirectory(dirname($path));
+        [$tempRelative, $tempPath] = $this->createLocalTempPath('xlsx');
 
         $writer = new Xlsx($spreadsheet);
-        $writer->save($fullPath);
+        $writer->save($tempPath);
+        Storage::disk()->put($path, fopen($tempPath, 'rb'));
+        Storage::disk('local')->delete($tempRelative);
     }
 
     private function onlyofficeJwt(array $payload): string
@@ -1577,8 +1776,8 @@ class OnlineDocumentController extends Controller
         $storagePath = $document->type === 'powerpoint'
             ? $this->service->ensurePptxPath($document)
             : $this->service->ensureDocxPath($document);
-        $beforeModified = Storage::disk('local')->exists($storagePath)
-            ? Storage::disk('local')->lastModified($storagePath)
+        $beforeModified = Storage::disk()->exists($storagePath)
+            ? Storage::disk()->lastModified($storagePath)
             : 0;
 
         $payload = [
@@ -1605,11 +1804,11 @@ class OnlineDocumentController extends Controller
             // Wait for callback to persist updated DOCX before exporting.
             for ($i = 0; $i < 16; $i += 1) {
                 usleep(250000);
-                if (!Storage::disk('local')->exists($storagePath)) {
+                if (!Storage::disk()->exists($storagePath)) {
                     continue;
                 }
 
-                $currentModified = Storage::disk('local')->lastModified($storagePath);
+                $currentModified = Storage::disk()->lastModified($storagePath);
                 if ($currentModified > $beforeModified) {
                     break;
                 }
@@ -1673,12 +1872,12 @@ class OnlineDocumentController extends Controller
 
     private function syncLinkedPersonalFilesFromPath(Document $document, string $sourcePath): void
     {
-        if (!Storage::disk('local')->exists($sourcePath)) {
+        if (!Storage::disk()->exists($sourcePath)) {
             return;
         }
 
         try {
-            $content = Storage::disk('local')->get($sourcePath);
+            $content = Storage::disk()->get($sourcePath);
         } catch (\Throwable $error) {
             return;
         }
@@ -1701,8 +1900,8 @@ class OnlineDocumentController extends Controller
                     }
 
                     try {
-                        Storage::disk('local')->makeDirectory(dirname($storedPath));
-                        Storage::disk('local')->put($storedPath, $content);
+                        Storage::disk()->makeDirectory(dirname($storedPath));
+                        Storage::disk()->put($storedPath, $content);
                     } catch (\Throwable $error) {
                         continue;
                     }
@@ -1771,8 +1970,8 @@ class OnlineDocumentController extends Controller
     private function deleteFolderContents(PersonalFolder $folder): void
     {
         foreach ($folder->files as $file) {
-            if (Storage::disk('local')->exists($file->stored_path)) {
-                Storage::disk('local')->delete($file->stored_path);
+            if (Storage::disk()->exists($file->stored_path)) {
+                Storage::disk()->delete($file->stored_path);
             }
             $file->delete();
         }
@@ -1846,8 +2045,8 @@ class OnlineDocumentController extends Controller
                 ->where('user_id', $userId)
                 ->whereKey($id)
                 ->firstOrFail();
-            if (Storage::disk('local')->exists($file->stored_path)) {
-                Storage::disk('local')->delete($file->stored_path);
+            if (Storage::disk()->exists($file->stored_path)) {
+                Storage::disk()->delete($file->stored_path);
             }
             $file->delete();
             return;

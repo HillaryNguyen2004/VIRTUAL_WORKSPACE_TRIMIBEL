@@ -58,8 +58,14 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
+            'persistent' => true,
+            // 'options' => extension_loaded('pdo_mysql') ? array_filter([
+            //     (defined('\Pdo\Mysql::ATTR_SSL_CA') 
+            //         ? \Pdo\Mysql::ATTR_SSL_CA 
+            //         : \PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+            // ]) : [],
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                PDO::MYSQL_ATTR_SSL_CA => false,
             ]) : [],
         ],
 
@@ -80,17 +86,17 @@ return [
 
         'pgsql_dw' => [
             'driver' => 'pgsql',
-            'url' => env('DW_DATABASE_URL'),
-            'host' => env('DW_DB_HOST', 'localhost'),
-            'port' => env('DW_DB_PORT', '5432'),
-            'database' => env('DW_DB_DATABASE', 'dw_productivity'),
-            'username' => env('DW_DB_USERNAME', 'postgres'),
-            'password' => env('DW_DB_PASSWORD', '123456'),
+            'url' => env('PG_URL'),
+            // 'host' => env('DW_DB_HOST', 'localhost'),
+            // 'port' => env('DW_DB_PORT', '5432'),
+            // 'database' => env('DW_DB_DATABASE', 'dw_productivity'),
+            // 'username' => env('DW_DB_USERNAME', 'postgres'),
+            // 'password' => env('DW_DB_PASSWORD', '123456'),
             'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
             'schema' => 'public',
-            'sslmode' => 'prefer',
+            'sslmode' => 'require',
         ],
 
         'sqlsrv' => [

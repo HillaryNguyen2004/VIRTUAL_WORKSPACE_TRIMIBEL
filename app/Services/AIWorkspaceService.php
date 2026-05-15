@@ -127,6 +127,7 @@ class AIWorkspaceService
             'description' => $data['description'] ?? null,
             'slug' => $slug,
             'visibility' => $data['visibility'] ?? 'private',
+            'allow_others_upload' => (bool) ($data['allow_others_upload'] ?? false),
             'folder_path' => '',  // Temporary placeholder
             'status' => 'active',
         ]);
@@ -151,6 +152,9 @@ class AIWorkspaceService
             'name' => $data['name'] ?? $workspace->name,
             'description' => $data['description'] ?? $workspace->description,
             'visibility' => $data['visibility'] ?? $workspace->visibility,
+            'allow_others_upload' => array_key_exists('allow_others_upload', $data)
+                ? (bool) $data['allow_others_upload']
+                : $workspace->allow_others_upload,
         ]);
 
         // Ensure matching vector workspace folders exist when visibility changes.
@@ -295,18 +299,20 @@ class AIWorkspaceService
         $fileName = Str::uuid() . '.' . $extension;
         $s3Path = $folderPath . '/' . $fileName;  // e.g., ai-workspace/{id}/{file-uuid}.ext
 
-        // Upload to S3
+        // Upload to S3 using a stream to avoid loading the entire file into memory
         try {
-            $fileContent = file_get_contents($file->getRealPath());
-            if ($fileContent === false) {
+            $stream = fopen($file->getRealPath(), 'rb');
+            if ($stream === false) {
                 throw new \Exception("Cannot read uploaded file");
             }
 
-            Storage::disk('s3')->put(
-                $s3Path,
-                $fileContent,
-                'private'
-            );
+            try {
+                Storage::disk('s3')->put($s3Path, $stream, 'private');
+            } finally {
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+            }
         } catch (\Exception $e) {
             throw new \Exception("Failed to upload file to S3: " . $e->getMessage(), 0, $e);
         }

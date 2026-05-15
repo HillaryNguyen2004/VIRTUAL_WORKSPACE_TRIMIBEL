@@ -8,15 +8,25 @@
             <div class="flex items-center gap-4">
                 <x-back-btn :route="'ai-workspaces.index'" />
                 <div>
-                    <h1 class="font-bold text-3xl text-main tracking-tight">{{ $workspace->name }}</h1>
+                    <h1 class="font-bold text-3xl text-main tracking-tight">
+                        {{ $workspace->name }}
+                    </h1>
                     @if ($workspace->description)
                         <p class="text-muted-500 text-sm mt-2">{{ $workspace->description }}</p>
                     @endif
+                    <p class="text-muted-500 text-sm mt-2">{{ __('ai.created_by') }} {{ $workspace->user->name }} ({{ $workspace->user->username }})</p>
                 </div>
             </div>
 
-            @can('update', $workspace)
-                <div class="flex gap-2">
+            <div class="flex gap-2">
+                {{-- <button onclick="openSummaryModal('workspace', null, '{{ $workspace->id }}')"
+                    class="inline-flex items-center justify-center gap-2 bg-white border border-purple-300 px-4 py-2 rounded-xl text-sm font-medium text-purple-700 hover:bg-purple-50 transition-all shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Summarize Workspace
+                </button> --}}
+                @can('update', $workspace)
                     <a href="{{ route('ai-workspaces.edit', $workspace) }}"
                         class="inline-flex items-center justify-center gap-2 bg-white border border-blue-600/30 px-4 py-2 rounded-xl text-sm font-medium text-blue-600 hover:bg-blue-50 transition-all shadow-sm">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -40,8 +50,8 @@
                             {{ __('ai.delete') }}
                         </button>
                     </form>
-                </div>
-            @endcan
+                @endcan
+            </div>
         </div>
 
         <!-- Messages -->
@@ -104,11 +114,11 @@
         </div>
 
         <!-- Upload Section -->
-        <div class="bg-white rounded-2xl border border-muted-200 shadow-sm p-6 md:p-8 animate-fade-in-up [animation-delay:100ms]">
-            <h2 class="text-lg md:text-xl font-semibold text-main mb-2">{{ __('ai.upload_files') }}</h2>
-            <p class="text-muted-600 text-sm mb-6">{{ __('ai.upload_files_desc') }}</p>
+        @can('upload', $workspace)
+            <div class="bg-white rounded-2xl border border-muted-200 shadow-sm p-6 md:p-8 animate-fade-in-up [animation-delay:100ms]">
+                <h2 class="text-lg md:text-xl font-semibold text-main mb-2">{{ __('ai.upload_files') }}</h2>
+                <p class="text-muted-600 text-sm mb-6">{{ __('ai.upload_files_desc') }}</p>
 
-            @can('upload', $workspace)
                 <form action="{{ route('ai-workspaces.upload-files', $workspace) }}" method="POST" enctype="multipart/form-data">
                     @csrf
 
@@ -150,18 +160,8 @@
                         @endforeach
                     </div>
                 @endif
-            @else
-                <p class="text-sm text-muted-600">
-                    @if($workspace->visibility === 'private')
-                        Workspace này ở chế độ riêng tư. Chỉ chủ workspace mới có thể upload file.
-                    @elseif($workspace->visibility === 'team')
-                        Chỉ thành viên trong team mới có thể upload file vào workspace này.
-                    @else
-                        Bạn không có quyền upload file vào workspace này.
-                    @endif
-                </p>
-            @endcan
-        </div>
+            </div>
+        @endcan
 
         <!-- Ingest Section -->
         @can('ingest', $workspace)
@@ -273,15 +273,26 @@
                                     </td>
                                     <td class="px-6 py-4 text-right">
                                         <div class="inline-flex items-center gap-3">
+                                            @if($file->ingest_status === 'completed')
+                                                <button type="button"
+                                                    onclick="openSummaryModal('document', '{{ $file->file_path }}', '{{ $workspace->id }}', '{{ addslashes($file->original_name) }}')"
+                                                    title="Summarize this document"
+                                                    class="p-1.5 rounded-lg text-muted-400 hover:bg-purple-50 hover:text-purple-600 transition-colors">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                    </svg>
+                                                </button>
+                                            @endif
                                             {{-- <a href="{{ route('workspace-files.preview', $file) }}" target="_blank"
                                                 class="text-blue-600 hover:text-blue-700 text-xs font-medium">Preview</a> --}}
                                             @can('ingest', $workspace)
                                                 @if(in_array($file->ingest_status, ['pending', 'failed']))
-                                                    <form action="{{ route('workspace-files.ingest', $file) }}" method="POST" class="inline">
+                                                    <form action="{{ route('workspace-files.ingest', $file) }}" method="POST" class="inline" data-ingest-file-form>
                                                         @csrf
                                                         <button type="submit"
                                                             title="{{ __('ai.retry_ingest') }}"
-                                                            class="p-1.5 rounded-lg text-muted-400 hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                                                            class="p-1.5 rounded-lg text-muted-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                                            data-ingest-file-button>
                                                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
                                                                 <polyline points="1 4 1 10 7 10"></polyline>
                                                                 <path d="M3.51 15a9 9 0 1 0 .49-3.86L1 10"></path>
@@ -383,6 +394,354 @@
                 }
                 ingestOverlay.classList.remove('hidden');
             });
+        }
+
+        document.querySelectorAll('[data-ingest-file-form]').forEach((form) => {
+            form.addEventListener('submit', () => {
+                const button = form.querySelector('[data-ingest-file-button]');
+                const buttonIcon = button ? button.querySelector('svg') : null;
+
+                if (button) {
+                    button.disabled = true;
+                    button.classList.add('opacity-70', 'cursor-not-allowed');
+                }
+
+                if (buttonIcon) {
+                    buttonIcon.classList.add('animate-spin');
+                }
+
+                if (ingestOverlay) {
+                    ingestOverlay.classList.remove('hidden');
+                }
+            });
+        });
+    </script>
+
+    {{-- Summary Modal --}}
+    <div id="summaryModal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-black/50" onclick="closeSummaryModal()"></div>
+        <div class="fixed inset-0 z-10 flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-xl rounded-2xl shadow-2xl flex flex-col max-h-[80vh]">
+                {{-- Header --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-muted-200 shrink-0">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <h3 id="summaryModalTitle" class="font-bold text-main text-base">Summary</h3>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="summary-copy-btn" onclick="copySummary()" title="Copy to clipboard"
+                            class="hidden p-1.5 rounded-lg text-muted-400 hover:text-purple-600 hover:bg-purple-50 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                        </button>
+                        <button onclick="closeSummaryModal()" class="p-1.5 rounded-full text-muted-400 hover:text-primary hover:bg-muted-100 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                {{-- Options --}}
+                <div class="flex items-center gap-3 px-6 py-3 bg-muted-50 border-b border-muted-200 shrink-0 flex-wrap">
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-medium text-muted-500">Style</label>
+                        <select id="ws-summary-style" class="text-xs border border-muted-200 rounded-lg px-2 py-1.5 bg-white text-main focus:outline-none focus:ring-2 focus:ring-primary/20">
+                            <option value="bullet">Bullet points</option>
+                            <option value="paragraph">Paragraph</option>
+                            <option value="short">Short (TL;DR)</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-medium text-muted-500">Language</label>
+                        <select id="ws-summary-lang" class="text-xs border border-muted-200 rounded-lg px-2 py-1.5 bg-white text-main focus:outline-none focus:ring-2 focus:ring-primary/20">
+                            <option value="auto">Auto</option>
+                            <option value="en">English</option>
+                            <option value="vi">Vietnamese</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-medium text-muted-500">Clusters</label>
+                        <select id="ws-summary-clusters" class="text-xs border border-muted-200 rounded-lg px-2 py-1.5 bg-white text-main focus:outline-none focus:ring-2 focus:ring-primary/20">
+                            <option value="5">5</option>
+                            <option value="8">8</option>
+                            <option value="10" selected>10</option>
+                            <option value="15">15</option>
+                            <option value="20">20</option>
+                        </select>
+                    </div>
+                    <button id="summary-run-btn" onclick="runSummary()" class="ml-auto text-xs font-semibold px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                        Summarize
+                    </button>
+                </div>
+                {{-- Body --}}
+                <div id="summary-modal-body" class="flex-1 overflow-y-auto px-6 py-5 custom-scrollbar"></div>
+                {{-- Footer stats --}}
+                <div id="summary-modal-footer" class="px-6 py-3 border-t border-muted-200 shrink-0 gap-3 text-xs text-muted-500" style="display:none">
+                    <span id="summary-stat-clusters" class="inline-flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+                        <span id="summary-stat-clusters-text"></span>
+                    </span>
+                    <span id="summary-stat-chunks" class="inline-flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+                        <span id="summary-stat-chunks-text"></span>
+                    </span>
+                    <span id="summary-stat-source" class="ml-auto italic"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let _summaryMode = 'workspace';
+        let _summaryS3Key = null;
+        let _summaryWorkspaceId = null;
+        let _summaryFileName = null;
+        let _summaryPlainText = '';
+
+        function openSummaryModal(mode, s3Key, workspaceId, fileName) {
+            _summaryMode        = mode;
+            _summaryS3Key       = s3Key;
+            _summaryWorkspaceId = workspaceId;
+            _summaryFileName    = fileName || null;
+
+            document.getElementById('summaryModalTitle').textContent =
+                mode === 'workspace' ? 'Workspace Summary'
+                                     : 'Document Summary' + (fileName ? ' — ' + fileName : '');
+
+            document.getElementById('summary-copy-btn').classList.add('hidden');
+            document.getElementById('summary-modal-footer').style.display = 'none';
+            document.getElementById('summary-modal-body').innerHTML = `
+                <div class="flex flex-col items-center justify-center py-14 gap-4 text-center">
+                    <svg class="w-10 h-10 text-purple-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <p class="text-sm text-muted-400">Choose your options above, then click <strong class="text-main">Summarize</strong>.</p>
+                    <div class="flex items-center gap-3 mt-1">
+                        <button onclick="runSummary()"
+                            class="px-5 py-2 text-sm font-semibold bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors">
+                            Summarize
+                        </button>
+                        <button onclick="closeSummaryModal()"
+                            class="px-5 py-2 text-sm font-medium text-muted-500 border border-muted-200 rounded-xl hover:bg-muted-50 transition-colors">
+                            Cancel
+                        </button>
+                    </div>
+                </div>`;
+            document.getElementById('summaryModal').classList.remove('hidden');
+        }
+
+        function closeSummaryModal() {
+            document.getElementById('summaryModal').classList.add('hidden');
+        }
+
+        function copySummary() {
+            if (!_summaryPlainText) return;
+            navigator.clipboard.writeText(_summaryPlainText).then(() => {
+                const btn = document.getElementById('summary-copy-btn');
+                btn.title = 'Copied!';
+                setTimeout(() => { btn.title = 'Copy to clipboard'; }, 2000);
+            });
+        }
+
+        function renderSummaryText(raw) {
+            _summaryPlainText = raw;
+            const lines = raw.split('\n').filter(l => l.trim());
+            const isList = lines.some(l => /^[-•*]/.test(l.trim()));
+
+            const html = lines.map(line => {
+                const withBold = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                if (/^[-•*]\s*/.test(line.trim())) {
+                    const clean = withBold.replace(/^[-•*]\s*/, '');
+                    return `<li class="flex gap-2 text-sm text-main leading-relaxed">
+                                <span class="text-purple-500 mt-1 shrink-0">&#8226;</span>
+                                <span>${clean}</span>
+                            </li>`;
+                }
+                return `<p class="text-sm text-main leading-relaxed">${withBold}</p>`;
+            }).join('');
+
+            return isList ? `<ul class="flex flex-col gap-2">${html}</ul>`
+                          : `<div class="flex flex-col gap-2">${html}</div>`;
+        }
+
+        async function runSummary() {
+            const body     = document.getElementById('summary-modal-body');
+            const footer   = document.getElementById('summary-modal-footer');
+            const copyBtn  = document.getElementById('summary-copy-btn');
+            const runBtn   = document.getElementById('summary-run-btn');
+            const style    = document.getElementById('ws-summary-style').value;
+            const lang     = document.getElementById('ws-summary-lang').value;
+            const clusters = parseInt(document.getElementById('ws-summary-clusters').value, 10);
+
+            if (runBtn) { runBtn.disabled = true; runBtn.textContent = 'Running…'; }
+            _summaryPlainText = '';
+            copyBtn.classList.add('hidden');
+            footer.style.display = 'none';
+
+            body.innerHTML = `
+                <div class="flex items-center justify-center py-12 gap-3 text-muted-400">
+                    <svg class="animate-spin w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
+                    <span class="text-sm font-medium">Generating summary&hellip;</span>
+                </div>`;
+
+            const payload = {
+                lang,
+                style,
+                n_clusters:   clusters,
+                workspace_id: _summaryWorkspaceId,
+            };
+
+            // --- Streaming path for workspace summaries ---
+            if (_summaryMode === 'workspace') {
+                try {
+                    const res = await fetch('/api/ai/summarize-workspace/stream', {
+                        method:  'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).content || '',
+                            'Accept':       'text/plain',
+                        },
+                        body: JSON.stringify(payload),
+                    });
+
+                    if (!res.ok) {
+                        const txt = await res.text();
+                        body.innerHTML = `<p class="text-sm text-red-600 text-center py-6">${txt || 'Summary service returned an error.'}</p>`;
+                        return;
+                    }
+
+                    const reader  = res.body.getReader();
+                    const decoder = new TextDecoder();
+                    let   buffer  = '';
+                    let   rawText = '';
+                    let   started = false;
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop();
+
+                        for (const line of lines) {
+                            if (!line.trim()) continue;
+                            let evt;
+                            try { evt = JSON.parse(line); } catch { continue; }
+
+                            if (evt.type === 'progress') {
+                                if (!started) {
+                                    body.innerHTML = `
+                                        <div id="summary-stream-progress" class="text-xs text-muted-400 mb-3 flex items-center gap-2">
+                                            <svg class="animate-spin w-3 h-3 text-purple-400 shrink-0" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                                            </svg>
+                                            <span id="summary-progress-label"></span>
+                                        </div>
+                                        <div id="summary-stream-content" class="flex flex-col gap-2"></div>`;
+                                    started = true;
+                                }
+                                const label = document.getElementById('summary-progress-label');
+                                if (label) label.textContent = `Processing file ${evt.current}/${evt.total}: ${evt.file}`;
+
+                            } else if (evt.type === 'token') {
+                                rawText += evt.text;
+                                const progress = document.getElementById('summary-stream-progress');
+                                if (progress) progress.remove();
+                                if (!document.getElementById('summary-stream-content')) {
+                                    body.innerHTML = `<div id="summary-stream-content" class="flex flex-col gap-2"></div>`;
+                                }
+                                document.getElementById('summary-stream-content').innerHTML = renderSummaryText(rawText);
+
+                            } else if (evt.type === 'done') {
+                                _summaryPlainText = rawText;
+                                copyBtn.classList.remove('hidden');
+
+                                const clusterText = evt.n_clusters  ? `${evt.n_clusters} clusters`  : '';
+                                const chunkText   = evt.total_chunks ? `${evt.total_chunks} chunks` : '';
+                                const fileText    = evt.file_name    ? evt.file_name                 : '';
+
+                                document.getElementById('summary-stat-clusters-text').textContent = clusterText;
+                                document.getElementById('summary-stat-chunks-text').textContent   = chunkText;
+                                document.getElementById('summary-stat-source').textContent        = fileText;
+
+                                if (clusterText || chunkText) footer.style.display = 'flex';
+
+                            } else if (evt.type === 'error') {
+                                body.innerHTML = `<p class="text-sm text-red-600 text-center py-6">${evt.message}</p>`;
+                            }
+                        }
+                    }
+
+                    if (!rawText && !body.querySelector('.text-red-600')) {
+                        body.innerHTML = `<p class="text-sm text-muted-400 text-center py-6">No content to summarise yet. Make sure documents are ingested.</p>`;
+                    }
+                } catch (err) {
+                    body.innerHTML = `<p class="text-sm text-red-600 text-center py-6">Network error — could not reach the summary service.</p>`;
+                    console.error('summary stream error', err);
+                } finally {
+                    if (runBtn) { runBtn.disabled = false; runBtn.textContent = 'Regenerate'; }
+                }
+                return;
+            }
+
+            // --- Non-streaming path for document summaries ---
+            payload.s3_key = _summaryS3Key;
+
+            try {
+                const res  = await fetch('/api/ai/summarize-document', {
+                    method:  'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).content || '',
+                        'Accept':       'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    const msg = data.error || data.message || 'Summary service returned an error.';
+                    body.innerHTML = `<p class="text-sm text-red-600 text-center py-6">${msg}</p>`;
+                    return;
+                }
+
+                if (data.error) {
+                    body.innerHTML = `<p class="text-sm text-red-600 text-center py-6">${data.error}</p>`;
+                    return;
+                }
+
+                if (!data.summary || !data.summary.trim()) {
+                    body.innerHTML = `<p class="text-sm text-muted-400 text-center py-6">No content to summarise yet. Make sure documents are ingested.</p>`;
+                    return;
+                }
+
+                body.innerHTML = renderSummaryText(data.summary);
+                copyBtn.classList.remove('hidden');
+
+                const clusterText = data.n_clusters  ? `${data.n_clusters} clusters`  : '';
+                const chunkText   = data.total_chunks ? `${data.total_chunks} chunks`  : '';
+                const fileText    = data.file_name    ? data.file_name                 : '';
+
+                document.getElementById('summary-stat-clusters-text').textContent = clusterText;
+                document.getElementById('summary-stat-chunks-text').textContent   = chunkText;
+                document.getElementById('summary-stat-source').textContent        = fileText || data.source;
+
+                if (clusterText || chunkText) footer.style.display = 'flex';
+            } catch (err) {
+                body.innerHTML = `<p class="text-sm text-red-600 text-center py-6">Network error — could not reach the summary service.</p>`;
+                console.error('summary error', err);
+            } finally {
+                if (runBtn) { runBtn.disabled = false; runBtn.textContent = 'Regenerate'; }
+            }
         }
     </script>
 

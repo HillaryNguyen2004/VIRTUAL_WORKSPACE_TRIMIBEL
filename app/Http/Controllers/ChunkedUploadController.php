@@ -178,8 +178,7 @@ class ChunkedUploadController extends Controller
             $baseDir = 'personal-files/' . $user->id . '/' . ($session->folder_id ? ('folder-' . $session->folder_id) : 'root');
 
             $finalPath = $baseDir . '/' . $finalFilename;
-            $destinationFile = Storage::disk('local')->path($finalPath);
-            @mkdir(dirname($destinationFile), 0755, true);
+            [$tempRelative, $destinationFile] = $this->createLocalTempPath($extension);
 
             $handle = fopen($destinationFile, 'wb');
             if (!$handle) {
@@ -207,14 +206,14 @@ class ChunkedUploadController extends Controller
             $existingFile = $this->findPersonalFileByName($user->id, $session->folder_id, $originalName);
             if ($existingFile) {
                 if ($conflictStrategy === 'error') {
-                    @unlink($destinationFile);
+                    Storage::disk('local')->delete($tempRelative);
                     return response()->json([
                         'message' => __('online_docs.file_name_conflict'),
                     ], 409);
                 }
 
                 if ($conflictStrategy === 'replace') {
-                    Storage::disk('local')->delete($existingFile->stored_path);
+                    Storage::disk()->delete($existingFile->stored_path);
                     $existingFile->delete();
                 } else {
                     $originalName = $this->resolveUniquePersonalFileName($user->id, $session->folder_id, $originalName);
@@ -233,7 +232,11 @@ class ChunkedUploadController extends Controller
                 'mime_type' => $this->detectMimeType($finalFilename),
                 'size' => $finalFileSize,
                 'searchable_text' => $searchableText,
+                'ingest_status' => 'pending',
             ]);
+
+            Storage::disk()->put($finalPath, fopen($destinationFile, 'rb'));
+            Storage::disk('local')->delete($tempRelative);
 
             // Mark chunks as assembled and clean up
             $session->chunks()->update(['status' => 'assembled']);
@@ -244,9 +247,6 @@ class ChunkedUploadController extends Controller
                 'assembled_path' => $finalPath,
             ]);
 
-            // Auto-index into ChromaDB (best-effort, non-blocking)
-            $this->ragIndex->indexFile($finalPath, 'personal_file_' . $file->id, 'personal_file');
-
             return response()->json([
                 'file_id' => $file->id,
                 'name' => $file->original_name,
@@ -254,6 +254,9 @@ class ChunkedUploadController extends Controller
                 'message' => __('online_docs.upload_done'),
             ]);
         } catch (\Exception $e) {
+            if (isset($tempRelative)) {
+                Storage::disk('local')->delete($tempRelative);
+            }
             $session->update([
                 'status' => 'failed',
                 'error_message' => $e->getMessage(),
@@ -326,6 +329,15 @@ class ChunkedUploadController extends Controller
                 Storage::disk('local')->delete($chunk->stored_path);
             }
         }
+    }
+
+    private function createLocalTempPath(string $extension): array
+    {
+        $normalized = ltrim($extension, '.');
+        $relative = 'tmp/uploads/' . Str::uuid() . ($normalized !== '' ? '.' . $normalized : '');
+        Storage::disk('local')->makeDirectory(dirname($relative));
+
+        return [$relative, Storage::disk('local')->path($relative)];
     }
 
     private function normalizeStorageName(string $name, int $maxLen, string $default): string

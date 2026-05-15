@@ -4,12 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AIWorkspace;
+use App\Models\Conversation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-class ChatbotController extends Controller
+class ChatBotController extends Controller
 {
     private const CHATBOT_MAX_EXECUTION_TIME = 600;
     private const CHATBOT_REQUEST_TIMEOUT = 590;
@@ -145,7 +146,14 @@ class ChatbotController extends Controller
             'request_id' => 'nullable|string|max:128',
         ]);
 
-        $userRole = strtolower((string) ($data['user_role'] ?? 'user'));
+        $user = auth()->user();
+
+        $userRole = match ($user->role) {
+            'admin', 'subadmin' => 'admin',
+            'staff', 'substaff' => 'staff',
+            default => 'user',
+        };
+        
         $normalizedRole = match ($userRole) {
             'admin', 'subadmin' => 'admin',
             'staff', 'substaff' => 'staff',
@@ -166,8 +174,16 @@ class ChatbotController extends Controller
             @ini_set('implicit_flush', '1');
             @ob_implicit_flush(true);
 
+            $message = $this->sanitizePrompt($data['message']);
+
+            if ($this->containsPromptInjection($message)) {
+                abort(response()->json([
+                    'error' => 'Unsafe prompt detected.'
+                ], 400));
+            }
+
             $payload = json_encode([
-                'message' => $data['message'],
+                'message' => $message,
                 'k' => $data['k'] ?? 5,
                 'lang' => $data['lang'] ?? 'en',
                 'user_id' => $data['user_id'] ?? null,
@@ -231,6 +247,278 @@ class ChatbotController extends Controller
         ]);
     }
 
+    public function summarizeConversation(Request $request, Conversation $conversation)
+    {
+        $user = $request->user();
+
+        if (!$conversation->participants()->where('user_id', $user->id)->exists()) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $data = $request->validate([
+            'lang'  => 'nullable|string|in:auto,vi,en',
+            'style' => 'nullable|string|in:bullet,paragraph,short',
+            'limit' => 'nullable|integer|min:10|max:500',
+        ]);
+
+        $lang  = $data['lang']  ?? 'auto';
+        $style = $data['style'] ?? 'bullet';
+        $limit = (int) ($data['limit'] ?? 100);
+
+        $messages = $conversation->messages()
+            ->with('user:id,name')
+            ->latest()
+            ->limit($limit)
+            ->get()
+            ->reverse()
+            ->values()
+            ->map(function ($m) use ($user) {
+                $name    = $m->user->name ?? 'Unknown';
+                $content = trim($m->content ?? '');
+                return [
+                    'role'    => $m->user_id === $user->id ? 'user' : 'assistant',
+                    'name'    => $name,
+                    'content' => "[{$name}]: {$content}",
+                    '_raw'    => $content,
+                ];
+            })
+            ->filter(fn($m) => $m['_raw'] !== '')
+            ->map(fn($m) => ['role' => $m['role'], 'content' => $m['content']])
+            ->values()
+            ->all();
+
+        if (empty($messages)) {
+            return response()->json(['summary' => '', 'message_count' => 0, 'truncated' => false]);
+        }
+
+        try {
+            $response = Http::connectTimeout(10)
+                ->timeout(self::CHATBOT_REQUEST_TIMEOUT)
+                ->post('http://127.0.0.1:8002/summary/messages', [
+                    'messages' => $messages,
+                    'lang'     => $lang,
+                    'style'    => $style,
+                ]);
+
+            if ($response->failed()) {
+                Log::error('Summary service error', [
+                    'status' => $response->status(),
+                    'body'   => $response->body(),
+                ]);
+                return response()->json(['message' => 'Summary service error'], 500);
+            }
+
+            return response()->json($response->json());
+
+        } catch (\Exception $e) {
+            Log::error('summarizeConversation exception', ['error' => $e->getMessage()]);
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function summarizeWorkspace(Request $request)
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'workspace_id' => 'required|string',
+            'lang'         => 'nullable|string|in:auto,vi,en',
+            'style'        => 'nullable|string|in:bullet,paragraph,short',
+            'n_clusters'   => 'nullable|integer|min:3|max:20',
+        ]);
+
+        $workspaceId = $this->resolveWorkspaceScope($data['workspace_id']);
+
+        // Authorise: user must own or be a member of the workspace
+        $workspace = AIWorkspace::find($data['workspace_id']);
+        if ($workspace && $workspace->user_id !== $user->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        try {
+            @ini_set('max_execution_time', (string) self::CHATBOT_MAX_EXECUTION_TIME);
+            @set_time_limit(self::CHATBOT_MAX_EXECUTION_TIME);
+
+            $response = Http::connectTimeout(10)
+                ->timeout(self::CHATBOT_REQUEST_TIMEOUT)
+                ->post('http://127.0.0.1:8002/summary/workspace', [
+                    'workspace_id' => $workspaceId,
+                    'lang'         => $data['lang']       ?? 'auto',
+                    'style'        => $data['style']      ?? 'bullet',
+                    'n_clusters'   => $data['n_clusters'] ?? 10,
+                ]);
+
+            if ($response->failed()) {
+                Log::error('summarizeWorkspace service error', ['status' => $response->status(), 'body' => $response->body()]);
+                return response()->json(['message' => 'Summary service error', 'error' => $response->body()], 500);
+            }
+
+            return response()->json($response->json());
+        } catch (\Exception $e) {
+            Log::error('summarizeWorkspace exception', ['error' => $e->getMessage()]);
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function summarizeWorkspaceStream(Request $request)
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'workspace_id' => 'required|string',
+            'lang'         => 'nullable|string|in:auto,vi,en',
+            'style'        => 'nullable|string|in:bullet,paragraph,short',
+            'n_clusters'   => 'nullable|integer|min:3|max:20',
+        ]);
+
+        $workspaceId = $this->resolveWorkspaceScope($data['workspace_id']);
+
+        $workspace = AIWorkspace::find($data['workspace_id']);
+        if ($workspace && $workspace->user_id !== $user->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        return response()->stream(function () use ($data, $workspaceId) {
+            while (ob_get_level() > 0) { @ob_end_flush(); }
+            @ini_set('output_buffering', 'off');
+            @ini_set('zlib.output_compression', '0');
+            @ini_set('implicit_flush', '1');
+            @ob_implicit_flush(true);
+
+            $payload = json_encode([
+                'workspace_id' => $workspaceId,
+                'lang'         => $data['lang']       ?? 'auto',
+                'style'        => $data['style']       ?? 'bullet',
+                'n_clusters'   => $data['n_clusters']  ?? 10,
+            ]);
+
+            $ch = curl_init('http://127.0.0.1:8002/summary/workspace/stream');
+            curl_setopt_array($ch, [
+                CURLOPT_POST            => true,
+                CURLOPT_POSTFIELDS      => $payload,
+                CURLOPT_HTTPHEADER      => ['Content-Type: application/json', 'Accept: text/plain'],
+                CURLOPT_RETURNTRANSFER  => false,
+                CURLOPT_HEADER          => false,
+                CURLOPT_FOLLOWLOCATION  => false,
+                CURLOPT_CONNECTTIMEOUT  => 10,
+                CURLOPT_TIMEOUT         => self::CHATBOT_REQUEST_TIMEOUT,
+                CURLOPT_NOPROGRESS      => false,
+                CURLOPT_XFERINFOFUNCTION => function () {
+                    return connection_aborted() ? 1 : 0;
+                },
+                CURLOPT_WRITEFUNCTION   => function ($ch, string $chunk): int {
+                    if (connection_aborted()) return 0;
+                    echo $chunk;
+                    @flush();
+                    return strlen($chunk);
+                },
+            ]);
+
+            curl_exec($ch);
+
+            if (curl_errno($ch)) {
+                Log::warning('summarizeWorkspaceStream proxy error', ['error' => curl_error($ch)]);
+            }
+
+            curl_close($ch);
+        }, 200, [
+            'Content-Type'      => 'text/plain; charset=utf-8',
+            'X-Accel-Buffering' => 'no',
+            'Cache-Control'     => 'no-cache',
+        ]);
+    }
+
+    public function summarizeDocument(Request $request)
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'workspace_id' => 'required|string',
+            's3_key'       => 'nullable|string',
+            'lang'         => 'nullable|string|in:auto,vi,en',
+            'style'        => 'nullable|string|in:bullet,paragraph,short',
+            'n_clusters'   => 'nullable|integer|min:3|max:20',
+        ]);
+
+        $rawWorkspaceId = trim((string) $data['workspace_id']);
+
+        // Personal file workspaces (personal_file_{id}) are stored entirely in ChromaDB.
+        // Use /summary/workspace which reads stored embeddings directly — no S3 download needed.
+        $isPersonalFile = str_starts_with($rawWorkspaceId, 'personal_file_');
+        if ($isPersonalFile) {
+            $personalFileId = (int) str_replace('personal_file_', '', $rawWorkspaceId);
+            $file = \App\Models\PersonalFile::where('id', $personalFileId)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if (!$file) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+
+            try {
+                @ini_set('max_execution_time', (string) self::CHATBOT_MAX_EXECUTION_TIME);
+                @set_time_limit(self::CHATBOT_MAX_EXECUTION_TIME);
+
+                $response = Http::connectTimeout(10)
+                    ->timeout(self::CHATBOT_REQUEST_TIMEOUT)
+                    ->post('http://127.0.0.1:8002/summary/workspace', [
+                        'workspace_id' => $rawWorkspaceId,
+                        'user_id'      => (string) $user->id,
+                        'lang'         => $data['lang']       ?? 'auto',
+                        'style'        => $data['style']      ?? 'bullet',
+                        'n_clusters'   => $data['n_clusters'] ?? 10,
+                    ]);
+
+                if ($response->failed()) {
+                    Log::error('summarizeDocument(personal) service error', ['status' => $response->status(), 'body' => $response->body()]);
+                    return response()->json(['message' => 'Summary service error', 'error' => $response->body()], 500);
+                }
+
+                return response()->json($response->json());
+            } catch (\Exception $e) {
+                Log::error('summarizeDocument(personal) exception', ['error' => $e->getMessage()]);
+                return response()->json(['message' => $e->getMessage()], 500);
+            }
+        }
+
+        $workspaceId = $this->resolveWorkspaceScope($rawWorkspaceId);
+
+        $workspace = AIWorkspace::find($rawWorkspaceId);
+        if ($workspace && $workspace->user_id !== $user->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $s3Key = trim((string) ($data['s3_key'] ?? ''));
+        if ($s3Key === '') {
+            return response()->json(['message' => 'Validation error: s3_key is required for workspace documents'], 422);
+        }
+
+        try {
+            @ini_set('max_execution_time', (string) self::CHATBOT_MAX_EXECUTION_TIME);
+            @set_time_limit(self::CHATBOT_MAX_EXECUTION_TIME);
+
+            $response = Http::connectTimeout(10)
+                ->timeout(self::CHATBOT_REQUEST_TIMEOUT)
+                ->post('http://127.0.0.1:8002/summary/document', [
+                    'workspace_id' => $workspaceId,
+                    's3_key'       => $s3Key,
+                    'lang'         => $data['lang']       ?? 'auto',
+                    'style'        => $data['style']      ?? 'bullet',
+                    'n_clusters'   => $data['n_clusters'] ?? 10,
+                ]);
+
+            if ($response->failed()) {
+                Log::error('summarizeDocument service error', ['status' => $response->status(), 'body' => $response->body()]);
+                return response()->json(['message' => 'Summary service error', 'error' => $response->body()], 500);
+            }
+
+            return response()->json($response->json());
+        } catch (\Exception $e) {
+            Log::error('summarizeDocument exception', ['error' => $e->getMessage()]);
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
+    }
+
     private function resolveWorkspaceScope(?string $workspaceInput): string
     {
         $raw = trim((string) ($workspaceInput ?? ''));
@@ -251,5 +539,41 @@ class ChatbotController extends Controller
         }
 
         return (string) $workspace->id;
+    }
+
+    private function sanitizePrompt(string $input): string
+    {
+        // Remove null bytes/control chars
+        $input = preg_replace('/[\x00-\x1F\x7F]/u', '', $input);
+
+        // Normalize whitespace
+        $input = preg_replace('/\s+/', ' ', $input);
+
+        return trim($input);
+    }
+
+    private function containsPromptInjection(string $text): bool
+    {
+        $patterns = [
+            '/ignore\s+(all|previous)\s+instructions/i',
+            '/reveal\s+(system|prompt)/i',
+            '/you\s+are\s+now/i',
+            '/act\s+as/i',
+            '/developer\s+mode/i',
+            '/jailbreak/i',
+            '/\bDAN\b/i',
+            '/bypass/i',
+            '/disable\s+safety/i',
+            '/print\s+your\s+instructions/i',
+            '/show\s+hidden\s+prompt/i',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $text)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

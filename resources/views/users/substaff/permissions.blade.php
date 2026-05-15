@@ -50,7 +50,7 @@
             <div class="flex items-center bg-primary/10 rounded-2xl py-2 px-6 gap-3 border border-primary/50 transition-all duration-300 group">
                     <div class="relative my-auto">
                         <div class="absolute inset-0 bg-primary/20 rounded-full blur-lg opacity-50"></div>
-                        <img src="{{ $user->user_profile_photo ?? '/img/undraw_profile_2.svg' }}" alt="leader_avatar" class="relative w-10 h-10 rounded-full">
+                        <img src="{{ getUserAvatar($user) }}" alt="leader_avatar" class="relative w-10 h-10 rounded-full">
                     </div>
                     <div class="flex flex-col justify-between h-full">
                         <h3 class="text-primary text-md md:text-lg font-semibold">{{ $user->name }}</h3>

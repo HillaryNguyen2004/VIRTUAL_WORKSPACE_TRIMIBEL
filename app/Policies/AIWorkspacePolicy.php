@@ -74,6 +74,14 @@ class AIWorkspacePolicy
      */
     public function upload(User $user, AIWorkspace $workspace): bool
     {
+        if ((int) $workspace->user_id === (int) $user->id) {
+            return true;
+        }
+
+        if (!$workspace->allow_others_upload) {
+            return false;
+        }
+
         if ($workspace->visibility === 'public') {
             return true;
         }
@@ -82,7 +90,7 @@ class AIWorkspacePolicy
             return in_array((int) $user->id, $this->getTeamScopeUserIds($workspace->user), true);
         }
 
-        return (int) $workspace->user_id === (int) $user->id;
+        return false;
     }
 
     /**

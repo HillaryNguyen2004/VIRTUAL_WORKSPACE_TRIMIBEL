@@ -13,4 +13,5 @@ return [
     'save' => 'Save',
     'update_title'=> 'Update Company Hours',
     'back_to_company_hour'=> 'Back to Company Hours',
+    'working_days' => 'Working days',
 ];

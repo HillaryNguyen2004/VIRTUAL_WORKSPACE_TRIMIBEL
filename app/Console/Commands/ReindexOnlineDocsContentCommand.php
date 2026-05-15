@@ -38,9 +38,9 @@ class ReindexOnlineDocsContentCommand extends Command
             ->chunkById($chunkSize, function ($documents) use ($bar): void {
                 foreach ($documents as $document) {
                     $html = '';
-                    if ($document->html_path && Storage::disk('local')->exists($document->html_path)) {
+                    if ($document->html_path && Storage::disk()->exists($document->html_path)) {
                         try {
-                            $html = (string) Storage::disk('local')->get($document->html_path);
+                            $html = (string) Storage::disk()->get($document->html_path);
                         } catch (\Throwable $error) {
                             $html = '';
                         }
@@ -49,9 +49,9 @@ class ReindexOnlineDocsContentCommand extends Command
                     if (trim($html) === '' && $document->type === 'docs' && $document->docx_path) {
                         $this->documentService->syncHtmlAndSearchFromDocx($document);
 
-                        if ($document->html_path && Storage::disk('local')->exists($document->html_path)) {
+                        if ($document->html_path && Storage::disk()->exists($document->html_path)) {
                             try {
-                                $html = (string) Storage::disk('local')->get($document->html_path);
+                                $html = (string) Storage::disk()->get($document->html_path);
                             } catch (\Throwable $error) {
                                 $html = '';
                             }

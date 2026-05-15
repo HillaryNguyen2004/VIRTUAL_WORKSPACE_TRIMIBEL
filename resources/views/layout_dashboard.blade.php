@@ -450,11 +450,18 @@
                         $chatWorkspaceOptions = $chatVisibleWorkspaces->mapWithKeys(function ($workspace) use ($mapWorkspaceValue) {
                             $value = $mapWorkspaceValue($workspace);
 
-                            return [$value => $workspace->name . ' (' . ucfirst($workspace->visibility) . ')'];
+                            $visibilityLabel = match ($workspace->visibility) {
+                                'public' => __('ai.visibility_public'),
+                                'private' => __('ai.visibility_private'),
+                                'team' => __('ai.visibility_team'),
+                                _ => ucfirst($workspace->visibility),
+                            };
+
+                            return [$value => $workspace->name . ' (' . $visibilityLabel . ')'];
                         })->all();
 
                         // Hardcoded scope for productivity vector DB.
-                        $chatWorkspaceOptions = ['productivity' => 'Productivity Insights'] + $chatWorkspaceOptions;
+                        $chatWorkspaceOptions = ['productivity' => __('chatbot.productivity_insights')] + $chatWorkspaceOptions;
 
                         $chatDefaultWorkspace = $chatVisibleWorkspaces->firstWhere('visibility', 'public')
                             ?: $chatVisibleWorkspaces->first();

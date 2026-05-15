@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
+
 class RagIndexService
 {
     private string $baseUrl;
@@ -17,38 +18,38 @@ class RagIndexService
     }
 
     /**
-     * Auto-index an online Document into ChromaDB.
-     * Tries docx path first, then falls back to the document storage directory.
+     * Auto-index an online Document into ChromaDB via S3 key.
      */
-    public function indexDocument(Document $document): void
+    public function indexDocument(Document $document, ?string $userId = null): void
     {
         if ($this->baseUrl === '') return;
 
-        // Prefer the physical docx/xlsx/pptx file if available
-        $filePath = $document->docx_path ?? $document->xlsx_path ?? $document->pptx_path ?? null;
+        $s3Key        = $document->docx_path ?? $document->xlsx_path ?? $document->pptx_path ?? null;
+        $originalName = $document->title ?? $document->name ?? null;
 
-        if ($filePath && Storage::disk('local')->exists($filePath)) {
-            $this->indexFile(
-                $filePath,
-                'online_doc_' . $document->id,
-                'online_doc'
+        if ($s3Key && Storage::disk()->exists($s3Key)) {
+            $this->ingestS3(
+                s3Key: $s3Key,
+                workspaceId: 'online_doc_' . $document->id,
+                originalName: $originalName,
+                storageFileName: basename($s3Key),
+                userId: $userId,
             );
             return;
         }
 
-        // Fall back: look for any supported file inside documents/{id}/
-        $dir = storage_path('app/documents/' . $document->id);
-        if (is_dir($dir)) {
-            foreach (scandir($dir) as $f) {
-                $ext = strtolower(pathinfo($f, PATHINFO_EXTENSION));
-                if (in_array($ext, ['pdf', 'docx', 'xlsx', 'txt', 'md'], true)) {
-                    $this->indexFile(
-                        'documents/' . $document->id . '/' . $f,
-                        'online_doc_' . $document->id,
-                        'online_doc'
-                    );
-                    return;
-                }
+        $dir = 'documents/' . $document->id;
+        foreach (Storage::disk()->files($dir) as $file) {
+            $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+            if (in_array($ext, ['pdf', 'docx', 'xlsx', 'pptx', 'txt', 'md'], true)) {
+                $this->ingestS3(
+                    s3Key: $file,
+                    workspaceId: 'online_doc_' . $document->id,
+                    originalName: $originalName,
+                    storageFileName: basename($file),
+                    userId: $userId,
+                );
+                return;
             }
         }
     }
@@ -56,51 +57,124 @@ class RagIndexService
     /**
      * Remove an online Document from ChromaDB.
      */
-    public function deleteDocument(Document $document): void
+    public function deleteDocument(Document $document, ?string $userId = null): void
     {
-        $this->deleteDoc('online_doc_' . $document->id, 'online_doc');
-    }
+        $s3Key       = $document->docx_path ?? $document->xlsx_path ?? $document->pptx_path ?? null;
+        $storageFile = $s3Key ? basename($s3Key) : null;
 
-    /**
-     * Index any file by stored path.
-     */
-    public function indexFile(string $storedPath, string $docId, string $sourceType = 'personal_file'): void
-    {
-        if ($this->baseUrl === '') return;
-
-        $absolutePath = storage_path('app/' . ltrim($storedPath, '/'));
-
-        try {
-            Http::timeout(60)->post($this->baseUrl . '/ingest', [
-                'path'        => $absolutePath,
-                'doc_id'      => $docId,
-                'source_type' => $sourceType,
-            ]);
-        } catch (\Throwable $e) {
-            Log::warning('RagIndexService::indexFile failed', [
-                'path'  => $absolutePath,
-                'error' => $e->getMessage(),
-            ]);
+        if ($storageFile) {
+            $this->removeDocument(
+                storageFile: $storageFile,
+                workspaceId: 'online_doc_' . $document->id,
+                userId: $userId,
+            );
         }
     }
 
     /**
-     * Remove a document from ChromaDB by doc_id.
+     * Index any file stored under the default disk via /ingest-s3.
      */
-    public function deleteDoc(string $docId, string $sourceType = 'personal_file'): void
+    public function indexFile(
+        string $storedPath,
+        string $workspaceId,
+        string $originalName = '',
+        ?string $userId = null,
+    ): int {
+        if (!Storage::disk()->exists($storedPath)) {
+            Log::warning('RagIndexService::indexFile – file not found', ['path' => $storedPath]);
+            return 0;
+        }
+
+        return $this->ingestS3(
+            s3Key: $storedPath,
+            workspaceId: $workspaceId,
+            originalName: $originalName ?: basename($storedPath),
+            storageFileName: basename($storedPath),
+            userId: $userId,
+        );
+    }
+
+    /**
+     * Batch-index multiple files (passed as s3_key items).
+     *
+     * @param  array  $items  [['s3_key' => '...', 'original_name' => '...', 'storage_file_name' => '...'], ...]
+     */
+    public function indexBatch(array $items, string $workspaceId, ?string $userId = null): void
+    {
+        if ($this->baseUrl === '' || empty($items)) return;
+
+        try {
+            $response = Http::timeout(300)->post($this->baseUrl . '/agent/ingest-batch', [
+                'items'        => $items,
+                'workspace_id' => $workspaceId,
+                'user_id'      => $userId,
+            ]);
+
+            if ($response->failed()) {
+                Log::warning('RagIndexService::indexBatch failed', [
+                    'status' => $response->status(),
+                    'body'   => $response->body(),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('RagIndexService::indexBatch exception', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Remove a document from ChromaDB by storage_file + workspace_id.
+     */
+    public function removeDocument(string $storageFile, string $workspaceId, ?string $userId = null): void
     {
         if ($this->baseUrl === '') return;
 
         try {
-            Http::timeout(30)->post($this->baseUrl . '/delete', [
-                'doc_id'      => $docId,
-                'source_type' => $sourceType,
+            $response = Http::timeout(30)->delete($this->baseUrl . '/agent/document', [
+                'storage_file' => $storageFile,
+                'workspace_id' => $workspaceId,
+                'user_id'      => $userId,
             ]);
+
+            if ($response->failed()) {
+                Log::warning('RagIndexService::removeDocument failed', [
+                    'status'       => $response->status(),
+                    'body'         => $response->body(),
+                    'storage_file' => $storageFile,
+                ]);
+            }
         } catch (\Throwable $e) {
-            Log::warning('RagIndexService::deleteDoc failed', [
-                'doc_id' => $docId,
-                'error'  => $e->getMessage(),
+            Log::warning('RagIndexService::removeDocument exception', [
+                'storage_file' => $storageFile,
+                'error'        => $e->getMessage(),
             ]);
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
+    private function ingestS3(
+        string $s3Key,
+        string $workspaceId,
+        ?string $originalName = null,
+        ?string $storageFileName = null,
+        ?string $userId = null,
+    ): int {
+        $response = Http::timeout(600)->post($this->baseUrl . '/ingest-s3', [
+            's3_key'            => $s3Key,
+            'workspace_id'      => $workspaceId,
+            'original_name'     => $originalName,
+            'storage_file_name' => $storageFileName,
+            'user_id'           => $userId,
+        ]);
+
+        if ($response->failed()) {
+            throw new \RuntimeException(
+                'Chatbot ingest failed (HTTP ' . $response->status() . '): ' . $response->body()
+            );
+        }
+
+        return (int) ($response->json('total_chunks') ?? 0);
     }
 }
