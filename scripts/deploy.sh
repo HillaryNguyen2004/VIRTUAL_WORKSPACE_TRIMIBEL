@@ -74,7 +74,18 @@ echo "▶ [6/8] Updating & restarting chatbot service..."
 ) || echo "⚠  Chatbot service update failed — not blocking deploy."
 
 # ── 7. ML API service (Flask on :5001) ───────────────────────────────────────
-echo "▶ [7/8] Syncing systemd service files..."
+echo "▶ [7/9] Syncing Nginx config..."
+(
+  SRC="$DEPLOY_PATH/scripts/nginx/laravel.conf"
+  DST="/etc/nginx/sites-available/laravel"
+  if [ -f "$SRC" ] && ! diff -q "$SRC" "$DST" > /dev/null 2>&1; then
+    sudo cp "$SRC" "$DST"
+    sudo nginx -t && sudo systemctl reload nginx
+    echo "  Nginx config updated and reloaded"
+  fi
+) || echo "⚠  Nginx config sync failed — not blocking deploy."
+
+echo "▶ [8/9] Syncing systemd service files..."
 (
   CHANGED=0
   for SVC in laravel-queue chatbot ml-api whitebophir; do
@@ -89,7 +100,7 @@ echo "▶ [7/8] Syncing systemd service files..."
   [ "$CHANGED" = "1" ] && sudo systemctl daemon-reload || true
 ) || echo "⚠  Service file sync failed — not blocking deploy."
 
-echo "▶ [8/8] Updating & restarting ML API..."
+echo "▶ [9/9] Updating & restarting ML API..."
 (
   REQ_HASH_FILE="ml/.venv/.req_hash"
   REQ_HASH=$(md5sum ml/requirements.txt | cut -d' ' -f1)
