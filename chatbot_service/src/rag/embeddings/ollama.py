@@ -72,11 +72,16 @@ def _embed_batch_via_api(inputs: List[str]) -> List[List[float]]:
 
 def _embed(inputs: List[str], should_cancel: Optional[Callable[[], bool]] = None) -> List[List[float]]:
     """
-    Embed texts in batches. Tries /api/embed (batch) first, falls back to
-    /api/embeddings (one per request) for older Ollama versions.
+    Embed texts in batches using the /api/embed endpoint (Ollama >= 0.1.26).
     """
+    import logging
+    log = logging.getLogger(__name__)
+
     if should_cancel and should_cancel():
         raise RuntimeError("Embedding canceled before request dispatch")
+
+    if _client is None:
+        raise RuntimeError("httpx is not available; cannot call Ollama embed API")
 
     results: List[List[float]] = []
 
@@ -86,29 +91,20 @@ def _embed(inputs: List[str], should_cancel: Optional[Callable[[], bool]] = None
         if should_cancel and should_cancel():
             raise RuntimeError("Embedding canceled mid-batch")
 
-        # Try batch endpoint first
         try:
-            batch_results = _embed_batch_via_api(batch)
-            results.extend(batch_results)
-            continue
-        except Exception:
-            pass
-
-        # Fall back: one request per text
-        for text in batch:
-            if _client is not None:
-                r = _client.post(
-                    f"{OLLAMA_BASE_URL}/api/embeddings",
-                    json={"model": EMBED_MODEL, "prompt": text, "keep_alive": "0"},
-                )
-                r.raise_for_status()
-                data = r.json()
-                emb = data.get("embedding")
-                if not isinstance(emb, list) or not emb:
-                    raise ValueError(f"Unexpected embed response: {data}")
-                results.append(emb)
-            else:
-                results.append(_embed_via_urllib(text))
+            r = _client.post(
+                f"{OLLAMA_BASE_URL}/api/embed",
+                json={"model": EMBED_MODEL, "input": batch},
+            )
+            r.raise_for_status()
+            data = r.json()
+            embeddings = data.get("embeddings")
+            if not isinstance(embeddings, list) or len(embeddings) != len(batch):
+                raise ValueError(f"Unexpected /api/embed response shape: {list(data.keys())}")
+            results.extend(embeddings)
+        except Exception as exc:
+            log.error("Ollama /api/embed failed (model=%s, batch_size=%d): %s", EMBED_MODEL, len(batch), exc)
+            raise
 
     return results
 
