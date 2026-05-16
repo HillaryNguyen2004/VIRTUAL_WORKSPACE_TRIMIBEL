@@ -256,11 +256,36 @@ def chunk_pdf(path: Path):
 # DOCX
 # =========================
 def read_docx(path: Path) -> str:
+    import zipfile
+
+    # Candidate paths for the main document body across different .docx producers
+    _DOC_PATHS = ["word/document.xml", "word/document2.xml", "Document.xml"]
+
+    try:
+        archive_file = ZipFile(path)
+    except zipfile.BadZipFile as exc:
+        raise ValueError(
+            f"Cannot open '{path.name}' as a .docx file (not a valid ZIP). "
+            "The file may be in the legacy .doc format — please re-save it as .docx."
+        ) from exc
+
+    with archive_file as archive:
+        names = archive.namelist()
+        doc_path = next((p for p in _DOC_PATHS if p in names), None)
+
+        if doc_path is None:
+            # Last resort: find any XML file under word/
+            doc_path = next((n for n in names if n.startswith("word/") and n.endswith(".xml")), None)
+
+        if doc_path is None:
+            raise ValueError(
+                f"Cannot find document body in '{path.name}'. "
+                f"Archive contains: {', '.join(names[:10])}"
+            )
+
+        root = ElementTree.parse(archive.open(doc_path)).getroot()
+
     paragraphs = []
-
-    with ZipFile(path) as archive:
-        root = ElementTree.parse(archive.open("word/document.xml")).getroot()
-
     for p in root.findall(".//w:p", OFFICE_XML_NAMESPACES):
         texts = [t.text or "" for t in p.findall(".//w:t", OFFICE_XML_NAMESPACES)]
         line = "".join(texts).strip()
