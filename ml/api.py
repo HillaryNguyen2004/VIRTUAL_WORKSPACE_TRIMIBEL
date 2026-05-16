@@ -23,7 +23,12 @@ import logging
 from sqlalchemy import create_engine, text
 from tensorflow.keras.models import load_model
 import sys
-sys.path.append('../etl')
+from pathlib import Path
+
+ETL_DIR = Path(__file__).resolve().parent.parent / "etl"
+if str(ETL_DIR) not in sys.path:
+    sys.path.insert(0, str(ETL_DIR))
+
 from config import PG_URL
 
 # ════════════════════════════════════════════════════════════
