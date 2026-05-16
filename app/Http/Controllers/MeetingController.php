@@ -20,13 +20,13 @@ class MeetingController extends Controller
 
     private function meteredBaseUrl(): string
     {
-        $domain = env('METERED_DOMAIN');
+        $domain = config('services.metered.domain');
         return "https://{$domain}/api/v1";
     }
 
     private function meteredSecretKey(): ?string
     {
-        return env('METERED_SECRET_KEY');
+        return config('services.metered.secret_key');
     }
 
     private function meteredRequest(string $method, string $path, array $query = [])
@@ -175,7 +175,7 @@ class MeetingController extends Controller
     {
         return view('video-chat.meeting', [
             'MEETING_ID' => $meetingId,
-            'METERED_DOMAIN' => env('METERED_DOMAIN'),
+            'METERED_DOMAIN' => config('services.metered.domain'),
             'currentUserName' => auth()->check() ? auth()->user()->name ?? auth()->user()->username : null,
         ]);
     }
@@ -226,7 +226,7 @@ class MeetingController extends Controller
 
         return view('video-chat.meeting_view', [
             'MEETING_ID' => $meetingId,
-            'METERED_DOMAIN' => env('METERED_DOMAIN'),
+            'METERED_DOMAIN' => config('services.metered.domain'),
             'currentUserName' => auth()->check() ? auth()->user()->name ?? auth()->user()->username : null,
             'meetingAttendees' => MeetingAttendee::where('meeting_id', $meetingId)
                 ->orderByDesc('joined_at')
