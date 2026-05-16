@@ -120,20 +120,6 @@ server {
     # Upload size limit (must match PHP)
     client_max_body_size 520M;
 
-    # Chatbot proxy (FastAPI on :8002)
-    location /api/chat-bot {
-        proxy_pass         http://127.0.0.1:8002;
-        proxy_http_version 1.1;
-        proxy_set_header   Host \$host;
-        proxy_set_header   X-Real-IP \$remote_addr;
-        proxy_set_header   Connection '';
-        proxy_read_timeout 600s;
-        proxy_send_timeout 600s;
-        proxy_buffering    off;
-        proxy_cache        off;
-        chunked_transfer_encoding on;
-    }
-
     location / {
         try_files \$uri \$uri/ /index.php?\$query_string;
     }
@@ -144,6 +130,8 @@ server {
         fastcgi_param  SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;
         include        fastcgi_params;
         fastcgi_read_timeout 600s;
+        # Disable FastCGI buffering so SSE/chunked streaming passes through immediately
+        fastcgi_buffering off;
     }
 
     location ~ /\.(?!well-known).* {
