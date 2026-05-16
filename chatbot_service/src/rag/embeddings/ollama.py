@@ -31,7 +31,7 @@ def _embed_via_urllib(text: str) -> List[float]:
     payload = {
         "model": EMBED_MODEL,
         "prompt": text,
-        "keep_alive": "0",
+        "keep_alive": "10m",
     }
     data = json.dumps(payload).encode("utf-8")
     req = urlrequest.Request(
@@ -94,7 +94,7 @@ def _embed(inputs: List[str], should_cancel: Optional[Callable[[], bool]] = None
         try:
             r = _client.post(
                 f"{OLLAMA_BASE_URL}/api/embed",
-                json={"model": EMBED_MODEL, "input": batch},
+                json={"model": EMBED_MODEL, "input": batch, "keep_alive": "10m"},
             )
             r.raise_for_status()
             data = r.json()
