@@ -52,4 +52,10 @@ return [
     ],
 
     'node_binary' => env('NODE_BINARY', 'node'),
+
+    'google' => [
+        'credentials'      => env('GOOGLE_APPLICATION_CREDENTIALS'),
+        'project_id'       => env('GOOGLE_CLOUD_PROJECT_ID'),
+        'storage_bucket'   => env('GOOGLE_CLOUD_STORAGE_BUCKET'),
+    ],
 ];

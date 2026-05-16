@@ -109,15 +109,7 @@
                     <tr class="hover:bg-gray-50 transition">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
-                                <div class="flex-shrink-0 h-10 w-10">
-                                    @if($user->user_profile_photo)
-                                        <img class="h-10 w-10 rounded-full" src="{{ storageUrl($user->user_profile_photo) }}" alt="{{ $user->name }}">
-                                    @else
-                                        <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-                                            {{ substr($user->name, 0, 1) }}
-                                        </div>
-                                    @endif
-                                </div>
+                                <x-user-avatar :user="$user" size="h-10 w-10" :withRing="false" />
                                 <div class="ml-4">
                                     <div class="text-sm font-medium text-gray-900">{{ $user->name }}</div>
                                     <div class="text-sm text-gray-500">{{ $user->email }}</div>

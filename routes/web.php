@@ -486,6 +486,10 @@ Route::post('/meeting/{meetingId}/chat', [MeetingController::class, 'sendChatMes
     ->middleware(['auth'])
     ->name('meeting.chat.send');
 
+Route::post('/meeting/{meetingId}/notes', [MeetingController::class, 'saveMeetingNotes'])
+    ->middleware(['auth'])
+    ->name('meeting.notes.save');
+
 // Whiteboard (WBO) Routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/whiteboard', [WBOController::class, 'index'])->name('wbo.index');

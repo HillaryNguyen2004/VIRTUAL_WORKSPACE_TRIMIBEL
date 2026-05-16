@@ -263,30 +263,11 @@
                                     <ul class="flex flex-col gap-4">
                                         @foreach($recentCheckIns->take(5) as $log)
                                             <li class="flex items-center gap-4 group">
-                                                {{-- Dynamic Avatar Logic --}}
-                                                @php
-                                                    // Try to get photo from flat properties or relation
-                                                    $photoData = $log->user_profile_photo ?? $log->avatar ?? ($log->user->profile_photo ?? ($log->user->avatar ?? null));
-                                                    $userName = $log->user_name ?? ($log->user->name ?? 'U');
-                                                    $userId = $log->user_id ?? ($log->user->id ?? 0);
-                                                    $initial = strtoupper(mb_substr($userName, 0, 1));
-                                                    
-                                                    $colors = ['bg-primary/10 text-primary', 'bg-secondary/10 text-secondary', 'bg-accent/20 text-accent'];
-                                                    $colorClass = $colors[$userId % count($colors)];
-                                                @endphp
-
-                                                @if($photoData)
-                                                    <img src="{{ storageUrl($photoData) }}" 
-                                                        alt="{{ $userName }}" 
-                                                        class="h-10 w-10 rounded-full object-cover flex-shrink-0">
-                                                @else
-                                                    <div class="h-10 w-10 rounded-full {{ $colorClass }} grid place-items-center font-bold text-sm flex-shrink-0">
-                                                        {{ $initial }}
-                                                    </div>
-                                                @endif
+                                                {{-- Dynamic Avatar Logic using Component --}}
+                                                <x-user-avatar :user="$log->user" size="h-10 w-10" withRing="false" />
 
                                                 <div class="flex-1 min-w-0">
-                                                    <p class="text-sm font-medium text-main truncate">{{ $userName }}</p>
+                                                    <p class="text-sm font-medium text-main truncate">{{ $log->user_name ?? $log->user->name ?? 'U' }}</p>
                                                     <div class="flex items-center gap-2 text-xs text-muted-400">
                                                         <span class="flex items-center gap-1 text-primary font-medium">
                                                             {{ $log->check_in_time ?? '--:--' }}
@@ -527,33 +508,14 @@
                                 <ul class="flex flex-col gap-6 relative">
                                     @foreach($recentLogs->take(3) as $log)
                                         <li class="flex gap-4 group">
-                                            {{-- Dynamic Avatar Logic replacing the Timeline Dot --}}
-                                            @php
-                                                $actUser = $log->user ?? null;
-                                                $actPhotoData = $actUser->profile_photo ?? ($actUser->avatar ?? null);
-                                                $actUserName = $actUser->name ?? 'User';
-                                                $actUserId = $actUser->id ?? 0;
-                                                $actInitial = strtoupper(mb_substr($actUserName, 0, 1));
-                                                
-                                                $actColors = ['primary', 'secondary', 'accent'];
-                                                $actColorClass = $actColors[$actUserId % count($actColors)];
-                                            @endphp
-
-                                            <div class="relative z-10 mt-0.5 flex-shrink-0 w-8 h-8 bg-white rounded-full">
-                                                @if($actPhotoData)
-                                                    <img src="{{ storageUrl($actPhotoData) }}" 
-                                                        alt="{{ $actUserName }}" 
-                                                        class="w-8 h-8 rounded-full object-cover ring-4 ring-white">
-                                                @else
-                                                    <div class="w-8 h-8 rounded-full text-{{ $actColorClass }} bg-{{ $actColorClass }}/10 flex items-center justify-center font-bold text-xs ring-4 ring-white">
-                                                        {{ $actInitial }}
-                                                    </div>
-                                                @endif
+                                            {{-- Dynamic Avatar Logic using Component --}}
+                                            <div class="relative z-10 mt-0.5 flex-shrink-0">
+                                                <x-user-avatar :user="$log->user" size="w-8 h-8" ringClass="ring-4 ring-white" />
                                             </div>
                                             
                                             <div class="flex-1">
                                                 <p class="text-sm font-medium text-main">
-                                                    <span class="font-bold text-{{ $actColorClass }}">{{ $actUserName }}</span>
+                                                    <span class="font-bold text-primary">{{ $log->user->name ?? 'User' }}</span>
                                                     {{ $log->action }}
                                                 </p>
                                                 <p class="text-xs text-muted-500 mt-1 line-clamp-2">{{ $log->description }}</p>

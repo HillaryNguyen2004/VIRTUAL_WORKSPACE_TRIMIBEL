@@ -11,7 +11,7 @@
     </div>
 
     {{-- Join/Create Card (matches video-chat layout) --}}
-    <div class="mb-10">
+    <div class="mb-10 max-w-[1200px] w-full mx-auto">
         <div class="bg-white border border-muted-300 rounded-2xl overflow-hidden relative animate-fade-in-up">
             <div class="p-8">
                 <div class="grid grid-cols-1 @4xl:grid-cols-2 gap-10 items-center relative z-10">
@@ -71,13 +71,13 @@
 
     {{-- Recent Boards History --}}
     @if (!empty($recentBoards) && count($recentBoards) > 0)
-    <div class="flex items-center justify-between mb-6 animate-fade-in-up [animation-delay:150ms]">
+    <div class="flex items-center justify-between max-w-[1200px] w-full mx-auto animate-fade-in-up [animation-delay:150ms]">
         <h4 class="text-md md:text-lg font-semibold text-main">{{ __('app.recent_boards') }}</h4>
     </div>
-    <div class="grid grid-cols-1 @2xl:grid-cols-2 @5xl:grid-cols-3 gap-4 animate-fade-in-up [animation-delay:200ms]">
+    <div class="grid grid-cols-1 @2xl:grid-cols-2 @5xl:grid-cols-3 gap-4 max-w-[1200px] w-full mx-auto animate-fade-in-up [animation-delay:200ms]">
         @foreach ($recentBoards as $board)
         <a href="{{ route('wbo.board', $board['board_id']) }}"
-           class="bg-white rounded-2xl border border-muted-300 hover:border-primary/30 transition-all duration-300 flex flex-col h-full group p-4">
+           class="bg-white rounded-2xl border border-muted-300 hover:border-primary/50 transition-all duration-300 flex flex-col h-full group p-4">
             <div class="flex items-start justify-between gap-3">
                 <div class="flex-1 min-w-0">
                     <p class="text-xs text-muted-500 truncate"><code>{{ substr($board['board_id'], 0, 13) }}...</code></p>
@@ -94,7 +94,7 @@
     @endif
 
     {{-- Info Section --}}
-    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4">
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4 max-w-[1200px] w-full mx-auto animate-fade-in-up [animation-delay:250ms]">
         <div class="flex gap-3">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 fill-blue-600 flex-shrink-0 mt-0.5">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>

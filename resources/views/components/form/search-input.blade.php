@@ -25,6 +25,6 @@
         id="{{ $id ?? $name }}"
         value="{{ old($key, $value) }}"
         placeholder="{{ __($placeholder) }}"
-        class="block w-full h-[50px] pl-10 bg-canvas border border-muted-200 text-main py-2.5 px-4 rounded-xl placeholder-muted-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+        class="block w-full bg-canvas border text-main h-12 pl-10 pr-4 rounded-xl placeholder-muted-400 hover:border-primary/50 focus:bg-white outline-none focus-within:ring-1 focus-within:ring-primary/20 focus:border-primary transition-all"
     >
 </div>

@@ -70,7 +70,7 @@
                     class="hidden sm:block h-16 w-auto">
                 {{-- Monogram: visible below sm --}}
                 <img src="{{ asset('img/logo/monogram-07.png') }}" alt="Tremibel"
-                    class="block sm:hidden h-16 w-auto">
+                    class="block sm:hidden h-16 w-8 object-cover">
             </a>
 
             <ul class="flex flex-col gap-1 justify-start sm:w-[220px]">
@@ -209,14 +209,15 @@
 
     <div class="flex flex-col w-full h-full min-h-0">
         
-        <nav class="flex justify-between xl:justify-end pl-10 pr-10 xl:pr-[64px] py-3 bg-white border-muted-200 shadow-[0_4px_40px_0_rgba(206,197,242,0.2)] z-40 shrink-0">
+        <nav class="flex justify-between xl:justify-end pl-4 pr-4 md:pl-10 md:pr-10 xl:pr-[64px] py-4 bg-canvas border-b border-muted-200 shadow-[0_4px_40px_0_rgba(206,197,242,0.2)] z-40 shrink-0">
             <button class="flex items-center xl:hidden hover:bg-muted-50 rounded-full p-2 text-primary" id="sidebar-menu-btn">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-6 h-6 fill-current">
                     <path
                         d="M96 160C96 142.3 110.3 128 128 128L512 128C529.7 128 544 142.3 544 160C544 177.7 529.7 192 512 192L128 192C110.3 192 96 177.7 96 160zM96 320C96 302.3 110.3 288 128 288L512 288C529.7 288 544 302.3 544 320C544 337.7 529.7 352 512 352L128 352C110.3 352 96 337.7 96 320zM544 480C544 497.7 529.7 512 512 512L128 512C110.3 512 96 497.7 96 480C96 462.3 110.3 448 128 448L512 448C529.7 448 544 462.3 544 480z" />
                 </svg>
             </button>
-            <ul class="flex flex-row gap-5 items-center">
+            <ul class="flex flex-row gap-3 sm:gap-5 items-center">
+                {{-- Language Switcher --}}
                 <li>
                     @php $currentLocale = app()->getLocale(); @endphp
                     <div class="relative" id="langMenu">
@@ -249,6 +250,8 @@
                         </div>
                     </div>
                 </li>
+
+                {{-- Notifications --}}
                 <li>
                     <div class="relative" id="notificationMenu">
                         <button id="notificationBtn" class="flex items-center px-1 py-1 rounded-full  transition-colors"
@@ -285,6 +288,8 @@
                         </div>
                     </div>
                 </li>
+
+                {{-- Chat Bot Toggle --}}
                 <li>
                     <button id="navbar-chatbot-toggle" title="Chat Bot"
                         class="p-1 flex items-center justify-center rounded-full  hover:opacity-95 transition"
@@ -296,22 +301,19 @@
                         </svg>
                     </button>
                 </li>
+
+                {{-- Divider --}}
                 <li>
                     <div class="w-px h-5 bg-muted-300"></div>
                 </li>
+
+                {{-- User Profile Dropdown --}}
                 <li class="relative list-none" id="userMenu">
-                    <button id="userButton" type="button" class="inline-flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-muted-50 transition-colors
+                    <button id="userButton" type="button" class="inline-flex items-center gap-2 rounded-lg outline-none hover:scale-105 transition-all
                             focus:outline-none" aria-haspopup="menu" aria-expanded="false">
                         @auth
-                        <span
-                            class="hidden lg:inline text-sm text-muted-600 font-medium">{{ Auth::user()->username }}</span>
-                        <img class="h-8 w-8 rounded-full object-cover ring-2 ring-white border border-muted-200 shadow-sm"
-                            src="{{ getUserAvatar(Auth::user()) }}" alt="{{ Auth::user()->name }} avatar">
+                        <x-user-avatar :user="Auth::user()" size="h-8 w-8" ringClass="" />
                         @endauth
-                        <svg class="h-4 w-4 text-muted-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path
-                                d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" />
-                        </svg>
                     </button>
 
                     <div id="userList"
@@ -354,8 +356,8 @@
                 class="hidden absolute inset-0 bg-black/20 z-30 transition-opacity opacity-0 xl:hidden">
             </div>
 
-        <div id="main-content-area" class="flex-1 @container overflow-y-auto w-full transition-all duration-300">
-            @yield('content')
+            <div id="main-content-area" class="flex-1 @container overflow-y-auto w-full transition-all duration-300">
+                @yield('content')
 
                 {{-- Scroll to top button --}}
                 <div class="fixed bottom-5 right-5 flex flex-col items-end gap-3 z-30 transition-all duration-300"
@@ -372,12 +374,12 @@
             </div>
 
             <aside id="right-sidebar" class="
-            w-0 h-full flex flex-col shrink-0 
-            bg-white border-l border-muted-200 shadow-2xl shadow-primary/15
-            transition-[width] duration-300 ease-in-out overflow-hidden
-            absolute right-0 top-0 z-30
-            xl:static xl:z-auto
-        ">
+                w-0 h-full flex flex-col shrink-0 
+                bg-white border-l border-muted-200 shadow-2xl shadow-primary/15
+                transition-[width] duration-300 ease-in-out overflow-hidden
+                absolute right-0 top-0 z-30
+                xl:static xl:z-auto
+            ">
 
                 {{-- Header --}}
                 <div

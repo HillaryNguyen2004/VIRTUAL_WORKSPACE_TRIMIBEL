@@ -103,7 +103,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
 
     public function filterUsers(array $filters, int $perPage = 10)
     {
-        $query = $this->model->with('roles')
+        $query = $this->model->with(['roles', 'department'])
             ->whereDoesntHave('roles', function ($q) {
                 $q->where('name', 'admin');
             });

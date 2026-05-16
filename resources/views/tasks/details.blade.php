@@ -34,7 +34,7 @@
         $overdue = \Illuminate\Support\Carbon::parse($task->due_date)->isPast() && $task->status !== 'completed';
     @endphp
 
-    <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
+    <div class="flex flex-col gap-6 w-full max-w-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
 
         {{-- HEADER WITH TASK ID AND ACTIONS --}}
         <div class="flex items-center justify-between gap-4 flex-wrap">
@@ -259,8 +259,7 @@
                         @foreach($task->assignedUsers as $user)
                             <div
                                 class="flex items-center gap-3 p-3 bg-muted-50 rounded border border-muted-200 hover:border-primary/30 transition-colors">
-                                <img src="{{ getUserAvatar($user) }}" alt="{{ $user->name }}"
-                                    class="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm">
+                                <x-user-avatar :user="$user" size="w-10 h-10" ringClass="border-2 border-white shadow-sm" withRing="false" />
                                 <div class="flex-1">
                                     <p class="font-medium text-sm text-main">{{ $user->name }}</p>
                                     <a href="mailto:{{ $user->email }}"
