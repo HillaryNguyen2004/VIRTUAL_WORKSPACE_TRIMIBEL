@@ -126,8 +126,12 @@ server {
         proxy_http_version 1.1;
         proxy_set_header   Host \$host;
         proxy_set_header   X-Real-IP \$remote_addr;
+        proxy_set_header   Connection '';
         proxy_read_timeout 600s;
         proxy_send_timeout 600s;
+        proxy_buffering    off;
+        proxy_cache        off;
+        chunked_transfer_encoding on;
     }
 
     location / {
