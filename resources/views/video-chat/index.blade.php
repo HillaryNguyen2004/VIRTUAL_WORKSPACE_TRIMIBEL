@@ -2,31 +2,33 @@
 @section('title', __('video_chat.title'))
 
 @section('content')
-    <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
-        
-        <div class="mb-10 ">
-            <div class="md:flex md:items-center md:justify-between mb-6 ">
-                <div class="flex-1 min-w-0">
-                    <h1 class="font-semibold text-2xl md:text-3xl text-main tracking-tight">
-                        {{ __('video_chat.title') }}
-                    </h1>
-                    <p class="text-muted-500 text-sm md:text-base mt-1">
-                        {{ __('video_chat.subtitle') }}
-                    </p>
-                </div>
+    <div class="flex flex-col gap-6 w-full text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
+    
+        {{-- Header Section --}}
+        <div class="md:flex md:items-center md:justify-between">
+            <div class="flex-1 min-w-0">
+                <h1 class="font-semibold text-2xl md:text-3xl text-main tracking-tight">
+                    {{ __('video_chat.title') }}
+                </h1>
+                <p class="text-muted-500 text-sm md:text-base mt-1">
+                    {{ __('video_chat.subtitle') }}
+                </p>
             </div>
+        </div>
 
+        <div class="mb-10 max-w-[1200px] mx-auto w-full">
+            {{-- Hero Section --}}
             <div class="relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-10 mb-6 bg-panel-left-gradient border-muted-200 shadow-xl shadow-secondary/20 rounded-2xl p-6 md:p-10 lg:p-12 animate-fade-in-up">
 
                 <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white/10 blur-3xl pointer-events-none"></div>
 
                 {{-- Main Content (left side) --}}
-                <div class="flex flex-col flex-1 items-start gap-10 justify-between w-full md:min-w-0 z-10">    
-                    <div class="text-left">
+                <div class="flex flex-col flex-1 items-start gap-10 justify-between w-full md:w-full z-10">    
+                    <div class="text-left flex flex-col w-full">
                         <h1 class="text-2xl md:text-3xl font-semibold text-canvas override mb-2">
                             {{ __('video_chat.smart_meeting_heading') }}
                         </h1>
-                        <p class="text-sm md:text-base text-muted-100 max-w-lg">
+                        <p class="text-sm md:text-base text-muted-100 max-w-xl">
                             {{ __('video_chat.smart_meeting_desc') }}
                         </p>
                     </div>
@@ -48,7 +50,7 @@
                 </div>
 
                 {{-- Decorative Elements (right side) --}}
-                <div class="hidden md:flex flex-1 justify-end items-center relative z-10 pointer-events-none">
+                <div class="hidden md:flex justify-end items-center relative z-10 pointer-events-none">
                     <div class="relative w-48 h-48">
                         <div class="absolute right-4 top-4 w-32 h-32 bg-white/20 rounded-3xl backdrop-blur-md border border-white/30 rotate-12 shadow-2xl shadow-main/10 flex items-center justify-center transition-transform duration-700 hover:rotate-6">
                             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-white/90">
@@ -75,6 +77,7 @@
 
             </div>
 
+            {{-- Meeting Actions --}}
             <div class="flex flex-col md:grid md:grid-cols-5 gap-2 w-full max-w-3xl mx-auto p-2 border border-muted-300 rounded-2xl shadow-md shadow-muted-50 animate-fade-in-up [animation-delay:100ms]">
                 {{-- Join Meeting --}}
                 <form method="post" action="{{ route('validateMeeting') }}" class="w-full md:col-span-2">
@@ -131,7 +134,7 @@
         </div>
 
         {{-- History Section --}}
-        <div class="flex items-center justify-between mb-6 animate-fade-in-up [animation-delay:150ms]">
+        <div class="flex items-center justify-between w-full max-w-[1200px] mx-auto animate-fade-in-up [animation-delay:150ms]">
             <h4 class="text-md md:text-lg font-semibold text-main">{{ __('video_chat.recent_meetings_title') }}</h4>
             
             <a href="{{ route('meetings.history') }}" class="text-xs md:text-sm text-primary font-medium hover:underline transition-colors">
@@ -139,9 +142,9 @@
             </a>
         </div>
 
-        <div class="grid grid-cols-1 @2xl:grid-cols-2 @5xl:grid-cols-3 gap-6 animate-fade-in-up [animation-delay:200ms]">
+        <div class="grid grid-cols-1 @2xl:grid-cols-2 @5xl:grid-cols-3 gap-6 animate-fade-in-up [animation-delay:200ms] w-full max-w-[1200px] mx-auto">
             @forelse($meetingHistory->take(3) as $meeting)
-            <div class="bg-white rounded-2xl border border-muted-300 hover:border-primary/30 transition-all duration-300 flex flex-col h-full group">
+            <x-white-card-container class="flex-col gap-4 hover:border-primary/50">
                 
                 {{-- Card Header --}}
                 <div class="px-6 py-5 border-b border-muted-100 flex justify-between items-start">
@@ -149,7 +152,7 @@
                         <span class="block text-xs font-bold text-muted-400 uppercase tracking-wider">
                             {{ $meeting->start_time->format('M d, Y') }}
                         </span>
-                        <span class="block text-lg font-bold text-main mt-1 group-hover:text-primary transition-colors">
+                        <span class="block text-lg font-bold text-main mt-1 transition-colors">
                             {{ $meeting->start_time->format('h:i A') }}
                         </span>
                     </div>
@@ -163,10 +166,7 @@
                     {{-- Attendees --}}
                     <div class="flex -space-x-3 overflow-hidden mb-4 pl-1">
                         @foreach($meeting->attendees->take(3) as $attendee)
-                            <img class="inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover" 
-                                src="{{ $attendee->avatar_url ?? 'https://ui-avatars.com/api/?name='.urlencode($attendee->name) }}" 
-                                alt="{{ $attendee->name }}"
-                                title="{{ $attendee->name }}">
+                            <x-user-avatar :user="$attendee" size="h-8 w-8" withRing="true" />
                         @endforeach
                         @if($meeting->attendees_count > 3)
                             <span class=" items-center text-center justify-center h-8 w-8 rounded-full ring-2 ring-white bg-muted-100 text-xs font-medium text-muted-500">
@@ -188,10 +188,10 @@
                         {{ __('video_chat.view_details') }}
                     </a>
                 </div>
-            </div>
+            </x-white-card-container>
             @empty
-            <div class="col-span-full py-16 flex flex-col items-center justify-center bg-white border-2 border-dashed border-muted-200 rounded-2xl">
-                <div class="p-4 rounded-full bg-muted-50 text-muted-400 mb-3">
+            <div class="col-span-full py-16 flex flex-col items-center justify-center border-2 border-dashed border-muted-200 rounded-2xl">
+                <div class="p-4 rounded-full bg-muted-100 text-muted-400 mb-3">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                 </div>
                 <span class="block text-sm font-medium text-muted-500">
@@ -329,27 +329,8 @@
                                 data-name="{{ $user->name }}" 
                                 data-search="{{ strtolower($user->name . ' ' . $user->email) }}">
                                 
-                                {{-- Dynamic Avatar Logic --}}
-                                @php
-                                    // Look for photo on the user model directly
-                                    $photoData = $user->avatar_url ?? $user->profile_photo ?? $user->avatar ?? null;
-                                    $userName = $user->name ?? 'U';
-                                    $userId = $user->id ?? 0;
-                                    $initial = strtoupper(mb_substr($userName, 0, 1));
-                                    
-                                    $colors = ['bg-primary/10 text-primary', 'bg-secondary/10 text-secondary', 'bg-accent/20 text-accent'];
-                                    $colorClass = $colors[$userId % count($colors)];
-                                @endphp
-
-                                @if($photoData)
-                                    <img src="{{ storageUrl($photoData) }}" 
-                                        alt="{{ $userName }}" 
-                                        class="h-8 w-8 rounded-full object-cover ring-2 ring-white flex-shrink-0">
-                                @else
-                                    <div class="h-8 w-8 rounded-full {{ $colorClass }} ring-2 ring-white grid place-items-center font-bold text-sm flex-shrink-0">
-                                        {{ $initial }}
-                                    </div>
-                                @endif
+                                {{-- Dynamic Avatar --}}
+                                <x-user-avatar :user="$user" size="h-8 w-8" withRing="true" />
                                 
                                 <div class="flex-1 min-w-0">
                                     <p class="font-bold text-main leading-tight truncate">{{ $user->name }}</p>

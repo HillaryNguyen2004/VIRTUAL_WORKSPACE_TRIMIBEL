@@ -36,6 +36,7 @@ class Kernel extends ConsoleKernel
     {
         // Existing campaigns
         $schedule->command('campaigns:send-scheduled')->everyMinute()->withoutOverlapping();;
+        $schedule->command('meeting:cleanup-recordings')->hourly()->withoutOverlapping();
         $schedule->command('emails:birthday')->dailyAt('08:00')->withoutOverlapping();;
 
         // 1. Run incremental ETL every night at 1:00 AM
