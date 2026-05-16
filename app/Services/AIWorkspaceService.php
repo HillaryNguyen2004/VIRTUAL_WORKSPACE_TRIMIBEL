@@ -21,13 +21,19 @@ class AIWorkspaceService
     {
         $query = AIWorkspace::query()->active();
 
-        if (!$user->hasRole('admin')) {
+        // Private workspaces are owner-only regardless of role.
+        // Admins see all public/team workspaces but only their own private ones.
+        if ($user->hasRole('admin')) {
+            $query->where(function ($q) use ($user) {
+                $q->where(function ($q2) use ($user) {
+                    $q2->where('visibility', 'private')->where('user_id', $user->id);
+                })->orWhereIn('visibility', ['public', 'team']);
+            });
+        } else {
             $teamUserIds = $this->getTeamScopeUserIds($user);
-
             $query->where(function ($q) use ($user, $teamUserIds) {
-                $q->where(function ($privateQ) use ($user) {
-                    $privateQ->where('visibility', 'private')
-                        ->where('user_id', $user->id);
+                $q->where(function ($q2) use ($user) {
+                    $q2->where('visibility', 'private')->where('user_id', $user->id);
                 })->orWhere('visibility', 'public')
                     ->orWhere(function ($teamQ) use ($teamUserIds) {
                         $teamQ->where('visibility', 'team')
@@ -49,18 +55,19 @@ class AIWorkspaceService
         $user = auth()->user();
         $query = AIWorkspace::query();
 
-        // Admin can see all active workspaces.
-        // Non-admin visibility rules:
-        // - public: everyone can see
-        // - team: only users in the same team scope can see
-        // - private: only owner can see
-        if (!$user->hasRole('admin')) {
+        // Private workspaces are owner-only regardless of role.
+        // Admins see all public/team workspaces but only their own private ones.
+        if ($user->hasRole('admin')) {
+            $query->where(function ($q) use ($user) {
+                $q->where(function ($q2) use ($user) {
+                    $q2->where('visibility', 'private')->where('user_id', $user->id);
+                })->orWhereIn('visibility', ['public', 'team']);
+            });
+        } else {
             $teamUserIds = $this->getTeamScopeUserIds($user);
-
             $query->where(function ($q) use ($user, $teamUserIds) {
-                $q->where(function ($privateQ) use ($user) {
-                    $privateQ->where('visibility', 'private')
-                        ->where('user_id', $user->id);
+                $q->where(function ($q2) use ($user) {
+                    $q2->where('visibility', 'private')->where('user_id', $user->id);
                 })->orWhere('visibility', 'public')
                     ->orWhere(function ($teamQ) use ($teamUserIds) {
                         $teamQ->where('visibility', 'team')

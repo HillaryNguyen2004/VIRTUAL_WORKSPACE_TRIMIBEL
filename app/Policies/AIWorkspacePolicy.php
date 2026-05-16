@@ -13,12 +13,16 @@ class AIWorkspacePolicy
      */
     public function before(User $user, string $ability): bool|null
     {
-        // Allow admins to do anything
+        // 'view' always falls through so private workspaces remain owner-only even for admins
+        if ($ability === 'view') {
+            return null;
+        }
+
         if ($user->hasRole('admin')) {
             return true;
         }
 
-        return null; // proceed to the ability
+        return null;
     }
 
     /**
