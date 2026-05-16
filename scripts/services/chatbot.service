@@ -5,8 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=www-data
-Group=www-data
+User=ubuntu
+Group=ubuntu
 WorkingDirectory=/var/www/html/chatbot_service
 
 # Load the application's .env so Python can read DB creds, API keys, etc.

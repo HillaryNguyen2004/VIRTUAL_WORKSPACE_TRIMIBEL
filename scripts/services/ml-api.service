@@ -5,8 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=www-data
-Group=www-data
+User=ubuntu
+Group=ubuntu
 WorkingDirectory=/var/www/html/ml
 
 # Load ETL env (PG_URL, Supabase + MySQL credentials for ML API)
