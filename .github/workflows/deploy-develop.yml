@@ -159,7 +159,6 @@ jobs:
             --exclude='chatbot_service/.env' \
             --exclude='chatbot_service/.venv' \
             --exclude='ml/.venv' \
-            --exclude='ml/models' \
             --exclude='whitebophir/node_modules' \
             -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
             ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:${{ secrets.EC2_DEPLOY_PATH }}/
