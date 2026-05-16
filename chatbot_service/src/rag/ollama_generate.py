@@ -72,7 +72,7 @@ Always think step-by-step (Chain-of-Thought) before answering.
 Be concise, accurate, logical, and data-driven.
 If the context is provided, use it. If not, say you don't know instead of hallucinating."""
 
-_client = httpx.Client(timeout=httpx.Timeout(connect=10, read=300, write=60, pool=300))
+_client = httpx.Client(timeout=httpx.Timeout(connect=10, read=600, write=60, pool=600))
 
 
 class GenerationCancelled(Exception):
