@@ -159,10 +159,7 @@
                                         <div class="flex items-center gap-2 flex-wrap">
                                             @foreach($task->assignedUsers->take(3) as $user)
                                                 <div class="flex items-center gap-1.5 px-2 py-1 bg-muted-50 rounded-full">
-                                                    <img src="{{ getUserAvatar($user) }}"
-                                                        alt="{{ $user->name }}"
-                                                        class="w-5 h-5 rounded-full border border-muted-200"
-                                                        title="{{ $user->name }}">
+                                                    <x-user-avatar :user="$user" size="w-5 h-5" ringClass="border border-muted-200" withRing="false" />
                                                     <span class="text-xs font-medium text-muted-700 truncate max-w-[80px]">{{ $user->name }}</span>
                                                 </div>
                                             @endforeach

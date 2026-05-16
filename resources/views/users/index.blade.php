@@ -20,23 +20,24 @@
         }
     @endphp
 
-    <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
+    <div class="flex flex-col gap-6 w-full text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
         
         {{-- HEADER SECTION --}}
-        <div class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center w-full mb-8">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex items-center gap-4">
-                @include('components.back-btn' , ['route' => $dashRoute])
+                @include('components.back-btn', ['route' => $dashRoute])
+
                 <div>
-                    <h2 class="font-bold text-3xl text-main tracking-tight">
+                    <h1 class="font-semibold text-2xl md:text-3xl text-main tracking-tight">
                         {{ __('user_management.title') }}
-                    </h2>
-                    <p class="text-muted-500 text-sm mt-2">{{ __('user_management.subtitle') ?? 'Manage system access and roles' }}</p>
+                    </h1>
+                    <p class="text-muted-500 text-sm md:text-base mt-1">
+                        {{ __('user_management.subtitle') }}
+                    </p>
                 </div>
             </div>
 
-            {{-- BUTTONS --}}
-            <div class="flex items-center gap-4">
-                {{-- Add User --}}
+            <div class="flex items-center gap-3">
                 <a href="{{ route('admin.users.create') }}"
                     class="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-primary/20">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 fill-current">
@@ -48,7 +49,7 @@
         </div>
 
         {{-- CARD CONTAINER --}}
-        <div class="bg-white rounded-2xl border border-muted-200 shadow-lg shadow-main/5 overflow-hidden flex flex-col animate-fade-in-up">
+        <x-white-card-container class="w-full max-w-[1200px] mx-auto flex-col overflow-hidden">
 
             {{-- SEARCH & FILTER BAR --}}
             <form class="p-5 border-b border-muted-200 flex flex-wrap gap-4 bg-white" method="GET">
@@ -88,7 +89,7 @@
                 <div class="flex gap-2">
                     {{-- Filter Button --}}
                     <button type="submit" title="{{ __('tasks.filter') }}"
-                        class="border border-muted-200 px-3 py-2.5 rounded-xl text-muted-500 hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-colors">
+                        class="border border-muted-200 px-3 py-2 rounded-xl text-muted-500 hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-current">
                             <path d="M96 128C83.1 128 71.4 135.8 66.4 147.8C61.4 159.8 64.2 173.5 73.4 182.6L256 365.3L256 480C256 488.5 259.4 496.6 265.4 502.6L329.4 566.6C338.6 575.8 352.3 578.5 364.3 573.5C376.3 568.5 384 556.9 384 544L384 365.3L566.6 182.7C575.8 173.5 578.5 159.8 573.5 147.8C568.5 135.8 556.9 128 544 128L96 128z" />
                         </svg>
@@ -96,7 +97,7 @@
 
                     {{-- Reset Button --}}
                     <a href="{{ route('admin.users.index') }}" title="{{ __('tasks.reset') }}"
-                        class="flex items-center justify-center border border-muted-200 px-3 py-2.5 rounded-xl text-muted-500 hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-colors">
+                        class="flex items-center justify-center border border-muted-200 px-3 py-2 rounded-xl text-muted-500 hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-current">
                             <path d="M88 256L232 256C241.7 256 250.5 250.2 254.2 241.2C257.9 232.2 255.9 221.9 249 215L202.3 168.3C277.6 109.7 386.6 115 455.8 184.2C530.8 259.2 530.8 380.7 455.8 455.7C380.8 530.7 259.3 530.7 184.3 455.7C174.1 445.5 165.3 434.4 157.9 422.7C148.4 407.8 128.6 403.4 113.7 412.9C98.8 422.4 94.4 442.2 103.9 457.1C113.7 472.7 125.4 487.5 139 501C239 601 401 601 501 501C601 401 601 239 501 139C406.8 44.7 257.3 39.3 156.7 122.8L105 71C98.1 64.2 87.8 62.1 78.8 65.8C69.8 69.5 64 78.3 64 88L64 232C64 245.3 74.7 256 88 256z" />
                         </svg>
@@ -109,11 +110,12 @@
                 <table class="w-full">
                     <thead class="bg-muted-50 border-b border-muted-200">
                         <tr>
-                            <th class="w-[20%] py-4 px-3 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('user_management.user_fullname_column') }}</th>
-                            <th class="w-[20%] py-4 pl-6 pr-3 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('user_management.user_username_column') }}</th>
-                            <th class="w-[25%] py-4 px-3 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('user_management.email_column') }}</th>
-                            <th class="w-[15%] py-4 px-3 text-center text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('user_management.role_column') }}</th>
-                            <th class="w-[20%] py-4 pr-6 pl-3 text-right text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('user_management.actions_column') }}</th>
+                            <th class="w-[25%] py-4 px-3 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('user_management.user_fullname_column') }}</th>
+                            <th class="w-[15%] py-4 pl-6 pr-3 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('user_management.user_username_column') }}</th>
+                            <th class="w-[20%] py-4 px-3 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('user_management.email_column') }}</th>
+                            <th class="w-[10%] py-4 px-3 text-center text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('user_management.role_column') }}</th>
+                            <th class="w-[15%] py-4 px-3 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('user_management.department_column') }}</th>
+                            <th class="w-[15%] py-4 pr-6 pl-3 text-right text-xs font-semibold text-muted-400 uppercase tracking-wider">{{ __('user_management.actions_column') }}</th>
                         </tr>
                     </thead>
 
@@ -147,7 +149,8 @@
 
                             <tr class="hover:bg-canvas transition-colors">
                                 {{-- Name --}}
-                                <td class="py-4 pl-6 px-3 text-sm font-medium text-main truncate" title="{{ $user->name }}">
+                                <td class="flex items-center py-4 px-3 text-sm font-medium text-main truncate" title="{{ $user->name }}">
+                                    <x-user-avatar :user="$user" size="h-7 w-7 mr-2" ringClass=""/>
                                     {{ $user->name }}
                                 </td>
 
@@ -166,6 +169,11 @@
                                     <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset {{ $badgeClass }}">
                                         {{ __('user_row.' . ($role ?? 'user') . '_role') }}
                                     </div>
+                                </td>
+
+                                {{-- Department --}}
+                                <td class="py-4 px-3 text-sm text-muted-500 truncate" title="{{ $user->department->name ?? __('user_row.no_department') }}">
+                                    {{ $user->department->name ?? __('user_row.no_department') }}
                                 </td>
 
                                 {{-- Actions --}}
@@ -314,7 +322,7 @@
                     </tbody>
                 </table>
             </div>
-        </div>
+        </x-white-card-container>
 
         {{-- PAGINATION --}}
         @if ($users->hasPages())

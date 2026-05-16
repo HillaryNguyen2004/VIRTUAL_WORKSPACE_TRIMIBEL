@@ -17,7 +17,7 @@
         }
     @endphp
 
-    <div class="flex flex-col w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
+    <div class="flex flex-col w-full max-w-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
         {{-- HEADER SECTION --}}
         <div class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center w-full mb-8">
             <div class="flex items-center gap-4">

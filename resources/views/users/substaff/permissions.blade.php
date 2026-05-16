@@ -22,7 +22,7 @@
             : [];
     @endphp
 
-    <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
+    <div class="flex flex-col gap-6 w-full max-w-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
 
         {{-- HEADER SECTION --}}
         <div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
@@ -50,7 +50,7 @@
             <div class="flex items-center bg-primary/10 rounded-2xl py-2 px-6 gap-3 border border-primary/50 transition-all duration-300 group">
                     <div class="relative my-auto">
                         <div class="absolute inset-0 bg-primary/20 rounded-full blur-lg opacity-50"></div>
-                        <img src="{{ getUserAvatar($user) }}" alt="leader_avatar" class="relative w-10 h-10 rounded-full">
+                        <x-user-avatar :user="$user" size="w-10 h-10" :withRing="false" class="relative" />
                     </div>
                     <div class="flex flex-col justify-between h-full">
                         <h3 class="text-primary text-md md:text-lg font-semibold">{{ $user->name }}</h3>

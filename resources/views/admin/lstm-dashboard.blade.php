@@ -1,27 +1,47 @@
 @extends('layout_dashboard')
 
-@section('content')
-<div class="lstm-dash">
+@section('title', 'Productivity Outlook')
 
-    {{-- ══════════════════════════════════════════════════════
-         HEADER
-    ══════════════════════════════════════════════════════ --}}
-    <div class="dash-header">
+@section('content')
+<div class="flex flex-col gap-6 w-full mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
+
+    {{-- ── HEADER ──────────────────────────────────────────── --}}
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-            <h2 class="dash-title">Productivity Outlook</h2>
-            <p class="dash-subtitle"
+            <div class="flex items-center gap-3">
+                <h1 class="font-semibold text-2xl md:text-3xl text-main tracking-tight">Productivity Outlook</h1>
+                <button id="btn-lstm-info" type="button"
+                    class="inline-flex items-center px-2 py-1 gap-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wide hover:bg-primary/20 transition-all cursor-pointer"
+                    title="About this model">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 16v-4"/>
+                        <path d="M12 8h.01"/>
+                    </svg>
+                    LSTM
+                </button>
+            </div>
+            <p class="text-muted-500 text-sm md:text-base mt-1"
                title="Dự đoán hạng năng suất ngày mai cho từng nhân viên dựa trên 14 ngày làm việc gần nhất.">
-                Tomorrow's predicted productivity class · LSTM forecast based on past 14 days
+                Tomorrow's predicted productivity class · forecast based on the past 14 days
             </p>
         </div>
-        <div class="header-actions">
-            <span class="last-run" title="Lần chạy mô hình gần nhất">
-                Last updated <span id="last-run">—</span>
+        <div class="flex items-center gap-4 flex-wrap justify-start lg:justify-end">
+            <span class="text-sm text-muted-500">
+                Last run: <span id="last-run" class="font-medium text-main">—</span>
             </span>
-            <button id="btn-export" class="btn-secondary" title="Tải báo cáo Excel">Export</button>
-            <button id="btn-refresh" class="btn-primary" title="Chạy lại dự đoán">
-                <svg id="refresh-icon" width="13" height="13" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2.2">
+            <button id="btn-export"
+                class="flex items-center justify-center gap-2 rounded-xl border border-muted-300 bg-white px-5 py-2.5 text-sm font-medium text-muted-600 hover:border-primary/40 hover:text-primary transition-all"
+                title="Tải báo cáo Excel">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Export
+            </button>
+            <button id="btn-refresh"
+                class="flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary-hover px-5 py-2.5 text-white text-sm font-semibold shadow-lg shadow-primary/20 transition-all active:scale-95"
+                title="Chạy lại dự đoán">
+                <svg id="refresh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/>
                     <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
                 </svg>
@@ -30,214 +50,232 @@
         </div>
     </div>
 
-    {{-- ══════════════════════════════════════════════════════
-         TIER 1 — SNAPSHOT
-         "What's the situation tomorrow?"
-    ══════════════════════════════════════════════════════ --}}
-    <div class="tier-1 panel">
-        <div class="snapshot-row">
-            <div class="snapshot-headline">
-                <div class="snapshot-label" title="Tổng quan dự đoán cho ngày mai">Tomorrow's outlook</div>
-                <div class="snapshot-main">
-                    <span class="snapshot-num" id="snap-attention">—</span>
-                    <span class="snapshot-text">need attention</span>
+    {{-- CONTENT AREA --}}
+    <div class="flex flex-col gap-6 max-w-[1200px] w-full mx-auto">
+        <div class = "flex flex-col lg:flex-row gap-6 animate-fade-in-up">
+            {{-- ── HERO SNAPSHOT ───────────────────────────────────── --}}
+            <div class="w-full overflow-hidden p-6 md:p-8 bg-primary-gradient shadow-xl shadow-indigo-500/20 rounded-3xl">
+                <div class="flex flex-row justify-between gap-6 h-full text-canvas">
+                    <div class="flex flex-col justify-between gap-6 flex-1">
+                        <p class="font-medium text-canvas/70 uppercase tracking-widest text-xs">
+                            Tomorrow's Productivity Forecast
+                        </p>
+
+                        <div class="flex flex-col gap-2">
+                            <a id="hero-count-link"
+                            href="#attention-section"
+                            class="group flex items-end gap-3 w-fit focus:outline-none transition-all"
+                            title="See who needs attention">
+                                <span id="snap-attention" class="text-6xl font-bold tracking-tight leading-none text-canvas transition-opacity">
+                                    6
+                                </span>
+                                <span id="hero-count-label" class="text-2xl text-canvas/90 font-medium group-hover:text-canvas transition-colors">
+                                    employees require attention
+                                </span>
+                                <svg class="h-5 w-5 text-canvas/60 -translate-y-1 group-hover:translate-y-0 group-hover:text-canvas transition-all flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+                                </svg>
+                            </a>
+
+                            {{-- Notice: The repeated "6 employees..." is removed. It just gets straight to the context. --}}
+                            <p id="snap-sub" class="text-base text-canvas/80 leading-relaxed max-w-xl mt-1">
+                                Driven primarily by sharp declining trends in <span class="font-semibold text-canvas">Engineering</span> and <span class="font-semibold text-canvas">Sales</span>.
+                            </p>
+                        </div>
+                    </div>
+
+                    {{-- micro card populated by renderHeroBanner() --}}
+                    <div id="hero-micro-card"
+                         class="flex-col justify-between self-end min-w-[180px] max-w-[220px] rounded-2xl p-4"
+                         style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2)">
+                    </div>
                 </div>
-                <div class="snapshot-sub" id="snap-sub">—</div>
+
             </div>
-            <div class="snapshot-bars">
-                <div class="snap-bar snap-bar-low"
-                     title="Số nhân viên được dự đoán có năng suất Thấp ngày mai">
-                    <span class="snap-bar-num" id="snap-low">—</span>
-                    <span class="snap-bar-lbl">Predicted Low <span class="snap-bar-thresh">&lt;50</span></span>
-                </div>
-                <div class="snap-bar snap-bar-med"
-                     title="Số nhân viên được dự đoán có năng suất Trung bình ngày mai">
-                    <span class="snap-bar-num" id="snap-med">—</span>
-                    <span class="snap-bar-lbl">Predicted Medium <span class="snap-bar-thresh">50–79</span></span>
-                </div>
-                <div class="snap-bar snap-bar-high"
-                     title="Số nhân viên được dự đoán có năng suất Cao ngày mai">
-                    <span class="snap-bar-num" id="snap-high">—</span>
-                    <span class="snap-bar-lbl">Predicted High <span class="snap-bar-thresh">≥80</span></span>
-                </div>
+
+            {{-- ── KPI CARDS ───────────────────────────────────────── --}}
+            <div class="flex flex-col w-full lg:max-w-72 gap-4 animate-fade-in-up [animation-delay:50ms]">
+                <x-white-card-container color="success/80" class="p-4 items-center gap-4 hover:border-success/80">
+                    <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-success/10 text-success">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-muted-400">Predicted High</p>
+                        <p class="text-2xl font-bold text-main leading-tight" id="snap-high">—</p>
+                        <p class="text-xs text-muted-400 mt-0.5">Score ≥80 · on track</p>
+                    </div>
+                </x-white-card-container>
+
+                <x-white-card-container color="secondary/80" class="p-4 items-center gap-4">
+                    <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-secondary/10 text-secondary">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-muted-400">Predicted Medium</p>
+                        <p class="text-2xl font-bold text-main leading-tight" id="snap-med">—</p>
+                        <p class="text-xs text-muted-400 mt-0.5">Score 50–79 · watch closely</p>
+                    </div>
+                </x-white-card-container>
+
+                <x-white-card-container color="danger/50" class="p-4 items-center gap-4 hover:border-danger/50">
+                    <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-danger/10 text-danger">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-muted-400">Predicted Low</p>
+                        <p class="text-2xl font-bold text-main leading-tight" id="snap-low">—</p>
+                        <p class="text-xs text-muted-400 mt-0.5">Score &lt;50 · needs attention</p>
+                    </div>
+                </x-white-card-container>
+
             </div>
         </div>
-    </div>
 
-    {{-- ══════════════════════════════════════════════════════
-         TIER 2 — ACTION
-         "Who do I need to talk to?"
-    ══════════════════════════════════════════════════════ --}}
-    <div class="tier-2">
-        <div class="panel attention-panel">
-            <div class="panel-head">
+        {{-- ── ATTENTION LIST ──────────────────────────────────── --}}
+        <div id="attention-section" class="scroll-mt-6 animate-fade-in-up [animation-delay:80ms]">
+        <x-white-card-container color="primary/50" class="overflow-hidden flex-col animate-fade-in-up [animation-delay:100ms]">
+            <div class="flex items-start justify-between border-b border-muted-200 px-5 py-4 flex-wrap gap-3">
                 <div>
-                    <span class="panel-title" title="Nhân viên cần được quan tâm">Who needs attention</span>
-                    <span class="panel-sub">Sorted by predicted risk · click a row to see history</span>
+                    <h4 class="flex items-center gap-2 text-lg font-semibold text-main">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                        </div>
+                        Who needs attention
+                    </h4>
+                    <p class="text-sm text-muted-500 mt-1">Predicted Low · Medium trending down</p>
                 </div>
-                <div class="attention-controls">
-                    <select id="attn-filter" class="tbl-select" title="Lọc theo dự đoán">
-                        <option value="all">All concerns</option>
-                        <option value="low">Predicted Low only</option>
-                        <option value="declining">Declining trend only</option>
-                    </select>
+                <select id="attn-filter"
+                    class="appearance-none rounded-xl border border-muted-300 bg-white px-4 py-2 text-sm text-main hover:border-muted-400 focus:outline-none focus:border-primary transition-colors cursor-pointer">
+                    <option value="all">All concerns</option>
+                    <option value="low">Predicted Low only</option>
+                    <option value="declining">Declining trend only</option>
+                </select>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="sticky top-0 z-10 border-b border-muted-200 bg-muted-50 text-xs uppercase tracking-wider text-muted-500">
+                        <tr>
+                            <th class="px-5 py-4 text-left font-semibold">Employee</th>
+                            <th class="px-4 py-4 text-left font-semibold">Trajectory</th>
+                            <th class="px-4 py-4 text-left font-semibold">Predicted</th>
+                            <th class="px-4 py-4 text-left font-semibold">Confidence</th>
+                            <th class="px-4 py-4 text-center font-semibold">Chart</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attention-list" class="divide-y divide-muted-100 text-sm">
+                        <tr><td colspan="5" class="px-5 py-10 text-center text-sm text-muted-400">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </x-white-card-container>
+        </div>
+
+        {{-- ── CONTEXT ─────────────────────────────────────────── --}}
+        <div class="animate-fade-in-up [animation-delay:120ms]">
+            <p class="text-xs font-bold text-muted-400 uppercase tracking-widest mb-4">Context</p>
+            <div class="grid grid-cols-1 lg:grid-cols-[1.2fr_1.2fr_1fr] gap-4 animate-fade-in-up [animation-delay:150ms]">
+
+                <x-white-card-container class="p-6 flex-col gap-4 hover:border-primary/50">
+                    <h4 class="flex items-center gap-2 text-base font-semibold text-main border-b border-muted-100 pb-3">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                            </svg>
+                        </div>
+                        By department
+                    </h4>
+                    <div id="dept-list"><p class="text-sm text-muted-400 text-center py-6">Loading…</p></div>
+                </x-white-card-container>
+
+                <x-white-card-container class="p-6 flex-col gap-4 hover:border-secondary/50">
+                    <h4 class="flex items-center gap-2 text-base font-semibold text-main border-b border-muted-100 pb-3">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/10 text-secondary">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                        </div>
+                        Score distribution
+                    </h4>
+                    <div class="relative w-full h-44"><canvas id="dist-chart"></canvas></div>
+                </x-white-card-container>
+
+                <x-white-card-container class="p-6 flex-col gap-4 hover:border-accent/50">
+                    <h4 class="flex items-center gap-2 text-base font-semibold text-main border-b border-muted-100 pb-3">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                            </svg>
+                        </div>
+                        Top predicted
+                    </h4>
+                    <div id="top-list"><p class="text-sm text-muted-400 text-center py-6">Loading…</p></div>
+                </x-white-card-container>
+            </div>
+        </div>
+
+        {{-- ── ALL EMPLOYEES (collapsible like daily logs) ─────── --}}
+        <x-white-card-container color="primary/50" class="overflow-hidden flex-col animate-fade-in-up [animation-delay:150ms]">
+            <details class="group">
+                <summary class="flex cursor-pointer list-none items-center justify-between border-b border-muted-200 px-5 py-4 group-open:border-b">
+                    <div>
+                        <h4 class="text-lg font-semibold text-main">All employees</h4>
+                        <p class="text-sm text-muted-500">Full prediction table with filters</p>
+                    </div>
+                    <div class="flex items-center gap-1 text-sm font-medium text-primary">
+                        <span>Show details</span>
+                        <svg class="h-4 w-4 transition-transform duration-200 -rotate-90 group-open:rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                </summary>
+
+                <div>
+                    <div class="border-b border-muted-200 bg-white p-5 flex flex-wrap gap-4">
+                        <input type="text" id="search" placeholder="Search name or department…"
+                            class="flex-1 min-w-[180px] rounded-xl border border-muted-300 bg-white px-3 py-2 text-sm placeholder-muted-400 hover:border-muted-400 focus:outline-none focus:border-primary transition-colors">
+                        <select id="dept-filter"
+                            class="rounded-xl border border-muted-300 bg-white px-3 py-2 text-sm hover:border-muted-400 focus:outline-none focus:border-primary transition-colors cursor-pointer">
+                            <option value="">All departments</option>
+                        </select>
+                        <select id="risk-filter"
+                            class="rounded-xl border border-muted-300 bg-white px-3 py-2 text-sm hover:border-muted-400 focus:outline-none focus:border-primary transition-colors cursor-pointer">
+                            <option value="">All classes</option>
+                            <option value="high">Predicted High</option>
+                            <option value="medium">Predicted Medium</option>
+                            <option value="low">Predicted Low</option>
+                        </select>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead class="bg-muted-50 text-xs uppercase tracking-wider text-muted-500 border-b border-muted-200">
+                                <tr>
+                                    <th class="px-5 py-4 text-left font-semibold">Employee</th>
+                                    <th class="px-4 py-4 text-left font-semibold">Department</th>
+                                    <th class="px-4 py-4 text-left font-semibold">Today</th>
+                                    <th class="px-4 py-4 text-left font-semibold">Predicted</th>
+                                    <th class="px-4 py-4 text-left font-semibold">Trend</th>
+                                    <th class="px-4 py-4 text-left font-semibold">Confidence</th>
+                                    <th class="px-4 py-4"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="all-tbody" class="divide-y divide-muted-100 text-sm"></tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            </details>
+        </x-white-card-container>
 
-            <div class="attn-table-head">
-                <span title="Tên nhân viên">Employee</span>
-                <span title="Xu hướng 7 ngày qua">Recent trajectory</span>
-                <span title="Hạng dự đoán cho ngày mai">Predicted</span>
-                <span title="Độ tự tin của mô hình">Model confidence</span>
-                <span></span>
-            </div>
-            <div id="attention-list">
-                <div class="empty-state">Loading…</div>
-            </div>
-        </div>
     </div>
 
-    {{-- ══════════════════════════════════════════════════════
-         TIER 3 — CONTEXT
-         "How does this break down?"
-    ══════════════════════════════════════════════════════ --}}
-    <div class="section-label">Context</div>
-    <div class="tier-3">
-        {{-- Department breakdown --}}
-        <div class="panel">
-            <div class="panel-head">
-                <span class="panel-title" title="Trung bình theo phòng ban">By department</span>
-                <span class="panel-hint">Predicted average for tomorrow</span>
-            </div>
-            <div id="dept-list">
-                <div class="empty-state">Loading…</div>
-            </div>
-        </div>
-
-        {{-- Predicted score distribution (REAL data) --}}
-        <div class="panel">
-            <div class="panel-head">
-                <span class="panel-title" title="Phân phối điểm dự đoán">Score distribution</span>
-                <span class="panel-hint">Tomorrow's predicted scores</span>
-            </div>
-            <div class="chart-wrap"><canvas id="dist-chart"></canvas></div>
-        </div>
-
-        {{-- Top performers (compact) --}}
-        <div class="panel">
-            <div class="panel-head">
-                <span class="panel-title" title="Nhân viên có dự đoán cao nhất">Top predicted</span>
-                <span class="panel-hint">Tomorrow</span>
-            </div>
-            <div id="top-list">
-                <div class="empty-state">Loading…</div>
-            </div>
-        </div>
-    </div>
-
-    {{-- ══════════════════════════════════════════════════════
-         TIER 4 — TRUST
-         "Can I trust these numbers?"
-    ══════════════════════════════════════════════════════ --}}
-    <div class="section-label">About this model</div>
-    <div class="tier-4 panel">
-        <div class="trust-grid">
-            <div class="trust-cell"
-                 title="Độ chính xác trên dữ liệu kiểm tra (chưa từng thấy trong quá trình huấn luyện)">
-                <div class="trust-num" id="ms-acc">—</div>
-                <div class="trust-lbl">Test accuracy</div>
-                <div class="trust-sub">Held-out data, Feb 2026 onward</div>
-            </div>
-            <div class="trust-cell"
-                 title="So với cách đoán đơn giản: 'ngày mai giống ngày hôm nay'">
-                <div class="trust-num" id="ms-uplift">—</div>
-                <div class="trust-lbl">Lift over naive baseline</div>
-                <div class="trust-sub">vs. "tomorrow = today" guess</div>
-            </div>
-            <div class="trust-cell"
-                 title="Macro F1 — trung bình cân bằng giữa các hạng">
-                <div class="trust-num" id="ms-f1">—</div>
-                <div class="trust-lbl">Macro F1</div>
-                <div class="trust-sub">Balance across all classes</div>
-            </div>
-            <div class="trust-cell"
-                 title="Số ngày dữ liệu được dùng làm đầu vào">
-                <div class="trust-num" id="ms-lookback">14</div>
-                <div class="trust-lbl">Lookback window</div>
-                <div class="trust-sub">Days of history per prediction</div>
-            </div>
-        </div>
-
-        <div class="trust-classes">
-            <div class="trust-class-row">
-                <span class="trust-class-lbl">High class</span>
-                <span class="trust-class-bar"><span class="tcb-fill tcb-high" id="cls-f1-high-bar"></span></span>
-                <span class="trust-class-val" id="cls-f1-high">—</span>
-                <span class="trust-class-note">Strong predictions</span>
-            </div>
-            <div class="trust-class-row">
-                <span class="trust-class-lbl">Medium class</span>
-                <span class="trust-class-bar"><span class="tcb-fill tcb-med" id="cls-f1-med-bar"></span></span>
-                <span class="trust-class-val" id="cls-f1-med">—</span>
-                <span class="trust-class-note">Reasonably reliable</span>
-            </div>
-            <div class="trust-class-row">
-                <span class="trust-class-lbl">Low class</span>
-                <span class="trust-class-bar"><span class="tcb-fill tcb-low" id="cls-f1-low-bar"></span></span>
-                <span class="trust-class-val" id="cls-f1-low">—</span>
-                <span class="trust-class-note">Use as signal, not verdict</span>
-            </div>
-        </div>
-
-        <div class="trust-disclaimer"
-             title="Lưu ý quan trọng về cách diễn giải kết quả">
-            <strong>How to read this:</strong> The model forecasts a class, not an exact score.
-            Predictions for the Low class have lower reliability (F1 = 0.38) — when the model
-            flags someone as Low, treat it as a prompt to check in, not a final judgement.
-            High predictions are more dependable (F1 = 0.78). Class thresholds: Low &lt;50,
-            Medium 50–79, High ≥80.
-        </div>
-    </div>
-
-    {{-- ══════════════════════════════════════════════════════
-         FULL TABLE (collapsed by default)
-    ══════════════════════════════════════════════════════ --}}
-    <div class="section-row">
-        <div class="section-label" style="margin:0">All employees</div>
-        <button class="btn-toggle" id="btn-toggle-all" title="Hiển thị/ẩn bảng đầy đủ">Show all ▾</button>
-    </div>
-    <div class="panel" id="panel-all" style="display:none">
-        <div class="table-filters">
-            <input type="text" id="search" placeholder="Search name or department…" class="tbl-search">
-            <select id="dept-filter" class="tbl-select">
-                <option value="">All departments</option>
-            </select>
-            <select id="risk-filter" class="tbl-select">
-                <option value="">All classes</option>
-                <option value="high">Predicted High</option>
-                <option value="medium">Predicted Medium</option>
-                <option value="low">Predicted Low</option>
-            </select>
-        </div>
-        <div class="tbl-wrap">
-            <table class="emp-table">
-                <thead>
-                    <tr>
-                        <th>Employee</th>
-                        <th>Department</th>
-                        <th title="Điểm hôm nay">Today</th>
-                        <th title="Hạng dự đoán cho ngày mai">Predicted (tomorrow)</th>
-                        <th title="Xu hướng 7 ngày">Trend</th>
-                        <th title="Độ tự tin">Confidence</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody id="all-tbody"></tbody>
-            </table>
-        </div>
-    </div>
-
-    {{-- LOADING --}}
+    {{-- LOADING OVERLAY --}}
     <div id="loading-overlay" class="loading-overlay">
         <div class="spinner"></div>
         <p>Loading predictions…</p>
@@ -245,232 +283,242 @@
 </div>
 
 <style>
-/* ─── Reset & base ──────────────────────────────────────── */
-.lstm-dash *{box-sizing:border-box}
-.lstm-dash{padding:1.5rem 0 3rem;font-family:'DM Sans',sans-serif;color:#1a1a1a}
+/* ── Smooth scroll ───────────────────────────────────────── */
+html { scroll-behavior: smooth }
 
-/* ─── Header ────────────────────────────────────────────── */
-.dash-header{display:flex;justify-content:space-between;align-items:flex-start;
-  margin-bottom:1.5rem;gap:1rem;flex-wrap:wrap}
-.dash-title{font-size:1.4rem;font-weight:600;letter-spacing:-.02em;margin:0 0 4px;color:#0f172a}
-.dash-subtitle{font-size:.78rem;color:#64748b;margin:0;line-height:1.5;cursor:help}
-.header-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.last-run{font-size:.72rem;color:#94a3b8;cursor:help;margin-right:4px}
-
-.btn-primary{display:inline-flex;align-items:center;gap:6px;padding:.45rem 1rem;
-  font-size:.76rem;font-weight:600;border:1px solid #0f172a;border-radius:8px;
-  background:#0f172a;color:#fff;cursor:pointer;transition:all .15s;
-  white-space:nowrap;font-family:inherit}
-.btn-primary:hover{background:#1e293b}
-.btn-primary:disabled{opacity:.5;cursor:not-allowed}
-.btn-primary.spinning #refresh-icon{animation:spin .7s linear infinite}
-.btn-secondary{display:inline-flex;align-items:center;gap:6px;padding:.45rem 1rem;
-  font-size:.76rem;font-weight:600;border:1px solid #cbd5e1;border-radius:8px;
-  background:#fff;color:#334155;cursor:pointer;transition:all .15s;font-family:inherit}
-.btn-secondary:hover{border-color:#94a3b8;background:#f8fafc}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* ─── Panels ─────────────────────────────────────────────── */
-.panel{background:#fff;border:1px solid #ebebeb;border-radius:14px;padding:1.1rem 1.25rem}
-.panel-head{display:flex;align-items:flex-start;justify-content:space-between;
-  margin-bottom:.85rem;gap:8px}
-.panel-title{font-size:.85rem;font-weight:700;color:#0f172a;letter-spacing:-.01em;
-  cursor:help;display:block}
-.panel-sub{font-size:.7rem;color:#94a3b8;display:block;margin-top:2px;font-weight:500}
-.panel-hint{font-size:.7rem;color:#94a3b8;font-weight:500}
-
-/* ─── Section label ─────────────────────────────────────── */
-.section-label{font-size:.68rem;font-weight:700;color:#94a3b8;letter-spacing:.1em;
-  text-transform:uppercase;margin:1.5rem 0 .85rem}
-.section-row{display:flex;align-items:center;justify-content:space-between;
-  margin:1.5rem 0 .85rem}
-
-/* ═══════════════════════════════════════════════════════════
-   TIER 1 — SNAPSHOT
-═══════════════════════════════════════════════════════════ */
-.tier-1{margin-bottom:14px;padding:1.4rem 1.5rem}
-.snapshot-row{display:grid;grid-template-columns:1fr 1.4fr;gap:1.5rem;align-items:center}
-.snapshot-label{font-size:.72rem;color:#64748b;margin-bottom:6px;cursor:help}
-.snapshot-main{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
-.snapshot-num{font-size:2.3rem;font-weight:600;letter-spacing:-.04em;line-height:1;color:#0f172a}
-.snapshot-text{font-size:.95rem;color:#475569;font-weight:500}
-.snapshot-sub{font-size:.74rem;color:#94a3b8}
-
-.snapshot-bars{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.snap-bar{padding:.85rem 1rem;border-radius:10px;cursor:help;
-  display:flex;flex-direction:column;gap:3px}
-.snap-bar-low {background:#fef2f2;color:#991b1b}
-.snap-bar-med {background:#f1f5f9;color:#334155}
-.snap-bar-high{background:#f0fdf4;color:#166534}
-.snap-bar-num{font-size:1.6rem;font-weight:600;letter-spacing:-.03em;line-height:1}
-.snap-bar-lbl{font-size:.7rem;font-weight:500;line-height:1.3}
-.snap-bar-thresh{opacity:.65;font-weight:400;margin-left:2px}
-
-/* ═══════════════════════════════════════════════════════════
-   TIER 2 — ACTION
-═══════════════════════════════════════════════════════════ */
-.tier-2{margin-bottom:1.5rem}
-.attention-panel{padding:1.1rem 0 .5rem}
-.attention-panel .panel-head{padding:0 1.25rem;margin-bottom:.85rem}
-.attention-controls{display:flex;gap:8px}
-
-.attn-table-head{display:grid;grid-template-columns:1.6fr 1.2fr .7fr 1fr 80px;
-  gap:10px;padding:.5rem 1.25rem;border-top:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;
-  background:#fafbfc}
-.attn-table-head span{font-size:.66rem;font-weight:700;color:#94a3b8;
-  text-transform:uppercase;letter-spacing:.06em;cursor:help}
-
-.attn-row{display:grid;grid-template-columns:1.6fr 1.2fr .7fr 1fr 80px;
-  gap:10px;align-items:center;padding:.7rem 1.25rem;border-bottom:1px solid #f5f5f5;
-  font-size:.78rem;transition:background .15s}
-.attn-row:hover{background:#fafbfc}
-.attn-row:last-child{border-bottom:none}
-
-.attn-emp-name{font-weight:700;font-size:.84rem;color:#0f172a;
-  display:flex;align-items:center;gap:8px}
-.attn-emp-avatar{width:28px;height:28px;border-radius:50%;display:flex;
-  align-items:center;justify-content:center;font-size:.62rem;font-weight:700;
-  color:#fff;flex-shrink:0}
-.attn-emp-info{display:flex;flex-direction:column;min-width:0}
-.attn-emp-dept{font-size:.68rem;color:#94a3b8;font-weight:500;margin-top:1px}
-
-.traj-text{font-size:.74rem;font-weight:600}
-.traj-declining{color:#991b1b}
-.traj-improving{color:#166534}
-.traj-stable{color:#64748b}
-.traj-detail{font-size:.66rem;color:#94a3b8;font-weight:500;margin-top:1px}
-
-.cls-pill{font-size:.66rem;font-weight:700;padding:3px 10px;border-radius:20px;
-  white-space:nowrap;display:inline-block}
-.pill-high{background:#dcfce7;color:#166534}
-.pill-med {background:#e0e7ff;color:#3730a3}
-.pill-low {background:#fee2e2;color:#991b1b}
-
-.conf-cell{display:flex;align-items:center;gap:8px;cursor:help}
-.conf-bar-wrap{flex:1;background:#f1f5f9;border-radius:3px;height:5px;overflow:hidden;max-width:60px}
-.conf-bar-fill{height:100%;border-radius:3px;background:#3b82f6;transition:width .5s}
-.conf-num{font-size:.72rem;font-weight:600;color:#475569;min-width:32px}
-
-.btn-mini{font-size:.68rem;padding:4px 10px;border:1px solid #e2e8f0;border-radius:6px;
-  background:#fff;cursor:pointer;color:#64748b;font-family:inherit;transition:all .15s}
-.btn-mini:hover{border-color:#0f172a;color:#0f172a}
-
-.empty-state{font-size:.78rem;color:#cbd5e1;text-align:center;padding:2.5rem 1.25rem}
-
-/* ═══════════════════════════════════════════════════════════
-   TIER 3 — CONTEXT
-═══════════════════════════════════════════════════════════ */
-.tier-3{display:grid;grid-template-columns:1.2fr 1.2fr 1fr;gap:14px;margin-bottom:.5rem}
-
-/* Department list */
-.dept-row-item{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;
-  padding:.55rem 0;border-bottom:1px solid #f5f5f5}
-.dept-row-item:last-child{border-bottom:none}
-.dept-name{font-size:.78rem;font-weight:600;color:#0f172a}
-.dept-meta{font-size:.66rem;color:#94a3b8;font-weight:500;margin-top:2px}
-.dept-bar-wrap{display:flex;align-items:center;gap:8px;width:100%;margin-top:6px}
-.dept-bar-track{flex:1;background:#f1f5f9;border-radius:3px;height:5px;overflow:hidden}
-.dept-bar-fill-inline{height:100%;border-radius:3px;transition:width .6s ease}
-.dept-score-lbl{font-size:.78rem;font-weight:700;color:#0f172a;white-space:nowrap}
-
-.chart-wrap{position:relative;height:160px}
-
-/* Top performers compact */
-.top-row{display:flex;align-items:center;gap:9px;padding:.5rem 0;
-  border-bottom:1px solid #f5f5f5}
-.top-row:last-child{border-bottom:none}
-.top-rank{font-size:.7rem;font-weight:700;color:#cbd5e1;width:14px;text-align:center;flex-shrink:0}
-.top-avatar{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;
-  justify-content:center;font-size:.55rem;font-weight:700;flex-shrink:0;color:#fff}
-.top-info{flex:1;min-width:0}
-.top-name{font-size:.76rem;font-weight:600;color:#0f172a;white-space:nowrap;
-  overflow:hidden;text-overflow:ellipsis}
-.top-dept{font-size:.64rem;color:#94a3b8}
-.top-score-num{font-size:.78rem;font-weight:700;color:#166534;white-space:nowrap}
-
-/* ═══════════════════════════════════════════════════════════
-   TIER 4 — TRUST
-═══════════════════════════════════════════════════════════ */
-.tier-4{margin-bottom:1.5rem;padding:1.3rem 1.5rem}
-.trust-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:1.5rem;
-  padding-bottom:1.2rem;border-bottom:1px solid #f1f5f9}
-.trust-cell{cursor:help}
-.trust-num{font-size:1.7rem;font-weight:600;letter-spacing:-.03em;line-height:1;
-  color:#0f172a;margin-bottom:4px}
-.trust-lbl{font-size:.78rem;font-weight:600;color:#475569;margin-bottom:2px}
-.trust-sub{font-size:.68rem;color:#94a3b8}
-
-.trust-classes{display:flex;flex-direction:column;gap:8px;margin-bottom:1rem}
-.trust-class-row{display:grid;grid-template-columns:90px 1fr 50px 1.1fr;gap:12px;
-  align-items:center;font-size:.74rem}
-.trust-class-lbl{font-weight:600;color:#0f172a}
-.trust-class-bar{background:#f1f5f9;border-radius:3px;height:6px;overflow:hidden;width:100%}
-.tcb-fill{display:block;height:100%;border-radius:3px;transition:width .6s ease}
-.tcb-high{background:#22c55e}
-.tcb-med {background:#3b82f6}
-.tcb-low {background:#ef4444}
-.trust-class-val{font-weight:700;color:#0f172a;text-align:right}
-.trust-class-note{color:#64748b;font-size:.72rem}
-
-.trust-disclaimer{font-size:.74rem;color:#475569;line-height:1.6;
-  background:#fafbfc;border-left:3px solid #cbd5e1;padding:.75rem 1rem;border-radius:0 8px 8px 0;
-  cursor:help}
-.trust-disclaimer strong{color:#0f172a;font-weight:700}
-
-/* ─── Table ───────────────────────────────────────────────── */
-.btn-toggle{font-size:.74rem;color:#64748b;background:none;border:none;cursor:pointer;
-  padding:0;font-family:inherit;font-weight:500}
-.btn-toggle:hover{color:#0f172a}
-.table-filters{display:flex;gap:8px;margin-bottom:.85rem;flex-wrap:wrap}
-.tbl-search{flex:1;min-width:180px;padding:.42rem .75rem;font-size:.78rem;
-  border:1px solid #e2e8f0;border-radius:8px;outline:none;font-family:inherit}
-.tbl-search:focus{border-color:#0f172a}
-.tbl-select{padding:.42rem .7rem;font-size:.78rem;border:1px solid #e2e8f0;
-  border-radius:8px;outline:none;background:#fff;cursor:pointer;font-family:inherit}
-.tbl-wrap{overflow-x:auto}
-.emp-table{width:100%;border-collapse:collapse;font-size:.78rem}
-.emp-table th{font-size:.66rem;font-weight:700;color:#94a3b8;text-transform:uppercase;
-  letter-spacing:.06em;padding:.55rem .65rem;border-bottom:1.5px solid #f0f0f0;
-  text-align:left;cursor:help}
-.emp-table td{padding:.6rem .65rem;border-bottom:1px solid #f7f7f7;vertical-align:middle;color:#334155}
-.emp-table tbody tr:hover td{background:#fafbfc}
-
-/* ─── Loading ──────────────────────────────────────────────── */
-.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.92);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  z-index:9999;gap:14px}
-.loading-overlay.hidden{display:none!important}
-.spinner{width:30px;height:30px;border:2.5px solid #e2e8f0;border-top-color:#0f172a;
-  border-radius:50%;animation:spin .7s linear infinite}
-.loading-overlay p{font-size:.78rem;color:#64748b}
-
-/* ─── Responsive ─────────────────────────────────────────── */
-@media(max-width:1100px){
-  .tier-3{grid-template-columns:1fr 1fr}
-  .tier-3>.panel:last-child{grid-column:1/-1}
-  .snapshot-row{grid-template-columns:1fr}
-  .trust-grid{grid-template-columns:repeat(2,1fr)}
+/* ── Attention section highlight on :target ──────────────── */
+#attention-section:target > * {
+    animation: attn-pulse 1.4s ease forwards;
 }
-@media(max-width:700px){
-  .snapshot-bars{grid-template-columns:1fr}
-  .tier-3{grid-template-columns:1fr}
-  .attn-table-head,.attn-row{grid-template-columns:1.5fr .8fr 80px}
-  .attn-table-head span:nth-child(2),
-  .attn-table-head span:nth-child(4),
-  .attn-row>*:nth-child(2),
-  .attn-row>*:nth-child(4){display:none}
-  .trust-grid{grid-template-columns:1fr 1fr}
-  .trust-class-row{grid-template-columns:80px 1fr 40px}
-  .trust-class-note{display:none}
+@keyframes attn-pulse {
+    0%   { box-shadow: 0 0 0 0   rgba(83,71,204,0) }
+    25%  { box-shadow: 0 0 0 4px rgba(83,71,204,.35) }
+    100% { box-shadow: 0 0 0 0   rgba(83,71,204,0) }
+}
+
+/* ── Spinner ─────────────────────────────────────────────── */
+#btn-refresh.spinning #refresh-icon { animation: lstm-spin .7s linear infinite }
+@keyframes lstm-spin { to { transform: rotate(360deg) } }
+
+/* ── Loading overlay ─────────────────────────────────────── */
+.loading-overlay {
+    position: fixed; inset: 0;
+    background: rgba(255,255,255,.9);
+    backdrop-filter: blur(2px);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 9999; gap: 14px;
+}
+.loading-overlay.hidden { display: none !important }
+.spinner {
+    width: 30px; height: 30px;
+    border: 2.5px solid #E5E7EB;
+    border-top-color: #5347CC;
+    border-radius: 50%;
+    animation: lstm-spin .7s linear infinite;
+}
+.loading-overlay p { font-size: .82rem; color: #6B7280 }
+
+/* ── Trajectory ──────────────────────────────────────────── */
+.traj-text   { font-size: .78rem; font-weight: 600 }
+.traj-declining { color: #EF4444 }
+.traj-improving { color: #10B981 }
+.traj-stable    { color: #6B7280 }
+.traj-detail    { font-size: .68rem; color: #9CA3AF; margin-top: 2px }
+
+/* ── Department list ─────────────────────────────────────── */
+.dept-row-item {
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 10px; align-items: center;
+    padding: .6rem 0; border-bottom: 1px solid #F3F4F6;
+}
+.dept-row-item:last-child { border-bottom: none }
+.dept-name { font-size: .85rem; font-weight: 600; color: #070416 }
+.dept-meta { font-size: .7rem; color: #9CA3AF; margin-top: 2px }
+.dept-bar-wrap { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 6px }
+.dept-bar-track { flex: 1; background: #F3F4F6; border-radius: 9999px; height: 5px; overflow: hidden }
+.dept-bar-fill-inline { height: 100%; border-radius: 9999px; transition: width .6s ease }
+.dept-score-lbl { font-size: .85rem; font-weight: 700; color: #070416; white-space: nowrap }
+
+/* ── Top performers ──────────────────────────────────────── */
+.top-row { display: flex; align-items: center; gap: 10px; padding: .55rem 0; border-bottom: 1px solid #F3F4F6 }
+.top-row:last-child { border-bottom: none }
+.top-rank { font-size: .72rem; font-weight: 700; color: #9CA3AF; width: 16px; text-align: center; flex-shrink: 0 }
+.top-avatar { width: 28px; height: 28px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: .6rem; font-weight: 700; flex-shrink: 0; color: #fff }
+.top-info { flex: 1; min-width: 0 }
+.top-name { font-size: .82rem; font-weight: 600; color: #070416; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.top-dept { font-size: .7rem; color: #9CA3AF; margin-top: 1px }
+.top-score-num { font-size: .85rem; font-weight: 700; color: #059669; white-space: nowrap }
+
+/* ── Trust class bars ────────────────────────────────────── */
+.trust-class-row { display: grid; grid-template-columns: 70px 1fr 50px 1fr; gap: 14px; align-items: center }
+.trust-class-bar { background: #F3F4F6; border-radius: 9999px; height: 6px; overflow: hidden; display: block; width: 100% }
+.tcb-fill { display: block; height: 100%; border-radius: 9999px; transition: width .6s ease }
+.tcb-high { background: #10B981 }
+.tcb-med  { background: #4896FE }
+.tcb-low  { background: #EF4444 }
+
+/* ── Hero micro card ─────────────────────────────────────── */
+#hero-micro-card { display: none }
+@media (min-width: 1024px) {
+    #hero-micro-card.flex { display: flex }
+}
+.hero-micro-btn {
+    width: 100%; text-align: center;
+    font-size: .72rem; font-weight: 600;
+    padding: 6px 12px; border-radius: 8px;
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.25);
+    color: #fff; cursor: pointer;
+    transition: background .15s;
+    font-family: inherit;
+}
+.hero-micro-btn:hover { background: rgba(255,255,255,.28) }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 860px) {
+    .trust-class-row { grid-template-columns: 60px 1fr 45px }
+    .trust-class-row > :last-child { display: none }
 }
 </style>
+
+{{-- ── ABOUT THIS MODEL MODAL ──────────────────────────────── --}}
+<div id="lstm-info-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/50">
+
+    <div class="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl flex flex-col animate-fade-in-up">
+
+        {{-- Header --}}
+        <div class="flex items-start justify-between px-6 py-5 border-b border-muted-200 relative z-10 flex-shrink-0">
+            <div>
+                <h2 class="font-bold text-xl text-main tracking-tight">About this model</h2>
+                <p class="text-muted-500 text-sm mt-0.5">LSTM · Long Short-Term Memory neural network</p>
+            </div>
+            <button type="button" id="lstm-info-close"
+                class="mt-0.5 ml-4 flex-shrink-0 p-2 rounded-xl text-muted-400 hover:bg-muted-100 hover:text-main transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        {{-- Modal body --}}
+        <div class="p-6 flex flex-col gap-6">
+
+            {{-- 4 KPI cards --}}
+            <div class="grid grid-cols-2 gap-3">
+                <x-white-card-container color="primary/50" class="p-4 flex-col gap-3">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-muted-400">Test accuracy</p>
+                        <p id="ms-acc" class="text-2xl font-bold text-main leading-tight">—</p>
+                        <p class="text-xs text-muted-400 mt-0.5">Held-out data, Feb 2026+</p>
+                    </div>
+                </x-white-card-container>
+
+                <x-white-card-container color="accent/50" class="p-4 flex-col gap-3">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-muted-400">Lift over baseline</p>
+                        <p id="ms-uplift" class="text-2xl font-bold text-main leading-tight">—</p>
+                        <p class="text-xs text-muted-400 mt-0.5">vs. "tomorrow = today"</p>
+                    </div>
+                </x-white-card-container>
+
+                <x-white-card-container color="secondary/50" class="p-4 flex-col gap-3">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary/10 text-secondary">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-muted-400">Macro F1</p>
+                        <p id="ms-f1" class="text-2xl font-bold text-main leading-tight">—</p>
+                        <p class="text-xs text-muted-400 mt-0.5">Balance across classes</p>
+                    </div>
+                </x-white-card-container>
+
+                <x-white-card-container color="primary/50" class="p-4 flex-col gap-3">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-muted-400">Lookback window</p>
+                        <p id="ms-lookback" class="text-2xl font-bold text-main leading-tight">14</p>
+                        <p class="text-xs text-muted-400 mt-0.5">Days of history per prediction</p>
+                    </div>
+                </x-white-card-container>
+            </div>
+
+            {{-- Per-class F1 breakdown --}}
+            <x-white-card-container color="primary/50" class="p-5 flex-col gap-4">
+                <h4 class="flex items-center gap-2 text-sm font-semibold text-main border-b border-muted-200 pb-3">
+                    <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    Per-class F1 score
+                </h4>
+                <div class="flex flex-col gap-3">
+                    <div class="trust-class-row">
+                        <span class="text-sm font-semibold text-main">High</span>
+                        <span class="trust-class-bar"><span class="tcb-fill tcb-high" id="cls-f1-high-bar"></span></span>
+                        <span class="text-sm font-bold text-main text-right" id="cls-f1-high">—</span>
+                        <span class="text-xs text-muted-500 hidden sm:block">Strong predictions</span>
+                    </div>
+                    <div class="trust-class-row">
+                        <span class="text-sm font-semibold text-main">Medium</span>
+                        <span class="trust-class-bar"><span class="tcb-fill tcb-med" id="cls-f1-med-bar"></span></span>
+                        <span class="text-sm font-bold text-main text-right" id="cls-f1-med">—</span>
+                        <span class="text-xs text-muted-500 hidden sm:block">Reasonably reliable</span>
+                    </div>
+                    <div class="trust-class-row">
+                        <span class="text-sm font-semibold text-main">Low</span>
+                        <span class="trust-class-bar"><span class="tcb-fill tcb-low" id="cls-f1-low-bar"></span></span>
+                        <span class="text-sm font-bold text-main text-right" id="cls-f1-low">—</span>
+                        <span class="text-xs text-muted-500 hidden sm:block">Use as signal, not verdict</span>
+                    </div>
+                </div>
+                <div class="text-sm text-muted-600 leading-relaxed border-t border-muted-200 pt-3 rounded-r-xl">
+                    <strong class="text-main font-semibold">How to read this:</strong>
+                    The model predicts a class (Low / Medium / High), not an exact score. Low predictions
+                    have lower reliability — treat them as a prompt to check in, not a final verdict.
+                    Thresholds: Low &lt;50, Medium 50–79, High ≥80.
+                </div>
+            </x-white-card-container>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const modal  = document.getElementById('lstm-info-modal');
+    const opener = document.getElementById('btn-lstm-info');
+    const closer = document.getElementById('lstm-info-close');
+
+    function openModal()  { modal.classList.remove('hidden'); modal.classList.add('flex'); document.body.style.overflow = 'hidden'; }
+    function closeModal() { modal.classList.add('hidden');    modal.classList.remove('flex'); document.body.style.overflow = ''; }
+
+    opener.addEventListener('click', openModal);
+    closer.addEventListener('click', closeModal);
+    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal(); });
+})();
+</script>
 
 @endsection
 
 @push('scripts')
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
-      rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="{{ asset('js/admin/lstm-dashboard.js') }}"></script>
 @endpush

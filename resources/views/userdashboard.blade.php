@@ -89,7 +89,7 @@
                     <div class="@2xl:col-span-1 @4xl:col-span-2 bg-white border border-muted-300 hover:border-primary/30 transition-colors rounded-2xl p-6 flex flex-col items-center text-center">
                         <div class="relative my-auto">
                             <div class="absolute inset-0 bg-primary/20 rounded-full blur-lg opacity-50"></div>
-                            <img src="{{ getUserAvatar($teamLeader) }}" alt="leader_avatar" class="relative w-24 h-24 rounded-full ring ring-muted-200 ring-offset-8 object-cover">
+                            <x-user-avatar :user="$teamLeader" size="w-24 h-24" ringClass="ring ring-muted-200 ring-offset-8" class="relative" />
                         </div>
                         
                         <div class="py-4">

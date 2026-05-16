@@ -18,6 +18,9 @@ return [
     'username_column' => 'HỌ VÀ TÊN',
     'email_column' => 'EMAIL',
     'role_column' => 'VAI TRÒ',
+    'department_column' => 'PHÒNG BAN',
     'actions_column' => 'HÀNH ĐỘNG',
+    'no_department' => 'Không có phòng ban',
+    'department_permissions_title' => 'Đi đến Quyền của Phòng ban',
     'export_excel' => 'Xuất ra Excel',
 ];

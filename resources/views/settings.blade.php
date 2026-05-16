@@ -5,7 +5,7 @@
     @vite(['resources/js/settings/upload_image.js'])
     @vite(['resources/js/settings/update_detail.js'])
 
-    <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
+    <div class="flex flex-col gap-6 w-full max-w-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
         
         {{-- Header --}}
         <div class="flex items-center gap-3">
@@ -31,7 +31,8 @@
                             <img id="avatar-preview" 
                                  src="{{ getUserAvatar(Auth::user()) }}" 
                                  class="w-40 h-40 object-cover rounded-full border-4 border-muted-100 group-hover:border-primary/50 transition-colors duration-300 shadow-sm"
-                                 alt="User Avatar">
+                                 alt="User Avatar" style="display: none;">
+                            <x-user-avatar :user="Auth::user()" size="w-40 h-40" withRing="false" class="border-4 border-muted-100 group-hover:border-primary/50 transition-colors duration-300 shadow-sm" />
                             
                             {{-- Hidden Input --}}
                             <input type="file" name="avatar" id="avatar" accept="image/jpg,image/png,image/jpeg" class="hidden">

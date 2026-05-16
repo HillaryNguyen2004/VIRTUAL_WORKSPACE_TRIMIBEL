@@ -19,6 +19,9 @@ return [
     'user_username_column' => 'USERNAME',
     'email_column' => 'EMAIL',
     'role_column' => 'ROLE',
+    'department_column' => 'DEPARTMENT',
     'actions_column' => 'ACTIONS',
+    'no_department' => 'No Department',
+    'department_permissions_title' => 'Go to Department Permissions',
     'export_excel' => 'Export to Excel',
 ];

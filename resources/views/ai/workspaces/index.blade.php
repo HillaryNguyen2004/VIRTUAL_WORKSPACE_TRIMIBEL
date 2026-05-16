@@ -20,26 +20,26 @@
         }
     @endphp
 
-    <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
+    <div class="flex flex-col gap-6 w-full mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
         {{-- HEADER --}}
-        <div class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center w-full mb-8">
-            <div>
-                <h2 class="font-bold text-3xl text-main tracking-tight">
+        <div class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center w-full">
+            <div class="flex-1 min-w-0">
+                <h1 class="font-semibold text-2xl md:text-3xl text-main tracking-tight">
                     {{ __('ai.my_workspaces') }}
-                </h2>
-                <p class="text-muted-500 text-sm mt-2">
+                </h1>
+                <p class="text-muted-500 text-sm md:text-base mt-1">
                     {{ __('ai.workspaces_desc') }}
                 </p>
             </div>
 
-            <a href="{{ route('ai-workspaces.create') }}"
+            <button type="button" id="open-create-modal"
                 class="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-primary/20">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 fill-current">
                     <path
                         d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z" />
                 </svg>
                 <span class="font-medium">{{ __('ai.new_workspace') }}</span>
-            </a>
+            </button>
         </div>
 
         {{-- SUCCESS MESSAGE --}}
@@ -56,18 +56,17 @@
             </div>
         @endif
 
-        {{-- CARD CONTAINER --}}
-        <div
-            class="bg-white rounded-2xl border border-muted-200 shadow-lg shadow-main/5 overflow-visible flex flex-col animate-fade-in-up">
+        {{-- LIST CONTAINER --}}
+        <div class="max-w-[1200px] mx-auto w-full flex flex-col gap-4 animate-fade-in-up">
 
             {{-- SEARCH & FILTER BAR --}}
-            <form class="p-5 border-b border-muted-200 flex flex-wrap gap-4 bg-white rounded-t-2xl" method="GET">
+            <form class="bg-white rounded-2xl border border-muted-300 p-4 flex flex-wrap gap-3 items-center" method="GET">
                 {{-- Search --}}
                 <x-form.search-input name="search" :value="request('search')"
                     placeholder="{{ __('ai.search_placeholder') }}" />
 
                 {{-- Visibility Filter --}}
-                <x-form.select name="visibility" :value="request('visibility')" 
+                <x-form.select name="visibility" :value="request('visibility')"
                 :options="[
                     '' => __('ai.all_visibility'),
                     'private' => __('ai.visibility_private'),
@@ -76,15 +75,15 @@
                 ]" :showChevron="true" />
 
                 {{-- Sort --}}
-                <x-form.select name="sort" :value="request('sort', 'desc')" 
+                <x-form.select name="sort" :value="request('sort', 'desc')"
                 :options="[
                     'desc' => __('ai.newest_first'),
                     'asc' => __('ai.oldest_first'),
                 ]" :showChevron="true" />
 
-                <div class="flex gap-2">
+                <div class="flex gap-2 ml-auto">
                     <button type="submit"
-                        class="border border-muted-200 px-3 py-2.5 rounded-xl text-muted-500 hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-colors"
+                        class="border border-muted-300 px-3 py-2.5 rounded-xl text-muted-500 hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-colors"
                         title="{{ __('ai.filter') }}">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
                             <path
@@ -93,7 +92,7 @@
                     </button>
 
                     <a href="{{ route('ai-workspaces.index') }}"
-                        class="flex items-center justify-center border border-muted-200 px-3 py-2.5 rounded-xl text-muted-500 hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-colors"
+                        class="flex items-center justify-center border border-muted-300 px-3 py-2.5 rounded-xl text-muted-500 hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-colors"
                         title="{{ __('ai.reset') }}">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
                             <path
@@ -103,146 +102,183 @@
                 </div>
             </form>
 
-            {{-- TABLE --}}
-            <div class="overflow-x-auto w-full h-[420px]">
-                <table class="w-full table-fixed">
-                    <thead class="bg-muted-50 border-b border-muted-200">
-                        <tr>
-                            <th
-                                class="w-[25%] py-4 pl-6 text-left text-xs font-semibold text-muted-400 uppercase tracking-wider">
-                                {{ __('ai.name') }}
-                            </th>
-                            <th
-                                class="w-[15%] py-4 px-3 text-center text-xs font-semibold text-muted-400 uppercase tracking-wider">
-                                {{ __('ai.visibility') }}
-                            </th>
-                            <th
-                                class="w-[15%] py-4 px-3 text-center text-xs font-semibold text-muted-400 uppercase tracking-wider">
-                                {{ __('ai.files') }}
-                            </th>
-                            <th
-                                class="w-[15%] py-4 px-3 text-center text-xs font-semibold text-muted-400 uppercase tracking-wider">
-                                {{ __('ai.storage') }}
-                            </th>
-                            <th
-                                class="w-[15%] py-4 px-3 text-center text-xs font-semibold text-muted-400 uppercase tracking-wider">
-                                {{ __('ai.status') }}
-                            </th>
-                            <th
-                                class="w-[15%] py-4 pr-6 text-center text-xs font-semibold text-muted-400 uppercase tracking-wider">
-                                {{ __('ai.created') }}
-                            </th>
-                        </tr>
-                    </thead>
+            {{-- WORKSPACE LIST --}}
+            <div class="flex flex-col gap-2">
+                @forelse($workspaces as $workspace)
+                    @php
+                        $ingestedCount = $workspace->ingestedFiles()->count();
 
-                    <tbody class="divide-y divide-muted-100">
-                        @forelse($workspaces as $workspace)
-                            @php
-                                $ingestedCount = $workspace->ingestedFiles()->count();
-                                $storageMb = round(($workspace->storage_size ?? 0) / (1024 * 1024), 1);
+                        $derivedStatus = data_get($workspace, 'status');
+                        if (!$derivedStatus) {
+                            if (($workspace->file_count ?? 0) === 0) {
+                                $derivedStatus = 'empty';
+                            } elseif ($ingestedCount >= ($workspace->file_count ?? 0)) {
+                                $derivedStatus = 'ready';
+                            } else {
+                                $derivedStatus = 'processing';
+                            }
+                        }
 
-                                $derivedStatus = data_get($workspace, 'status');
-                                if (!$derivedStatus) {
-                                    if (($workspace->file_count ?? 0) === 0) {
-                                        $derivedStatus = 'empty';
-                                    } elseif ($ingestedCount >= ($workspace->file_count ?? 0)) {
-                                        $derivedStatus = 'ready';
-                                    } else {
-                                        $derivedStatus = 'processing';
-                                    }
-                                }
+                        $statusClass = 'bg-muted-100 text-muted-600';
+                        $statusDot = 'bg-muted-400';
+                        if (in_array(strtolower($derivedStatus), ['ready', 'active', 'completed'])) {
+                            $statusClass = 'bg-success/10 text-success';
+                            $statusDot = 'bg-success';
+                        } elseif (in_array(strtolower($derivedStatus), ['processing', 'pending', 'draft'])) {
+                            $statusClass = 'bg-primary/10 text-primary';
+                            $statusDot = 'bg-primary';
+                        }
 
-                                $statusClass = 'bg-muted-100 text-muted-600';
-                                if (in_array(strtolower($derivedStatus), ['ready', 'active', 'completed'])) {
-                                    $statusClass = 'bg-accent/10 text-accent';
-                                } elseif (in_array(strtolower($derivedStatus), ['processing', 'pending', 'draft'])) {
-                                    $statusClass = 'bg-primary/10 text-primary';
-                                } elseif (in_array(strtolower($derivedStatus), ['empty', 'inactive'])) {
-                                    $statusClass = 'bg-muted-100 text-muted-600';
-                                }
+                        $visibilityIcon = match ($workspace->visibility) {
+                            'private' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>',
+                            'team' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>',
+                            default => '<circle stroke-linecap="round" stroke-linejoin="round" stroke-width="2" cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 12h20"/>',
+                        };
 
-                                $visibilityClass = 'bg-muted-100 text-muted-600';
-                                if ($workspace->visibility === 'private') {
-                                    $visibilityClass = 'bg-blue-500/10 text-blue-500';
-                                } elseif ($workspace->visibility === 'team') {
-                                    $visibilityClass = 'bg-violet-500/10 text-violet-500';
-                                } elseif ($workspace->visibility === 'public') {
-                                    $visibilityClass = 'bg-green-500/10 text-green-500';
-                                }
-                            @endphp
+                        $visibilityColor = match ($workspace->visibility) {
+                            'private' => 'text-primary',
+                            'team' => 'text-secondary',
+                            default => 'text-accent',
+                        };
 
-                            <tr class="hover:bg-canvas transition-colors group relative">
-                                {{-- Name --}}
-                                <td class="py-4 pl-6 text-sm font-medium text-main">
-                                    <a href="{{ route('ai-workspaces.show', $workspace) }}"
-                                        class="hover:text-primary hover:underline transition-colors">
-                                        {{ $workspace->name }}
-                                    </a>
-                                </td>
+                        $visibilityLabel = match ($workspace->visibility) {
+                            'private' => __('ai.visibility_private'),
+                            'team' => __('ai.visibility_team'),
+                            'public' => __('ai.visibility_public'),
+                            default => ucfirst($workspace->visibility),
+                        };
 
+                        $iconBg = match ($workspace->visibility) {
+                            'private' => 'from-primary/20 to-primary-light/10',
+                            'team' => 'from-secondary/20 to-secondary-light/10',
+                            default => 'from-accent/20 to-accent-light/10',
+                        };
+                        $iconColor = match ($workspace->visibility) {
+                            'private' => 'text-primary',
+                            'team' => 'text-secondary',
+                            default => 'text-accent',
+                        };
+                        $hoverColor = match ($workspace->visibility) {
+                            'private' => 'hover:border-primary/50',
+                            'team' => 'hover:border-secondary/50',
+                            default => 'hover:border-accent/50',
+                        };
+                    @endphp
+
+                    <a href="{{ route('ai-workspaces.show', $workspace) }}"
+                        class="group flex items-center gap-4 bg-white border border-muted-300 rounded-2xl px-5 py-4 {{ $hoverColor }} transition-all duration-300">
+
+                        {{-- Workspace Icon --}}
+                        <div class="flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br {{ $iconBg }} flex items-center justify-center">
+                            <svg class="w-5 h-5 {{ $iconColor }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                {!! $visibilityIcon !!}
+                            </svg>
+                        </div>
+
+                        {{-- Main Content --}}
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-semibold text-main text-sm transition-colors truncate">
+                                    {{ $workspace->name }}
+                                </span>
+                                {{-- Status dot + label --}}
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium {{ $statusClass }}">
+                                    <span class="w-1.5 h-1.5 rounded-full {{ $statusDot }}"></span>
+                                    {{ ucfirst($derivedStatus) }}
+                                </span>
+                            </div>
+
+                            {{-- Meta row --}}
+                            <div class="flex items-center gap-4 mt-1.5 flex-wrap">
                                 {{-- Visibility --}}
-                                <td class="py-4 px-3 text-center text-sm">
-                                    <span
-                                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium {{ $visibilityClass }}">
-                                        {{ match ($workspace->visibility) {
-                                            'private' => __('ai.visibility_private'),
-                                            'team' => __('ai.visibility_team'),
-                                            'public' => __('ai.visibility_public'),
-                                            default => ucfirst($workspace->visibility),
-                                        } }}
-                                    </span>
-                                </td>
+                                <span class="flex items-center gap-1 text-xs {{ $visibilityColor }}">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        {!! $visibilityIcon !!}
+                                    </svg>
+                                    {{ $visibilityLabel }}
+                                </span>
 
-                                {{-- File Count --}}
-                                <td class="py-4 px-3 text-center text-sm text-muted-500">
-                                    <span class="bg-white border border-muted-200 px-2 py-0.5 rounded-full text-xs">
-                                        {{ $workspace->file_count }}
-                                    </span>
-                                </td>
+                                {{-- Files --}}
+                                <span class="flex items-center gap-1 text-xs text-muted-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 lucide lucide-file-icon lucide-file">
+                                        <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/>
+                                        <path d="M14 2v5a1 1 0 0 0 1 1h5"/>
+                                    </svg>
+                                    {{ $workspace->file_count }} {{ __('ai.files') }}
+                                </span>
 
                                 {{-- Storage --}}
-                                <td class="py-4 px-3 text-center text-sm text-muted-500">
+                                <span class="flex items-center gap-1 text-xs text-muted-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 lucide lucide-database-icon lucide-database"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
                                     {{ formatBytes($workspace->storage_size, 2) }}
-                                </td>
+                                </span>
+                            </div>
+                        </div>
 
-                                {{-- Status --}}
-                                <td class="py-4 px-3 text-center">
-                                    <div
-                                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusClass }}">
-                                        {{ ucfirst($derivedStatus) }}
-                                    </div>
-                                </td>
+                        {{-- Right: Date + Arrow --}}
+                        <div class="flex-shrink-0 flex items-center gap-4 text-right">
+                            <span class="text-xs text-muted-400 hidden sm:block">
+                                {{ $workspace->created_at ? $workspace->created_at->format('d/m/Y') : __('ai.not_available') }}
+                            </span>
+                            <svg class="w-4 h-4 text-muted-300 group-hover:{{ $visibilityColor }} group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </div>
+                    </a>
 
-                                {{-- Created --}}
-                                <td class="py-4 pr-6 text-center text-sm text-muted-500">
-                                    {{ $workspace->created_at ? $workspace->created_at->format('d/m/Y') : __('ai.not_available') }}
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="8" class="py-12 text-center">
-                                    <div class="flex flex-col items-center justify-center gap-3">
-                                        <div class="p-3 rounded-full bg-muted-100 text-muted-400">
-                                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                                            </svg>
-                                        </div>
-                                        <p class="text-muted-500 font-medium">{{ __('ai.no_workspaces') }}</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                @empty
+                    <div class="bg-white border border-muted-200 rounded-2xl py-16 flex flex-col items-center justify-center gap-3">
+                        <div class="p-4 rounded-full bg-muted-100 text-muted-400">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <p class="text-muted-500 font-medium text-sm">{{ __('ai.no_workspaces') }}</p>
+                        <a href="{{ route('ai-workspaces.create') }}"
+                            class="mt-1 text-xs text-primary hover:underline font-medium">
+                            {{ __('ai.new_workspace') }}
+                        </a>
+                    </div>
+                @endforelse
             </div>
 
             {{-- PAGINATION --}}
             @if ($workspaces instanceof \Illuminate\Pagination\LengthAwarePaginator && $workspaces->hasPages())
-                <div class="mt-6 flex justify-center w-full pb-6">
+                <div class="flex justify-center w-full py-2">
                     {{ $workspaces->onEachSide(1)->withQueryString()->links('vendor.pagination.tailwind') }}
                 </div>
             @endif
         </div>
     </div>
+
+    @include('ai.workspaces.create')
+
+    <script>
+        const createModal = document.getElementById('create-workspace-modal');
+        const createBackdrop = document.getElementById('create-modal-backdrop');
+
+        function openCreateModal() {
+            createModal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeCreateModal() {
+            createModal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        document.getElementById('open-create-modal').addEventListener('click', openCreateModal);
+        createBackdrop?.addEventListener('click', closeCreateModal);
+        document.getElementById('close-create-modal')?.addEventListener('click', closeCreateModal);
+        document.getElementById('cancel-create-modal')?.addEventListener('click', closeCreateModal);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeCreateModal();
+        });
+
+        @if($errors->any())
+            document.addEventListener('DOMContentLoaded', openCreateModal);
+        @endif
+    </script>
 @endsection

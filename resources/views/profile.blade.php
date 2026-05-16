@@ -20,7 +20,7 @@
     }
 @endphp
 
-<div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 @3xl:px-8 @4xl:px-16 @5xl:px-24 py-8">
+<div class="flex flex-col gap-6 w-full max-w-[1200px] mx-auto text-main px-4 @3xl:px-8 @4xl:px-16 @5xl:px-24 py-8">
     
     {{-- Back Button & Title --}}
     <div class="flex items-center justify-between mb-4">
@@ -45,10 +45,7 @@
         {{-- Left: Avatar & Identity --}}
         <div class="flex items-center gap-6 w-full @4xl:w-auto">
             <div class="relative group">
-                <img src="{{ getUserAvatar(Auth::user()) }}" 
-                     class="w-24 h-24 @4xl:w-32 @4xl:h-32 rounded-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                     alt="User Avatar">
-                <div class="absolute inset-0 rounded-full shadow-inner pointer-events-none"></div>
+                <x-user-avatar :user="Auth::user()" size="w-24 h-24 @4xl:w-32 @4xl:h-32" class="group-hover:scale-105 transition-transform duration-300" />
             </div>
             
             <div class="flex flex-col gap-1">

@@ -56,3 +56,6 @@ yarn-error.log
 venv/
 face_detection/__pycache__/
 face_detection/*.pyc 
+
+# Google
+storage/google/service-account.json

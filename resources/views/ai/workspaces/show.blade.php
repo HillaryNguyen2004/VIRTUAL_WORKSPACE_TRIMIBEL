@@ -3,82 +3,82 @@
 
 @section('content')
     <div class="flex flex-col gap-6 w-full mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
-        <!-- Header -->
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+
+        {{-- HEADER --}}
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div class="flex items-center gap-4">
-                <x-back-btn :route="'ai-workspaces.index'" />
+                @include('components.back-btn', ['route' => 'ai-workspaces.index'])
+
                 <div>
-                    <h1 class="font-bold text-3xl text-main tracking-tight">
-                        {{ $workspace->name }}
-                    </h1>
+                    <h1 class="font-semibold text-2xl md:text-3xl text-main tracking-tight">{{ $workspace->name }}</h1>
                     @if ($workspace->description)
-                        <p class="text-muted-500 text-sm mt-2">{{ $workspace->description }}</p>
+                        <p class="text-muted-500 text-sm md:text-base mt-1">{{ $workspace->description }}</p>
                     @endif
                     <p class="text-muted-500 text-sm mt-2">{{ __('ai.created_by') }} {{ $workspace->user->name }} ({{ $workspace->user->username }})</p>
                 </div>
             </div>
 
-            <div class="flex gap-2">
-                {{-- <button onclick="openSummaryModal('workspace', null, '{{ $workspace->id }}')"
-                    class="inline-flex items-center justify-center gap-2 bg-white border border-purple-300 px-4 py-2 rounded-xl text-sm font-medium text-purple-700 hover:bg-purple-50 transition-all shadow-sm">
+
+            <div class="flex items-center gap-2">
+                {{-- Primary Action: Summarize --}}
+                <button onclick="openSummaryModal('workspace', null, '{{ $workspace->id }}')"
+                    class="inline-flex items-center justify-center gap-2  border border-primary/30 px-4 py-2.5 rounded-xl text-sm font-medium text-primary hover:bg-primary/10 transition-all">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                     Summarize Workspace
-                </button> --}}
+                </button>
+
                 @can('update', $workspace)
-                    <a href="{{ route('ai-workspaces.edit', $workspace) }}"
-                        class="inline-flex items-center justify-center gap-2 bg-white border border-blue-600/30 px-4 py-2 rounded-xl text-sm font-medium text-blue-600 hover:bg-blue-50 transition-all shadow-sm">
+                    {{-- Subtle vertical divider --}}
+                    <div class="h-6 w-px bg-muted-200 mx-2 hidden sm:block"></div>
+                    
+                    {{-- Secondary Action: Edit --}}
+                    <button type="button" id="open-edit-modal" title="{{ __('ai.edit') }}"
+                        class="flex items-center justify-center p-2.5 rounded-xl border border-muted-300 bg-white text-muted-500 transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                            </path>
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
-                        {{ __('ai.edit') }}
-                    </a>
+                    </button>
+                    
+                    {{-- Danger Action: Delete --}}
                     <form action="{{ route('ai-workspaces.destroy', $workspace) }}" method="POST" class="inline">
                         @csrf
                         @method('DELETE')
-                        <button type="submit"
-                            class="inline-flex items-center justify-center gap-2 bg-white border border-danger/30 px-4 py-2 rounded-xl text-sm font-medium text-danger hover:bg-danger/5 transition-all shadow-sm"
+                        <button type="submit" title="{{ __('ai.delete') }}"
+                            class="flex items-center justify-center p-2.5 rounded-xl border border-muted-300 bg-white text-muted-500 transition-all hover:border-danger/30 hover:bg-danger/5 hover:text-danger"
                             onclick="return confirm('{{ __('ai.confirm_delete') }}')">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                </path>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+                                <path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                             </svg>
-                            {{ __('ai.delete') }}
                         </button>
                     </form>
                 @endcan
             </div>
         </div>
 
-        <!-- Messages -->
+        {{-- FLASH MESSAGES --}}
         @if(session('success'))
-            <div class="rounded-xl border border-green-200 bg-green-50 px-4 py-4 text-green-800 text-sm">
-                <div class="flex gap-3">
-                    <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                    </svg>
-                    {{ session('success') }}
-                </div>
+            <div class="flex w-full max-w-[1200px] mx-auto items-start gap-3 rounded-2xl border border-success/20 bg-success/5 px-4 py-4 text-success text-sm">
+                <svg class="w-5 h-5 flex-shrink-0 mt-0.5 fill-current" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                {{ session('success') }}
             </div>
         @endif
 
         @if(session('warning'))
-            <div class="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-4 text-yellow-800 text-sm">
-                <div class="flex gap-3">
-                    <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                    </svg>
-                    {{ session('warning') }}
-                </div>
+            <div class="flex w-full max-w-[1200px] mx-auto items-start gap-3 rounded-2xl border border-accent/20 bg-accent/5 px-4 py-4 text-accent text-sm">
+                <svg class="w-5 h-5 flex-shrink-0 mt-0.5 fill-current" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                {{ session('warning') }}
             </div>
         @endif
 
         @if($errors->any())
-            <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-red-800 text-sm">
+            <div class="flex w-full max-w-[1200px] mx-auto rounded-2xl border border-danger/20 bg-danger/5 px-4 py-4 text-danger text-sm">
                 <ul class="space-y-1">
                     @foreach($errors->all() as $error)
                         <li>{{ $error }}</li>
@@ -87,188 +87,236 @@
             </div>
         @endif
 
-        <!-- Statistics -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in-up">
-            <div class="rounded-lg border border-muted-200 bg-white p-4">
-                <div class="text-xs text-muted-600 mb-1">{{ __('ai.total_files') }}</div>
-                <div class="text-2xl font-bold text-main">{{ $stats['total_files'] }}</div>
-            </div>
-            <div class="rounded-lg border border-muted-200 bg-white p-4">
-                <div class="text-xs text-muted-600 mb-1">{{ __('ai.storage_used') }}</div>
-                <div class="text-2xl font-bold text-main">{{ formatBytes($stats['storage_size'], 2) }}</div>
-            </div>
-            <div class="rounded-lg border border-muted-200 bg-white p-4">
-                <div class="text-xs text-muted-600 mb-1">{{ __('ai.total_chunks') }}</div>
-                <div class="text-2xl font-bold text-main">{{ $stats['total_chunks'] }}</div>
-            </div>
-            <div class="rounded-lg border border-muted-200 bg-white p-4">
-                <div class="text-xs text-muted-600 mb-1">{{ __('ai.last_ingested') }}</div>
-                <div class="text-2xl font-medium text-main">
-                    @if($workspace->last_ingested_at)
-                        {{ $workspace->last_ingested_at->diffForHumans() }}
-                    @else
-                        {{ __('ai.never') }}
-                    @endif
+        {{-- STATS KPI CARDS --}}
+        <div class="w-full max-w-[1200px] mx-auto grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+            <x-white-card-container color="primary/50" class="p-3 items-center gap-4">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 lucide lucide-file-icon lucide-file">
+                        <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/>
+                        <path d="M14 2v5a1 1 0 0 0 1 1h5"/>
+                    </svg>
                 </div>
-            </div>
+                <div>
+                    <p class="text-xs font-medium text-muted-400">{{ __('ai.total_files') }}</p>
+                    <p class="text-lg font-bold text-main leading-tight">{{ $stats['total_files'] }}</p>
+                </div>
+            </x-white-card-container>
+
+            <x-white-card-container class="hover:border-secondary/80 p-3 items-center gap-4">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/10 text-secondary">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 lucide lucide-database-icon lucide-database">
+                        <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                        <path d="M3 5V19A9 3 0 0 0 21 19V5"/>
+                        <path d="M3 12A9 3 0 0 0 21 12"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-muted-400">{{ __('ai.storage_used') }}</p>
+                    <p class="text-lg font-bold text-main leading-tight">{{ formatBytes($stats['storage_size'], 2) }}</p>
+                </div>
+            </x-white-card-container>
+
+            <x-white-card-container color="accent/50" class="p-3 items-center gap-4">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-muted-400">{{ __('ai.total_chunks') }}</p>
+                    <p class="text-lg font-bold text-main leading-tight">{{ $stats['total_chunks'] }}</p>
+                </div>
+            </x-white-card-container>
+
+            <x-white-card-container class="hover:border-success/80 p-3 items-center gap-4">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-success/10 text-success">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-muted-400">{{ __('ai.last_ingested') }}</p>
+                    <p class="text-sm font-bold text-main leading-tight">
+                        @if($workspace->last_ingested_at)
+                            {{ $workspace->last_ingested_at->diffForHumans() }}
+                        @else
+                            <span class="text-muted-400 font-medium">{{ __('ai.never') }}</span>
+                        @endif
+                    </p>
+                </div>
+            </x-white-card-container>
+
         </div>
 
-        <!-- Upload Section -->
+        {{-- UPLOAD SECTION --}}
         @can('upload', $workspace)
-            <div class="bg-white rounded-2xl border border-muted-200 shadow-sm p-6 md:p-8 animate-fade-in-up [animation-delay:100ms]">
-                <h2 class="text-lg md:text-xl font-semibold text-main mb-2">{{ __('ai.upload_files') }}</h2>
-                <p class="text-muted-600 text-sm mb-6">{{ __('ai.upload_files_desc') }}</p>
+            <x-white-card-container color="primary/50" class="p-6 flex-col w-full max-w-[1200px] mx-auto">
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-main">{{ __('ai.upload_files') }}</h4>
+                    <p class="text-sm text-muted-500 mt-1">{{ __('ai.upload_files_desc') }}</p>
+                </div>
 
                 <form action="{{ route('ai-workspaces.upload-files', $workspace) }}" method="POST" enctype="multipart/form-data">
                     @csrf
 
-                    <div class="mb-6">
-                        <label for="files-batch" class="block" id="batch-dropzone-label">
-                            <div id="batch-dropzone"
-                                class="border-2 border-dashed border-muted-300 rounded-lg p-8 text-center hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer">
-                                <svg class="mx-auto h-12 w-12 text-muted-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
-                                </svg>
-                                <p class="text-sm font-medium text-muted-700">{{ __('ai.drag_files') }}</p>
-                                <p class="text-xs text-muted-500 mt-1">{{ __('ai.supported_formats') }}: PDF, TXT, MD, DOCX, XLSX, CSV</p>
-                            </div>
-                            <input
-                                type="file"
-                                name="files[]"
-                                id="files-batch"
-                                multiple
-                                accept=".pdf,.txt,.md,.docx,.pptx,.xlsx,.csv"
-                                class="hidden">
-                        </label>
-                        <p class="text-sm text-muted-600 mt-2" id="batchFileList"></p>
-                    </div>
+                    <label for="files-batch" class="block mb-5" id="batch-dropzone-label">
+                        <div id="batch-dropzone"
+                            class="border-2 border-dashed border-muted-300 rounded-2xl p-8 text-center hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer">
+                            <svg class="mx-auto h-12 w-12 text-muted-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                            </svg>
+                            <p class="text-sm font-medium text-muted-700">{{ __('ai.drag_files') }}</p>
+                            <p class="text-xs text-muted-500 mt-1">{{ __('ai.supported_formats') }}: PDF, TXT, MD, DOCX, XLSX, CSV</p>
+                        </div>
+                        <input type="file" name="files[]" id="files-batch" multiple
+                            accept=".pdf,.txt,.md,.docx,.pptx,.xlsx,.csv" class="hidden">
+                    </label>
+                    <p class="text-sm text-muted-600 mb-5" id="batchFileList"></p>
 
-                    <button
-                        type="submit"
-                        class="inline-flex items-center justify-center rounded-lg bg-primary-gradient px-6 py-3 text-white text-sm font-semibold shadow-lg shadow-primary/20 transition-all hover:shadow-lg focus:ring-4 focus:ring-primary/30 active:scale-95">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                        </svg>
-                        {{ __('ai.upload_files') }}
-                    </button>
+                    <div class="flex justify-end">
+                        <button type="submit"
+                            class="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-white font-semibold shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            {{ __('ai.upload_files') }}
+                        </button>
+                    </div>
                 </form>
 
                 @if($upload_errors ?? false)
                     <div class="mt-4 space-y-1">
                         @foreach($upload_errors as $error)
-                            <p class="text-red-600 text-xs">{{ $error }}</p>
+                            <p class="text-danger text-xs">{{ $error }}</p>
                         @endforeach
                     </div>
                 @endif
-            </div>
+            </x-white-card-container>
         @endcan
 
-        <!-- Ingest Section -->
+        {{-- INGEST SECTION --}}
         @can('ingest', $workspace)
-        @if($stats['pending_files'] > 0 || $stats['failed_files'] > 0)
-            @php
-                $reingestCount = $stats['pending_files'] + $stats['failed_files'];
-            @endphp
-            <div class="bg-blue-50 rounded-2xl border border-blue-200 p-6 md:p-8 animate-fade-in-up [animation-delay:200ms]">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <h2 class="text-lg font-semibold text-blue-900">{{ __('ai.ingest_required') }}</h2>
-                        <p class="text-blue-700 text-sm mt-2">
-                            {{ __('ai.reingest_ready', ['count' => $reingestCount]) }}
-                            @if($stats['pending_files'] > 0 && $stats['failed_files'] > 0)
-                                <span class="block mt-1 text-blue-600">
-                                    {{ $stats['pending_files'] }} {{ __('ai.pending') }}, {{ $stats['failed_files'] }} {{ __('ai.failed') }}
-                                </span>
-                            @elseif($stats['pending_files'] > 0)
-                                <span class="block mt-1 text-blue-600">
-                                    {{ $stats['pending_files'] }} {{ __('ai.pending') }}
-                                </span>
-                            @else
-                                <span class="block mt-1 text-blue-600">
-                                    {{ $stats['failed_files'] }} {{ __('ai.failed') }}
-                                </span>
-                            @endif
-                        </p>
+            @if($stats['pending_files'] > 0 || $stats['failed_files'] > 0)
+                @php $reingestCount = $stats['pending_files'] + $stats['failed_files']; @endphp
+                <div class="relative overflow-hidden rounded-2xl border border-primary/30 bg-inherit p-6">
+                    <div class="flex items-end justify-between gap-4">
+                        <div class="flex gap-4">
+                            <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold uppercase tracking-wide text-primary/80">{{ __('ai.ingest_required') }}</h4>
+                                <p class="text-sm text-primary/70 mt-1">
+                                    {{ __('ai.reingest_ready', ['count' => $reingestCount]) }}
+                                    @if($stats['pending_files'] > 0 && $stats['failed_files'] > 0)
+                                        <span class="block mt-0.5 text-primary/60">
+                                            {{ $stats['pending_files'] }} {{ __('ai.pending') }}, {{ $stats['failed_files'] }} {{ __('ai.failed') }}
+                                        </span>
+                                    @elseif($stats['pending_files'] > 0)
+                                        <span class="block mt-0.5 text-primary/60">{{ $stats['pending_files'] }} {{ __('ai.pending') }}</span>
+                                    @else
+                                        <span class="block mt-0.5 text-primary/60">{{ $stats['failed_files'] }} {{ __('ai.failed') }}</span>
+                                    @endif
+                                </p>
+                            </div>
+                        </div>
+
+                        <form id="ingest-form" action="{{ route('ai-workspaces.ingest', $workspace) }}" method="POST" class="flex-shrink-0">
+                            @csrf
+                            <button id="ingest-btn" type="submit"
+                                class="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover">
+                                <svg id="ingest-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                {{ __('ai.start_ingest') }}
+                            </button>
+                        </form>
                     </div>
-                    <form id="ingest-form" action="{{ route('ai-workspaces.ingest', $workspace) }}" method="POST" class="flex-shrink-0">
-                        @csrf
-                        <button id="ingest-btn"
-                            type="submit"
-                            class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
-                            <svg id="ingest-icon" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                            </svg>
-                            {{ __('ai.start_ingest') }}
-                        </button>
-                    </form>
                 </div>
-            </div>
-        @endif
+            @endif
         @endcan
 
-        <!-- Files List -->
-        <div class="bg-white rounded-2xl border border-muted-200 shadow-sm overflow-hidden animate-fade-in-up [animation-delay:200ms]">
-            <div class="px-6 md:px-8 py-6 border-b border-muted-200">
-                <h2 class="text-lg md:text-xl font-semibold text-main">{{ __('ai.workspace_files') }}</h2>
+        {{-- FILES LIST --}}
+        <x-white-card-container color="primary/50" class="overflow-hidden flex-col w-full max-w-[1200px] mx-auto">
+            <div class="flex items-center justify-between border-b border-muted-200 px-5 py-4">
+                <div>
+                    <h4 class="text-lg font-semibold text-main">{{ __('ai.workspace_files') }}</h4>
+                    <p class="text-sm text-muted-500">All documents uploaded to this workspace.</p>
+                </div>
             </div>
 
             @if($files->count() === 0)
-                <div class="px-6 md:px-8 py-12 text-center">
-                    <svg class="mx-auto h-12 w-12 text-muted-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                    <p class="text-muted-600 text-sm">{{ __('ai.no_files') }}</p>
+                <div class="flex flex-col items-center justify-center gap-3 py-16 px-6 text-center">
+                    <div class="p-3 rounded-full bg-muted-100 text-muted-400">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <p class="text-muted-500 font-medium">{{ __('ai.no_files') }}</p>
                 </div>
             @else
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead class="border-b border-muted-200 bg-muted-50">
+                    <table class="min-w-full">
+                        <thead class="bg-muted-50 text-xs uppercase tracking-wider text-muted-400 border-b border-muted-200">
                             <tr>
-                                <th class="px-6 py-3 text-left font-semibold text-muted-700">{{ __('ai.file_name') }}</th>
-                                <th class="px-6 py-3 text-left font-semibold text-muted-700">{{ __('ai.file_size') }}</th>
-                                <th class="px-6 py-3 text-left font-semibold text-muted-700">{{ __('ai.status') }}</th>
-                                <th class="px-6 py-3 text-left font-semibold text-muted-700">{{ __('ai.chunks') }}</th>
-                                <th class="px-6 py-3 text-left font-semibold text-muted-700">{{ __('ai.uploaded_at') }}</th>
-                                <th class="px-6 py-3 text-right font-semibold text-muted-700">{{ __('ai.actions') }}</th>
+                                <th class="px-5 py-4 text-left font-semibold">{{ __('ai.file_name') }}</th>
+                                <th class="px-4 py-4 text-center font-semibold">{{ __('ai.file_size') }}</th>
+                                <th class="px-4 py-4 text-center font-semibold">{{ __('ai.status') }}</th>
+                                <th class="px-4 py-4 text-center font-semibold">{{ __('ai.chunks') }}</th>
+                                <th class="px-4 py-4 text-center font-semibold">{{ __('ai.uploaded_at') }}</th>
+                                <th class="px-5 py-4 text-center font-semibold">{{ __('ai.actions') }}</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-muted-200">
+                        <tbody class="divide-y divide-muted-100 text-sm">
                             @foreach($files as $file)
                                 <tr class="hover:bg-muted-50 transition-colors">
-                                    <td class="px-6 py-4">
+
+                                    {{-- File Name --}}
+                                    <td class="px-5 py-4">
                                         <div class="flex items-center gap-3">
-                                            <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-muted-100 flex items-center justify-center">
+                                            <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-muted-100">
                                                 @if (str_ends_with(strtolower($file->file_name), '.pdf'))
-                                                    <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
-                                                @elseif (str_ends_with(strtolower($file->file_name), '.docx') || str_ends_with(strtolower($file->file_name), '.doc') || str_ends_with(strtolower($file->file_name), '.txt') || str_ends_with(strtolower($file->file_name), '.md'))
-                                                    <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
+                                                    <svg class="w-5 h-5 text-danger fill-current" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
                                                 @elseif (str_ends_with(strtolower($file->file_name), '.xlsx') || str_ends_with(strtolower($file->file_name), '.xls') || str_ends_with(strtolower($file->file_name), '.csv'))
-                                                    <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
+                                                    <svg class="w-5 h-5 text-success fill-current" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
+                                                @else
+                                                    <svg class="w-5 h-5 text-primary fill-current" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>
                                                 @endif
                                             </div>
                                             <div class="min-w-0">
-                                                <p class="font-medium text-main truncate">{{ $file->original_name }}</p>
+                                                <p class="font-semibold text-main truncate">{{ $file->original_name }}</p>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4 text-muted-600">
-                                        {{ formatBytes($file->file_size, 2) }}
+
+                                    {{-- File Size --}}
+                                    <td class="px-4 py-4 text-center">
+                                        <div class="font-semibold text-main">{{ formatBytes($file->file_size, 2) }}</div>
                                     </td>
-                                    <td class="px-6 py-4">
+
+                                    {{-- Status --}}
+                                    <td class="px-4 py-4 text-center">
                                         @if($file->ingest_status === 'pending')
-                                            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium bg-yellow-100 text-yellow-800">{{ __('ai.pending') }}</span>
+                                            <span class="inline-flex items-center rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">{{ __('ai.pending') }}</span>
                                         @elseif($file->ingest_status === 'processing')
-                                            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800">{{ __('ai.processing') }}</span>
+                                            <span class="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{{ __('ai.processing') }}</span>
                                         @elseif($file->ingest_status === 'completed')
-                                            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium bg-green-100 text-green-800">{{ __('ai.completed') }}</span>
+                                            <span class="inline-flex items-center rounded-full bg-success/5 px-3 py-1 text-xs font-semibold text-success">{{ __('ai.completed') }}</span>
                                         @elseif($file->ingest_status === 'failed')
-                                            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium bg-red-100 text-red-800">{{ __('ai.failed') }}</span>
+                                            <span class="inline-flex items-center rounded-full bg-danger/10 px-3 py-1 text-xs font-semibold text-danger">{{ __('ai.failed') }}</span>
                                         @endif
                                     </td>
-                                    <td class="px-6 py-4 text-muted-600">
-                                        {{ $file->chunk_count > 0 ? $file->chunk_count : '-' }}
+
+                                    {{-- Chunks --}}
+                                    <td class="px-4 py-4 text-center">
+                                        <span class="font-semibold text-main">{{ $file->chunk_count > 0 ? $file->chunk_count : '-' }}</span>
                                     </td>
-                                    <td class="px-6 py-4 text-muted-600 text-xs">
+
+                                    {{-- Uploaded At --}}
+                                    <td class="px-4 py-4 text-center text-xs text-muted-500">
                                         {{ $file->created_at->format('d/m/Y, H:i') }}
                                     </td>
                                     <td class="px-6 py-4 text-right">
@@ -289,9 +337,8 @@
                                                 @if(in_array($file->ingest_status, ['pending', 'failed']))
                                                     <form action="{{ route('workspace-files.ingest', $file) }}" method="POST" class="inline" data-ingest-file-form>
                                                         @csrf
-                                                        <button type="submit"
-                                                            title="{{ __('ai.retry_ingest') }}"
-                                                            class="p-1.5 rounded-lg text-muted-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                                        <button type="submit" title="{{ __('ai.retry_ingest') }}"
+                                                            class="p-1.5 rounded-lg text-muted-400 hover:bg-primary/10 hover:text-primary transition-colors"
                                                             data-ingest-file-button>
                                                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
                                                                 <polyline points="1 4 1 10 7 10"></polyline>
@@ -301,13 +348,16 @@
                                                     </form>
                                                 @endif
                                             @endcan
+
                                             <a href="{{ route('workspace-files.download', $file) }}"
                                                 class="p-1.5 rounded-lg text-muted-400 hover:bg-primary/10 hover:text-primary transition-colors">
-                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
-                                                    class="w-4 h-4 fill-current">
-                                                    <path d="M352 96C352 78.3 337.7 64 320 64C302.3 64 288 78.3 288 96L288 306.7L246.6 265.3C234.1 252.8 213.8 252.8 201.3 265.3C188.8 277.8 188.8 298.1 201.3 310.6L297.3 406.6C309.8 419.1 330.1 419.1 342.6 406.6L438.6 310.6C451.1 298.1 451.1 277.8 438.6 265.3C426.1 252.8 405.8 252.8 393.3 265.3L352 306.7L352 96zM160 384C124.7 384 96 412.7 96 448L96 480C96 515.3 124.7 544 160 544L480 544C515.3 544 544 515.3 544 480L544 448C544 412.7 515.3 384 480 384L433.1 384L376.5 440.6C345.3 471.8 294.6 471.8 263.4 440.6L206.9 384L160 384zM464 440C477.3 440 488 450.7 488 464C488 477.3 477.3 488 464 488C450.7 488 440 477.3 440 464C440 450.7 450.7 440 464 440z"/>
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4lucide lucide-download-icon lucide-download">
+                                                    <path d="M12 15V3"/>
+                                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                                    <path d="m7 10 5 5 5-5"/>
                                                 </svg>
                                             </a>
+
                                             @can('delete', $file)
                                                 <form action="{{ route('workspace-files.delete', $file) }}" method="POST" class="inline">
                                                     @csrf
@@ -315,11 +365,13 @@
                                                     <button type="submit"
                                                         onclick="return confirm('{{ __('ai.confirm_delete') }}')"
                                                         class="p-1.5 rounded-lg text-muted-400 hover:bg-danger/10 hover:text-danger transition-colors">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
-                                                            class="w-4 h-4 fill-current">
-                                                            <path
-                                                                d="M232.7 69.9L224 96L128 96C110.3 96 96 110.3 96 128C96 145.7 110.3 160 128 160L512 160C529.7 160 544 145.7 544 128C544 110.3 529.7 96 512 96L416 96L407.3 69.9C402.9 56.8 390.7 48 376.9 48L263.1 48C249.3 48 237.1 56.8 232.7 69.9zM512 208L128 208L149.1 531.1C150.7 556.4 171.7 576 197 576L443 576C468.3 576 489.3 556.4 490.9 531.1L512 208z" />
-                                                        </svg>
+                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 lucide lucide-trash-icon lucide-trash">
+                                                                <path d="M10 11v6"/>
+                                                                <path d="M14 11v6"/>
+                                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                                                                <path d="M3 6h18"/>
+                                                                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                                            </svg>
                                                     </button>
                                                 </form>
                                             @endcan
@@ -331,14 +383,13 @@
                     </table>
                 </div>
 
-                <!-- Pagination -->
                 @if($files->hasPages())
-                    <div class="px-6 py-4 border-t border-muted-200">
-                        {{ $files->links() }}
+                    <div class="flex justify-center px-5 py-5 border-t border-muted-200">
+                        {{ $files->links('vendor.pagination.tailwind') }}
                     </div>
                 @endif
             @endif
-        </div>
+        </x-white-card-container>
 
         <div id="ingest-loading-overlay" class="ingest-loading-overlay hidden" aria-live="polite" aria-busy="true">
             <div class="ingest-spinner"></div>
@@ -346,7 +397,40 @@
         </div>
     </div>
 
-    <!-- File upload script -->
+    @can('update', $workspace)
+        @include('ai.workspaces.edit')
+    @endcan
+
+    <script>
+        const editModal = document.getElementById('edit-workspace-modal');
+        const editBackdrop = document.getElementById('edit-modal-backdrop');
+
+        function openEditModal() {
+            if (!editModal) return;
+            editModal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeEditModal() {
+            if (!editModal) return;
+            editModal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        document.getElementById('open-edit-modal')?.addEventListener('click', openEditModal);
+        editBackdrop?.addEventListener('click', closeEditModal);
+        document.getElementById('close-edit-modal')?.addEventListener('click', closeEditModal);
+        document.getElementById('cancel-edit-modal')?.addEventListener('click', closeEditModal);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeEditModal();
+        });
+
+        @if($errors->any())
+            document.addEventListener('DOMContentLoaded', openEditModal);
+        @endif
+    </script>
+
     <script>
         const batchFileInput = document.getElementById('files-batch');
         const batchDropzone = document.getElementById('batch-dropzone');
