@@ -10,7 +10,7 @@ Group=www-data
 WorkingDirectory=/var/www/html/chatbot_service
 
 # Load the application's .env so Python can read DB creds, API keys, etc.
-EnvironmentFile=/var/www/html/.env
+EnvironmentFile=/var/www/html/chatbot_service/.env
 
 ExecStart=/var/www/html/chatbot_service/.venv/bin/uvicorn \
     api.app:app \

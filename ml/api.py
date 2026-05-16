@@ -630,6 +630,7 @@ def predict_all():
                     _build_prediction_core(uid, name, include_chatbot_context=True)
                 )
             except ValueError as e:
+                logger.warning(f"[PREDICT_ALL] User {uid} ({name}): skipped — {e}")
                 errors.append({"user_id": uid, "name": name, "error": str(e)})
             except Exception as e:
                 logger.error(f"[PREDICT_ALL] User {uid}: {e}", exc_info=True)

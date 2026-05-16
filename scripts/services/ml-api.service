@@ -9,8 +9,8 @@ User=www-data
 Group=www-data
 WorkingDirectory=/var/www/html/ml
 
-# Load the application's .env (PG_URL, DB credentials, etc.)
-EnvironmentFile=/var/www/html/.env
+# Load ETL env (PG_URL, Supabase + MySQL credentials for ML API)
+EnvironmentFile=/var/www/html/etl/.env
 
 # TensorFlow CPU-only — suppress warnings
 Environment=TF_CPP_MIN_LOG_LEVEL=2
