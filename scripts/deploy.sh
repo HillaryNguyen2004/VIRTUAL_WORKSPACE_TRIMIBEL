@@ -22,7 +22,7 @@ echo "╚═══════════════════════�
 echo ""
 
 # ── 1. PHP dependencies ───────────────────────────────────────────────────────
-echo "▶ [1/7] Installing PHP dependencies..."
+echo "▶ [1/8] Installing PHP dependencies..."
 $COMPOSER install \
   --no-dev \
   --no-interaction \
@@ -32,7 +32,7 @@ $COMPOSER install \
   --quiet
 
 # ── 2. Laravel optimizations ──────────────────────────────────────────────────
-echo "▶ [2/7] Optimizing Laravel (config, routes, views, events)..."
+echo "▶ [2/8] Optimizing Laravel (config, routes, views, events)..."
 $PHP artisan config:cache
 # route:cache is intentionally skipped: web.php contains Closure routes that
 # cannot be serialized. Routes load from files (~5 ms overhead, negligible).
@@ -41,7 +41,7 @@ $PHP artisan view:cache
 $PHP artisan event:cache
 
 # ── 3. Storage & permissions ──────────────────────────────────────────────────
-echo "▶ [3/7] Fixing permissions..."
+echo "▶ [3/8] Fixing permissions..."
 $PHP artisan storage:link --force 2>/dev/null || true
 sudo chown -R ubuntu:"$WEB_USER" storage bootstrap/cache
 sudo chmod -R 775 storage bootstrap/cache
@@ -49,15 +49,15 @@ sudo chown -R ubuntu:"$WEB_USER" public/build 2>/dev/null || true
 sudo chmod -R 775 public/build 2>/dev/null || true
 
 # ── 4. Restart PHP-FPM ────────────────────────────────────────────────────────
-echo "▶ [4/7] Restarting PHP-FPM..."
+echo "▶ [4/8] Restarting PHP-FPM..."
 sudo systemctl restart php8.5-fpm
 
 # ── 5. Restart Laravel queue worker ──────────────────────────────────────────
-echo "▶ [5/7] Restarting Laravel queue worker..."
+echo "▶ [5/8] Restarting Laravel queue worker..."
 sudo systemctl restart laravel-queue
 
 # ── 6. Python Chatbot service (FastAPI/uvicorn on :8002) ─────────────────────
-echo "▶ [6/7] Updating & restarting chatbot service..."
+echo "▶ [6/8] Updating & restarting chatbot service..."
 (
   REQ_HASH_FILE="chatbot_service/.venv/.req_hash"
   REQ_HASH=$(md5sum chatbot_service/requirements.txt | cut -d' ' -f1)
@@ -74,7 +74,22 @@ echo "▶ [6/7] Updating & restarting chatbot service..."
 ) || echo "⚠  Chatbot service update failed — not blocking deploy."
 
 # ── 7. ML API service (Flask on :5001) ───────────────────────────────────────
-echo "▶ [7/7] Updating & restarting ML API..."
+echo "▶ [7/8] Syncing systemd service files..."
+(
+  CHANGED=0
+  for SVC in laravel-queue chatbot ml-api whitebophir; do
+    SRC="$DEPLOY_PATH/scripts/services/${SVC}.service"
+    DST="/etc/systemd/system/${SVC}.service"
+    if [ -f "$SRC" ] && ! diff -q "$SRC" "$DST" > /dev/null 2>&1; then
+      sudo cp "$SRC" "$DST"
+      CHANGED=1
+      echo "  updated ${SVC}.service"
+    fi
+  done
+  [ "$CHANGED" = "1" ] && sudo systemctl daemon-reload || true
+) || echo "⚠  Service file sync failed — not blocking deploy."
+
+echo "▶ [8/8] Updating & restarting ML API..."
 (
   REQ_HASH_FILE="ml/.venv/.req_hash"
   REQ_HASH=$(md5sum ml/requirements.txt | cut -d' ' -f1)

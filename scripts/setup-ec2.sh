@@ -193,6 +193,11 @@ ubuntu ALL=(ALL) NOPASSWD: /bin/systemctl restart laravel-queue
 ubuntu ALL=(ALL) NOPASSWD: /bin/systemctl restart chatbot
 ubuntu ALL=(ALL) NOPASSWD: /bin/systemctl restart ml-api
 ubuntu ALL=(ALL) NOPASSWD: /bin/systemctl restart whitebophir
+ubuntu ALL=(ALL) NOPASSWD: /bin/systemctl daemon-reload
+ubuntu ALL=(ALL) NOPASSWD: /bin/cp $DEPLOY_PATH/scripts/services/laravel-queue.service /etc/systemd/system/laravel-queue.service
+ubuntu ALL=(ALL) NOPASSWD: /bin/cp $DEPLOY_PATH/scripts/services/chatbot.service /etc/systemd/system/chatbot.service
+ubuntu ALL=(ALL) NOPASSWD: /bin/cp $DEPLOY_PATH/scripts/services/ml-api.service /etc/systemd/system/ml-api.service
+ubuntu ALL=(ALL) NOPASSWD: /bin/cp $DEPLOY_PATH/scripts/services/whitebophir.service /etc/systemd/system/whitebophir.service
 SUDOERS
 chmod 440 /etc/sudoers.d/deploy-services
 
