@@ -24,6 +24,8 @@ return [
     'name_placeholder' => 'Nhập tên của bạn',
     'camera_label' => 'Camera',
     'microphone_label' => 'Micro',
+    'joining_as' => 'Đang tham gia với',
+    'login_required_to_join' => 'Vui lòng đăng nhập để tham gia cuộc họp.',
     'left_meeting' => 'Bạn đã rời khỏi cuộc họp',
     'return_to_dashboard' => 'Trở lại Bảng điều khiển',
 
@@ -59,4 +61,56 @@ return [
     'smart_meeting_find_slots' => 'Tìm khung giờ',
     'smart_meeting_slots' => 'Khung giờ khả dụng (trong 7 ngày tới)',
     'smart_meeting_book' => 'Đặt cuộc họp',
+
+    'meeting_details' => 'Chi tiết cuộc họp',
+
+    // Meeting Details Page
+    'summary_tab' => 'Tóm tắt',
+    'transcript_tab' => 'Bản ghi âm',
+    'notes_tab' => 'Ghi chú',
+    'ongoing' => 'Đang diễn ra',
+    
+    // Summary Section
+    'overview_title' => 'Tổng quan',
+    'overview_default' => 'Nhóm đã thảo luận về tiến độ dự án, nhấn mạnh hoàn thành gần như toàn bộ phát triển backend và frontend. Họ đã giải quyết những thách thức trong việc tích hợp API của bên thứ ba. Các mục hành động bao gồm hoàn thiện xác thực, thiết kế giao diện người dùng và kiểm tra. Bước tiếp theo: kiểm tra tiến độ giữa tuần.',
+    'project_progress_title' => 'Tiến độ dự án',
+    'challenges_faced_title' => 'Vấn đề gặp phải',
+    'action_items_title' => 'Công việc',
+    'next_steps_title' => 'Bước tiếp theo',
+    'action_items_review_backend' => 'Xem xét các tác vụ backend.',
+    'action_items_empty' => 'Không xác định được các mục hành động cụ thể.',
+    'attendees_title' => 'Người tham gia',
+    'attendees_desc' => 'Những người tham gia cuộc họp này.',
+    'attendees_participant_col' => 'Người tham gia',
+    'attendees_joined_col' => 'Thời gian tham gia',
+    'attendees_status_col' => 'Trạng thái',
+    'attendees_status_present' => 'Có mặt',
+    'attendees_status_invited' => 'Được mời',
+    'attendees_team_member' => 'Thành viên nhóm',
+    'attendees_empty' => 'Không có người tham gia nào được ghi nhận cho cuộc họp này.',
+
+    // Transcript Section
+    'transcript_title' => 'Bản ghi âm cuộc họp',
+    'transcript_desc' => 'Đọc và tìm kiếm trong cuộc trò chuyện.',
+    'transcript_search_placeholder' => 'Tìm kiếm bản ghi âm...',
+    'transcript_host_badge' => 'Chủ trì',
+    'transcript_copy_btn' => 'Sao chép',
+    'transcript_copied_btn' => 'Đã sao chép',
+    'transcript_empty' => 'Chưa có bản ghi âm cho cuộc họp này.',
+
+    // Recording Section
+    'recording_tab' => 'Ghi hình',
+    'recording_title' => 'Bản ghi hình cuộc họp',
+    'recording_desc' => 'Xem lại toàn bộ cuộc họp.',
+    'recording_download_btn' => 'Tải xuống',
+    'recording_unsupported' => 'Trình duyệt của bạn không hỗ trợ thẻ video.',
+    'recording_empty_title' => 'Chưa có bản ghi hình',
+    'recording_empty_desc' => 'Video cuộc họp sẽ xuất hiện ở đây sau khi xử lý hoàn tất. Quá trình này có thể mất vài phút sau khi cuộc họp kết thúc.',
+
+    // Notes Section
+    'notes_title' => 'Ghi chú cá nhân',
+    'notes_desc' => 'Một nơi để ghi chú các ý tưởng và suy nghĩ cá nhân cho cuộc họp này.',
+    'notes_saved_label' => 'Đã lưu ghi chú',
+    'notes_empty_title' => 'Chưa có ghi chú',
+    'notes_empty_desc' => 'Thêm ghi chú từ phòng họp và chúng sẽ được lưu ở đây để xem lại sau.',
 ];

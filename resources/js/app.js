@@ -378,12 +378,11 @@ async function recordMeetingLeave() {
 
 // Add this to your app.js, at the top level
 jquery(function() {
-    
     const urlParams = new URLSearchParams(window.location.search);
-    const username = urlParams.get('username');
+    const username = window.CURRENT_USER_NAME || urlParams.get('username');
 
     if (username && jquery("#meetingView").length > 0) {
-        console.log("Username found, auto-joining meeting...");
+        console.log("Auto-joining meeting as:", username);
         joinMeetingFromUrl(username);
     }
 });
@@ -562,18 +561,13 @@ if (meeting) {
  * Join Meeting
  */
 jquery("#joinMeetingBtn").on("click", async function () {
-  var username = jquery("#username").val();
-  if (!username) {
-    return alert("Please enter a username");
-  }
-
-  // Get the base path (e.g., /meeting/room_id)
   const currentPath = window.location.pathname;
 
-  // Build the NEW URL for the meeting room page
-  const newWindowUrl = `${currentPath}/room?username=${encodeURIComponent(username)}`;
+  if (!window.CURRENT_USER_NAME) {
+    return alert("Please login to join the meeting.");
+  }
 
-  // Open the new window
+  const newWindowUrl = `${currentPath}/room`;
   window.open(newWindowUrl, '_blank');
 });
 

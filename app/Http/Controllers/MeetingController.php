@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\MeetingAttendee;
 use App\Models\MeetingHistory;
+use Illuminate\Support\Facades\Storage;
 use App\Events\MeetingChatMessage;
 use App\Services\CalendarService;
 use Carbon\Carbon;
@@ -77,14 +78,13 @@ class MeetingController extends Controller
         }
 
         $meetingHistory = MeetingHistory::with('attendees')
+            ->withCount('attendees')
             ->where('user_id', $userId)
             ->orderByDesc('start_time')
             ->get();
 
         $meetingHistory->each(function ($meeting) {
             $meeting->start_time = $meeting->start_time ?? $meeting->created_at;
-            $meeting->attendees = $meeting->attendees ?? collect();
-            $meeting->attendees_count = $meeting->attendees->count();
         });
 
         return $meetingHistory;
@@ -95,17 +95,29 @@ class MeetingController extends Controller
         $METERED_DOMAIN = config('services.metered.domain');
         $METERED_SECRET_KEY = config('services.metered.secret_key');
     
-
-        // Contain the logic to create a new meeting
+        // 1. Send the correct auto-record parameters
         $response = Http::post("https://{$METERED_DOMAIN}/api/v1/room?secretKey={$METERED_SECRET_KEY}", [
-            'autoJoin' => true
+            'autoJoin' => true,
+            'recordRoom' => true,
+            'enableComposition' => true,
+            'recordComposition' => true
         ]);
+
+        // 2. Catch API failures gracefully
+        if (!$response->successful()) {
+            \Log::error('Metered API Create Room Failed: ' . $response->body());
+            return redirect('/?error=Failed to create meeting room via API');
+        }
 
         $roomName = $response->json("roomName");
 
-        $this->ensureMeetingHistory($roomName);
-        
-        return redirect("/meeting/{$roomName}"); // We will update this soon.
+        // 3. Ensure we actually got a string before saving
+        if ($roomName) {
+            $this->ensureMeetingHistory($roomName);
+            return redirect("/meeting/{$roomName}");
+        }
+
+        return redirect('/?error=Invalid room data from API');
     }
 
     public function validateMeeting(Request $request) {
@@ -134,22 +146,28 @@ class MeetingController extends Controller
         $METERED_DOMAIN = config('services.metered.domain');
         $METERED_SECRET_KEY = config('services.metered.secret_key');
 
+        // 1. Send the correct auto-record parameters
         $response = Http::post("https://{$METERED_DOMAIN}/api/v1/room?secretKey={$METERED_SECRET_KEY}", [
-            'autoJoin' => true
+            'autoJoin' => true,
+            'recordRoom' => true,
+            'enableComposition' => true,
+            'recordComposition' => true
         ]);
 
         if ($response->successful()) {
             $roomName = $response->json("roomName");
             
-            // Log it in history right away so the user "owns" it
-            $this->ensureMeetingHistory($roomName);
+            if ($roomName) {
+                $this->ensureMeetingHistory($roomName);
 
-            return response()->json([
-                'success' => true,
-                'roomName' => $roomName
-            ]);
+                return response()->json([
+                    'success' => true,
+                    'roomName' => $roomName
+                ]);
+            }
         }
 
+        \Log::error('Metered API Generate Room Failed: ' . $response->body());
         return response()->json(['success' => false, 'message' => 'Failed to create room via Metered API'], 500);
     }
 
@@ -157,7 +175,8 @@ class MeetingController extends Controller
     {
         return view('video-chat.meeting', [
             'MEETING_ID' => $meetingId,
-            'METERED_DOMAIN' => env('METERED_DOMAIN')
+            'METERED_DOMAIN' => env('METERED_DOMAIN'),
+            'currentUserName' => auth()->check() ? auth()->user()->name ?? auth()->user()->username : null,
         ]);
     }
 
@@ -170,7 +189,7 @@ class MeetingController extends Controller
             $history = $this->ensureMeetingHistory($meetingId);
             if ($history) {
                 $user = auth()->user();
-                $name = $user->name ?? $user->email ?? 'User';
+                $name = $user->name ?? $user->username ?? $user->email ?? 'User';
 
                 $attendee = MeetingAttendee::where('meeting_id', $meetingId)
                     ->where('user_id', $user->id)
@@ -201,13 +220,18 @@ class MeetingController extends Controller
             }
         }
 
-        // This page might use a different layout, or no layout at all
+        $meetingHistory = MeetingHistory::where('user_id', auth()->id())
+            ->where('meeting_id', $meetingId)
+            ->first();
+
         return view('video-chat.meeting_view', [
             'MEETING_ID' => $meetingId,
             'METERED_DOMAIN' => env('METERED_DOMAIN'),
+            'currentUserName' => auth()->check() ? auth()->user()->name ?? auth()->user()->username : null,
             'meetingAttendees' => MeetingAttendee::where('meeting_id', $meetingId)
                 ->orderByDesc('joined_at')
                 ->get(),
+            'meetingNotes' => $meetingHistory?->notes ?? '',
         ]);
     }
 
@@ -222,7 +246,7 @@ class MeetingController extends Controller
     {
         $meetingHistory = $this->getMeetingHistoryForUser();
 
-        return view('meetings.history', compact('meetingHistory'));
+        return view('video-chat.history', compact('meetingHistory'));
     }
 
     public function debugRoomsApi()
@@ -339,7 +363,7 @@ class MeetingController extends Controller
     {
         $userId = auth()->id();
 
-        $meeting = MeetingHistory::with('attendees')
+        $meeting = MeetingHistory::with(['attendees', 'transcriptions'])
             ->where('id', $meetingHistoryId)
             ->where('user_id', $userId)
             ->firstOrFail();
@@ -348,7 +372,11 @@ class MeetingController extends Controller
         $meeting->attendees = $meeting->attendees ?? collect();
         $meeting->attendees_count = $meeting->attendees->count();
 
-        return view('meetings.details', compact('meeting'));
+        $recordingUrl = $meeting->recording_url
+            ? Storage::disk('s3')->temporaryUrl($meeting->recording_url, now()->addHours(2))
+            : null;
+
+        return view('video-chat.details', compact('meeting', 'recordingUrl'));
     }
 
     public function recordLeave(Request $request)
@@ -365,6 +393,11 @@ class MeetingController extends Controller
         if (!$history->end_time) {
             $history->end_time = now();
             $history->save();
+
+            // Dispatch the STT job to run 3 minutes in the future, 
+            // giving Metered time to process the video.
+            \App\Jobs\ProcessMeetingTranscription::dispatch($data['meeting_id'])
+                ->delay(now()->addMinutes(3));
         }
 
         return response()->json(['success' => true]);
@@ -386,7 +419,7 @@ class MeetingController extends Controller
         $payload = [
             'meeting_id' => $meetingId,
             'message' => $data['message'],
-            'name' => $user->name ?? $user->email ?? 'User',
+            'name' => $user->name ?? $user->username ?? $user->email ?? 'User',
             'user_id' => $user->id,
             'avatar_url' => $user->avatar_url ?? null,
             'sent_at' => now()->toISOString(),
@@ -395,6 +428,23 @@ class MeetingController extends Controller
         broadcast(new MeetingChatMessage($meetingId, $payload))->toOthers();
 
         return response()->json(['success' => true, 'data' => $payload]);
+    }
+
+    public function saveMeetingNotes(Request $request, $meetingId)
+    {
+        $data = $request->validate([
+            'notes' => 'nullable|string|max:10000',
+        ]);
+
+        $history = $this->ensureMeetingHistory($meetingId);
+        if (!$history) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $history->notes = $data['notes'] ?? null;
+        $history->save();
+
+        return response()->json(['success' => true, 'notes' => $history->notes]);
     }
 
     // API to Find Slots

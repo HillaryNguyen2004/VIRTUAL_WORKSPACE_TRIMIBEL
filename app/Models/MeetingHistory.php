@@ -14,6 +14,7 @@ class MeetingHistory extends Model
         'start_time',
         'end_time',
         'notes',
+        'recording_url',
     ];
 
     protected $casts = [
@@ -29,5 +30,13 @@ class MeetingHistory extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function transcriptions()
+    {
+        // 1st arg: The related model
+        // 2nd arg: The foreign key on the 'meeting_transcriptions' table
+        // 3rd arg: The local key on the 'meeting_histories' table
+        return $this->hasMany(MeetingTranscription::class, 'meeting_id', 'meeting_id');
     }
 }

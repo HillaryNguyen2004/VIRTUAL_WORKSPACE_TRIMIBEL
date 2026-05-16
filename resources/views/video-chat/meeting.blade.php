@@ -11,6 +11,7 @@
         <script>
             window.METERED_DOMAIN = "{{ $METERED_DOMAIN }}";
             window.MEETING_ID = "{{ $MEETING_ID }}";
+            window.CURRENT_USER_NAME = @json($currentUserName ?? null);
         </script>
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -19,20 +20,24 @@
     <body class="antialiased">
         
         {{-- Main Container matched to dashboard width --}}
-        <div class="flex flex-col gap-6 w-full w-max-[1200px] mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
+        <div class="flex flex-col gap-6 w-full text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
 
             <div id="waitingArea" class="w-full">
                 
                 {{-- Header Section --}}
-                <div class="flex flex-col gap-4 sm:flex-row sm:items-center w-full mb-6">
-                    @include('components.back-btn')
+                <div class="flex items-center gap-4 mb-6">
+                    <x-back-btn />
                     <div>
-                        <h2 class="font-bold text-3xl text-main tracking-tight">{{ __('video_chat.lobby_title') }}</h2>
-                        <p class="mt-1 text-sm text-muted-500">{{ __('video_chat.lobby_subtitle') }}</p>
+                        <h1 class="font-semibold text-2xl md:text-3xl text-main tracking-tight">
+                            {{ __('video_chat.lobby_title') }}
+                        </h1>
+                        <p class="text-muted-500 text-sm md:text-base mt-1 flex flex-wrap items-center gap-3">
+                            {{ __('video_chat.lobby_subtitle') }}
+                        </p>
                     </div>
                 </div>
     
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full animate-fade-in-up">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full animate-fade-in-up max-w-[1200px] mx-auto">
                     
                     {{-- Video Preview Area --}}
                     <div class="lg:col-span-7 xl:col-span-8">
@@ -74,21 +79,16 @@
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                                 </div>
                                 <h3 class="text-xl font-bold text-main">{{ __('video_chat.ready_to_join') }}</h3>
+                                <p class="text-muted-500 mt-0.5 text-sm">{{ __('video_chat.joining_as') }} {{ auth()->user()->name ?? auth()->user()->username }}</p>
                             </div>
                             
                             <div class="flex flex-col space-y-5">
-                                
-                                <div>
-                                    <label for="username" class="block mb-1.5 text-sm font-medium text-muted-600">{{ __('video_chat.name_label') }}</label>
-                                    <input id="username" type="text" placeholder="{{ __('video_chat.name_placeholder') }}" 
-                                        class="block w-full bg-canvas border border-muted-200 text-main py-3 px-4 rounded-xl placeholder-muted-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all" />
-                                </div>
 
                                 <div>
                                     <label for="cameraSelectBox" class="block mb-1.5 text-sm font-medium text-muted-600">{{ __('video_chat.camera_label') }}</label>
                                     <div class="relative w-full">
                                         <select id='cameraSelectBox' 
-                                            class="block w-full bg-canvas border border-muted-200 text-main py-3 px-4 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent appearance-none pr-10 transition-all">
+                                            class="block w-full bg-canvas border border-muted-300 text-main py-3 px-4 rounded-xl focus:bg-white outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none pr-10 transition-all">
                                             </select>
                                         
                                         <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -103,7 +103,7 @@
                                     <label for="microphoneSelectBox" class="block mb-1.5 text-sm font-medium text-muted-600">{{ __('video_chat.microphone_label') }}</label>
                                     <div class="relative w-full">
                                         <select id='microphoneSelectBox' 
-                                            class="block w-full bg-canvas border border-muted-200 text-main py-3 px-4 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent appearance-none pr-10 transition-all">
+                                            class="block w-full bg-canvas border border-muted-300 text-main py-3 px-4 rounded-xl focus:bg-white outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none pr-10 transition-all">
                                             </select>
                                         
                                         <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -117,9 +117,6 @@
                                 <div class="pt-2">
                                     <button id='joinMeetingBtn' class="group flex items-center justify-center gap-2 w-full rounded-xl bg-primary px-6 py-3 text-white font-medium shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover focus:ring-4 focus:ring-primary/30 active:scale-95">
                                         {{ __('video_chat.join_button') }}
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                        </svg>
                                     </button>
                                 </div>
                             </div>
