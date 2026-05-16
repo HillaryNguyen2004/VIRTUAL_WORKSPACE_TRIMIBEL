@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AIWorkspace;
 use App\Models\Conversation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -329,9 +330,8 @@ class ChatBotController extends Controller
 
         $workspaceId = $this->resolveWorkspaceScope($data['workspace_id']);
 
-        // Authorise: user must own or be a member of the workspace
         $workspace = AIWorkspace::find($data['workspace_id']);
-        if ($workspace && $workspace->user_id !== $user->id) {
+        if ($workspace && Gate::denies('view', $workspace)) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -374,7 +374,7 @@ class ChatBotController extends Controller
         $workspaceId = $this->resolveWorkspaceScope($data['workspace_id']);
 
         $workspace = AIWorkspace::find($data['workspace_id']);
-        if ($workspace && $workspace->user_id !== $user->id) {
+        if ($workspace && Gate::denies('view', $workspace)) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -484,7 +484,7 @@ class ChatBotController extends Controller
         $workspaceId = $this->resolveWorkspaceScope($rawWorkspaceId);
 
         $workspace = AIWorkspace::find($rawWorkspaceId);
-        if ($workspace && $workspace->user_id !== $user->id) {
+        if ($workspace && Gate::denies('view', $workspace)) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
