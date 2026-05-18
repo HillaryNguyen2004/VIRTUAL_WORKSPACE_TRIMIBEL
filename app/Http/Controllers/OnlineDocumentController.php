@@ -269,10 +269,7 @@ class OnlineDocumentController extends Controller
     {
         $this->authorize('view', $document);
 
-        $content = $this->service->getDocumentContent($document);
-        $plainText = strip_tags((string) $content);
-        $plainText = html_entity_decode($plainText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $plainText = trim((string) preg_replace('/\s+/', ' ', $plainText));
+        $plainText = $this->service->getDocumentPlainText($document);
 
         if ($plainText === '') {
             return response()->json(['summary' => __('online_docs.ai_summary_empty')]);
@@ -315,10 +312,7 @@ class OnlineDocumentController extends Controller
     {
         $this->authorize('view', $document);
 
-        $content = $this->service->getDocumentContent($document);
-        $plainText = strip_tags((string) $content);
-        $plainText = html_entity_decode($plainText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $plainText = trim((string) preg_replace('/\s+/', ' ', $plainText));
+        $plainText = $this->service->getDocumentPlainText($document);
 
         if ($plainText === '') {
             return response()->json(['items' => []]);
@@ -562,22 +556,22 @@ class OnlineDocumentController extends Controller
             return response()->json([
                 'answer'     => __('online_docs.search_agent_empty'),
                 'citations'  => [],
-                'confidence' => ['level' => 'low', 'score' => 0.0, 'reason' => 'No matching documents found.'],
+                'confidence' => ['level' => 'low', 'score' => 0.0],
                 'source'     => 'bm25',
             ]);
         }
 
-        // Build a plain-text answer summarising top matches
-        $lines = [];
         $citations = [];
         $rank = 1;
+        $docLines = [];
+        $fileLines = [];
 
         foreach ($rankedDocs->take(5) as $doc) {
-            $snippet = $doc->search_match_snippet ?? Str::limit((string) ($doc->searchable_text ?? ''), 200);
+            $rawSnippet = $doc->search_match_snippet ?? strip_tags((string) ($doc->searchable_text ?? ''));
+            $snippet = Str::limit($this->stripChunkHeader($rawSnippet), 180);
             $page    = $doc->search_match_page ?? null;
-            $line    = $doc->search_match_line ?? null;
-            $loc     = $page ? " (page {$page})" : '';
-            $lines[] = "• [{$doc->title}]{$loc}: {$snippet}";
+            $locTag  = $page ? " *(trang {$page})*" : '';
+            $docLines[] = "- **{$doc->title}**{$locTag}  \n  {$snippet}";
 
             $citations[] = [
                 'rank'         => $rank++,
@@ -587,14 +581,14 @@ class OnlineDocumentController extends Controller
                 'doc_link'     => route('online-docs.docs.show', $doc),
                 'file_link'    => null,
                 'page'         => $page,
-                'line'         => $line,
+                'line'         => $doc->search_match_line ?? null,
                 'source_type'  => 'doc',
             ];
         }
 
         foreach ($rankedFiles->take(3) as $file) {
-            $snippet = Str::limit((string) ($file->searchable_text ?? ''), 200);
-            $lines[] = "• [{$file->original_name}]: {$snippet}";
+            $snippet = Str::limit($this->stripChunkHeader(strip_tags((string) ($file->searchable_text ?? ''))), 180);
+            $fileLines[] = "- **{$file->original_name}**  \n  {$snippet}";
 
             $ext = strtolower(pathinfo((string) $file->original_name, PATHINFO_EXTENSION));
             $isOffice = in_array($ext, ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'], true);
@@ -612,7 +606,15 @@ class OnlineDocumentController extends Controller
             ];
         }
 
-        $answer = implode("\n", $lines);
+        $sections = [];
+        if ($docLines) {
+            $sections[] = "### Tài liệu\n" . implode("\n", $docLines);
+        }
+        if ($fileLines) {
+            $sections[] = "### Tệp cá nhân\n" . implode("\n", $fileLines);
+        }
+        $answer = implode("\n\n", $sections);
+
         $topScore = (float) ($rankedDocs->first()?->search_score ?? $rankedFiles->first()?->search_score ?? 0.0);
         $level = $topScore >= 3.0 ? 'high' : ($topScore >= 1.0 ? 'medium' : 'low');
 
@@ -620,9 +622,8 @@ class OnlineDocumentController extends Controller
             'answer'     => $answer,
             'citations'  => $citations,
             'confidence' => [
-                'level'  => $level,
-                'score'  => round(min(1.0, $topScore / 5.0), 2),
-                'reason' => 'Results ranked by BM25 keyword relevance (AI model unavailable).',
+                'level' => $level,
+                'score' => round(min(1.0, $topScore / 5.0), 2),
             ],
             'source' => 'bm25',
         ]);
@@ -1360,8 +1361,7 @@ class OnlineDocumentController extends Controller
 
         try {
             $path = $this->ensureSpreadsheetPath($document);
-            Storage::disk()->makeDirectory(dirname($path));
-            Storage::disk()->put($path, file_get_contents($data['xlsx']->getRealPath()));
+            $this->service->putToDefaultDisk($path, file_get_contents($data['xlsx']->getRealPath()));
 
             $document->update([
                 'xlsx_path' => $path,
@@ -1385,8 +1385,7 @@ class OnlineDocumentController extends Controller
 
         try {
             $path = $this->service->ensurePptxPath($document);
-            Storage::disk()->makeDirectory(dirname($path));
-            Storage::disk()->put($path, file_get_contents($data['pptx']->getRealPath()));
+            $this->service->putToDefaultDisk($path, file_get_contents($data['pptx']->getRealPath()));
 
             $document->update([
                 'pptx_path' => $path,
@@ -1536,7 +1535,7 @@ class OnlineDocumentController extends Controller
 
         $writer = new Xlsx($spreadsheet);
         $writer->save($tempPath);
-        Storage::disk()->put($path, fopen($tempPath, 'rb'));
+        $this->service->putToDefaultDisk($path, fopen($tempPath, 'rb'));
         Storage::disk('local')->delete($tempRelative);
 
         $document->update([
@@ -1709,7 +1708,7 @@ class OnlineDocumentController extends Controller
         }
 
         $path = "documents/{$document->id}/sheet.xlsx";
-        Storage::disk()->makeDirectory("documents/{$document->id}");
+        // removed makeDirectory as S3 does not need it and it fails with ACL error
         $document->update(['xlsx_path' => $path]);
 
         return $path;
@@ -1900,8 +1899,7 @@ class OnlineDocumentController extends Controller
                     }
 
                     try {
-                        Storage::disk()->makeDirectory(dirname($storedPath));
-                        Storage::disk()->put($storedPath, $content);
+                        $this->service->putToDefaultDisk($storedPath, $content);
                     } catch (\Throwable $error) {
                         continue;
                     }
@@ -2097,5 +2095,18 @@ class OnlineDocumentController extends Controller
             return $default;
         }
         return mb_substr($name, 0, $maxLen, 'UTF-8');
+    }
+
+    /**
+     * Remove chunk header lines prepended during indexing, e.g.:
+     * "[File: report.pdf | Page: 3 | Section: Revenue | Type: pdf]"
+     * These appear at the start of searchable_text and are not useful for display.
+     */
+    private function stripChunkHeader(string $text): string
+    {
+        $text = trim($text);
+        // Remove one or more leading lines that look like "[File: ... | ...]"
+        $text = (string) preg_replace('/^\[File:[^\]]+\]\s*/i', '', $text);
+        return trim($text);
     }
 }

@@ -429,6 +429,8 @@ Route::middleware(['auth'])->group(function () {
 
 
     // Test route for user search
+    Route::get('/chat/messages/{message}/download', [App\Http\Controllers\ChatController::class, 'downloadFile'])->name('chat.file.download');
+
     Route::get('/chat/test-users', function () {
         $users = \App\Models\User::where('id', '!=', auth()->id())
             ->select(['id', 'name', 'email'])

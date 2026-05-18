@@ -6,6 +6,7 @@ from typing import List, Dict, Any, Callable, Optional
 
 from .embeddings.ollama import embed_query
 from .vectorstores.chroma_store import query_by_vector
+from .bm25_store import bm25_search
 from .config import settings
 from .ollama_generate import GenerationCancelled
 from sentence_transformers import CrossEncoder
@@ -14,6 +15,9 @@ log = logging.getLogger(__name__)
 
 _cross_encoder = None
 _cross_encoder_ready = False
+
+# RRF constant — higher k dampens rank differences (60 is standard)
+_RRF_K = 60
 
 
 def _get_cross_encoder():
@@ -46,10 +50,7 @@ def _rerank_with_cross_encoder(query: str, docs: List[Dict[str, Any]]) -> List[D
     if ce is None or not docs:
         return docs
 
-    pairs = []
-    for d in docs:
-        text = str(d.get("content") or d.get("document") or "")
-        pairs.append((query, text))
+    pairs = [(query, str(d.get("content") or d.get("document") or "")) for d in docs]
 
     try:
         scores = ce.predict(pairs)
@@ -63,6 +64,7 @@ def _rerank_with_cross_encoder(query: str, docs: List[Dict[str, Any]]) -> List[D
     docs.sort(key=lambda d: d.get("_ce_score", float("-inf")), reverse=True)
     return docs
 
+
 def _keyword_score(query: str, passage_text: str) -> float:
     """Token-overlap score — lowercase only, preserve diacritics."""
     def _soft(text: str) -> str:
@@ -75,6 +77,43 @@ def _keyword_score(query: str, passage_text: str) -> float:
     hits = sum(1 for t in set(tokens) if t in content)
     return hits / len(set(tokens))
 
+
+def _rrf_merge(
+    dense_results: List[Dict[str, Any]],
+    sparse_results: List[Dict[str, Any]],
+    k: int = _RRF_K,
+) -> List[Dict[str, Any]]:
+    """
+    Reciprocal Rank Fusion of dense + sparse ranked lists.
+
+    score(d) = Σ 1 / (k + rank(d))  across both lists.
+
+    Docs are identified by their 'id' field.  All unique docs from both
+    lists are included; missing from one list → no contribution from that list.
+    """
+    scores: Dict[str, float] = {}
+    doc_map: Dict[str, Dict[str, Any]] = {}
+
+    for rank, doc in enumerate(dense_results, start=1):
+        doc_id = doc["id"]
+        scores[doc_id] = scores.get(doc_id, 0.0) + 1.0 / (k + rank)
+        doc_map[doc_id] = doc
+
+    for rank, doc in enumerate(sparse_results, start=1):
+        doc_id = doc["id"]
+        scores[doc_id] = scores.get(doc_id, 0.0) + 1.0 / (k + rank)
+        if doc_id not in doc_map:
+            doc_map[doc_id] = doc
+
+    merged = []
+    for doc_id, rrf_score in sorted(scores.items(), key=lambda x: x[1], reverse=True):
+        entry = dict(doc_map[doc_id])
+        entry["rrf_score"] = rrf_score
+        merged.append(entry)
+
+    return merged
+
+
 def retrieve(
     query_text: str,
     k: int | None = None,
@@ -82,19 +121,26 @@ def retrieve(
     user_id: str | int | None = None,
     where: dict | None = None,
     should_cancel: Optional[Callable[[], bool]] = None,
+    # Legacy kwargs accepted by search_agent callers — unused in hybrid pipeline
+    expand: bool = False,  # noqa: ARG001
+    src_lang: Optional[str] = None,  # noqa: ARG001
+    history: Optional[List[Dict[str, str]]] = None,  # noqa: ARG001
 ) -> List[Dict[str, Any]]:
     """
-    Single-query retrieval with cross-encoder rerank (fallback to heuristic).
+    Hybrid retrieval: Dense (ChromaDB HNSW) + Sparse (BM25), merged via RRF,
+    then reranked with a Cross-Encoder.
 
-    Steps:
-    1. Embed the query as-is (Qwen3-Embedding handles multilingual natively)
-    2. Fetch top k*3 candidates from ChromaDB
-     3. Rerank by Cross-Encoder if available
-         (fallback to distance * keyword overlap)
-    4. Return top k
+    Steps
+    -----
+    1. Embed query → Dense retrieval (top fetch_k candidates)
+    2. BM25 keyword retrieval (top fetch_k candidates)
+    3. RRF merge of both ranked lists
+    4. Cross-Encoder rerank on merged candidates (fallback: distance×keyword)
+    5. Reverse repacking: return top-k in reverse order so the most-relevant
+       passage appears last (closest to the LLM's attention window)
     """
     base_k = k or settings.top_k
-    fetch_k = base_k * 3
+    fetch_k = base_k * 3  # Fetch extra candidates before reranking
 
     if not query_text.strip():
         return []
@@ -102,30 +148,65 @@ def retrieve(
     if should_cancel and should_cancel():
         raise GenerationCancelled("Retrieval canceled")
 
-    # 1. Embed
+    # ── 1. Dense retrieval ────────────────────────────────────────────────────
     qv = embed_query(query_text, should_cancel=should_cancel)
 
     if should_cancel and should_cancel():
         raise GenerationCancelled("Retrieval canceled after embed")
 
-    # 2. Fetch candidates
-    raw = query_by_vector(qv, fetch_k, workspace_id=workspace_id, user_id=user_id, where=where)
+    dense_raw = query_by_vector(
+        qv, fetch_k, workspace_id=workspace_id, user_id=user_id, where=where
+    )
 
-    if not raw:
+    # ── 2. BM25 sparse retrieval ──────────────────────────────────────────────
+    try:
+        sparse_raw = bm25_search(
+            query=query_text,
+            workspace_id=workspace_id,
+            user_id=user_id,
+            k=fetch_k,
+        )
+    except Exception as e:
+        log.warning("retrieve: BM25 search failed, skipping sparse leg: %s", e)
+        sparse_raw = []
+
+    if should_cancel and should_cancel():
+        raise GenerationCancelled("Retrieval canceled after BM25")
+
+    # ── 3. RRF merge ──────────────────────────────────────────────────────────
+    if sparse_raw:
+        merged = _rrf_merge(dense_raw, sparse_raw)
+        log.debug(
+            "retrieve: dense=%d sparse=%d merged=%d",
+            len(dense_raw), len(sparse_raw), len(merged),
+        )
+    else:
+        # BM25 unavailable or empty — fall back to dense only
+        merged = dense_raw
+        log.debug("retrieve: dense only, %d candidates", len(merged))
+
+    if not merged:
         return []
 
-    # 3. Rerank by cross-encoder; fallback to previous heuristic scoring.
-    reranked = _rerank_with_cross_encoder(query_text, raw)
-    if reranked is raw and raw and "_ce_score" not in raw[0]:
-        for doc in raw:
+    # ── 4. Cross-Encoder rerank ───────────────────────────────────────────────
+    reranked = _rerank_with_cross_encoder(query_text, merged)
+    if reranked is merged and merged and "_ce_score" not in merged[0]:
+        # CE unavailable — heuristic: distance × keyword overlap
+        for doc in merged:
             kw = _keyword_score(query_text, str(doc.get("content", "")))
             dist = doc.get("distance", 1.0)
-            # Lower distance = better. Convert to similarity score then boost with keyword.
             similarity = 1.0 - min(dist, 1.0)
-            doc["_final_score"] = similarity * (1.0 + kw)
-        raw.sort(key=lambda d: d["_final_score"], reverse=True)
+            rrf = doc.get("rrf_score", 0.0)
+            doc["_final_score"] = (similarity + rrf) * (1.0 + kw)
+        merged.sort(key=lambda d: d["_final_score"], reverse=True)
+        top = merged[:base_k]
     else:
-        raw = reranked
+        top = reranked[:base_k]
 
-    log.debug("retrieve: %d candidates → returning top %d", len(raw), base_k)
-    return raw[:base_k]
+    # ── 5. Reverse repacking ──────────────────────────────────────────────────
+    # Most-relevant passage placed last so it sits closest to the query in the
+    # prompt context window (per RAG best practices: Lost in the Middle effect).
+    top_reversed = list(reversed(top))
+
+    log.debug("retrieve: returning %d passages (reverse-packed)", len(top_reversed))
+    return top_reversed

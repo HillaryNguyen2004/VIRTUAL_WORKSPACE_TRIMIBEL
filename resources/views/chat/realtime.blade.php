@@ -774,24 +774,27 @@ class RealtimeChatApp {
         const isOwn = message.user.id === this.currentUserId;
         
         let contentHtml = message.content;
-        if (message.type === 'image' && message.file_path) {
+        const fileUrl = message.file_url || (message.file_path ? `/storage/${message.file_path}` : '');
+        if (message.type === 'image' && fileUrl) {
+            const caption = (message.content && !message.content.startsWith('Image: ')) ? message.content : '';
             contentHtml = `
                 <div class="rounded-lg overflow-hidden border border-white/20 mb-1 bg-black/5">
-                    <img src="/storage/${message.file_path}" class="max-h-64 w-auto object-cover cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open(this.src)">
+                    <img src="${fileUrl}" class="max-h-64 w-auto object-cover cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open('${fileUrl}')" onerror="this.parentElement.innerHTML='<div class=\\'p-2 text-xs opacity-70\\'>${message.file_name}</div>'">
                 </div>
-                ${message.content ? `<div class="mt-1 text-xs md:text-sm">${message.content}</div>` : ''}
+                ${caption ? `<div class="mt-1 text-xs md:text-sm">${caption}</div>` : ''}
             `;
         } else if (message.type === 'file') {
+            const downloadUrl = `/chat/messages/${message.id}/download`;
             contentHtml = `
                 <div class="flex flex-col p-1">
-                    <div class="flex items-center gap-3 p-3 bg-black/5 rounded-xl border border-black/5 hover:bg-black/10 transition-colors cursor-pointer" onclick="window.location.href='/storage/${message.file_path}'">
+                    <a href="${downloadUrl}" download="${message.file_name}" class="flex items-center gap-3 p-3 bg-black/5 rounded-xl border border-black/5 hover:bg-black/10 transition-colors cursor-pointer no-underline text-inherit">
                         <div class="h-8 w-8 bg-white rounded-lg flex items-center justify-center text-primary shadow-sm"><i class="fas fa-file-alt"></i></div>
                         <div class="flex-1 min-w-0">
                             <div class="text-xs font-bold truncate max-w-[150px]">${message.file_name}</div>
                             <div class="text-[10px] opacity-70">${this.formatFileSize(message.file_size)}</div>
                         </div>
                         <div class="opacity-70"><i class="fas fa-download"></i></div>
-                    </div>
+                    </a>
                     ${message.content ? `<div class="mt-2 text-xs md:text-sm">${message.content}</div>` : ''}
                 </div>
             `;
@@ -898,7 +901,7 @@ class RealtimeChatApp {
                 // NEW: Slide the chat pane in on mobile
                 this.openMobileChat();
                 // subscribe to realtime updates for this conversation
-                // if (this.subscribeToConversation) this.subscribeToConversation(id);
+                if (this.subscribeToConversation) this.subscribeToConversation(id);
             }
         } catch (e) { console.error(e); }
     }
@@ -1522,9 +1525,13 @@ class RealtimeChatApp {
              const res = await axios.post(ep, formData, { headers: { 'Content-Type': 'multipart/form-data' }});
              if(res.data.success) {
                  clearFileSelection();
-                 this.switchToConversation(this.currentConversation.id);
+                 const msg = res.data.data.message;
+                 const list = document.getElementById('messages-list');
+                 list.insertAdjacentHTML('beforeend', this.renderMessage(msg));
+                 this.scrollToBottom();
+                 document.getElementById('message-input').value = '';
              }
-         } catch(e) { console.error(e); } 
+         } catch(e) { console.error(e); }
          finally {
              sendBtn.innerHTML = originalIcon;
              sendBtn.disabled = false;

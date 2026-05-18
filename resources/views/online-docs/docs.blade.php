@@ -3,12 +3,17 @@
 
 @section('content')
     <div class="flex flex-col gap-6 w-full mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
+
+        {{-- Header --}}
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h2 class="font-bold text-3xl text-main tracking-tight">{{ __('online_docs.title') }}</h2>
                 <p class="text-muted-500 text-sm mt-1">{{ __('online_docs.subtitle') }}</p>
             </div>
-            <a href="{{ route('dashboard') }}" class="px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-600 hover:bg-muted-50">
+            <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-600 hover:bg-muted-50 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
                 {{ __('online_docs.back_home') }}
             </a>
         </div>
@@ -25,45 +30,73 @@
             $highlightText = function (string $text, string $query) {
                 $safe = e($text);
                 $tokens = preg_split('/\s+/', trim($query)) ?: [];
+                $tokens = array_values(array_unique(array_filter($tokens, static function (string $token): bool {
+                    return mb_strlen(trim($token)) >= 2;
+                })));
 
-                foreach ($tokens as $token) {
-                    $token = trim((string) $token);
-                    if (mb_strlen($token) < 2) {
+                if ($tokens === []) {
+                    return new \Illuminate\Support\HtmlString($safe);
+                }
+
+                $escapedTokens = array_map(static fn (string $token): string => preg_quote(e($token), '/'), $tokens);
+                $pattern = '/(' . implode('|', $escapedTokens) . ')/i';
+
+                $parts = preg_split('/(<[^>]+>)/', $safe, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [];
+                foreach ($parts as $index => $part) {
+                    if ($part === '' || $part[0] === '<') {
                         continue;
                     }
 
-                    $safeToken = e($token);
-                    $safe = preg_replace('/' . preg_quote($safeToken, '/') . '/i', '<mark class="rounded bg-warning/30 px-0.5 text-main">$0</mark>', $safe) ?? $safe;
+                    $parts[$index] = preg_replace(
+                        $pattern,
+                        '<mark class="rounded bg-warning/30 px-0.5 text-main">$1</mark>',
+                        $part
+                    ) ?? $part;
                 }
 
-                return new \Illuminate\Support\HtmlString($safe);
+                return new \Illuminate\Support\HtmlString(implode('', $parts));
             };
         @endphp
 
-        <div class="bg-white rounded-xl p-5 border border-muted-200">
-            <h3 class="text-lg font-semibold text-main">{{ __('online_docs.global_search_title') }}</h3>
+        <div class="bg-white rounded-2xl border border-muted-200 shadow-lg shadow-main/5 p-5">
+            <div class="flex items-center gap-2 mb-1">
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                </span>
+                <h3 class="text-sm font-semibold text-main">{{ __('online_docs.global_search_title') }}</h3>
+            </div>
             <p class="text-xs text-muted-400 mb-4">{{ __('online_docs.global_search_hint') }}</p>
 
             <form method="GET" action="{{ route('online-docs.home') }}" class="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-center">
-                <input
-                    type="text"
-                    name="doc_query"
-                    value="{{ $globalSearchQuery ?? '' }}"
-                    class="rounded-xl border border-muted-200 px-4 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
-                    placeholder="{{ __('online_docs.global_search_placeholder') }}"
-                />
-                <button type="submit" class="px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-700 hover:bg-muted-50">
+                <div class="relative">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                    <input
+                        type="text"
+                        name="doc_query"
+                        value="{{ $globalSearchQuery ?? '' }}"
+                        class="w-full rounded-xl border border-muted-200 pl-9 pr-4 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
+                        placeholder="{{ __('online_docs.global_search_placeholder') }}"
+                    />
+                </div>
+                <button type="submit" class="px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-hover transition-colors shadow-sm shadow-primary/20">
                     {{ __('online_docs.search_action') }}
                 </button>
                 @if(!empty($globalSearchQuery))
-                    <a href="{{ route('online-docs.home') }}" class="px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-600 hover:bg-muted-50 text-center">
+                    <a href="{{ route('online-docs.home') }}" class="px-4 py-2 rounded-xl border border-muted-200 text-sm font-medium text-muted-600 hover:bg-muted-50 transition-colors text-center">
                         {{ __('online_docs.clear_search') }}
                     </a>
                 @endif
             </form>
 
             @if(!empty($globalSearchQuery))
-                <div class="mt-3 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-primary">
+                <div class="mt-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 text-xs text-primary flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+                    </svg>
                     {{ __('online_docs.global_search_results', ['query' => $globalSearchQuery, 'count' => $globalSearchResults->count() + $personalSearchResults->count()]) }}
                 </div>
 
@@ -156,10 +189,14 @@
         </div>
 
         {{-- AI Search Agent Panel --}}
-        <div class="bg-white rounded-xl p-5 border border-muted-200" id="ai-search-agent">
+        <div class="bg-white rounded-2xl border border-muted-200 shadow-lg shadow-main/5 p-5" id="ai-search-agent">
             <div class="flex items-center gap-2 mb-1">
-                <svg viewBox="0 0 24 24" class="h-5 w-5 text-primary" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><path d="M11 8v6M8 11h6"/></svg>
-                <h3 class="text-lg font-semibold text-main">{{ __('online_docs.search_agent_title') }}</h3>
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                    </svg>
+                </span>
+                <h3 class="text-sm font-semibold text-main">{{ __('online_docs.search_agent_title') }}</h3>
             </div>
             <p class="text-xs text-muted-400 mb-4">{{ __('online_docs.search_agent_hint') }}</p>
 
@@ -173,42 +210,41 @@
                 <button
                     type="button"
                     id="agent-ask-btn"
-                    class="px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-hover disabled:opacity-50"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-hover transition-colors shadow-sm shadow-primary/20 disabled:opacity-50"
                 >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
                     {{ __('online_docs.search_agent_ask') }}
                 </button>
             </div>
 
             <div id="agent-results" class="mt-4 hidden">
-                <div id="agent-loading" class="hidden py-3">
-                    <span class="text-xs text-muted-500 italic">{{ __('online_docs.search_agent_loading') }}</span>
-                    <span class="inline-flex gap-1 ml-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:0ms]"></span>
-                        <span class="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:150ms]"></span>
-                        <span class="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:300ms]"></span>
-                    </span>
+                <div id="agent-loading" class="hidden items-center gap-2 py-3">
+                    <div class="w-4 h-4 rounded-full border-2 border-primary/20 border-t-primary animate-spin shrink-0"></div>
+                    <span class="text-xs text-muted-500">{{ __('online_docs.search_agent_loading') }}</span>
                 </div>
-                <div id="agent-error" class="hidden rounded-lg bg-danger/10 text-danger text-xs px-3 py-2"></div>
+                <div id="agent-error" class="hidden rounded-xl border border-danger/20 bg-danger/5 text-danger text-xs px-4 py-3"></div>
 
                 <div id="agent-answer-block" class="hidden">
                     <div class="mb-3">
-                        <div class="flex items-center justify-between mb-1">
-                            <p class="text-xs font-semibold text-muted-500 uppercase tracking-wide">{{ __('online_docs.search_agent_answer') }}</p>
-                            <button id="agent-copy-btn" type="button" class="text-xs text-primary hover:text-primary-hover font-medium flex items-center gap-1">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-[11px] font-semibold text-muted-400 uppercase tracking-wider">{{ __('online_docs.search_agent_answer') }}</p>
+                            <button id="agent-copy-btn" type="button" class="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary-hover font-medium">
                                 <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                                 <span id="agent-copy-label">{{ __('online_docs.search_agent_copy') }}</span>
                             </button>
                         </div>
                         <div id="agent-answer-text" class="text-sm text-main leading-relaxed bg-muted-50 rounded-xl px-4 py-3 border border-muted-100 prose prose-sm max-w-none"></div>
-                        <div id="agent-confidence" class="mt-1 text-[11px] text-muted-400"></div>
+                        <div id="agent-confidence" class="mt-1.5 text-[11px] text-muted-400"></div>
                     </div>
 
                     <div id="agent-citations-block" class="hidden">
-                        <p class="text-xs font-semibold text-muted-500 uppercase tracking-wide mb-2">{{ __('online_docs.search_agent_sources') }}</p>
+                        <p class="text-[11px] font-semibold text-muted-400 uppercase tracking-wider mb-2">{{ __('online_docs.search_agent_sources') }}</p>
                         <div id="agent-citations-list" class="flex flex-col gap-2"></div>
                     </div>
 
-                    <div class="mt-3">
+                    <div class="mt-4 pt-4 border-t border-muted-100">
                         <div class="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
                             <input
                                 type="text"
@@ -219,7 +255,7 @@
                             <button
                                 type="button"
                                 id="agent-followup-btn"
-                                class="px-4 py-2 rounded-xl bg-muted-100 text-main text-sm font-medium hover:bg-muted-200 disabled:opacity-50"
+                                class="px-4 py-2 rounded-xl border border-muted-200 bg-muted-50 text-main text-sm font-medium hover:bg-muted-100 transition-colors disabled:opacity-50"
                             >
                                 {{ __('online_docs.search_agent_ask') }}
                             </button>
@@ -229,58 +265,85 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-6">
-            <div class="bg-white rounded-xl p-5 border border-muted-200">
-                <h3 class="text-lg font-semibold text-main">{{ __('online_docs.recent_docs') }}</h3>
-                <p class="text-xs text-muted-400 mb-4">{{ __('online_docs.recent_docs_hint') }}</p>
-                <div class="flex flex-col gap-3">
-                    @forelse($recentDocuments as $document)
-                        <div class="flex items-center justify-between gap-3 rounded-xl border border-muted-100 px-4 py-3" draggable="true" data-doc-drag data-doc-id="{{ $document->id }}" data-doc-title="{{ $document->title }}">
+        {{-- Recent docs --}}
+        <div class="bg-white rounded-2xl border border-muted-200 shadow-lg shadow-main/5 overflow-hidden">
+            <div class="px-5 py-4 border-b border-muted-100 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </span>
+                    <div>
+                        <h3 class="text-sm font-semibold text-main">{{ __('online_docs.recent_docs') }}</h3>
+                        <p class="text-[11px] text-muted-400">{{ __('online_docs.recent_docs_hint') }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="divide-y divide-muted-100">
+                @forelse($recentDocuments as $document)
+                    <div class="flex items-center justify-between gap-3 px-5 py-3 hover:bg-muted-50/60 transition-colors" draggable="true" data-doc-drag data-doc-id="{{ $document->id }}" data-doc-title="{{ $document->title }}">
+                        <div class="min-w-0 flex items-center gap-3">
+                            <span class="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-muted-100 text-muted-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </span>
                             <div class="min-w-0">
-                                <p class="text-sm font-semibold text-main truncate">{{ $document->title }}</p>
-                                <p class="text-xs text-muted-400 flex items-center gap-2 flex-wrap">
-                                    {{ $typeLabels[$document->type] ?? $document->type }}
-                                </p>
-                            </div>
-                            <div class="flex items-center gap-3 shrink-0">
-                                <span class="text-xs text-muted-400">{{ $document->updated_at?->diffForHumans() }}</span>
-                                <a href="{{ route('online-docs.docs.show', $document) }}" class="text-xs font-medium text-primary hover:text-primary-hover">
-                                    {{ __('online_docs.open') }}
-                                </a>
+                                <p class="text-sm font-medium text-main truncate">{{ $document->title }}</p>
+                                <p class="text-xs text-muted-400">{{ $typeLabels[$document->type] ?? $document->type }}</p>
                             </div>
                         </div>
-                    @empty
-                        <p class="text-sm text-muted-400">{{ __('online_docs.empty_recent') }}</p>
-                    @endforelse
-                </div>
-                @if($recentDocuments->hasPages())
-                    <div class="mt-4 border-t border-muted-100 pt-3 flex items-center justify-between gap-3">
-                        <span class="text-xs text-muted-400">
-                            {{ $recentDocuments->firstItem() }}-{{ $recentDocuments->lastItem() }} / {{ $recentDocuments->total() }}
-                        </span>
-                        <div class="flex items-center gap-2">
-                            @if($recentDocuments->onFirstPage())
-                                <span class="px-3 py-1.5 rounded-lg border border-muted-200 text-xs text-muted-300">Prev</span>
-                            @else
-                                <a href="{{ $recentDocuments->appends(request()->except('recent_page'))->previousPageUrl() }}" class="px-3 py-1.5 rounded-lg border border-muted-200 text-xs text-muted-600 hover:bg-muted-50">Prev</a>
-                            @endif
-
-                            <span class="px-2 py-1 text-xs text-muted-500">{{ $recentDocuments->currentPage() }}/{{ $recentDocuments->lastPage() }}</span>
-
-                            @if($recentDocuments->hasMorePages())
-                                <a href="{{ $recentDocuments->appends(request()->except('recent_page'))->nextPageUrl() }}" class="px-3 py-1.5 rounded-lg border border-muted-200 text-xs text-muted-600 hover:bg-muted-50">Next</a>
-                            @else
-                                <span class="px-3 py-1.5 rounded-lg border border-muted-200 text-xs text-muted-300">Next</span>
-                            @endif
+                        <div class="flex items-center gap-3 shrink-0">
+                            <span class="text-xs text-muted-400 hidden sm:block">{{ $document->updated_at?->diffForHumans() }}</span>
+                            <a href="{{ route('online-docs.docs.show', $document) }}" class="px-3 py-1.5 rounded-lg bg-primary/5 text-primary text-xs font-medium hover:bg-primary/10 transition-colors">
+                                {{ __('online_docs.open') }}
+                            </a>
                         </div>
                     </div>
-                @endif
+                @empty
+                    <div class="flex flex-col items-center justify-center gap-2 px-5 py-10 text-center">
+                        <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-muted-100 text-muted-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </span>
+                        <p class="text-sm text-muted-400">{{ __('online_docs.empty_recent') }}</p>
+                    </div>
+                @endforelse
             </div>
+            @if($recentDocuments->hasPages())
+                <div class="px-5 py-3 border-t border-muted-100 bg-muted-50/50 flex items-center justify-between gap-3">
+                    <span class="text-xs text-muted-400">
+                        {{ $recentDocuments->firstItem() }}–{{ $recentDocuments->lastItem() }} / {{ $recentDocuments->total() }}
+                    </span>
+                    <div class="flex items-center gap-1.5">
+                        @if($recentDocuments->onFirstPage())
+                            <span class="px-3 py-1.5 rounded-lg border border-muted-200 text-xs text-muted-300">Prev</span>
+                        @else
+                            <a href="{{ $recentDocuments->appends(request()->except('recent_page'))->previousPageUrl() }}" class="px-3 py-1.5 rounded-lg border border-muted-200 text-xs text-muted-600 hover:bg-muted-50 transition-colors">Prev</a>
+                        @endif
+                        <span class="px-2 py-1 text-xs text-muted-500">{{ $recentDocuments->currentPage() }}/{{ $recentDocuments->lastPage() }}</span>
+                        @if($recentDocuments->hasMorePages())
+                            <a href="{{ $recentDocuments->appends(request()->except('recent_page'))->nextPageUrl() }}" class="px-3 py-1.5 rounded-lg border border-muted-200 text-xs text-muted-600 hover:bg-muted-50 transition-colors">Next</a>
+                        @else
+                            <span class="px-3 py-1.5 rounded-lg border border-muted-200 text-xs text-muted-300">Next</span>
+                        @endif
+                    </div>
+                </div>
+            @endif
         </div>
 
-        <div class="bg-white rounded-xl p-5 border border-muted-200">
-            <div class="flex flex-col gap-2 mb-4">
-                <h3 class="text-lg font-semibold text-main">{{ __('online_docs.personal_storage') }}</h3>
+        <div class="bg-white rounded-2xl border border-muted-200 shadow-lg shadow-main/5 overflow-hidden">
+            <div class="px-5 py-4 border-b border-muted-100 flex flex-col gap-2">
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-muted-100 text-muted-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                        </svg>
+                    </span>
+                    <h3 class="text-sm font-semibold text-main">{{ __('online_docs.personal_storage') }}</h3>
+                </div>
                 <div class="rounded-xl border border-muted-200 bg-muted-50 px-3 py-2">
                     <div class="flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs text-muted-500">
                         <a href="{{ route('online-docs.home') }}" class="rounded-md bg-white px-2 py-0.5 font-medium text-main border border-muted-200 hover:text-primary">{{ __('online_docs.storage_root') }}</a>
@@ -295,45 +358,40 @@
             </div>
 
             @if(session('storage_error'))
-                <div class="mb-4 rounded-lg bg-danger/10 text-danger text-xs px-3 py-2">
+                <div class="mx-5 mt-4 rounded-xl border border-danger/20 bg-danger/5 text-danger text-xs px-4 py-3">
                     {{ session('storage_error') }}
                 </div>
             @endif
             @if(session('storage_success'))
-                <div class="mb-4 rounded-lg bg-success/10 text-success text-xs px-3 py-2">
+                <div class="mx-5 mt-4 rounded-xl border border-success/20 bg-success/5 text-success text-xs px-4 py-3">
                     {{ session('storage_success') }}
                 </div>
             @endif
             @if(session('storage_warning'))
-                <div class="mb-4 rounded-lg bg-warning/10 text-warning text-xs px-3 py-2">
+                <div class="mx-5 mt-4 rounded-xl border border-warning/20 bg-warning/5 text-warning text-xs px-4 py-3">
                     {{ session('storage_warning') }}
                 </div>
             @endif
 
-            {{-- Ingest banner: shown when there are pending/failed files --}}
+            {{-- Ingest banner --}}
             @if($pendingIngestCount > 0)
-                <div class="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-4">
+                <div class="mx-5 mt-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
                     <div class="flex items-start justify-between gap-4">
                         <div>
-                            <p class="text-sm font-semibold text-blue-900">{{ __('online_docs.ingest_panel_title') }}</p>
-                            <p class="text-xs text-blue-700 mt-1">
+                            <p class="text-sm font-semibold text-primary">{{ __('online_docs.ingest_panel_title') }}</p>
+                            <p class="text-xs text-primary/70 mt-1">
                                 {{ __('online_docs.ingest_panel_desc', ['count' => $pendingIngestCount]) }}
                                 @if($failedIngestCount > 0)
-                                    <span class="ml-1 text-red-600">
-                                        ({{ __('online_docs.ingest_failed_count_label', ['count' => $failedIngestCount]) }})
-                                    </span>
+                                    <span class="ml-1 text-danger">({{ __('online_docs.ingest_failed_count_label', ['count' => $failedIngestCount]) }})</span>
                                 @endif
                             </p>
                         </div>
-                        <form id="ingest-all-form"
-                              action="{{ route('online-docs.files.ingest-all') }}"
-                              method="POST"
-                              class="flex-shrink-0">
+                        <form id="ingest-all-form" action="{{ route('online-docs.files.ingest-all') }}" method="POST" class="shrink-0">
                             @csrf
                             <button id="ingest-all-btn" type="submit"
-                                class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white text-xs font-medium hover:bg-blue-700 transition-colors">
-                                <svg id="ingest-all-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                class="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-white text-xs font-medium hover:bg-primary-hover transition-colors shadow-sm shadow-primary/20">
+                                <svg id="ingest-all-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                                 </svg>
                                 {{ __('online_docs.start_ingest') }}
                             </button>
@@ -344,7 +402,7 @@
 
             <div
                 id="storage-root"
-                class="flex flex-col gap-4"
+                class="flex flex-col gap-4 p-5"
                 data-current-folder="{{ $currentFolder?->id }}"
                 data-upload-url="{{ route('online-docs.files.store') }}"
                 data-move-url="{{ route('online-docs.storage.move') }}"
@@ -373,7 +431,7 @@
                 data-copy-link-done="{{ __('online_docs.copy_share_link_done') }}"
                 data-copy-link-failed="{{ __('online_docs.copy_share_link_failed') }}"
             >
-                <div class="rounded-2xl border border-muted-200 bg-muted-50/70 p-3 space-y-3">
+                <div class="rounded-xl border border-muted-200 bg-muted-50/60 p-3 space-y-3">
                     <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                         <div class="flex flex-wrap items-center gap-2">
                             <div class="relative" data-storage-new-menu>
@@ -1012,25 +1070,29 @@
         const followupInput = document.getElementById('agent-followup-input');
         const followupBtn = document.getElementById('agent-followup-btn');
 
-        // Minimal markdown renderer: bold, bullet lists, line breaks
         function renderMarkdown(text) {
             if (!text) return '';
+            if (window.marked && window.DOMPurify) {
+                return window.DOMPurify.sanitize(window.marked.parse(text, { breaks: true }));
+            }
+            // Lightweight fallback
             let html = text
                 .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/### (.+)/g, '<h3 class="text-xs font-semibold text-muted-500 uppercase tracking-wider mt-3 mb-1">$1</h3>')
                 .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
                 .replace(/\*(.+?)\*/g, '<em>$1</em>');
-            // Convert bullet lines (- item or • item) to <ul><li>
             const lines = html.split('\n');
             const out = [];
             let inList = false;
             for (const line of lines) {
                 const isBullet = /^[\-•]\s+/.test(line.trimStart());
                 if (isBullet) {
-                    if (!inList) { out.push('<ul class="list-disc pl-5 space-y-1">'); inList = true; }
+                    if (!inList) { out.push('<ul class="list-disc pl-5 space-y-1 mt-1">'); inList = true; }
                     out.push('<li>' + line.replace(/^[\-•]\s+/, '') + '</li>');
                 } else {
                     if (inList) { out.push('</ul>'); inList = false; }
-                    out.push(line === '' ? '<br>' : '<p>' + line + '</p>');
+                    if (line.startsWith('<h3')) out.push(line);
+                    else out.push(line === '' ? '' : '<p class="mt-1">' + line + '</p>');
                 }
             }
             if (inList) out.push('</ul>');
@@ -1078,14 +1140,24 @@
                 answerText.innerHTML = renderMarkdown(lastAnswer || emptyTxt);
                 answerBlock.classList.remove('hidden');
 
+                // Source badge (keyword search fallback vs AI)
+                const existingBadge = document.getElementById('agent-source-badge');
+                if (existingBadge) existingBadge.remove();
+                if (data.source === 'bm25') {
+                    const badge = document.createElement('div');
+                    badge.id = 'agent-source-badge';
+                    badge.className = 'mt-2 inline-flex items-center gap-1.5 text-[11px] text-muted-500 bg-muted-100 rounded-lg px-2.5 py-1';
+                    badge.innerHTML = `<svg viewBox="0 0 24 24" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>Kết quả tìm kiếm theo từ khóa`;
+                    confidenceEl.parentNode.insertBefore(badge, confidenceEl);
+                }
+
                 if (data.confidence && data.confidence.level) {
                     const lvlMap = { high: 'text-success', medium: 'text-warning', low: 'text-muted-400' };
                     const cls = lvlMap[data.confidence.level] || 'text-muted-400';
                     const score = data.confidence.score ? ' (' + (data.confidence.score * 100).toFixed(0) + '%)' : '';
                     confidenceEl.innerHTML = `<span class="${cls}">${confTxt}: ${data.confidence.level}${score}</span>`;
-                    if (data.confidence.reason) {
-                        confidenceEl.innerHTML += ` — <span class="text-muted-400">${data.confidence.reason}</span>`;
-                    }
+                } else {
+                    confidenceEl.innerHTML = '';
                 }
 
                 const cits = (data.citations || []).filter(c => c.display_name || c.source);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
@@ -150,6 +151,28 @@ class ChatController extends Controller
                 'message' => 'Failed to upload file'
             ], 500);
         }
+    }
+
+    public function downloadFile(Message $message)
+    {
+        $user = auth()->user();
+
+        if (!$message->file_path) {
+            abort(404);
+        }
+
+        // Only participants of the conversation can download
+        if (!$message->conversation->participants->contains($user->id)) {
+            abort(403);
+        }
+
+        $disk = Storage::disk();
+
+        if (!$disk->exists($message->file_path)) {
+            abort(404);
+        }
+
+        return $disk->download($message->file_path, $message->file_name);
     }
 
     public function createConversation(Request $request)
