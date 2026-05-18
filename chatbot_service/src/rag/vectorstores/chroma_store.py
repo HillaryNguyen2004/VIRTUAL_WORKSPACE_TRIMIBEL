@@ -93,6 +93,12 @@ def add_chunks(
     coll = get_collection(workspace_id=workspace_id, user_id=user_id)
     safe_metas = [_sanitize_metadata(meta) for meta in metas]
     coll.add(ids=ids, documents=docs, metadatas=safe_metas, embeddings=embeddings)
+    # Invalidate BM25 index so next search rebuilds from the updated collection
+    try:
+        from ..bm25_store import invalidate_bm25_index
+        invalidate_bm25_index(workspace_id=workspace_id, user_id=user_id)
+    except Exception:
+        pass
 
 def delete_by_storage_file(
     storage_file: str,
@@ -108,8 +114,13 @@ def delete_by_storage_file(
     results = coll.get(where=where, include=["metadatas"])
     count = len(results.get("ids", []))
     if count > 0:
-        # Use where-based delete to ensure all matching chunks are removed
         coll.delete(where=where)
+        # Invalidate BM25 index so next search rebuilds without deleted docs
+        try:
+            from ..bm25_store import invalidate_bm25_index
+            invalidate_bm25_index(workspace_id=workspace_id, user_id=user_id)
+        except Exception:
+            pass
     return count
 
 def delete_collection(workspace_id: str | None = None, user_id: str | int | None = None) -> None:

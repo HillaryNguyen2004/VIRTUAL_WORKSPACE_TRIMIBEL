@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Message extends Model
 {
@@ -14,6 +15,8 @@ class Message extends Model
     protected $casts = [
         'metadata' => 'array',
     ];
+
+    protected $appends = ['file_url'];
 
     public function conversation()
     {
@@ -45,15 +48,24 @@ class Message extends Model
         return !empty($this->file_path);
     }
 
-    /**
-     * Get file URL for download
-     */
-    public function getFileUrl()
+    public function getFileUrlAttribute(): ?string
     {
         if (!$this->hasFile()) {
             return null;
         }
-        
+
+        $disk = Storage::disk();
+
+        // For S3 private objects, generate a presigned URL (60 min expiry)
+        if (config('filesystems.default') === 's3') {
+            try {
+                return $disk->temporaryUrl($this->file_path, now()->addMinutes(60));
+            } catch (\Exception) {
+                // Fallback to plain URL if bucket is public or temporaryUrl unsupported
+                return $disk->url($this->file_path);
+            }
+        }
+
         return storageUrl($this->file_path);
     }
 

@@ -35,6 +35,9 @@ pypdf==6.10.2
 # Language detection
 lingua-language-detector==2.1.1
 
+# Hybrid search
+rank-bm25>=0.2.2
+
 # Observability (only if actively using Langfuse)
 langfuse==3.14.5
 opentelemetry-api==1.33.1

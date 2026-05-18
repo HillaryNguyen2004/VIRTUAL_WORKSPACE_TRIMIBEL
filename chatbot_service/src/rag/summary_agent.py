@@ -35,7 +35,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import Callable, Dict, Generator, Iterator, List, Optional, Tuple
+from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
 
@@ -52,40 +52,64 @@ _CHUNK_SIZE         = 800
 _CHUNK_OVERLAP      = 100
 _MAX_CLUSTERS       = 20
 _MIN_CLUSTERS       = 3
-_MAX_CHUNK_CHARS    = 600   # chars per excerpt sent to LLM (raised from 400)
-_MAX_FILE_SUMMARY_CHARS = 1200  # cap each file-level summary fed into reduce
+_MAX_CHUNK_CHARS    = 1800  # chars per excerpt sent to LLM
+_MAX_FILE_SUMMARY_CHARS = 4000  # cap each file-level summary fed into reduce
+_MIN_CHUNK_CHARS    = 40    # skip chunks that are too short to carry meaning
 
-_SYSTEM_PROMPT = (
-    "You are an expert summarisation assistant. "
-    "Given a set of representative excerpts from a document or conversation, "
-    "produce a clear, concise, well-structured summary. "
-    "Preserve key facts, figures, names, and dates. "
-    "Never hallucinate information that is not in the excerpts. "
-    "If information is missing or conflicting, say so explicitly."
-)
+_SYSTEM_PROMPT = """\
+You are a senior analyst writing a professional document summary.
 
-_REDUCE_SYSTEM_PROMPT = (
-    "You are an expert summarisation assistant. "
-    "You are given individual summaries of multiple documents or sections. "
-    "Synthesise them into one coherent, well-structured final summary. "
-    "Identify common themes, highlight the most important points, and note "
-    "any contradictions or gaps. Do not hallucinate."
-)
+Rules you must follow:
+1. Read the excerpts carefully, understand the subject matter, then write a genuine summary.
+2. Choose section headings that match the ACTUAL content of this specific document (e.g. for a marketing lecture: **Overview**, **Product Classifications**, **Service Marketing**; for a financial report: **Revenue**, **Expenses**, **Key Metrics**). Do NOT use generic headings like "Key Figures", "Action Items", or "Important Dates" unless the document actually contains those things.
+3. Under each section, write concise bullet points in your own words. Each bullet must begin with the most important concept or fact.
+4. Extract and preserve ALL specific facts: numbers, percentages, names, dates, amounts, and identifiers. Never paraphrase a number away.
+5. Do NOT copy or repeat the excerpt labels ([Excerpt N]) in your output. Do NOT list citations as bullet points. Use [Excerpt N] only as a brief inline reference after a specific fact, e.g. "Revenue grew 12% [Excerpt 2]."
+6. Do NOT hallucinate any fact, name, number, or date that is not present in the excerpts.
+7. Do NOT write generic filler phrases like "the document discusses" or "as mentioned above".
+8. Write in the language specified by the instruction below.\
+"""
+
+_REDUCE_SYSTEM_PROMPT = """\
+You are a senior analyst synthesising multiple document summaries into one final report.
+
+Rules you must follow:
+1. Read all document summaries, understand their shared subject, then produce a unified summary with section headings that match the ACTUAL content (e.g. for a product management course: **Overview**, **Product Classifications**, **Decisions & Strategies**; not generic headings).
+2. Under each section, write concise bullet points in your own words, starting with the most important concept.
+3. When citing a fact from a specific document, use [Document N] only as a brief inline reference after the fact.
+4. Explicitly call out any contradictions or gaps between documents.
+5. Preserve ALL specific numbers, names, dates, and identifiers — never round or paraphrase them away.
+6. Do NOT hallucinate. If something is uncertain, say so.
+7. Do NOT write generic filler phrases.
+8. Write in the language specified by the instruction below.\
+"""
 
 
 # ---------------------------------------------------------------------------
-# K-Means (pure numpy)
+# K-Means (pure numpy, K-Means++ initialisation)
 # ---------------------------------------------------------------------------
 
 def _kmeans(vectors: np.ndarray, k: int, max_iter: int = 100, seed: int = 42) -> np.ndarray:
+    """
+    Cluster `vectors` into `k` groups.
+    Returns label array of shape (n,) where label[i] is the cluster index for vectors[i].
+
+    Uses K-Means++ initialisation so the starting centroids are spread out,
+    which gives faster convergence and avoids degenerate clusters.
+    """
     rng = np.random.default_rng(seed)
     n   = len(vectors)
     k   = min(k, n)
 
-    # K-Means++ init
+    # K-Means++ init: first centroid random, each subsequent one chosen
+    # with probability proportional to squared distance from nearest existing centroid.
     centroids = [vectors[rng.integers(n)]]
     for _ in range(k - 1):
-        dists = np.array([min(float(np.dot(v - c, v - c)) for c in centroids) for v in vectors])
+        # squared distance from each point to its nearest centroid so far
+        dists = np.array([
+            min(float(np.dot(v - c, v - c)) for c in centroids)
+            for v in vectors
+        ])
         total = dists.sum()
         probs = dists / total if total > 0 else np.ones(n) / n
         centroids.append(vectors[rng.choice(n, p=probs)])
@@ -93,12 +117,14 @@ def _kmeans(vectors: np.ndarray, k: int, max_iter: int = 100, seed: int = 42) ->
 
     labels = np.zeros(n, dtype=np.int32)
     for _ in range(max_iter):
-        diffs      = vectors[:, None, :] - centroids[None, :, :]
-        dists2     = (diffs ** 2).sum(axis=2)
-        new_labels = dists2.argmin(axis=1)
+        # Assign each point to the nearest centroid
+        diffs      = vectors[:, None, :] - centroids[None, :, :]   # (n, k, d)
+        dists2     = (diffs ** 2).sum(axis=2)                       # (n, k)
+        new_labels = dists2.argmin(axis=1)                          # (n,)
         if np.array_equal(new_labels, labels):
             break
         labels = new_labels
+        # Recompute centroids as the mean of their member vectors
         for j in range(k):
             members = vectors[labels == j]
             if len(members):
@@ -108,13 +134,86 @@ def _kmeans(vectors: np.ndarray, k: int, max_iter: int = 100, seed: int = 42) ->
 
 
 def _auto_k(n_chunks: int, requested_k: int) -> int:
-    """Compute a sensible k that scales with content size."""
-    auto = max(_MIN_CLUSTERS, min(n_chunks // 5, _MAX_CLUSTERS))
+    """
+    Derive a sensible cluster count from corpus size.
+    For small docs (< 20 chunks) we use n_chunks // 2 so coverage is dense.
+    For larger docs: clamp(n_chunks // 5, _MIN_CLUSTERS, _MAX_CLUSTERS).
+    """
+    if n_chunks <= 20:
+        auto = max(_MIN_CLUSTERS, n_chunks // 2)
+    else:
+        auto = max(_MIN_CLUSTERS, min(n_chunks // 5, _MAX_CLUSTERS))
     return min(requested_k, auto, n_chunks)
 
 
 # ---------------------------------------------------------------------------
-# Representative selection
+# MMR (Maximal Marginal Relevance, pure numpy)
+# ---------------------------------------------------------------------------
+
+# How many candidates K-Means nominates per cluster before MMR filters them.
+_MMR_CANDIDATES_PER_CLUSTER = 3
+# Trade-off between relevance (1.0) and diversity (0.0).
+_MMR_LAMBDA = 0.6
+
+
+def _cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
+    """Cosine similarity between two already-normalised vectors."""
+    return float(np.dot(a, b))
+
+
+def _mmr(
+    candidate_indices: List[int],
+    vectors: np.ndarray,
+    query_vector: np.ndarray,
+    k: int,
+    lam: float = _MMR_LAMBDA,
+) -> List[int]:
+    """
+    Maximal Marginal Relevance selection.
+
+    From `candidate_indices`, pick `k` indices that maximise:
+        score(i) = λ · sim(i, query) − (1−λ) · max_j∈selected sim(i, j)
+
+    - λ close to 1.0  → favour relevance to the query centroid
+    - λ close to 0.0  → favour diversity (spread) among selected items
+
+    Vectors are assumed to already be L2-normalised, so dot-product == cosine sim.
+    Returns a list of chosen indices (original positions in `vectors`).
+    """
+    if not candidate_indices:
+        return []
+
+    k = min(k, len(candidate_indices))
+
+    # Relevance of each candidate to the global query (document centroid)
+    relevance = {i: _cosine_sim(vectors[i], query_vector) for i in candidate_indices}
+
+    selected:   List[int] = []
+    remaining:  List[int] = list(candidate_indices)
+
+    while len(selected) < k and remaining:
+        if not selected:
+            # First pick: highest relevance to query
+            best = max(remaining, key=lambda i: relevance[i])
+        else:
+            # Subsequent picks: MMR score
+            sel_vecs = vectors[selected]  # (s, d)
+            best, best_score = remaining[0], -np.inf
+            for i in remaining:
+                # max similarity to any already-selected excerpt
+                max_sim_to_selected = float(np.max(sel_vecs @ vectors[i]))
+                score = lam * relevance[i] - (1.0 - lam) * max_sim_to_selected
+                if score > best_score:
+                    best, best_score = i, score
+
+        selected.append(best)
+        remaining.remove(best)
+
+    return selected
+
+
+# ---------------------------------------------------------------------------
+# Representative selection  (K-Means → candidate pool → MMR)
 # ---------------------------------------------------------------------------
 
 def _pick_representatives(
@@ -124,21 +223,59 @@ def _pick_representatives(
     n_clusters: int,
 ) -> List[Tuple[int, str, dict]]:
     """
-    Returns list of (cluster_idx, text, meta) sorted by cluster index.
+    Two-stage selection pipeline:
+
+    Stage 1 — K-Means clustering
+        Divide all chunks into `k` semantic clusters.
+        From each cluster, nominate the top-C candidates closest to the
+        cluster centroid (not just 1). This gives a diverse candidate pool
+        that still covers every region of the document.
+
+    Stage 2 — MMR filtering
+        From the full candidate pool, MMR picks exactly `k` final excerpts
+        that are both relevant (close to the document centroid) and
+        mutually diverse (not too similar to each other).
+
+    Returns list of (cluster_idx, text, meta) sorted by cluster index
+    so the LLM receives excerpts in document order.
     """
-    k      = min(n_clusters, len(texts))
+    k = min(n_clusters, len(texts))
     labels = _kmeans(vectors, k)
 
-    selected: List[Tuple[int, str, dict]] = []
+    # Document centroid = mean of all vectors (used as the MMR "query")
+    doc_centroid = vectors.mean(axis=0)
+    norm = np.linalg.norm(doc_centroid)
+    if norm > 0:
+        doc_centroid = doc_centroid / norm
+
+    # Stage 1: collect top-C candidates per cluster
+    candidates: List[int] = []   # original indices into texts/vectors/metas
+    cluster_of: dict       = {}  # original_idx → cluster_idx (for output labelling)
+
     for ci in range(k):
         idx = np.where(labels == ci)[0]
         if len(idx) == 0:
             continue
-        centroid = vectors[idx].mean(axis=0)
-        dists    = ((vectors[idx] - centroid) ** 2).sum(axis=1)
-        best     = idx[dists.argmin()]
-        selected.append((ci, texts[best], metas[best] if metas else {}))
+        centroid  = vectors[idx].mean(axis=0)
+        # Squared distance from each member to its cluster centroid
+        dists     = ((vectors[idx] - centroid) ** 2).sum(axis=1)
+        # Take up to _MMR_CANDIDATES_PER_CLUSTER closest members
+        n_cands   = min(_MMR_CANDIDATES_PER_CLUSTER, len(idx))
+        top_local = idx[np.argsort(dists)[:n_cands]]
+        for orig_idx in top_local:
+            candidates.append(int(orig_idx))
+            cluster_of[int(orig_idx)] = ci
 
+    # Stage 2: MMR selects k final excerpts from the candidate pool
+    chosen_indices = _mmr(candidates, vectors, doc_centroid, k=k)
+
+    # Build output list — use the cluster index the chunk came from for ordering
+    selected: List[Tuple[int, str, dict]] = [
+        (cluster_of[i], texts[i], metas[i] if metas else {})
+        for i in chosen_indices
+    ]
+
+    # Sort by cluster index so excerpts arrive in rough document order
     selected.sort(key=lambda x: x[0])
     return selected
 
@@ -162,50 +299,71 @@ def _split_text(text: str, chunk_size: int = _CHUNK_SIZE, overlap: int = _CHUNK_
 
 def _style_and_lang(lang: str, style: str) -> str:
     lang_instr = (
-        "Respond in Vietnamese." if lang == "vi"
-        else "Respond in English." if lang == "en"
-        else "Respond in the same language as the source material."
+        "Write in Vietnamese." if lang == "vi"
+        else "Write in English." if lang == "en"
+        else "Write in the same language as the source material."
     )
     style_instr = {
-        "bullet":    "Format the summary as bullet points.",
-        "paragraph": "Format the summary as one or two flowing paragraphs.",
-        "short":     "Give a single-sentence TL;DR (max 40 words).",
-    }.get(style, "Format the summary as bullet points.")
-    return f"{lang_instr} {style_instr}"
+        "bullet":    (
+            "Use thematic bullet-point sections with bold headings. "
+            "Each bullet must start with a key word or phrase, not a weak verb."
+        ),
+        "paragraph": (
+            "Write in short, precise paragraphs (3–5 sentences each). "
+            "Use bold thematic headings to separate sections."
+        ),
+        "short":     (
+            "Write a single crisp paragraph of at most 60 words covering "
+            "the most important point, key figure, and main outcome."
+        ),
+    }.get(style, "Use thematic bullet-point sections with bold headings.")
+    return f"Language instruction: {lang_instr}\nFormat instruction: {style_instr}"
 
 
 def _build_map_prompt(reps: List[Tuple[int, str, dict]], lang: str, style: str) -> str:
     """Prompt for the MAP phase: summarise one file's representative chunks."""
-    header = _style_and_lang(lang, style)
-    parts  = []
-    for i, (_, text, meta) in enumerate(reps, 1):
-        loc = _format_location(meta)
-        label = f"[Excerpt {i}{(' — ' + loc) if loc else ''}]"
-        parts.append(f"{label}\n{text[:_MAX_CHUNK_CHARS]}")
-    excerpts = "\n\n---\n\n".join(parts)
+    style_lang = _style_and_lang(lang, style)
+    source = reps[0][2].get("source") or reps[0][2].get("file_name") or "" if reps else ""
+    source_line = f"Source file: {source}\n" if source else ""
+    parts = []
+    for i, (_, text, _meta) in enumerate(reps, 1):
+        # Use a plain separator — no "[Excerpt N]" label to avoid the LLM copying it verbatim
+        parts.append(f"--- passage {i} ---\n{text[:_MAX_CHUNK_CHARS]}")
+    excerpts = "\n\n".join(parts)
     return (
-        f"{header}\n"
-        f"Write in clear, professional language. "
-        f"Cite each point using the exact format [Excerpt N].\n\n"
-        f"Representative excerpts:\n\n{excerpts}\n\n"
-        f"Based on these excerpts, write a summary:"
+        f"{style_lang}\n\n"
+        f"{source_line}"
+        f"The following {len(reps)} passages are representative sections of the document, "
+        f"presented in document order.\n\n"
+        f"{excerpts}\n\n"
+        f"Task: Write a comprehensive, well-structured summary covering ALL major topics "
+        f"in the passages above. Use bold thematic section headings that match the actual "
+        f"content. Under each heading write detailed bullet points — include specific terms, "
+        f"definitions, examples, and any numbers or names mentioned. "
+        f"Do NOT mention 'passage N' or cite passage numbers in your output. "
+        f"Do not invent any detail not present in the passages."
     )
 
 
 def _build_reduce_prompt(file_summaries: List[Tuple[str, str]], lang: str, style: str) -> str:
     """Prompt for the REDUCE phase: merge per-file summaries into one final summary."""
-    header = _style_and_lang(lang, style)
-    parts  = []
+    style_lang = _style_and_lang(lang, style)
+    parts = []
     for i, (fname, fsummary) in enumerate(file_summaries, 1):
-        parts.append(f"[Document {i}: {fname}]\n{fsummary[:_MAX_FILE_SUMMARY_CHARS]}")
+        parts.append(
+            f"[Document {i}: {fname}]\n"
+            f"{fsummary[:_MAX_FILE_SUMMARY_CHARS]}"
+        )
     combined = "\n\n---\n\n".join(parts)
     return (
-        f"{header}\n"
-        f"Write in clear, professional language. "
-        f"Reference documents using the format [Document N].\n\n"
-        f"Below are summaries of individual documents or sections:\n\n"
+        f"{style_lang}\n\n"
+        f"You have {len(file_summaries)} document summary(ies) below. "
+        f"Each is labelled [Document N: filename].\n\n"
         f"{combined}\n\n"
-        f"Synthesise these into one final summary:"
+        f"Task: Synthesise these into one final, comprehensive summary. "
+        f"Cite sources as [Document N]. Highlight shared themes, key figures, "
+        f"important dates, and any contradictions between documents. "
+        f"Do not invent any detail not present in the summaries above."
     )
 
 
@@ -276,6 +434,16 @@ def _is_valid_embedding(embedding) -> bool:
         return False
 
 
+def _is_meaningful_chunk(text: str) -> bool:
+    """Return False for chunks that are too short or purely structural (headers, whitespace)."""
+    stripped = text.strip()
+    if len(stripped) < _MIN_CHUNK_CHARS:
+        return False
+    # Skip chunks that are almost entirely non-alphabetic (e.g. table separators, page numbers)
+    alpha_ratio = sum(c.isalpha() for c in stripped) / max(len(stripped), 1)
+    return alpha_ratio >= 0.25
+
+
 def _normalise(vectors: np.ndarray) -> np.ndarray:
     norms = np.linalg.norm(vectors, axis=1, keepdims=True)
     norms = np.where(norms == 0, 1.0, norms)
@@ -304,10 +472,10 @@ def _map_summarise(
     if should_cancel and should_cancel():
         raise GenerationCancelled("Cancelled in map phase")
 
-    prompt          = _build_map_prompt(reps, lang, style)
-    summary, _usage = generate_answer(prompt, system_prompt=_SYSTEM_PROMPT,
-                                      should_cancel=should_cancel)
-    citations       = _build_rich_citations(reps)
+    prompt         = _build_map_prompt(reps, lang, style)
+    summary, _ = generate_answer(prompt, system_prompt=_SYSTEM_PROMPT,
+                                 should_cancel=should_cancel)
+    citations  = _build_rich_citations(reps)
     return summary, citations, k
 
 
@@ -465,7 +633,7 @@ def summarize_workspace(
     triples = [
         (d, e, m)
         for d, e, m in zip(docs, embeds, raw_metas)
-        if bool(d) and _is_valid_embedding(e)
+        if bool(d) and _is_meaningful_chunk(d) and _is_valid_embedding(e)
     ]
     if not triples:
         return {"summary": "", "truncated": False, "n_clusters": 0, "total_chunks": 0,
@@ -543,7 +711,7 @@ def summarize_workspace_stream(
     triples = [
         (d, e, m)
         for d, e, m in zip(docs, embeds, raw_metas)
-        if bool(d) and _is_valid_embedding(e)
+        if bool(d) and _is_meaningful_chunk(d) and _is_valid_embedding(e)
     ]
     if not triples:
         yield _emit({"type": "error", "message": "Chunks found but embeddings missing — please re-ingest."})

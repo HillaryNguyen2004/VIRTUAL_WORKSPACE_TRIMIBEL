@@ -31,14 +31,16 @@ class DocumentService
             'owner_id' => $user->id,
             'title' => $title,
             'type' => $type,
-            'html_path' => 'pending',
+            'html_path' => '',
             'searchable_text' => '',
             'last_edited_by' => $user->id,
         ]);
 
-        $contentPath = "documents/{$document->id}/content.html";
-        $this->putToDefaultDisk($contentPath, $initialContent);
-        $document->update(['html_path' => $contentPath]);
+        if ($type === 'docs' || $type === 'powerpoint' || $type === 'excel') {
+            $contentPath = "documents/{$document->id}/content.html";
+            $this->putToDefaultDisk($contentPath, $initialContent);
+            $document->update(['html_path' => $contentPath]);
+        }
 
         return $document;
     }
@@ -75,6 +77,116 @@ class DocumentService
         }
 
         return '';
+    }
+
+    /**
+     * Extract plain text from any document type for AI summarisation.
+     * - docs: read HTML → strip tags
+     * - excel: read xlsx via PhpSpreadsheet → dump all sheet cell values
+     * - powerpoint: read pptx zip → extract slide text nodes
+     */
+    public function getDocumentPlainText(Document $document): string
+    {
+        return match ($document->type) {
+            'docs'        => $this->plainTextFromHtml($document),
+            'excel'       => $this->plainTextFromXlsx($document),
+            'powerpoint'  => $this->plainTextFromPptx($document),
+            default       => '',
+        };
+    }
+
+    private function plainTextFromHtml(Document $document): string
+    {
+        if (!$document->html_path || !Storage::disk()->exists($document->html_path)) {
+            return '';
+        }
+        $html = (string) Storage::disk()->get($document->html_path);
+        $text = strip_tags($html);
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        return trim((string) preg_replace('/\s+/', ' ', $text));
+    }
+
+    private function plainTextFromXlsx(Document $document): string
+    {
+        if (!$document->xlsx_path || !Storage::disk()->exists($document->xlsx_path)) {
+            return '';
+        }
+
+        try {
+            $tmpPath = tempnam(sys_get_temp_dir(), 'xlsx_') . '.xlsx';
+            file_put_contents($tmpPath, Storage::disk()->get($document->xlsx_path));
+
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($tmpPath);
+            @unlink($tmpPath);
+
+            $lines = [];
+            foreach ($spreadsheet->getAllSheets() as $sheet) {
+                $lines[] = '=== ' . $sheet->getTitle() . ' ===';
+                foreach ($sheet->getRowIterator() as $row) {
+                    $cells = [];
+                    foreach ($row->getCellIterator() as $cell) {
+                        $val = (string) ($cell->getFormattedValue() ?? '');
+                        if ($val !== '') {
+                            $cells[] = $val;
+                        }
+                    }
+                    if ($cells) {
+                        $lines[] = implode(' | ', $cells);
+                    }
+                }
+            }
+
+            return implode("\n", $lines);
+        } catch (\Throwable $e) {
+            Log::warning('DocumentService: xlsx text extraction failed', ['error' => $e->getMessage()]);
+            return '';
+        }
+    }
+
+    private function plainTextFromPptx(Document $document): string
+    {
+        if (!$document->pptx_path || !Storage::disk()->exists($document->pptx_path)) {
+            return '';
+        }
+
+        try {
+            $tmpPath = tempnam(sys_get_temp_dir(), 'pptx_') . '.pptx';
+            file_put_contents($tmpPath, Storage::disk()->get($document->pptx_path));
+
+            $zip = new ZipArchive();
+            if ($zip->open($tmpPath) !== true) {
+                @unlink($tmpPath);
+                return '';
+            }
+
+            $lines   = [];
+            $slideNo = 1;
+            // pptx stores slides as ppt/slides/slide1.xml, slide2.xml, …
+            while (($xml = $zip->getFromName("ppt/slides/slide{$slideNo}.xml")) !== false) {
+                $dom = new \DOMDocument();
+                @$dom->loadXML($xml);
+                $texts = [];
+                foreach ($dom->getElementsByTagNameNS('http://schemas.openxmlformats.org/drawingml/2006/main', 't') as $node) {
+                    $val = trim($node->textContent);
+                    if ($val !== '') {
+                        $texts[] = $val;
+                    }
+                }
+                if ($texts) {
+                    $lines[] = "=== Slide {$slideNo} ===";
+                    $lines[] = implode(' ', $texts);
+                }
+                $slideNo++;
+            }
+
+            $zip->close();
+            @unlink($tmpPath);
+
+            return implode("\n", $lines);
+        } catch (\Throwable $e) {
+            Log::warning('DocumentService: pptx text extraction failed', ['error' => $e->getMessage()]);
+            return '';
+        }
     }
 
     /**
@@ -275,7 +387,7 @@ class DocumentService
                 return $pptxPath;
         }
 
-    private function putToDefaultDisk(string $path, $contents): void
+    public function putToDefaultDisk(string $path, $contents): void
     {
         $diskName = config('filesystems.default');
         $diskConfig = config("filesystems.disks.{$diskName}", []);

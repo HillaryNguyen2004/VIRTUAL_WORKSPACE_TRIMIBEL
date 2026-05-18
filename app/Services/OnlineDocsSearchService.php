@@ -13,6 +13,7 @@ class OnlineDocsSearchService
     private const BM25_K1 = 1.2;
     private const BM25_B = 0.75;
     private const ESTIMATED_LINES_PER_PAGE = 35;
+    private const ESTIMATED_PARAGRAPHS_PER_PAGE = 4.5;
     private const QUERY_STOP_WORDS = [
         'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from', 'how', 'in', 'is', 'it',
         'of', 'on', 'or', 'that', 'the', 'this', 'to', 'what', 'when', 'where', 'who', 'why', 'with',
@@ -427,6 +428,7 @@ class OnlineDocsSearchService
                     'text' => $segment['text'],
                     'line' => $segment['line'],
                     'para_index' => $segment['para_index'] ?? null,
+                    'para_index_guess' => $segment['para_index_guess'] ?? null,
                 ];
             }
         }
@@ -436,12 +438,17 @@ class OnlineDocsSearchService
         }
 
         $line = max(1, (int) $best['line']);
-        $paraIndex = $best['para_index'];
+        $paraIndex = $best['para_index'] ?? null;
+        $paraIndexGuess = $best['para_index_guess'] ?? null;
 
         if ($paraIndex !== null) {
-            // Use paragraph index for more accurate page calculation (~4-5 paragraphs per page).
-            $page = (int) floor($paraIndex / 4.5) + 1;
+            // Use stored paragraph index for more accurate page calculation (~4-5 paragraphs per page).
+            $page = (int) floor($paraIndex / self::ESTIMATED_PARAGRAPHS_PER_PAGE) + 1;
             $isIndexed = true;
+        } elseif ($paraIndexGuess !== null) {
+            // Use document-order paragraph index as a fallback for HTML-only content.
+            $page = (int) floor($paraIndexGuess / self::ESTIMATED_PARAGRAPHS_PER_PAGE) + 1;
+            $isIndexed = false;
         } else {
             // Fallback to line-based estimation.
             $page = (int) floor(($line - 1) / self::ESTIMATED_LINES_PER_PAGE) + 1;
@@ -457,7 +464,7 @@ class OnlineDocsSearchService
     }
 
     /**
-     * @return array<int, array{line: int, text: string, para_index?: int}>
+     * @return array<int, array{line: int, text: string, para_index?: int, para_index_guess?: int}>
      */
     private function extractSegmentsFromDocument(Document $document): array
     {
@@ -492,9 +499,9 @@ class OnlineDocsSearchService
                         'line' => $line,
                         'text' => $text,
                     ];
-                }
 
-                $line++;
+                    $line++;
+                }
             }
         }
 
@@ -526,7 +533,7 @@ class OnlineDocsSearchService
 
     /**
      * Parse HTML via DOMDocument to extract segments with para indices.
-     * @return array<int, array{line: int, text: string, para_index?: int}>
+     * @return array<int, array{line: int, text: string, para_index?: int, para_index_guess?: int}>
      */
     private function extractSegmentsFromHtmlDom(string $html): array
     {
@@ -539,33 +546,74 @@ class OnlineDocsSearchService
             $dom->loadHTML('<?xml encoding="UTF-8">' . $html);
             libxml_clear_errors();
 
-            $blockTags = ['p', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div'];
-            foreach ($blockTags as $tagName) {
-                $elements = $dom->getElementsByTagName($tagName);
-                foreach ($elements as $element) {
-                    if (!$element instanceof \DOMElement) {
-                        continue;
-                    }
+            $blockTags = ['p', 'li', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'td', 'th'];
+            $xpath = new \DOMXPath($dom);
+            $conditions = array_map(static fn (string $tag): string => 'self::' . $tag, $blockTags);
+            $query = '//*[' . implode(' or ', $conditions) . ']';
+            $nodes = $xpath->query($query);
 
-                    $paraIndex = $element->getAttribute('data-para-index');
-                    $text = trim((string) preg_replace('/\s+/u', ' ', $element->textContent));
+            if ($nodes === false) {
+                return [];
+            }
 
-                    if ($text === '') {
-                        continue;
-                    }
-
-                    $segments[] = [
-                        'line' => $line,
-                        'text' => $text,
-                        'para_index' => $paraIndex !== '' ? (int) $paraIndex : null,
-                    ];
-                    $line++;
+            foreach ($nodes as $element) {
+                if (!$element instanceof \DOMElement) {
+                    continue;
                 }
+
+                if ($this->elementHasBlockDescendant($element, $blockTags)) {
+                    continue;
+                }
+
+                $text = trim((string) preg_replace('/\s+/u', ' ', $element->textContent));
+                if ($text === '') {
+                    continue;
+                }
+
+                $paraIndexAttr = trim((string) $element->getAttribute('data-para-index'));
+                $paraIndex = $paraIndexAttr !== '' ? (int) $paraIndexAttr : null;
+
+                $segments[] = [
+                    'line' => $line,
+                    'text' => $text,
+                    'para_index' => $paraIndex,
+                    'para_index_guess' => $paraIndex === null ? max(0, $line - 1) : null,
+                ];
+                $line++;
             }
         } catch (\Throwable $error) {
             return [];
         }
 
         return $segments;
+    }
+
+    /**
+     * @param array<int, string> $blockTags
+     */
+    private function elementHasBlockDescendant(\DOMElement $element, array $blockTags): bool
+    {
+        $stack = [];
+        foreach ($element->childNodes as $child) {
+            if ($child instanceof \DOMElement) {
+                $stack[] = $child;
+            }
+        }
+
+        while ($stack !== []) {
+            $node = array_pop($stack);
+            $tag = strtolower($node->tagName);
+            if (in_array($tag, $blockTags, true)) {
+                return true;
+            }
+
+            foreach ($node->childNodes as $child) {
+                if ($child instanceof \DOMElement) {
+                    $stack[] = $child;
+                }
+            }
+        }
+
+        return false;
     }
 }
