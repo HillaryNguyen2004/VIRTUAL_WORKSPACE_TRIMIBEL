@@ -22,7 +22,7 @@ echo "╚═══════════════════════�
 echo ""
 
 # ── 1. PHP dependencies ───────────────────────────────────────────────────────
-echo "▶ [1/8] Installing PHP dependencies..."
+echo "▶ [1/10] Installing PHP dependencies..."
 $COMPOSER install \
   --no-dev \
   --no-interaction \
@@ -31,8 +31,12 @@ $COMPOSER install \
   --ignore-platform-reqs \
   --quiet
 
-# ── 2. Laravel optimizations ──────────────────────────────────────────────────
-echo "▶ [2/8] Optimizing Laravel (config, routes, views, events)..."
+# ── 2. Database migrations ────────────────────────────────────────────────────
+echo "▶ [2/10] Running database migrations..."
+$PHP artisan migrate --force
+
+# ── 3. Laravel optimizations ──────────────────────────────────────────────────
+echo "▶ [3/10] Optimizing Laravel (config, routes, views, events)..."
 $PHP artisan config:cache
 # route:cache is intentionally skipped: web.php contains Closure routes that
 # cannot be serialized. Routes load from files (~5 ms overhead, negligible).
@@ -41,23 +45,29 @@ $PHP artisan view:cache
 $PHP artisan event:cache
 
 # ── 3. Storage & permissions ──────────────────────────────────────────────────
-echo "▶ [3/8] Fixing permissions..."
+echo "▶ [4/10] Fixing permissions..."
 $PHP artisan storage:link --force 2>/dev/null || true
 sudo chown -R ubuntu:"$WEB_USER" storage bootstrap/cache
 sudo chmod -R 775 storage bootstrap/cache
 sudo chown -R ubuntu:"$WEB_USER" public/build 2>/dev/null || true
 sudo chmod -R 775 public/build 2>/dev/null || true
+# ChromaDB must be writable by both ubuntu (chatbot service) and www-data (PHP ingest subprocess)
+if [ -d "chatbot_service/var" ]; then
+  sudo chown -R ubuntu:"$WEB_USER" chatbot_service/var
+  sudo chmod -R 775 chatbot_service/var
+  find chatbot_service/var -type d -exec sudo chmod g+s {} \;
+fi
 
 # ── 4. Restart PHP-FPM ────────────────────────────────────────────────────────
-echo "▶ [4/8] Restarting PHP-FPM..."
+echo "▶ [5/10] Restarting PHP-FPM..."
 sudo systemctl restart php8.5-fpm
 
 # ── 5. Restart Laravel queue worker ──────────────────────────────────────────
-echo "▶ [5/8] Restarting Laravel queue worker..."
+echo "▶ [6/10] Restarting Laravel queue worker..."
 sudo systemctl restart laravel-queue
 
 # ── 6. Python Chatbot service (FastAPI/uvicorn on :8002) ─────────────────────
-echo "▶ [6/8] Updating & restarting chatbot service..."
+echo "▶ [7/10] Updating & restarting chatbot service..."
 (
   REQ_HASH_FILE="chatbot_service/.venv/.req_hash"
   REQ_HASH=$(md5sum chatbot_service/requirements.txt | cut -d' ' -f1)
@@ -73,8 +83,8 @@ echo "▶ [6/8] Updating & restarting chatbot service..."
   sudo systemctl restart chatbot
 ) || echo "⚠  Chatbot service update failed — not blocking deploy."
 
-# ── 7. ML API service (Flask on :5001) ───────────────────────────────────────
-echo "▶ [7/9] Syncing Nginx config..."
+# ── 8. Nginx config ───────────────────────────────────────────────────────────
+echo "▶ [8/10] Syncing Nginx config..."
 (
   SRC="$DEPLOY_PATH/scripts/nginx/laravel.conf"
   DST="/etc/nginx/sites-available/laravel"
@@ -85,22 +95,27 @@ echo "▶ [7/9] Syncing Nginx config..."
   fi
 ) || echo "⚠  Nginx config sync failed — not blocking deploy."
 
-echo "▶ [8/9] Syncing systemd service files..."
+echo "▶ [9/10] Syncing systemd service files..."
 (
-  CHANGED=0
+  CHANGED_SVCS=()
   for SVC in laravel-queue chatbot ml-api whitebophir; do
     SRC="$DEPLOY_PATH/scripts/services/${SVC}.service"
     DST="/etc/systemd/system/${SVC}.service"
     if [ -f "$SRC" ] && ! diff -q "$SRC" "$DST" > /dev/null 2>&1; then
       sudo cp "$SRC" "$DST"
-      CHANGED=1
+      CHANGED_SVCS+=("$SVC")
       echo "  updated ${SVC}.service"
     fi
   done
-  [ "$CHANGED" = "1" ] && sudo systemctl daemon-reload || true
+  if [ "${#CHANGED_SVCS[@]}" -gt 0 ]; then
+    sudo systemctl daemon-reload
+    for SVC in "${CHANGED_SVCS[@]}"; do
+      sudo systemctl restart "$SVC" && echo "  restarted ${SVC}" || true
+    done
+  fi
 ) || echo "⚠  Service file sync failed — not blocking deploy."
 
-echo "▶ [9/9] Updating & restarting ML API..."
+echo "▶ [10/10] Updating & restarting ML API..."
 (
   REQ_HASH_FILE="ml/.venv/.req_hash"
   REQ_HASH=$(md5sum ml/requirements.txt | cut -d' ' -f1)

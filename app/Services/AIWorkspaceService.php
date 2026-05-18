@@ -508,7 +508,9 @@ class AIWorkspaceService
         }
 
         $venvCandidates = [
+            base_path('chatbot_service/.venv/bin/python3'),
             base_path('chatbot_service/.venv/bin/python'),
+            base_path('.venv/bin/python3'),
             base_path('.venv/bin/python'),
             '/opt/homebrew/bin/python3',
             '/usr/bin/python3',

@@ -8,7 +8,7 @@ set -euo pipefail
 
 DEPLOY_PATH="${1:-/var/www/html}"
 APP_DOMAIN="${2:-your-domain.com}"
-PHP_VERSION="8.2"
+PHP_VERSION="8.5"
 NODE_VERSION="20"
 PYTHON_VERSION="3.11"
 DB_NAME="manage_user"
@@ -108,6 +108,9 @@ chown -R www-data:www-data "$DEPLOY_PATH"
 # Add deploy user to www-data so it can write
 usermod -aG www-data ubuntu 2>/dev/null || true
 
+# Allow www-data (PHP-FPM) to traverse the ubuntu home dir to reach pyenv Python
+chmod o+x /home/ubuntu
+
 # ── Nginx virtual host ────────────────────────────────────────────────────────
 echo "▶ Configuring Nginx..."
 cat > /etc/nginx/sites-available/laravel <<NGINX
@@ -189,13 +192,37 @@ sed -i "s|/var/www/html|$DEPLOY_PATH|g" /etc/systemd/system/whitebophir.service
 systemctl daemon-reload
 systemctl enable laravel-queue chatbot ml-api whitebophir
 
+# ── Docker + OnlyOffice Document Server ──────────────────────────────────────
+echo "▶ Installing Docker..."
+curl -fsSL https://get.docker.com | sh
+usermod -aG docker ubuntu
+
+ONLYOFFICE_JWT_SECRET="${ONLYOFFICE_JWT_SECRET:-$(openssl rand -base64 32)}"
+echo "▶ Starting OnlyOffice Document Server (port 8081)..."
+docker run -d \
+  --name onlyoffice \
+  --restart=always \
+  -p 127.0.0.1:8081:80 \
+  -e JWT_ENABLED=true \
+  -e JWT_SECRET="$ONLYOFFICE_JWT_SECRET" \
+  -v /opt/onlyoffice/data:/var/www/onlyoffice/Data \
+  -v /opt/onlyoffice/log:/var/log/onlyoffice \
+  onlyoffice/documentserver
+
+echo ""
+echo "╔══════════════════════════════════════════╗"
+echo "║  SAVE THIS ONLYOFFICE SECRET NOW:        ║"
+echo "║  ONLYOFFICE_JWT_SECRET: $ONLYOFFICE_JWT_SECRET"
+echo "╚══════════════════════════════════════════╝"
+echo ""
+
 # ── ETL cron job ──────────────────────────────────────────────────────────────
 echo "▶ Setting up ETL cron (every 6 hours)..."
 (crontab -u www-data -l 2>/dev/null; echo "0 */6 * * * cd $DEPLOY_PATH/etl && $DEPLOY_PATH/chatbot_service/.venv/bin/python incremental_etl.py >> /var/log/etl.log 2>&1") | crontab -u www-data -
 
 # ── Laravel Scheduler ─────────────────────────────────────────────────────────
 echo "▶ Setting up Laravel scheduler cron..."
-(crontab -u www-data -l 2>/dev/null; echo "* * * * * cd $DEPLOY_PATH && php8.2 artisan schedule:run >> /dev/null 2>&1") | crontab -u www-data -
+(crontab -u www-data -l 2>/dev/null; echo "* * * * * cd $DEPLOY_PATH && php8.5 artisan schedule:run >> /dev/null 2>&1") | crontab -u www-data -
 
 # ── sudo permissions for deploy user ─────────────────────────────────────────
 echo "▶ Granting deploy-time sudo permissions..."
@@ -221,7 +248,11 @@ echo "✅  Server setup complete!"
 echo ""
 echo "Next steps:"
 echo "  1. Place your .env at $DEPLOY_PATH/.env"
+echo "     Add: ONLYOFFICE_DOCUMENT_SERVER_URL=http://localhost:8081"
+echo "     Add: ONLYOFFICE_JWT_SECRET=<secret printed above>"
+echo "     Add: ONLYOFFICE_PUBLIC_URL=https://$APP_DOMAIN"
 echo "  2. Place your SSH public key in ~/.ssh/authorized_keys"
 echo "  3. Run: certbot --nginx -d $APP_DOMAIN   (for HTTPS)"
 echo "  4. Set GitHub secrets (see scripts/deploy.sh header)"
+echo "  5. Add OnlyOffice nginx proxy block to laravel.conf (see scripts/nginx/laravel.conf)"
 echo ""
