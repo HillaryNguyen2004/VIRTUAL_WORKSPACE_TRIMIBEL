@@ -128,7 +128,7 @@ Example:
 ```bash
 ollama serve
 ollama pull deepseek-r1:latest
-ollama pull qwen3-embedding:latest
+ollama pull bge-m3:latest
 ```
 
 ### 4) Run the FastAPI chatbot service

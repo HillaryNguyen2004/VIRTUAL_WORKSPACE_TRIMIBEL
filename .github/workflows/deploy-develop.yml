@@ -6,7 +6,7 @@ on:
     branches: [develop]
 
 env:
-  PHP_VERSION: '8.2'
+  PHP_VERSION: '8.5'
   NODE_VERSION: '20'
 
 jobs:
