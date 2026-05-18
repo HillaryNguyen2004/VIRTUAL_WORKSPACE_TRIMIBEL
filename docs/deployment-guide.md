@@ -10,7 +10,7 @@ Nginx (80 → 443 redirect, SSL via Let's Encrypt)
    │
    ├── /* ──────────────── PHP-FPM 8.5 (Laravel)
    ├── /api/chat-bot/* ─── FastAPI chatbot service  :8002
-   └── /onlyoffice-ds/* ── OnlyOffice Docker        :8081
+   └── /onlyoffice-ds/* ── OnlyOffice Docker        :8080
 
 Background services (systemd):
   laravel-queue   Laravel queue worker
@@ -22,7 +22,7 @@ Local daemons:
   ollama          LLM server                          :11434
   mysql           Application database                :3307
   redis           Cache / sessions / queues           :6379
-  onlyoffice      Docker container                    :8081
+  onlyoffice      Docker container                    :8080
 ```
 
 ---
@@ -72,7 +72,7 @@ ollama pull bge-m3
 newgrp docker   # apply docker group without re-login
 docker run -d --name onlyoffice-document-server \
   --restart unless-stopped \
-  -p 127.0.0.1:8081:80 \
+  -p 127.0.0.1:8080:80 \
   -e JWT_ENABLED=true \
   -e JWT_SECRET=<your-jwt-secret> \
   -v onlyoffice_data:/var/www/onlyoffice/Data \
@@ -178,7 +178,7 @@ GOOGLE_REDIRECT_URI=https://trimibel.com/auth/google/callback
 METERED_DOMAIN=<subdomain>.metered.live
 METERED_SECRET_KEY=
 
-ONLYOFFICE_DOCUMENT_SERVER_URL=http://127.0.0.1:8081
+ONLYOFFICE_DOCUMENT_SERVER_URL=http://127.0.0.1:8080
 ONLYOFFICE_JWT_SECRET=<same-secret-used-in-docker-run>
 ONLYOFFICE_PUBLIC_URL=https://trimibel.com/onlyoffice-ds
 
@@ -312,7 +312,7 @@ Config file: `scripts/nginx/laravel.conf` — synced to `/etc/nginx/sites-availa
 | `/*` | PHP-FPM (Laravel) |
 | `/api/chat-bot/stop` | `http://127.0.0.1:8002/chat/cancel` |
 | `/api/chat-bot/*` | `http://127.0.0.1:8002/chat/*` |
-| `/onlyoffice-ds/*` | `http://127.0.0.1:8081/` |
+| `/onlyoffice-ds/*` | `http://127.0.0.1:8080/` |
 
 The config includes both the HTTP→HTTPS redirect block and the HTTPS SSL block, so deploys never break SSL.
 
