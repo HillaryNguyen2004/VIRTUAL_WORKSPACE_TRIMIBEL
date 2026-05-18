@@ -327,7 +327,7 @@
     @if($isExcel)
         @vite(['resources/js/online_docs/excel.js'])
     @elseif(($isDocs || $isPowerpoint) && $onlyofficeConfig)
-        <script src="{{ rtrim(config('onlyoffice.document_server_url'), '/') }}/web-apps/apps/api/documents/api.js"></script>
+        <script src="{{ rtrim(config('onlyoffice.editor_url'), '/') }}/web-apps/apps/api/documents/api.js"></script>
         <script>
             const onlyofficeConfig = @json($onlyofficeConfig);
             const docEditor = new DocsAPI.DocEditor('onlyoffice-editor', onlyofficeConfig);
