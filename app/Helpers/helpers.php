@@ -46,8 +46,18 @@ if (!function_exists('storageUrl')) {
         }
 
         $disk = Storage::disk();
+
         if ($disk->exists($path)) {
-            return $disk->url($path);
+            try {
+                return $disk->url($path);
+            } catch (\RuntimeException) {
+                // Private S3 bucket — fall back to a 1-hour pre-signed URL
+                try {
+                    return $disk->temporaryUrl($path, now()->addHour());
+                } catch (\RuntimeException) {
+                    return null;
+                }
+            }
         }
 
         return asset('storage/' . ltrim($path, '/'));
