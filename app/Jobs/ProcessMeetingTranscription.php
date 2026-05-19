@@ -99,12 +99,12 @@ class ProcessMeetingTranscription implements ShouldQueue
         }
 
         try {
-        $storage = new \Google\Cloud\Storage\StorageClient(['keyFilePath' => env('GOOGLE_APPLICATION_CREDENTIALS')]);
-        $bucket = $storage->bucket(env('GOOGLE_CLOUD_STORAGE_BUCKET'));
+        $storage = new \Google\Cloud\Storage\StorageClient(['keyFilePath' => config('services.google_cloud.credentials')]);
+        $bucket = $storage->bucket(config('services.google_cloud.storage_bucket'));
 
         $credentials = new \Google\Auth\Credentials\ServiceAccountCredentials(
             'https://www.googleapis.com/auth/cloud-platform',
-            env('GOOGLE_APPLICATION_CREDENTIALS')
+            config('services.google_cloud.credentials')
         );
         $tokenData = $credentials->fetchAuthToken();
         $token = $tokenData['access_token'] ?? null;
@@ -175,7 +175,7 @@ class ProcessMeetingTranscription implements ShouldQueue
 
                 $fileName = "track_{$recordingId}.flac";
                 $bucket->upload(fopen($audioPath, 'r'), ['name' => $fileName]);
-                $gcsUri = "gs://" . env('GOOGLE_CLOUD_STORAGE_BUCKET') . "/{$fileName}";
+                $gcsUri = "gs://" . config('services.google_cloud.storage_bucket') . "/{$fileName}";
 
                 // 4. Start Google STT
                 $sttResponse = \Illuminate\Support\Facades\Http::withToken($token)
