@@ -158,6 +158,7 @@ jobs:
             --exclude='etl/.env' \
             --exclude='chatbot_service/.env' \
             --exclude='chatbot_service/.venv' \
+            --exclude='chatbot_service/var/' \
             --exclude='ml/.venv' \
             --exclude='whitebophir/node_modules' \
             --exclude='tools/docx-converter/node_modules' \
