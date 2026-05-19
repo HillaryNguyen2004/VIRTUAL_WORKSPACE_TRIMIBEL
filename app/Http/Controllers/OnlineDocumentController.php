@@ -398,13 +398,14 @@ class OnlineDocumentController extends Controller
                 }
 
                 $response = Http::timeout(45)->post($chatbotUrl . '/agent/answer/multi', [
-                    'query'        => $query,
+                    'query'         => $query,
                     'workspace_ids' => $workspaceIds,
-                    'user_role'    => $normalizedRole,
-                    'k'            => 8,
-                    'lang'         => app()->getLocale(),
-                    'history'      => [],
-                    'history_text' => '',
+                    'user_role'     => $normalizedRole,
+                    'user_id'       => (string) $user->id,
+                    'k'             => 8,
+                    'lang'          => app()->getLocale(),
+                    'history'       => [],
+                    'history_text'  => '',
                 ]);
 
                 if ($response->successful()) {
@@ -437,22 +438,28 @@ class OnlineDocumentController extends Controller
     {
         $citations = [];
         foreach ($passages as $i => $p) {
-            $meta    = $p['metadata'] ?? [];
-            $source  = $meta['source'] ?? $meta['file_name'] ?? $meta['storage_file'] ?? '';
+            $meta        = $p['metadata'] ?? [];
+            $source      = $meta['source'] ?? $meta['file_name'] ?? $meta['storage_file'] ?? '';
+            $workspaceId = (string) ($meta['workspace_id'] ?? '');
 
-            // Chunks store workspace_id like "online_doc_42" — extract the numeric doc ID from it.
-            $workspaceId = $meta['workspace_id'] ?? '';
-            $numericId = '';
-            if (preg_match('/^online_doc_(\d+)$/', (string) $workspaceId, $m)) {
-                $numericId = $m[1];
+            $numericId  = '';
+            $sourceType = 'unknown';
+
+            if (preg_match('/^online_doc_(\d+)$/', $workspaceId, $m)) {
+                $numericId  = $m[1];
+                $sourceType = 'doc';
+            } elseif (preg_match('/^personal_file_(\d+)$/', $workspaceId, $m)) {
+                $numericId  = $m[1];
+                $sourceType = 'file';
             }
 
             $citations[] = [
-                'rank'   => $i + 1,
-                'id'     => $numericId ?: $source,
-                'source' => $source,
-                'page'   => (int) ($meta['page'] ?? 0),
-                'line'   => (int) ($meta['chunk_index'] ?? 0),
+                'rank'        => $i + 1,
+                'id'          => $numericId ?: $source,
+                'source'      => $source,
+                'source_type' => $sourceType,
+                'page'        => (int) ($meta['page'] ?? 0),
+                'line'        => (int) ($meta['chunk_index'] ?? 0),
             ];
         }
         return $citations;
@@ -487,17 +494,19 @@ class OnlineDocumentController extends Controller
     {
         $enriched = [];
         foreach ($citations as $citation) {
-            $sourceId = (string) ($citation['id'] ?? '');
-            $source   = (string) ($citation['source'] ?? '');
-            $rank     = (int)    ($citation['rank'] ?? 0);
-            $page     = (int)    ($citation['page'] ?? 0);
-            $line     = (int)    ($citation['line'] ?? 0);
+            $sourceId   = (string) ($citation['id'] ?? '');
+            $source     = (string) ($citation['source'] ?? '');
+            $hintType   = (string) ($citation['source_type'] ?? 'unknown');
+            $rank       = (int)    ($citation['rank'] ?? 0);
+            $page       = (int)    ($citation['page'] ?? 0);
+            $line       = (int)    ($citation['line'] ?? 0);
 
-            $docLink = null;
-            $fileLink = null;
+            $docLink     = null;
+            $fileLink    = null;
             $displayName = $source;
 
-            if (is_numeric($sourceId)) {
+            // Use source_type hint from passagesToCitations() to avoid unnecessary DB queries.
+            if ($hintType === 'doc' && is_numeric($sourceId)) {
                 $doc = Document::query()
                     ->where(function ($q) use ($user) {
                         $q->where('owner_id', $user->id)
@@ -506,23 +515,41 @@ class OnlineDocumentController extends Controller
                     ->find((int) $sourceId);
 
                 if ($doc) {
-                    $docLink = route('online-docs.docs.show', $doc);
+                    $docLink     = route('online-docs.docs.show', $doc);
                     $displayName = $doc->title ?: $source;
+                }
+            } elseif ($hintType === 'file' && is_numeric($sourceId)) {
+                $file = PersonalFile::query()
+                    ->where('user_id', $user->id)
+                    ->find((int) $sourceId);
+
+                if ($file) {
+                    $fileLink    = route('online-docs.files.preview', $file);
+                    $displayName = $file->original_name ?: $source;
                 }
             }
 
-            if (!$docLink) {
-                $file = PersonalFile::query()
-                    ->where('user_id', $user->id)
-                    ->where(function ($q) use ($source) {
-                        $q->where('original_name', 'like', '%' . basename($source) . '%')
-                            ->orWhere('stored_path', 'like', '%' . basename($source) . '%');
+            // Fallback: if hint was wrong or lookup failed, try both
+            if (!$docLink && !$fileLink && is_numeric($sourceId)) {
+                $doc = Document::query()
+                    ->where(function ($q) use ($user) {
+                        $q->where('owner_id', $user->id)
+                            ->orWhereHas('sharedUsers', fn ($q2) => $q2->where('user_id', $user->id));
                     })
-                    ->first();
+                    ->find((int) $sourceId);
 
-                if ($file) {
-                    $fileLink = route('online-docs.files.preview', $file);
-                    $displayName = $file->original_name ?: $source;
+                if ($doc) {
+                    $docLink     = route('online-docs.docs.show', $doc);
+                    $displayName = $doc->title ?: $source;
+                } else {
+                    $file = PersonalFile::query()
+                        ->where('user_id', $user->id)
+                        ->find((int) $sourceId);
+
+                    if ($file) {
+                        $fileLink    = route('online-docs.files.preview', $file);
+                        $displayName = $file->original_name ?: $source;
+                    }
                 }
             }
 
@@ -1162,7 +1189,7 @@ class OnlineDocumentController extends Controller
             'docs'
         );
 
-        $this->ragIndex->indexDocument($document);
+        $this->ragIndex->indexDocument($document, userId: (string) auth()->id());
 
         return redirect()->route('online-docs.docs.show', $document);
     }
@@ -1289,7 +1316,7 @@ class OnlineDocumentController extends Controller
         $this->service->updateDocument($document, auth()->user(), $request->validated());
 
         // Re-index after content update so search agent stays up to date
-        $this->ragIndex->indexDocument($document);
+        $this->ragIndex->indexDocument($document, userId: (string) auth()->id());
 
         if ($request->expectsJson()) {
             return response()->json(['status' => 'ok']);
@@ -1326,7 +1353,7 @@ class OnlineDocumentController extends Controller
             Storage::disk()->delete($document->pptx_path);
         }
 
-        $this->ragIndex->deleteDocument($document);
+        $this->ragIndex->deleteDocument($document, userId: (string) auth()->id());
         $document->delete();
 
         return redirect()->back();
@@ -1345,7 +1372,7 @@ class OnlineDocumentController extends Controller
             return redirect()->back()->with('docx_error', $message);
         }
 
-        $this->ragIndex->indexDocument($document);
+        $this->ragIndex->indexDocument($document, userId: (string) auth()->id());
 
         return redirect()->route('online-docs.docs.show', $document);
     }

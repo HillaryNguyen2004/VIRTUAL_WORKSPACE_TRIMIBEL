@@ -1,5 +1,6 @@
 from __future__ import annotations
 import logging
+import math
 import re
 import torch
 from typing import List, Dict, Any, Callable, Optional
@@ -201,11 +202,17 @@ def retrieve(
         merged.sort(key=lambda d: d["_final_score"], reverse=True)
         top = merged[:base_k]
     else:
+        # Normalise CE raw logit into [0, 1] via sigmoid, then store as _final_score
+        for doc in reranked:
+            raw = doc.get("_ce_score", 0.0)
+            doc["_final_score"] = 1.0 / (1.0 + math.exp(-raw))
         top = reranked[:base_k]
 
     # ── 5. Reverse repacking ──────────────────────────────────────────────────
     # Most-relevant passage placed last so it sits closest to the query in the
     # prompt context window (per RAG best practices: Lost in the Middle effect).
+    # The original order (best-first) is preserved in _final_score; callers that
+    # need ranked display should sort by _final_score descending.
     top_reversed = list(reversed(top))
 
     log.debug("retrieve: returning %d passages (reverse-packed)", len(top_reversed))

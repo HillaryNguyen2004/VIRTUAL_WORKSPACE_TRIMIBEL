@@ -112,58 +112,76 @@ def generate_answer(
             "num_predict": settings.gen_max_tokens,
             "num_ctx": 8192,
         },
+        "think": False,
         "stream": stream,
         "keep_alive": "10m",
     }
 
-    try:
-        if stream:
-            chunks: list[str] = []
-            last_data: Dict[str, Any] = {}
+    # Retry with larger context window if Ollama returns 500 (prompt too long)
+    _CTX_LADDER = [8192, 16384, 32768]
 
-            with _client.stream("POST", f"{OLLAMA_BASE_URL}/api/chat", json=payload) as r:
-                r.raise_for_status()
+    for num_ctx in _CTX_LADDER:
+        payload["options"]["num_ctx"] = num_ctx
+        try:
+            if stream:
+                chunks: list[str] = []
+                last_data: Dict[str, Any] = {}
 
-                for line in r.iter_lines():
-                    if should_cancel and should_cancel():
-                        r.close()
-                        raise GenerationCancelled("Generation canceled while streaming")
-
-                    if not line:
+                with _client.stream("POST", f"{OLLAMA_BASE_URL}/api/chat", json=payload) as r:
+                    if r.status_code == 500:
+                        # Prompt too long — try next context size
+                        logger.warning("Ollama 500 at num_ctx=%d, retrying with larger ctx", num_ctx)
                         continue
+                    r.raise_for_status()
 
-                    if isinstance(line, bytes):
-                        line = line.decode("utf-8", errors="ignore")
+                    for line in r.iter_lines():
+                        if should_cancel and should_cancel():
+                            r.close()
+                            raise GenerationCancelled("Generation canceled while streaming")
 
-                    try:
-                        data = json.loads(line)
-                    except json.JSONDecodeError:
-                        continue
+                        if not line:
+                            continue
 
-                    last_data = data
-                    content = (data.get("message") or {}).get("content")
-                    if content:
-                        chunks.append(content)
+                        if isinstance(line, bytes):
+                            line = line.decode("utf-8", errors="ignore")
 
-                    if data.get("done"):
-                        break
+                        try:
+                            data = json.loads(line)
+                        except json.JSONDecodeError:
+                            continue
 
-            text = "".join(chunks).strip()
-            usage = _extract_usage(last_data)
+                        last_data = data
+                        content = (data.get("message") or {}).get("content")
+                        if content:
+                            chunks.append(content)
+
+                        if data.get("done"):
+                            break
+
+                text = "".join(chunks).strip()
+                usage = _extract_usage(last_data)
+                return text, usage
+
+            r = _client.post(f"{OLLAMA_BASE_URL}/api/chat", json=payload)
+            if r.status_code == 500 and num_ctx < _CTX_LADDER[-1]:
+                logger.warning("Ollama 500 at num_ctx=%d, retrying with larger ctx", num_ctx)
+                continue
+            r.raise_for_status()
+            data = r.json()
+            text = (data.get("message", {}).get("content") or "").strip()
+            usage = _extract_usage(data)
             return text, usage
 
-        r = _client.post(f"{OLLAMA_BASE_URL}/api/chat", json=payload)
-        r.raise_for_status()
-        data = r.json()
-        text = (data.get("message", {}).get("content") or "").strip()
-        usage = _extract_usage(data)
-        return text, usage
+        except GenerationCancelled:
+            raise
+        except Exception as e:
+            if num_ctx < _CTX_LADDER[-1]:
+                logger.warning("Ollama error at num_ctx=%d (%s), retrying", num_ctx, e)
+                continue
+            logger.error("Ollama error: %s", e)
+            return "Sorry, I encountered an error while generating the answer. Please try again.", {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
-    except GenerationCancelled:
-        raise
-    except Exception as e:
-        logger.error(f"Ollama error: {e}")
-        return "Sorry, I encountered an error while generating the answer. Please try again.", {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+    return "Sorry, I encountered an error while generating the answer. Please try again.", {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
 
 def stream_answer(
@@ -191,37 +209,56 @@ def stream_answer(
             "num_predict": settings.gen_max_tokens,
             "num_ctx": 8192,
         },
+        "think": False,
         "stream": True,
         "keep_alive": "10m",
     }
 
-    with _client.stream("POST", f"{OLLAMA_BASE_URL}/api/chat", json=payload) as r:
-        r.raise_for_status()
+    _CTX_LADDER = [8192, 16384, 32768]
+    for num_ctx in _CTX_LADDER:
+        payload["options"]["num_ctx"] = num_ctx
+        yielded_anything = False
+        try:
+            with _client.stream("POST", f"{OLLAMA_BASE_URL}/api/chat", json=payload) as r:
+                if r.status_code == 500 and num_ctx < _CTX_LADDER[-1]:
+                    logger.warning("stream_answer: Ollama 500 at num_ctx=%d, retrying", num_ctx)
+                    continue
+                r.raise_for_status()
 
-        last_data: Dict[str, Any] = {}
-        for line in r.iter_lines():
-            if should_cancel and should_cancel():
-                r.close()
-                raise GenerationCancelled("Generation canceled while streaming")
+                last_data: Dict[str, Any] = {}
+                for line in r.iter_lines():
+                    if should_cancel and should_cancel():
+                        r.close()
+                        raise GenerationCancelled("Generation canceled while streaming")
 
-            if not line:
+                    if not line:
+                        continue
+
+                    if isinstance(line, bytes):
+                        line = line.decode("utf-8", errors="ignore")
+
+                    try:
+                        data = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+
+                    last_data = data
+
+                    content = (data.get("message") or {}).get("content")
+                    if content:
+                        yielded_anything = True
+                        yield content
+
+                    if data.get("done"):
+                        if on_usage is not None:
+                            on_usage(_extract_usage(last_data))
+                        break
+            return  # success
+        except GenerationCancelled:
+            raise
+        except Exception as e:
+            if num_ctx < _CTX_LADDER[-1] and not yielded_anything:
+                logger.warning("stream_answer: error at num_ctx=%d (%s), retrying", num_ctx, e)
                 continue
-
-            if isinstance(line, bytes):
-                line = line.decode("utf-8", errors="ignore")
-
-            try:
-                data = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-
-            last_data = data
-
-            content = (data.get("message") or {}).get("content")
-            if content:
-                yield content
-
-            if data.get("done"):
-                if on_usage is not None:
-                    on_usage(_extract_usage(last_data))
-                break
+            logger.error("stream_answer error: %s", e)
+            return

@@ -117,7 +117,7 @@ def delete_chunks(req: DeleteChunksRequest):
     """
     Remove all ChromaDB chunks for a specific file (by storage_file metadata key).
     """
-    count = delete_by_storage_file(req.storage_file, workspace_id=req.workspace_id)
+    count = delete_by_storage_file(req.storage_file, workspace_id=req.workspace_id, user_id=req.user_id)
     reload_chroma_clients()
     return {"ok": True, "deleted": count}
 
@@ -200,15 +200,17 @@ def agent_search_endpoint(req: SearchRequest):
             where=req.where,
             user_id=req.user_id,
         )
+        # retrieve() reverse-packs for LLM context window — re-sort best-first for search display
+        passages_sorted = sorted(passages, key=lambda p: p.get("_final_score", 0.0), reverse=True)
         results = [
             PassageResult(
                 id=p["id"],
                 content=p["content"],
                 metadata=p.get("metadata", {}),
-                rrf_score=p.get("rrf_score", 0.0),
-                final_score=p.get("_final_score", 0.0),
+                rrf_score=round(p.get("rrf_score", 0.0), 6),
+                final_score=round(p.get("_final_score", 0.0), 6),
             )
-            for p in passages
+            for p in passages_sorted
         ]
         return SearchResponse(passages=results, total=len(results))
     except Exception as e:
