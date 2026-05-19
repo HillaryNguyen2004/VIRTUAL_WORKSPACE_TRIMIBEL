@@ -43,6 +43,12 @@ return [
         'domain' => env('METERED_DOMAIN'),
         'secret_key' => env('METERED_SECRET_KEY'),
     ],
+
+    'google_cloud' => [
+        'credentials' => env('GOOGLE_APPLICATION_CREDENTIALS'),
+        'project_id' => env('GOOGLE_CLOUD_PROJECT_ID'),
+        'storage_bucket' => env('GOOGLE_CLOUD_STORAGE_BUCKET'),
+    ],
     'face' => [
         'url' => env('FACE_SERVICE_URL'),
     ],
