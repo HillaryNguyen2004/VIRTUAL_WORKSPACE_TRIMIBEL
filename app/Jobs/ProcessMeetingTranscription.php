@@ -160,7 +160,8 @@ class ProcessMeetingTranscription implements ShouldQueue
                     continue;
                 }
 
-                $process = new \Symfony\Component\Process\Process(['ffmpeg', '-y', '-i', $localVideoPath, '-ac', '1', '-ar', '16000', $audioPath]);
+                $ffmpeg = exec('which ffmpeg') ?: '/usr/bin/ffmpeg';
+                $process = new \Symfony\Component\Process\Process([$ffmpeg, '-y', '-i', $localVideoPath, '-ac', '1', '-ar', '16000', $audioPath]);
                 $process->run();
 
                 if (!$process->isSuccessful() || !file_exists($audioPath)) {
