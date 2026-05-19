@@ -13,9 +13,9 @@ use Illuminate\Pagination\Paginator;
 use App\Repositories\ProjectRepository;
 use App\Repositories\ProjectRepositoryInterface;
 use Illuminate\Support\Facades\Storage;
-use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
+use Illuminate\Filesystem\AwsS3V3Adapter as IlluminateS3Adapter;
+use League\Flysystem\AwsS3V3\AwsS3V3Adapter as FlysystemS3Adapter;
 use League\Flysystem\Filesystem;
-use Illuminate\Filesystem\FilesystemAdapter;
 use Aws\S3\S3Client;
 use Aws\Middleware;
 use Aws\CommandInterface;
@@ -57,20 +57,22 @@ class AppServiceProvider extends ServiceProvider
 
         // S3 bucket has ACLs disabled (Bucket owner enforced).
         // Strip ACL from every upload so PutObject doesn't get rejected.
+        // Returns the proper Illuminate S3 adapter so url() and temporaryUrl() work.
         Storage::extend('s3', function ($app, $config) {
-            $client = new S3Client([
-                'version'     => 'latest',
-                'region'      => $config['region'],
-                'credentials' => [
-                    'key'    => $config['key'],
-                    'secret' => $config['secret'],
-                ],
-                'use_path_style_endpoint' => $config['use_path_style_endpoint'] ?? false,
-            ]);
+            $s3Config = array_merge($config, ['version' => 'latest']);
+
+            if (!empty($s3Config['key']) && !empty($s3Config['secret'])) {
+                $s3Config['credentials'] = [
+                    'key'    => $s3Config['key'],
+                    'secret' => $s3Config['secret'],
+                ];
+            }
+
+            $client = new S3Client($s3Config);
 
             $client->getHandlerList()->appendInit(
                 Middleware::mapCommand(function (CommandInterface $cmd) {
-                    if (in_array($cmd->getName(), ['PutObject', 'CreateMultipartUpload'])) {
+                    if (\in_array($cmd->getName(), ['PutObject', 'CreateMultipartUpload'], true)) {
                         $cmd->offsetUnset('ACL');
                     }
                     return $cmd;
@@ -78,12 +80,17 @@ class AppServiceProvider extends ServiceProvider
                 'remove-acl'
             );
 
-            $adapter = new AwsS3V3Adapter($client, $config['bucket'], $config['prefix'] ?? '');
+            $flysystemAdapter = new FlysystemS3Adapter(
+                $client,
+                $config['bucket'],
+                $config['prefix'] ?? '',
+            );
 
-            return new FilesystemAdapter(
-                new Filesystem($adapter),
-                $adapter,
-                $config
+            return new IlluminateS3Adapter(
+                new Filesystem($flysystemAdapter),
+                $flysystemAdapter,
+                $config,
+                $client
             );
         });
     }
