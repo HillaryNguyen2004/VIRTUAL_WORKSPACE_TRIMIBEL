@@ -31,9 +31,24 @@ class ProcessMeetingTranscription implements ShouldQueue
         $this->meetingId = $meetingId;
     }
     
+    public function failed(\Throwable $exception): void
+    {
+        \Log::error("ProcessMeetingTranscription permanently failed after {$this->tries} attempts for meeting: {$this->meetingId}", [
+            'exception' => $exception->getMessage(),
+            'file'      => $exception->getFile(),
+            'line'      => $exception->getLine(),
+            'trace'     => $exception->getTraceAsString(),
+        ]);
+    }
+
     public function handle()
     {
-        \Log::info("STT Job Started (Path 2: Individual Tracks) for meeting: {$this->meetingId}");
+        set_time_limit(0);
+
+        \Log::info("STT Job Started (Path 2: Individual Tracks) for meeting: {$this->meetingId}", [
+            'attempt' => $this->attempts(),
+            'max_tries' => $this->tries,
+        ]);
 
         if (\App\Models\MeetingTranscription::where('meeting_id', $this->meetingId)->exists()) {
             \Log::info("Transcription already exists. Skipping.");
@@ -43,15 +58,30 @@ class ProcessMeetingTranscription implements ShouldQueue
         $domain = config('services.metered.domain');
         $secretKey = config('services.metered.secret_key');
 
+        if (empty($domain) || empty($secretKey)) {
+            \Log::error("ProcessMeetingTranscription: missing Metered config (services.metered.domain or services.metered.secret_key).");
+            $this->fail(new \RuntimeException('Missing Metered API configuration.'));
+            return;
+        }
+
         // 1. Fetch all recordings for the room
         $response = \Illuminate\Support\Facades\Http::get("https://{$domain}/api/v1/recordings/room/{$this->meetingId}", [
             'secretKey' => $secretKey
         ]);
 
+        if (!$response->successful()) {
+            \Log::error("Metered API request failed for meeting: {$this->meetingId}", [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
+            $this->release(120);
+            return;
+        }
+
         $recordingsData = $response->json('data') ?? [];
-        
+
         if (empty($recordingsData)) {
-            \Log::info("Metered recordings data empty. Releasing job.");
+            \Log::info("Metered recordings data empty. Releasing job.", ['attempt' => $this->attempts()]);
             $this->release(120);
             return;
         }
@@ -68,14 +98,24 @@ class ProcessMeetingTranscription implements ShouldQueue
             return;
         }
 
+        try {
         $storage = new \Google\Cloud\Storage\StorageClient(['keyFilePath' => env('GOOGLE_APPLICATION_CREDENTIALS')]);
         $bucket = $storage->bucket(env('GOOGLE_CLOUD_STORAGE_BUCKET'));
-        
+
         $credentials = new \Google\Auth\Credentials\ServiceAccountCredentials(
             'https://www.googleapis.com/auth/cloud-platform',
             env('GOOGLE_APPLICATION_CREDENTIALS')
         );
-        $token = $credentials->fetchAuthToken()['access_token'];
+        $tokenData = $credentials->fetchAuthToken();
+        $token = $tokenData['access_token'] ?? null;
+        if (empty($token)) {
+            throw new \RuntimeException('Failed to fetch Google auth token — check GOOGLE_APPLICATION_CREDENTIALS.');
+        }
+
+        $recordingsDir = storage_path('app/recordings');
+        if (!is_dir($recordingsDir)) {
+            mkdir($recordingsDir, 0755, true);
+        }
 
         $activeOperations = [];
         $localFiles = [];
@@ -96,6 +136,10 @@ class ProcessMeetingTranscription implements ShouldQueue
                 $linkResponse = \Illuminate\Support\Facades\Http::get($downloadUrl);
 
                 if (!$linkResponse->successful() || !$linkResponse->json('url')) {
+                    \Log::warning("Could not get download URL for track {$recordingId}.", [
+                        'status' => $linkResponse->status(),
+                        'body'   => $linkResponse->body(),
+                    ]);
                     continue;
                 }
 
@@ -107,13 +151,24 @@ class ProcessMeetingTranscription implements ShouldQueue
                 $localFiles[] = $localVideoPath;
                 $localFiles[] = $audioPath;
 
-                \Illuminate\Support\Facades\Http::withOptions(['sink' => $localVideoPath])->timeout(300)->get($s3Url);
+                $dlResponse = \Illuminate\Support\Facades\Http::withOptions(['sink' => $localVideoPath])->timeout(300)->get($s3Url);
+
+                if (!$dlResponse->successful() || !file_exists($localVideoPath) || filesize($localVideoPath) === 0) {
+                    \Log::error("Failed to download track {$recordingId}.", [
+                        'status' => $dlResponse->status(),
+                    ]);
+                    continue;
+                }
 
                 $process = new \Symfony\Component\Process\Process(['ffmpeg', '-y', '-i', $localVideoPath, '-ac', '1', '-ar', '16000', $audioPath]);
                 $process->run();
 
-                if (!file_exists($audioPath)) {
-                    \Log::error("FFmpeg failed to create audio file for track {$recordingId}. Skipping.");
+                if (!$process->isSuccessful() || !file_exists($audioPath)) {
+                    \Log::error("FFmpeg failed for track {$recordingId}.", [
+                        'exit_code' => $process->getExitCode(),
+                        'stdout'    => $process->getOutput(),
+                        'stderr'    => $process->getErrorOutput(),
+                    ]);
                     continue;
                 }
 
@@ -134,12 +189,20 @@ class ProcessMeetingTranscription implements ShouldQueue
                         'audio' => ['uri' => $gcsUri]
                     ]);
 
+                if (!$sttResponse->successful()) {
+                    \Log::error("Google STT request failed for track {$recordingId}.", [
+                        'status' => $sttResponse->status(),
+                        'body'   => $sttResponse->body(),
+                    ]);
+                }
+
                 $operationName = $sttResponse->json('name');
 
                 if ($operationName) {
+                    \Log::info("Google STT operation started for track {$recordingId}.", ['operation' => $operationName]);
                     $activeOperations[] = [
                         'operation' => $operationName,
-                        'user_id' => $userId,
+                        'user_id'   => $userId,
                     ];
                 }
             }
@@ -165,20 +228,34 @@ class ProcessMeetingTranscription implements ShouldQueue
 
                     if (!empty($opData['done'])) {
                         $op['completed'] = true;
-                        if (!empty($opData['response'])) {
+                        if (!empty($opData['error'])) {
+                            \Log::error("Google STT operation returned an error.", [
+                                'operation' => $op['operation'],
+                                'error'     => $opData['error'],
+                            ]);
+                        } elseif (!empty($opData['response'])) {
                             $this->saveToDatabase($opData['response'], $op['user_id']);
+                        } else {
+                            \Log::warning("Google STT operation completed but had no response.", ['operation' => $op['operation']]);
                         }
                     } else {
                         $allDone = false;
                     }
                 }
             }
+            if (!$allDone) {
+                \Log::error("STT polling timed out after {$attempts} attempts for meeting: {$this->meetingId}. Some operations may be incomplete.", [
+                    'incomplete_operations' => collect($activeOperations)->where('completed', '!==', true)->pluck('operation'),
+                ]);
+            }
         } finally {
             // 6. Always clean up local files, even if an exception was thrown
             foreach ($localFiles as $file) {
-                @unlink($file);
+                if (file_exists($file)) {
+                    @unlink($file);
+                }
             }
-            \Log::info("All individual tracks processed and cleaned up.");
+            \Log::info("All individual tracks processed and cleaned up for meeting: {$this->meetingId}");
         }
 
         // 7. Upload composed full meeting video to AWS S3
@@ -190,6 +267,14 @@ class ProcessMeetingTranscription implements ShouldQueue
             $this->uploadComposedRecordingToS3($composedRecording, $domain, $secretKey);
         } else {
             \Log::info("No composed video recording found for meeting: {$this->meetingId}");
+        }
+        } catch (\Throwable $e) {
+            \Log::error("ProcessMeetingTranscription uncaught exception for meeting: {$this->meetingId}", [
+                'exception' => $e->getMessage(),
+                'file'      => $e->getFile(),
+                'line'      => $e->getLine(),
+            ]);
+            throw $e; // re-throw so Laravel retries or calls failed()
         }
     }
 
@@ -207,11 +292,15 @@ class ProcessMeetingTranscription implements ShouldQueue
         }
 
         $s3Url = $linkResponse->json('url');
+        $recordingsDir = storage_path('app/recordings');
+        if (!is_dir($recordingsDir)) {
+            mkdir($recordingsDir, 0755, true);
+        }
         $localPath = storage_path("app/recordings/meeting_{$this->meetingId}_full.mp4");
 
-        Http::withOptions(['sink' => $localPath])->timeout(600)->get($s3Url);
+        $dlResponse = Http::withOptions(['sink' => $localPath])->timeout(600)->get($s3Url);
 
-        if (!file_exists($localPath)) {
+        if (!$dlResponse->successful() || !file_exists($localPath) || filesize($localPath) === 0) {
             \Log::error("Failed to download composed recording for meeting: {$this->meetingId}");
             return;
         }

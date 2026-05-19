@@ -92,7 +92,7 @@ return [
     'transcript_host_badge' => 'Host',
     'transcript_copy_btn' => 'Copy',
     'transcript_copied_btn' => 'Copied',
-    'transcript_empty' => 'No transcript available for this meeting yet.',
+    'transcript_empty' => 'The full meeting transcript will appear here once processing is complete. This may take a few minutes after the meeting ends.',
 
     // Recording Section
     'recording_tab' => 'Recording',
