@@ -70,8 +70,8 @@ Route::prefix('super-admin')
     ->middleware(['auth', 'role:super_admin'])
     ->name('super_admin.')
     ->group(function () {
-        Route::get('/logs', [App\Http\Controllers\SuperAdminController::class, 'logs'])->name('logs');
-        Route::delete('/logs', [App\Http\Controllers\SuperAdminController::class, 'clearLogs'])->name('logs.clear');
+        Route::get('/logs', [App\Http\Controllers\SuperAdminDashboardController::class, 'logs'])->name('logs');
+        Route::delete('/logs', [App\Http\Controllers\SuperAdminDashboardController::class, 'clearLogs'])->name('logs.clear');
         Route::get('/database', [App\Http\Controllers\SuperAdminController::class, 'database'])->name('database');
         Route::get('/queues', [App\Http\Controllers\SuperAdminController::class, 'queues'])->name('queues');
         Route::post('/queues/retry/{id}', [App\Http\Controllers\SuperAdminController::class, 'retryFailedJob'])->name('queues.retry');
