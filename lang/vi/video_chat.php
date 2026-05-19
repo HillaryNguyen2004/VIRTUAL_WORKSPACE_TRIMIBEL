@@ -96,7 +96,7 @@ return [
     'transcript_host_badge' => 'Chủ trì',
     'transcript_copy_btn' => 'Sao chép',
     'transcript_copied_btn' => 'Đã sao chép',
-    'transcript_empty' => 'Chưa có bản ghi âm cho cuộc họp này.',
+    'transcript_empty' => 'Bản ghi âm đầy đủ của cuộc họp sẽ xuất hiện ở đây sau khi quá trình xử lý hoàn tất. Quá trình này có thể mất vài phút sau khi cuộc họp kết thúc.',
 
     // Recording Section
     'recording_tab' => 'Ghi hình',
