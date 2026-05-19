@@ -48,6 +48,7 @@ class IngestS3Request(BaseModel):
 class DeleteChunksRequest(BaseModel):
     storage_file: str = Field(..., min_length=1)
     workspace_id: str = Field(..., min_length=1)
+    user_id: str | None = None
 
 class IngestResult(BaseModel):
     success: bool
