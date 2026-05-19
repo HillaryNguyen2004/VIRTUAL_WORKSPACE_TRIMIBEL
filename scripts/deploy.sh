@@ -105,7 +105,7 @@ echo "▶ [9/11] Syncing Nginx config..."
 echo "▶ [10/11] Syncing systemd service files..."
 (
   CHANGED_SVCS=()
-  for SVC in laravel-queue chatbot ml-api whitebophir; do
+  for SVC in laravel-queue chatbot ml-api whitebophir face-detection; do
     SRC="$DEPLOY_PATH/scripts/services/${SVC}.service"
     DST="/etc/systemd/system/${SVC}.service"
     if [ -f "$SRC" ] && ! diff -q "$SRC" "$DST" > /dev/null 2>&1; then
@@ -122,7 +122,7 @@ echo "▶ [10/11] Syncing systemd service files..."
   fi
 ) || echo "⚠  Service file sync failed — not blocking deploy."
 
-echo "▶ [11/11] Updating & restarting ML API..."
+echo "▶ [11/12] Updating & restarting ML API..."
 (
   REQ_HASH_FILE="ml/.venv/.req_hash"
   REQ_HASH=$(md5sum ml/requirements.txt | cut -d' ' -f1)
@@ -137,6 +137,23 @@ echo "▶ [11/11] Updating & restarting ML API..."
   fi
   sudo systemctl restart ml-api
 ) || echo "⚠  ML API update failed — not blocking deploy."
+
+echo "▶ [12/12] Updating & restarting Face Detection service..."
+(
+  PYTHON_FACE="python3.11"
+  REQ_HASH_FILE="face_detection/.venv/.req_hash"
+  REQ_HASH=$(md5sum face_detection/requirements.txt | cut -d' ' -f1)
+  if [ -d "face_detection/.venv" ] && [ -f "$REQ_HASH_FILE" ] && [ "$(cat $REQ_HASH_FILE)" = "$REQ_HASH" ]; then
+    echo "  face-detection deps unchanged, skipping pip install"
+  else
+    if [ ! -d "face_detection/.venv" ]; then
+      $PYTHON_FACE -m venv face_detection/.venv
+    fi
+    face_detection/.venv/bin/pip install -r face_detection/requirements.txt --quiet
+    echo "$REQ_HASH" > "$REQ_HASH_FILE"
+  fi
+  sudo systemctl restart face-detection
+) || echo "⚠  Face Detection service update failed — not blocking deploy."
 
 echo ""
 echo "✅  Deployment complete at $(date '+%Y-%m-%d %H:%M:%S')"

@@ -23,16 +23,18 @@ class FaceService
                 $normalizedPath = substr($normalizedPath, 4);
             }
 
+            $disk = Storage::disk();
+
             // File exists?
-            if (!Storage::disk('public')->exists($normalizedPath)) {
+            if (!$disk->exists($normalizedPath)) {
                 Log::error("FaceService: Enrolled face missing in storage for user {$user->id}: {$normalizedPath}");
                 return false;
             }
 
             Log::info("FaceService: Sending request to Python service for user {$user->id}. Path: {$normalizedPath}");
 
-            // Read enrolled image from storage/app/public/...
-            $binary = Storage::disk('public')->get($normalizedPath);
+            // Read enrolled image from default disk (S3 on production, local otherwise)
+            $binary = $disk->get($normalizedPath);
             $enrolledDataUrl = "data:image/jpeg;base64," . base64_encode($binary);
 
             $resp = Http::timeout(8)
