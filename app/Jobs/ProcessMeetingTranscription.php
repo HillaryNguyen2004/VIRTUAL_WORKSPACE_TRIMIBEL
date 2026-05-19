@@ -109,7 +109,7 @@ class ProcessMeetingTranscription implements ShouldQueue
 
                 \Illuminate\Support\Facades\Http::withOptions(['sink' => $localVideoPath])->timeout(300)->get($s3Url);
 
-                $process = new \Symfony\Component\Process\Process(['ffmpeg', '-y', '-i', $localVideoPath, '-vn', '-ac', '1', '-ar', '16000', $audioPath]);
+                $process = new \Symfony\Component\Process\Process(['ffmpeg', '-y', '-i', $localVideoPath, '-ac', '1', '-ar', '16000', $audioPath]);
                 $process->run();
 
                 if (!file_exists($audioPath)) {
