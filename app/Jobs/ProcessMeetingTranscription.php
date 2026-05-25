@@ -11,6 +11,14 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Process\Process;
 use Google\Cloud\Storage\StorageClient;
+use Google\Cloud\Speech\V2\Client\SpeechClient;
+use Google\Cloud\Speech\V2\BatchRecognizeRequest;
+use Google\Cloud\Speech\V2\BatchRecognizeFileMetadata;
+use Google\Cloud\Speech\V2\RecognitionConfig;
+use Google\Cloud\Speech\V2\RecognitionFeatures;
+use Google\Cloud\Speech\V2\AutoDetectDecodingConfig;
+use Google\Cloud\Speech\V2\RecognitionOutputConfig;
+use Google\Cloud\Speech\V2\InlineOutputConfig;
 use App\Models\MeetingTranscription;
 use App\Models\MeetingHistory;
 
@@ -102,15 +110,21 @@ class ProcessMeetingTranscription implements ShouldQueue
         $storage = new \Google\Cloud\Storage\StorageClient(['keyFilePath' => config('services.google_cloud.credentials')]);
         $bucket = $storage->bucket(config('services.google_cloud.storage_bucket'));
 
-        $credentials = new \Google\Auth\Credentials\ServiceAccountCredentials(
-            'https://www.googleapis.com/auth/cloud-platform',
-            config('services.google_cloud.credentials')
-        );
-        $tokenData = $credentials->fetchAuthToken();
-        $token = $tokenData['access_token'] ?? null;
-        if (empty($token)) {
-            throw new \RuntimeException('Failed to fetch Google auth token — check GOOGLE_APPLICATION_CREDENTIALS.');
-        }
+        $projectId  = config('services.google_cloud.project_id');
+        $location   = config('services.google_cloud.stt_location', 'asia-south1'); // Chirp 3 preview region
+        $recognizer = "projects/{$projectId}/locations/{$location}/recognizers/_";
+
+        // Regional endpoint must match the location in the recognizer name.
+        // 'global' uses the default endpoint; all other locations use {location}-speech.googleapis.com
+        $apiEndpoint = $location === 'global'
+            ? 'speech.googleapis.com'
+            : "{$location}-speech.googleapis.com";
+
+        // V2 SDK handles auth via credentials file — no manual token needed
+        $speechClient = new SpeechClient([
+            'credentials' => config('services.google_cloud.credentials'),
+            'apiEndpoint' => $apiEndpoint,
+        ]);
 
         $recordingsDir = storage_path('app/recordings');
         if (!is_dir($recordingsDir)) {
@@ -177,39 +191,37 @@ class ProcessMeetingTranscription implements ShouldQueue
                 $bucket->upload(fopen($audioPath, 'r'), ['name' => $fileName]);
                 $gcsUri = "gs://" . config('services.google_cloud.storage_bucket') . "/{$fileName}";
 
-                // 4. Start Google STT
-                $sttResponse = \Illuminate\Support\Facades\Http::withToken($token)
-                    ->post('https://speech.googleapis.com/v1/speech:longrunningrecognize', [
-                        'config' => [
-                            'encoding' => 'FLAC',
-                            'sampleRateHertz' => 16000,
-                            'languageCode' => 'en-US',
-                            'alternativeLanguageCodes' => ['vi-VN'],
-                            'enableAutomaticPunctuation' => true,
-                        ],
-                        'audio' => ['uri' => $gcsUri]
-                    ]);
+                // 4. Start Google STT V2 (Chirp 3) via SDK
+                $batchRequest = new BatchRecognizeRequest([
+                    'recognizer' => $recognizer,
+                    'config'     => new RecognitionConfig([
+                        'model'                => 'chirp_3',
+                        'language_codes'       => ['en-US', 'vi-VN'],
+                        'auto_decoding_config' => new AutoDetectDecodingConfig(),
+                        'features'             => new RecognitionFeatures([
+                            'enable_automatic_punctuation' => true,
+                        ]),
+                    ]),
+                    'files' => [
+                        new BatchRecognizeFileMetadata(['uri' => $gcsUri]),
+                    ],
+                    'recognition_output_config' => new RecognitionOutputConfig([
+                        'inline_response_config' => new InlineOutputConfig(),
+                    ]),
+                ]);
 
-                if (!$sttResponse->successful()) {
-                    \Log::error("Google STT request failed for track {$recordingId}.", [
-                        'status' => $sttResponse->status(),
-                        'body'   => $sttResponse->body(),
-                    ]);
-                }
+                $operation = $speechClient->batchRecognize($batchRequest);
+                \Log::info("Google STT V2 operation started for track {$recordingId}.");
 
-                $operationName = $sttResponse->json('name');
-
-                if ($operationName) {
-                    \Log::info("Google STT operation started for track {$recordingId}.", ['operation' => $operationName]);
-                    $activeOperations[] = [
-                        'operation' => $operationName,
-                        'user_id'   => $userId,
-                    ];
-                }
+                $activeOperations[] = [
+                    'operation' => $operation,
+                    'user_id'   => $userId,
+                    'gcs_uri'   => $gcsUri,
+                ];
             }
 
-            // 5. Poll all Google STT operations until they are ALL finished
-            $allDone = false;
+            // 5. Poll all Google STT V2 operations until they are ALL finished
+            $allDone  = false;
             $attempts = 0;
 
             while (!$allDone && $attempts < 40) {
@@ -222,40 +234,39 @@ class ProcessMeetingTranscription implements ShouldQueue
                         continue;
                     }
 
-                    $opResponse = \Illuminate\Support\Facades\Http::withToken($token)
-                        ->get("https://speech.googleapis.com/v1/operations/{$op['operation']}");
+                    // Reload the operation status from Google
+                    $op['operation']->reload();
 
-                    $opData = $opResponse->json();
-
-                    if (!empty($opData['done'])) {
+                    if ($op['operation']->isDone()) {
                         $op['completed'] = true;
-                        if (!empty($opData['error'])) {
-                            \Log::error("Google STT operation returned an error.", [
-                                'operation' => $op['operation'],
-                                'error'     => $opData['error'],
-                            ]);
-                        } elseif (!empty($opData['response'])) {
-                            $this->saveToDatabase($opData['response'], $op['user_id']);
+
+                        if ($op['operation']->operationSucceeded()) {
+                            /** @var \Google\Cloud\Speech\V2\BatchRecognizeResponse $result */
+                            $result = $op['operation']->getResult();
+                            $this->saveToDatabase($result, $op['user_id'], $op['gcs_uri']);
                         } else {
-                            \Log::warning("Google STT operation completed but had no response.", ['operation' => $op['operation']]);
+                            $error = $op['operation']->getError();
+                            \Log::error("Google STT V2 operation failed.", [
+                                'error' => $error ? $error->getMessage() : 'unknown',
+                            ]);
                         }
                     } else {
                         $allDone = false;
                     }
                 }
             }
+
             if (!$allDone) {
-                \Log::error("STT polling timed out after {$attempts} attempts for meeting: {$this->meetingId}. Some operations may be incomplete.", [
-                    'incomplete_operations' => collect($activeOperations)->where('completed', '!==', true)->pluck('operation'),
-                ]);
+                \Log::error("STT polling timed out after {$attempts} attempts for meeting: {$this->meetingId}. Some operations may be incomplete.");
             }
         } finally {
-            // 6. Always clean up local files, even if an exception was thrown
+            // 6. Always clean up local files and close the SDK client
             foreach ($localFiles as $file) {
                 if (file_exists($file)) {
                     @unlink($file);
                 }
             }
+            $speechClient->close();
             \Log::info("All individual tracks processed and cleaned up for meeting: {$this->meetingId}");
         }
 
@@ -322,27 +333,49 @@ class ProcessMeetingTranscription implements ShouldQueue
         \Log::info("Composed meeting video uploaded to S3: {$s3Key}");
     }
 
-    // Updated Database Save Method
-    protected function saveToDatabase($response, $userId)
+    // V2 Database Save — parses BatchRecognizeResponse from the V2 SDK
+    protected function saveToDatabase(\Google\Cloud\Speech\V2\BatchRecognizeResponse $response, $userId, string $gcsUri)
     {
-        $results = $response['results'] ?? [];
-        if (count($results) === 0) return;
+        // V2 returns a map of file URI → BatchRecognizeFileResult
+        $fileResults = $response->getResults();
+
+        // We send one file per request, so grab the first (and only) result
+        $fileResult = null;
+        foreach ($fileResults as $result) {
+            $fileResult = $result;
+            break;
+        }
+
+        if (!$fileResult) {
+            \Log::warning("STT V2: no file result found in BatchRecognizeResponse for meeting: {$this->meetingId}");
+            return;
+        }
+
+        // InlineResult contains the actual transcript segments
+        $inlineResult = $fileResult->getTranscript();
+        if (!$inlineResult) {
+            \Log::warning("STT V2: file result has no inline transcript for meeting: {$this->meetingId}");
+            return;
+        }
 
         $fullText = '';
 
-        // Since it's one person, we just concatenate all the results into blocks of text
-        foreach ($results as $result) {
-            $transcript = $result['alternatives'][0]['transcript'] ?? '';
-            if ($transcript) {
-                $fullText .= trim($transcript) . ' ';
+        // Concatenate all recognition result segments into one block of text
+        foreach ($inlineResult->getResults() as $result) {
+            $alternatives = $result->getAlternatives();
+            if (count($alternatives) > 0) {
+                $text = $alternatives[0]->getTranscript();
+                if ($text) {
+                    $fullText .= trim($text) . ' ';
+                }
             }
         }
 
         if (!empty(trim($fullText))) {
             \App\Models\MeetingTranscription::create([
                 'meeting_id' => $this->meetingId,
-                'user_id' => $userId, // Assigned directly to the user!
-                'text' => trim($fullText)
+                'user_id'    => $userId,
+                'text'       => trim($fullText),
             ]);
         }
     }
