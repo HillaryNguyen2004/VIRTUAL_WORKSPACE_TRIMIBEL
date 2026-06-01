@@ -6,11 +6,10 @@
 set -euo pipefail
 
 # ── Config ────────────────────────────────────────────────────────────────────
-DEPLOY_PATH="${EC2_DEPLOY_PATH:-${HOMELAB_DEPLOY_PATH:-/var/www/html}}"
-PHP="${PHP_BIN:-php8.5}"
+DEPLOY_PATH="${EC2_DEPLOY_PATH:-/var/www/html}"
+PHP="php8.5"
 COMPOSER=$(which composer || echo "/usr/local/bin/composer")
 WEB_USER="www-data"
-DEPLOY_USER="${DEPLOY_USER:-ubuntu}"
 PYTHON_CHATBOT="python3.11"
 PYTHON_ML="python3.10"
 
@@ -55,13 +54,13 @@ $PHP artisan event:cache
 # ── 5. Storage & permissions ──────────────────────────────────────────────────
 echo "▶ [5/11] Fixing permissions..."
 $PHP artisan storage:link --force 2>/dev/null || true
-sudo chown -R "$DEPLOY_USER":"$WEB_USER" storage bootstrap/cache
+sudo chown -R ubuntu:"$WEB_USER" storage bootstrap/cache
 sudo chmod -R 775 storage bootstrap/cache
-sudo chown -R "$DEPLOY_USER":"$WEB_USER" public/build 2>/dev/null || true
+sudo chown -R ubuntu:"$WEB_USER" public/build 2>/dev/null || true
 sudo chmod -R 775 public/build 2>/dev/null || true
-# ChromaDB must be writable by both deploy user (chatbot service) and www-data (PHP ingest subprocess)
+# ChromaDB must be writable by both ubuntu (chatbot service) and www-data (PHP ingest subprocess)
 if [ -d "chatbot_service/var" ]; then
-  sudo chown -R "$DEPLOY_USER":"$WEB_USER" chatbot_service/var
+  sudo chown -R ubuntu:"$WEB_USER" chatbot_service/var
   sudo chmod -R 775 chatbot_service/var
   find chatbot_service/var -type d -exec sudo chmod g+s {} \;
 fi
@@ -109,20 +108,11 @@ echo "▶ [10/11] Syncing systemd service files..."
   for SVC in laravel-queue chatbot ml-api whitebophir face-detection; do
     SRC="$DEPLOY_PATH/scripts/services/${SVC}.service"
     DST="/etc/systemd/system/${SVC}.service"
-    # Generate effective service file with runtime substitutions applied
-    EFFECTIVE=$(mktemp)
-    sed \
-      -e "s|User=ubuntu|User=$DEPLOY_USER|g" \
-      -e "s|Group=ubuntu|Group=$DEPLOY_USER|g" \
-      -e "s|php8\.[0-9][0-9]*|$PHP|g" \
-      -e "s|/var/www/html|$DEPLOY_PATH|g" \
-      "$SRC" > "$EFFECTIVE"
-    if [ -f "$SRC" ] && ! diff -q "$EFFECTIVE" "$DST" > /dev/null 2>&1; then
-      sudo cp "$EFFECTIVE" "$DST"
+    if [ -f "$SRC" ] && ! diff -q "$SRC" "$DST" > /dev/null 2>&1; then
+      sudo cp "$SRC" "$DST"
       CHANGED_SVCS+=("$SVC")
       echo "  updated ${SVC}.service"
     fi
-    rm -f "$EFFECTIVE"
   done
   if [ "${#CHANGED_SVCS[@]}" -gt 0 ]; then
     sudo systemctl daemon-reload
