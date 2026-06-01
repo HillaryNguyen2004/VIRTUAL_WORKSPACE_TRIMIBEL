@@ -1,4 +1,4 @@
-name: CI/CD → AWS EC2 (develop)
+name: CI/CD → Homelab Server (develop)
 
 # Triggers when a PR is merged into develop
 on:
@@ -113,19 +113,18 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: frontend-build
+          name: frontend-build-homelab
           path: public/build/
           retention-days: 1
 
   # ──────────────────────────────────────────────────────────
-  # JOB 3 — Deploy to AWS EC2
+  # JOB 3 — Deploy to Homelab Server
   # Runs only after tests pass AND frontend builds succeed
   # ──────────────────────────────────────────────────────────
   deploy:
-    name: Deploy to EC2
+    name: Deploy to Homelab
     runs-on: ubuntu-latest
     needs: [test, build-frontend]
-    environment: develop
 
     steps:
       - name: Checkout
@@ -134,17 +133,24 @@ jobs:
       - name: Download frontend build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: frontend-build
+          name: frontend-build-homelab
           path: public/build/
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
 
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.HOMELAB_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -H "${{ secrets.HOMELAB_TS_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Sync application files to EC2
+      - name: Sync application files to Homelab
         run: |
           rsync -az --delete \
             --omit-dir-times \
@@ -163,17 +169,17 @@ jobs:
             --exclude='whitebophir/node_modules' \
             --exclude='tools/docx-converter/node_modules' \
             -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
-            ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:${{ secrets.EC2_DEPLOY_PATH }}/
+            ./ ${{ secrets.HOMELAB_USER }}@${{ secrets.HOMELAB_TS_HOST }}:${{ secrets.HOMELAB_DEPLOY_PATH }}/
 
-      - name: Run deployment script on EC2
+      - name: Run deployment script on Homelab
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
             -o ConnectTimeout=30 \
             -o ServerAliveInterval=60 \
             -o ServerAliveCountMax=10 \
-            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
-            "bash ${{ secrets.EC2_DEPLOY_PATH }}/scripts/deploy-ec2.sh"
+            ${{ secrets.HOMELAB_USER }}@${{ secrets.HOMELAB_TS_HOST }} \
+            "PHP_BIN=php8.2 DEPLOY_USER=${{ secrets.HOMELAB_USER }} HOMELAB_DEPLOY_PATH=${{ secrets.HOMELAB_DEPLOY_PATH }} bash ${{ secrets.HOMELAB_DEPLOY_PATH }}/scripts/deploy.sh"
 
       - name: Notify deployment result
         if: always()
@@ -182,4 +188,4 @@ jobs:
           COMMIT="${{ github.sha }}"
           SHORT="${COMMIT:0:7}"
           ACTOR="${{ github.actor }}"
-          echo "Deployment ${STATUS} — commit ${SHORT} by ${ACTOR}"
+          echo "Homelab deployment ${STATUS} — commit ${SHORT} by ${ACTOR}"
