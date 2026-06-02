@@ -146,9 +146,9 @@ jobs:
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.HOMELAB_SSH_KEY }}" > ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H "${{ secrets.HOMELAB_TS_HOST }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -H "${{ secrets.REMOTE_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Sync application files to Homelab
         run: |
@@ -169,7 +169,7 @@ jobs:
             --exclude='whitebophir/node_modules' \
             --exclude='tools/docx-converter/node_modules' \
             -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
-            ./ ${{ secrets.HOMELAB_USER }}@${{ secrets.HOMELAB_TS_HOST }}:${{ secrets.HOMELAB_DEPLOY_PATH }}/
+            ./ ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }}:${{ secrets.REMOTE_DEPLOY_PATH }}/
 
       - name: Run deployment script on Homelab
         run: |
@@ -178,8 +178,8 @@ jobs:
             -o ConnectTimeout=30 \
             -o ServerAliveInterval=60 \
             -o ServerAliveCountMax=10 \
-            ${{ secrets.HOMELAB_USER }}@${{ secrets.HOMELAB_TS_HOST }} \
-            "PHP_BIN=php8.2 DEPLOY_USER=${{ secrets.HOMELAB_USER }} HOMELAB_DEPLOY_PATH=${{ secrets.HOMELAB_DEPLOY_PATH }} bash ${{ secrets.HOMELAB_DEPLOY_PATH }}/scripts/deploy.sh"
+            ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} \
+            "PHP_BIN=php8.2 DEPLOY_USER=${{ secrets.REMOTE_USER }} REMOTE_DEPLOY_PATH=${{ secrets.REMOTE_DEPLOY_PATH }} bash ${{ secrets.REMOTE_DEPLOY_PATH }}/scripts/deploy.sh"
 
       - name: Notify deployment result
         if: always()
