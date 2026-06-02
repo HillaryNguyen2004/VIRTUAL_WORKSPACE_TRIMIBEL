@@ -2,7 +2,7 @@ name: Homelab Continuous Deployment
 
 on:
   push:
-    branches: [develop] # Chạy khi push vào branch develop
+    branches: [feature/ci-cd] # Chạy khi push vào branch develop
 
 jobs:
   deploy:
