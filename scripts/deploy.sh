@@ -6,7 +6,7 @@
 set -euo pipefail
 
 # ── Config ────────────────────────────────────────────────────────────────────
-DEPLOY_PATH="${EC2_DEPLOY_PATH:-${HOMELAB_DEPLOY_PATH:-/var/www/html}}"
+DEPLOY_PATH="${EC2_DEPLOY_PATH:-${REMOTE_DEPLOY_PATH:-/var/www/html}}"
 PHP="${PHP_BIN:-php8.5}"
 COMPOSER=$(which composer || echo "/usr/local/bin/composer")
 WEB_USER="www-data"
