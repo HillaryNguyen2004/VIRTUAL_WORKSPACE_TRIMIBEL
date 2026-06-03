@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=www-data
 Group=www-data
-WorkingDirectory=/var/www/html/whitebophir
+WorkingDirectory=/home/apps/DO_AN_CHUYEN_NGANH/whitebophir
 
 Environment=NODE_ENV=production
 Environment=PORT=3002

@@ -5,18 +5,18 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=ubuntu
-Group=ubuntu
-WorkingDirectory=/var/www/html/ml
+User=root
+Group=root
+WorkingDirectory=/home/apps/DO_AN_CHUYEN_NGANH/ml
 
 # Load ETL env (PG_URL, Supabase + MySQL credentials for ML API)
-EnvironmentFile=/var/www/html/etl/.env
+EnvironmentFile=/home/apps/DO_AN_CHUYEN_NGANH/etl/.env
 
 # TensorFlow CPU-only — suppress warnings
 Environment=TF_CPP_MIN_LOG_LEVEL=2
-Environment=PYTHONPATH=/var/www/html/etl:/var/www/html/ml
+Environment=PYTHONPATH=/home/apps/DO_AN_CHUYEN_NGANH/etl:/home/apps/DO_AN_CHUYEN_NGANH/ml
 
-ExecStart=/var/www/html/ml/.venv/bin/gunicorn \
+ExecStart=/home/apps/DO_AN_CHUYEN_NGANH/ml/.venv/bin/gunicorn \
     --bind 127.0.0.1:5001 \
     --workers 2 \
     --timeout 120 \

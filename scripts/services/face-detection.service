@@ -5,11 +5,11 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=ubuntu
-Group=ubuntu
-WorkingDirectory=/var/www/html/face_detection
+User=root
+Group=root
+WorkingDirectory=/home/apps/DO_AN_CHUYEN_NGANH/face_detection
 
-ExecStart=/var/www/html/face_detection/.venv/bin/uvicorn \
+ExecStart=/home/apps/DO_AN_CHUYEN_NGANH/face_detection/.venv/bin/uvicorn \
     app:app \
     --host 127.0.0.1 \
     --port 8001 \
