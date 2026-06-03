@@ -24,13 +24,14 @@ echo ""
 
 # ── 1. PHP dependencies ───────────────────────────────────────────────────────
 echo "▶ [1/10] Installing PHP dependencies..."
+export COMPOSER_ALLOW_SUPERUSER=1
+
 $COMPOSER install \
   --no-dev \
   --no-interaction \
   --prefer-dist \
   --optimize-autoloader \
-  --ignore-platform-reqs \
-  --quiet
+  --ignore-platform-reqs
 
 # ── 2. Node dependencies (docx converter tool) ───────────────────────────────
 echo "▶ [2/10] Installing Node dependencies (docx-converter)..."
