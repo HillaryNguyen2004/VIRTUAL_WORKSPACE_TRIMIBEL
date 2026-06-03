@@ -40,6 +40,12 @@ echo "▶ [2/10] Installing Node dependencies (docx-converter)..."
   npm install --production --silent
 ) || echo "⚠  docx-converter npm install failed — not blocking deploy."
 
+echo "▶ [2b/10] Installing Node dependencies (whitebophir)..."
+(
+  cd "$DEPLOY_PATH/whitebophir"
+  npm install --production --silent
+) || echo "⚠  whitebophir npm install failed — not blocking deploy."
+
 # ── 3. Database migrations ────────────────────────────────────────────────────
 echo "▶ [3/11] Running database migrations..."
 $PHP artisan migrate --force
