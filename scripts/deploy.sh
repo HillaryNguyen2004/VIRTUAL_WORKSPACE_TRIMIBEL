@@ -14,6 +14,16 @@ DEPLOY_USER="${DEPLOY_USER:-ubuntu}"
 PYTHON_CHATBOT="python3.11"
 PYTHON_ML="python3.10"
 
+ensure_python_venv() {
+  local venv_dir="$1"
+  local python_bin="$2"
+
+  if [ ! -x "$venv_dir/bin/pip" ] || [ ! -x "$venv_dir/bin/python" ]; then
+    rm -rf "$venv_dir"
+    "$python_bin" -m venv "$venv_dir"
+  fi
+}
+
 cd "$DEPLOY_PATH"
 
 echo ""
@@ -94,9 +104,7 @@ echo "▶ [8/11] Updating & restarting chatbot service..."
   if [ -d "chatbot_service/.venv" ] && [ -f "$REQ_HASH_FILE" ] && [ "$(cat $REQ_HASH_FILE)" = "$REQ_HASH" ]; then
     echo "  chatbot deps unchanged, skipping pip install"
   else
-    if [ ! -d "chatbot_service/.venv" ]; then
-      $PYTHON_CHATBOT -m venv chatbot_service/.venv
-    fi
+    ensure_python_venv "chatbot_service/.venv" "$PYTHON_CHATBOT"
     chatbot_service/.venv/bin/pip install -r chatbot_service/requirements.txt --quiet
     echo "$REQ_HASH" > "$REQ_HASH_FILE"
   fi
@@ -151,9 +159,7 @@ echo "▶ [11/12] Updating & restarting ML API..."
   if [ -d "ml/.venv" ] && [ -f "$REQ_HASH_FILE" ] && [ "$(cat $REQ_HASH_FILE)" = "$REQ_HASH" ]; then
     echo "  ml deps unchanged, skipping pip install"
   else
-    if [ ! -d "ml/.venv" ]; then
-      $PYTHON_ML -m venv ml/.venv
-    fi
+    ensure_python_venv "ml/.venv" "$PYTHON_ML"
     ml/.venv/bin/pip install -r ml/requirements.txt --quiet
     echo "$REQ_HASH" > "$REQ_HASH_FILE"
   fi
@@ -168,9 +174,7 @@ echo "▶ [12/12] Updating & restarting Face Detection service..."
   if [ -d "face_detection/.venv" ] && [ -f "$REQ_HASH_FILE" ] && [ "$(cat $REQ_HASH_FILE)" = "$REQ_HASH" ]; then
     echo "  face-detection deps unchanged, skipping pip install"
   else
-    if [ ! -d "face_detection/.venv" ]; then
-      $PYTHON_FACE -m venv face_detection/.venv
-    fi
+    ensure_python_venv "face_detection/.venv" "$PYTHON_FACE"
     face_detection/.venv/bin/pip install -r face_detection/requirements.txt --quiet
     echo "$REQ_HASH" > "$REQ_HASH_FILE"
   fi
