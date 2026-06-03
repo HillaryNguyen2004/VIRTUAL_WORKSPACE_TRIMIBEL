@@ -69,7 +69,7 @@ fi
 
 # ── 4. Restart PHP-FPM ────────────────────────────────────────────────────────
 echo "▶ [6/11] Restarting PHP-FPM..."
-sudo systemctl restart php8.5-fpm
+sudo systemctl restart php8.2-fpm
 
 # ── 5. Restart Laravel queue worker ──────────────────────────────────────────
 echo "▶ [7/11] Restarting Laravel queue worker..."
