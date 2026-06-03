@@ -73,6 +73,11 @@ sudo systemctl restart php8.2-fpm
 
 # ── 5. Restart Laravel queue worker ──────────────────────────────────────────
 echo "▶ [7/11] Restarting Laravel queue worker..."
+if [ ! -f "/etc/systemd/system/laravel-queue.service" ] && [ -f "$DEPLOY_PATH/scripts/services/laravel-queue.service" ]; then
+  echo "  laravel-queue.service missing, installing it now"
+  sudo cp "$DEPLOY_PATH/scripts/services/laravel-queue.service" /etc/systemd/system/laravel-queue.service
+fi
+sudo systemctl daemon-reload
 sudo systemctl restart laravel-queue
 
 # ── 6. Python Chatbot service (FastAPI/uvicorn on :8002) ─────────────────────
