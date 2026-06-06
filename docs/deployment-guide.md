@@ -31,18 +31,18 @@ Local daemons:
 
 Go to **GitHub → Repository → Settings → Secrets and variables → Actions** and add:
 
-| Secret | Value |
-|--------|-------|
-| `EC2_HOST` | EC2 public IP or DNS |
-| `EC2_USER` | `ubuntu` |
-| `EC2_SSH_KEY` | Contents of the private SSH key |
-| `EC2_DEPLOY_PATH` | `/var/www/html` |
-| `PUSHER_APP_KEY` | From Pusher dashboard |
-| `PUSHER_APP_SECRET` | From Pusher dashboard |
-| `PUSHER_APP_CLUSTER` | e.g. `mt1` |
-| `PUSHER_HOST` | `sockjs-mt1.pusher.com` |
-| `PUSHER_PORT` | `443` |
-| `PUSHER_SCHEME` | `https` |
+| Secret               | Value                           |
+| -------------------- | ------------------------------- |
+| `EC2_HOST`           | EC2 public IP or DNS            |
+| `EC2_USER`           | `ubuntu`                        |
+| `EC2_SSH_KEY`        | Contents of the private SSH key |
+| `EC2_DEPLOY_PATH`    | `/var/www/html`                 |
+| `PUSHER_APP_KEY`     | From Pusher dashboard           |
+| `PUSHER_APP_SECRET`  | From Pusher dashboard           |
+| `PUSHER_APP_CLUSTER` | e.g. `mt1`                      |
+| `PUSHER_HOST`        | `sockjs-mt1.pusher.com`         |
+| `PUSHER_PORT`        | `443`                           |
+| `PUSHER_SCHEME`      | `https`                         |
 
 ---
 
@@ -258,24 +258,79 @@ push to develop
 
 ### What `deploy.sh` does (10 steps):
 
-| Step | Action |
-|------|--------|
-| 1/10 | `composer install` — no-dev, optimized |
-| 2/10 | `php artisan migrate --force` |
-| 3/10 | `config:cache`, `route:clear`, `view:cache`, `event:cache` |
-| 4/10 | Fix storage/cache permissions (`775`, `ubuntu:www-data`) |
-| 5/10 | Restart `php8.5-fpm` |
-| 6/10 | Restart `laravel-queue` |
-| 7/10 | `pip install` chatbot deps if `requirements.txt` changed → restart `chatbot` |
-| 8/10 | Sync `scripts/nginx/laravel.conf` if changed → reload nginx |
-| 9/10 | Sync `scripts/services/*.service` if changed → `daemon-reload` → restart changed services |
-| 10/10 | `pip install` ML deps if changed → restart `ml-api` |
+| Step  | Action                                                                                    |
+| ----- | ----------------------------------------------------------------------------------------- |
+| 1/10  | `composer install` — no-dev, optimized                                                    |
+| 2/10  | `php artisan migrate --force`                                                             |
+| 3/10  | `config:cache`, `route:clear`, `view:cache`, `event:cache`                                |
+| 4/10  | Fix storage/cache permissions (`775`, `ubuntu:www-data`)                                  |
+| 5/10  | Restart `php8.5-fpm`                                                                      |
+| 6/10  | Restart `laravel-queue`                                                                   |
+| 7/10  | `pip install` chatbot deps if `requirements.txt` changed → restart `chatbot`              |
+| 8/10  | Sync `scripts/nginx/laravel.conf` if changed → reload nginx                               |
+| 9/10  | Sync `scripts/services/*.service` if changed → `daemon-reload` → restart changed services |
+| 10/10 | `pip install` ML deps if changed → restart `ml-api`                                       |
 
 ---
 
 ## 5. Service Management
 
-### View logs
+### 5.1 Clear Laravel / Artisan caches
+
+Run these when you change `.env`, config files, routes, views, or event bindings:
+
+```bash
+php artisan optimize:clear
+php artisan config:clear
+php artisan cache:clear
+php artisan route:clear
+php artisan view:clear
+php artisan event:clear
+php artisan queue:restart
+```
+
+If you want to rebuild caches after clearing them:
+
+```bash
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+php artisan event:cache
+```
+
+### 5.2 Restart services
+
+```bash
+sudo systemctl restart laravel-queue
+sudo systemctl restart chatbot
+sudo systemctl restart ml-api
+sudo systemctl restart face-detection
+sudo systemctl restart whitebophir
+sudo systemctl restart php8.2-fpm
+sudo systemctl restart nginx
+```
+
+### 5.3 Check service status
+
+```bash
+systemctl status laravel-queue chatbot ml-api face-detection whitebophir php8.2-fpm nginx --no-pager
+```
+
+If you want one service at a time:
+
+```bash
+sudo systemctl status laravel-queue --no-pager
+sudo systemctl status chatbot --no-pager
+sudo systemctl status ml-api --no-pager
+sudo systemctl status face-detection --no-pager
+sudo systemctl status whitebophir --no-pager
+sudo systemctl status php8.2-fpm --no-pager
+sudo systemctl status nginx --no-pager
+```
+
+### 5.4 Real-time logs
+
+Live tail commands:
 
 ```bash
 sudo journalctl -u chatbot -f
@@ -283,6 +338,16 @@ sudo journalctl -u laravel-queue -f
 sudo journalctl -u ml-api -f
 sudo journalctl -u whitebophir -f
 tail -f /var/www/html/storage/logs/laravel.log
+```
+
+For a one-shot snapshot instead of live mode:
+
+```bash
+sudo journalctl -u laravel-queue -n 100 --no-pager
+sudo journalctl -u chatbot -n 100 --no-pager
+sudo journalctl -u ml-api -n 100 --no-pager
+sudo journalctl -u whitebophir -n 100 --no-pager
+tail -n 100 /var/www/html/storage/logs/laravel.log
 ```
 
 ### Restart services
@@ -307,16 +372,17 @@ systemctl status chatbot laravel-queue ml-api whitebophir php8.5-fpm nginx
 
 Config file: `scripts/nginx/laravel.conf` — synced to `/etc/nginx/sites-available/laravel` on every deploy.
 
-| Path | Backend |
-|------|---------|
-| `/*` | PHP-FPM (Laravel) |
+| Path                 | Backend                             |
+| -------------------- | ----------------------------------- |
+| `/*`                 | PHP-FPM (Laravel)                   |
 | `/api/chat-bot/stop` | `http://127.0.0.1:8002/chat/cancel` |
-| `/api/chat-bot/*` | `http://127.0.0.1:8002/chat/*` |
-| `/onlyoffice-ds/*` | `http://127.0.0.1:8080/` |
+| `/api/chat-bot/*`    | `http://127.0.0.1:8002/chat/*`      |
+| `/onlyoffice-ds/*`   | `http://127.0.0.1:8080/`            |
 
 The config includes both the HTTP→HTTPS redirect block and the HTTPS SSL block, so deploys never break SSL.
 
 **Renew SSL manually:**
+
 ```bash
 sudo certbot renew
 sudo systemctl reload nginx
