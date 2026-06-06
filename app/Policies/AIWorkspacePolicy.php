@@ -38,6 +38,11 @@ class AIWorkspacePolicy
      */
     public function view(User $user, AIWorkspace $workspace): bool
     {
+        // Admins can view all non-private workspaces
+        if ($user->hasRole('admin')) {
+            return $workspace->visibility !== 'private';
+        }
+
         // private: only owner
         if ($workspace->visibility === 'private') {
             return (int) $workspace->user_id === (int) $user->id;
