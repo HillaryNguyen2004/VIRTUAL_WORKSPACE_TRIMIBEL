@@ -1,0 +1,19 @@
+# env & local stuff
+.env
+.venv/
+var/
+__pycache__/
+*.pyc
+.mypy_cache/
+.pytest_cache/
+
+# builds
+dist/
+build/
+*.egg-info/
+
+# OS noise
+.DS_Store
+
+# notebooks
+.ipynb_checkpoints/

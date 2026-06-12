@@ -12,6 +12,9 @@
                 @endforeach
             </ul>
         @endif
-        <x-companyhour::form-action :title="__('company_hour.add_btn')" :formAction="route('companyhour.store')" />
+        <x-companyhour::form-action 
+            :title="__('company_hour.add_btn')" 
+            :formAction="route('admin.company_hours.store')"
+            :workingDays="['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']" />
     </x-action-layout>
 @endsection

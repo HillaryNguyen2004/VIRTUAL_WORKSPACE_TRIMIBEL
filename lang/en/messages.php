@@ -26,6 +26,11 @@ return [
     'already_checked_out' => 'You have already checked out today.',
     'check_out_success' => 'Checked out successfully.',
 
+    // phase message
+    'phase_created' => 'Phase created successfully!',
+    'phase_updated' => 'Phase updated successfully!',
+    'phase_deleted' => 'Phase deleted successfully!',
+
     'invalid_user' => 'Invalid user.',
     'already_checked_in' => 'You have already checked in today.',
     'check_in_success' => 'Checked in successfully.',
@@ -33,4 +38,7 @@ return [
     'success_approve' => 'Day-off request approved.',
     'success_reject' => 'Day-off request rejected.',
     'notice_approved' => 'Your day-off request for :date was approved.',
+    'wrong_username' => 'It\'s not your username',
+    'not_in_working_hours' => 'You are not within working hours.',
+    'working_hour_not_configured' => 'Working hours are not configured. Please contact admin.',
 ];

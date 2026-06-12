@@ -70,7 +70,66 @@
                                         @endif
                                     </div>
                                     <div class="text-muted small">{{ $message->created_at->diffForHumans() }}</div>
-                                    <div class="mt-1">{{ $message->content }}</div>
+                                    <div class="mt-1">
+                                        @if($message->type === 'image' && $message->hasFile())
+                                            <div class="message-image mb-2">
+                                                <img src="{{ $message->getFileUrl() }}" 
+                                                     alt="{{ $message->file_name }}" 
+                                                     class="img-fluid rounded"
+                                                     style="max-width: 300px; max-height: 200px; cursor: pointer;"
+                                                     onclick="openImageModal('{{ $message->getFileUrl() }}', '{{ $message->file_name }}')"
+                                                     loading="lazy">
+                                                <div class="text-muted small mt-1">
+                                                    {{ $message->file_name }} ({{ $message->getFormattedFileSize() }})
+                                                </div>
+                                            </div>
+                                            @if($message->content && $message->content !== 'Image: ' . $message->file_name)
+                                                <div>{{ $message->content }}</div>
+                                            @endif
+                                        @elseif($message->type === 'file' && $message->hasFile())
+                                            @php
+                                                $ext = strtolower(pathinfo($message->file_name ?? '', PATHINFO_EXTENSION));
+                                                $isPdf = $ext === 'pdf';
+                                                $fileIcon = match($ext) {
+                                                    'pdf' => 'bi-file-earmark-pdf text-danger',
+                                                    'doc', 'docx' => 'bi-file-earmark-word text-primary',
+                                                    'xls', 'xlsx' => 'bi-file-earmark-excel text-success',
+                                                    'ppt', 'pptx' => 'bi-file-earmark-ppt text-warning',
+                                                    'zip', 'rar', '7z' => 'bi-file-earmark-zip text-secondary',
+                                                    'mp4', 'mov', 'avi' => 'bi-file-earmark-play text-info',
+                                                    default => 'bi-file-earmark text-primary',
+                                                };
+                                            @endphp
+                                            <div class="message-file p-3 bg-light rounded border">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="bi {{ $fileIcon }} fs-4 me-3"></i>
+                                                    <div class="flex-grow-1">
+                                                        <div class="fw-medium">{{ $message->file_name }}</div>
+                                                        <div class="text-muted small">{{ $message->getFormattedFileSize() }}</div>
+                                                    </div>
+                                                    <div class="d-flex gap-2">
+                                                        @if($isPdf)
+                                                            <button type="button"
+                                                                class="btn btn-outline-secondary btn-sm"
+                                                                onclick="openPdfPreview('{{ $message->getFileUrl() }}', '{{ e($message->file_name) }}')">
+                                                                <i class="bi bi-eye"></i> Preview
+                                                            </button>
+                                                        @endif
+                                                        <a href="{{ $message->getFileUrl() }}"
+                                                           download="{{ $message->file_name }}"
+                                                           class="btn btn-outline-primary btn-sm">
+                                                            <i class="bi bi-download"></i> Download
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            @if($message->content && $message->content !== 'File: ' . $message->file_name)
+                                                <div class="mt-2">{{ $message->content }}</div>
+                                            @endif
+                                        @else
+                                            {{ $message->content }}
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -83,15 +142,69 @@
                 </div>
 
                 <div class="card-footer">
-                    <form id="messageForm" class="d-flex">
+                    <form id="messageForm" class="d-flex align-items-end">
                         @csrf
                         <input type="hidden" name="conversation_id" value="{{ $conversation->id }}">
-                        <input type="text" 
-                               class="form-control me-2" 
-                               name="content"
-                               id="messageInput" 
-                               placeholder="Type your message..."
-                               required>
+                        
+                        <!-- File upload buttons -->
+                        <div class="me-2">
+                            <div class="btn-group-vertical">
+                                <button type="button" 
+                                        class="btn btn-outline-secondary btn-sm mb-1" 
+                                        title="Send Image"
+                                        onclick="document.getElementById('imageInput').click()">
+                                    <i class="bi bi-image"></i>
+                                </button>
+                                <button type="button" 
+                                        class="btn btn-outline-secondary btn-sm" 
+                                        title="Send File"
+                                        onclick="document.getElementById('fileInput').click()">
+                                    <i class="bi bi-paperclip"></i>
+                                </button>
+                            </div>
+                            <!-- Hidden file inputs -->
+                            <input type="file" 
+                                   id="imageInput" 
+                                   name="image" 
+                                   accept="image/*" 
+                                   style="display: none;"
+                                   onchange="handleFileSelect(this, 'image')">
+                            <input type="file" 
+                                   id="fileInput" 
+                                   name="file" 
+                                   style="display: none;"
+                                   onchange="handleFileSelect(this, 'file')">
+                        </div>
+                        
+                        <!-- Message input area -->
+                        <div class="flex-grow-1 me-2">
+                            <!-- File preview area -->
+                            <div id="filePreview" class="mb-2" style="display: none;">
+                                <div class="bg-light p-2 rounded border">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div id="fileInfo" class="d-flex align-items-center">
+                                            <i id="fileIcon" class="me-2"></i>
+                                            <span id="fileName"></span>
+                                            <small id="fileSize" class="text-muted ms-2"></small>
+                                        </div>
+                                        <button type="button" class="btn btn-sm text-danger" onclick="clearFileSelection()">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </div>
+                                    <div id="imagePreview" style="display: none;">
+                                        <img id="previewImg" class="mt-2 rounded" style="max-width: 200px; max-height: 100px;">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="content"
+                                   id="messageInput" 
+                                   placeholder="Type your message..."
+                                   required>
+                        </div>
+                        
                         <button type="submit" class="btn" style="background:#17a2b8;color:#fff;">
                             <i class="bi bi-send"></i>
                         </button>
@@ -101,6 +214,44 @@
         </div>
     </div>
 </div>
+
+<!-- Image Modal for viewing full-size images -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageModalTitle">Image</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalImage" class="img-fluid" alt="Full size image">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PDF Preview Modal -->
+<div class="modal fade" id="pdfPreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pdfPreviewTitle">PDF Preview</h5>
+                <div class="ms-auto d-flex gap-2 align-items-center">
+                    <a id="pdfDownloadLink" href="#" download class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-download"></i> Download
+                    </a>
+                    <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body p-0" style="height: 80vh;">
+                <iframe id="pdfPreviewFrame" src="" style="width:100%;height:100%;border:none;" title="PDF Preview"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include file upload script -->
+<script src="{{ asset('js/chat-file-upload.js') }}"></script>
 
 <script>
 document.getElementById('messageForm').addEventListener('submit', function(e) {

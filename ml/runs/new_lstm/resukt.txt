@@ -1,0 +1,27 @@
+Epoch 55: early stopping
+
+📊 Test set performance:
+   Test loss:     0.6591
+   Test accuracy: 71.21%
+
+✅ Model saved → models/lstm_productivity_nextday.keras
+✅ Run saved  → runs/new_lstm/ (with metadata)
+   Epochs run     : 55
+   Best val_loss  : 0.6411
+   Best train_acc : 75.18%
+   Best val_acc   : 72.20%
+   Overfit gap    : 2.98%
+   ✅ No significant overfit.
+
+📊 Feature enrichment (ETL v2):
+   • Total features: 39 (was 27)
+   • New timing signals: checkin_hour, minutes_late, time_at_office_h
+   • New task pressure: active_task_count, high_priority_task_count,
+                        days_to_nearest_deadline, overdue_task_count,
+                        total_estimated_hours
+   • New calendar: is_half_day_off, is_holiday, is_day_before/after_holiday
+
+Note: The next-day forecast ceiling on this dataset is ~70% (RF baseline).
+Naive 'tomorrow = today' baseline is ~66%. Anything in 67-72% is meaningful.
+Expected improvement from enriched features: 2-4% accuracy gain.
+(venv) ry@ry-Inspiron-5584:/opt/lampp/htdocs/DO_AN_CHUYEN_NGANH/ml$ 

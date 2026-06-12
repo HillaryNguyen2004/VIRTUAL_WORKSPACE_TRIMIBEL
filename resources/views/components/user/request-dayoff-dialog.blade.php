@@ -1,122 +1,306 @@
-@vite(['resources/utils/request_dayoff/request_dayoff_dialog.js'])
+@vite(['resources/js/request_dayoff/request_dayoff_dialog.js'])
 
-<div id="request-dayoff-dialog" class="hidden items-center justify-center fixed h-screen w-screen bg-black/20 z-50">
-    <div
-        class="flex flex-col items-center w-[280px] sm:w-[300px] md:w-[400px] lg:w-[500px] h-fit bg-[#FDFDFF] rounded-2xl shadow-[0_4px_40px_0_rgba(32,27,53,0.1)] animate-fade-in-up [animation-delay:150ms]">
-        <!-- title -->
-        <div class="w-full py-3 text-center md:text-xl bg-[#F1EFFC] text-[#5D3FD3] font-medium rounded-t-2xl relative">
-            <h2>{{ __('request_day_off.form_title') }}</h2>
-            <button class="close-request-dayoff absolute top-2 right-5 p-2 rounded-full hover:bg-violet-200 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 md:w-5 md:h-5 fill-[#5D3FD3]">
-                    <path
-                        d="M183.1 137.4C170.6 124.9 150.3 124.9 137.8 137.4C125.3 149.9 125.3 170.2 137.8 182.7L275.2 320L137.9 457.4C125.4 469.9 125.4 490.2 137.9 502.7C150.4 515.2 170.7 515.2 183.2 502.7L320.5 365.3L457.9 502.6C470.4 515.1 490.7 515.1 503.2 502.6C515.7 490.1 515.7 469.8 503.2 457.3L365.8 320L503.1 182.6C515.6 170.1 515.6 149.8 503.1 137.3C490.6 124.8 470.3 124.8 457.8 137.3L320.5 274.7L183.1 137.4z" />
-                </svg>
+<div id="request-dayoff-dialog"
+     class="hidden fixed inset-0 z-50 bg-black/50 items-center justify-center">
+
+    <div class="flex flex-col w-[320px] sm:w-[380px] md:w-[450px]
+                bg-white rounded-2xl shadow-xl overflow-hidden">
+
+        {{-- HEADER --}}
+        <div class="px-6 py-4 flex justify-between items-center border-b bg-white">
+            <h2 class="text-lg font-bold text-main">
+                {{ __('request_day_off.form_title') }}
+            </h2>
+            <button class="close-request-dayoff p-2 rounded-full text-muted-400 hover:text-primary hover:bg-muted-50">
+                ✕
             </button>
         </div>
-        <!-- form -->
-        <div class="w-full">
-            <form id="request-dayoff-form" method="POST" action="{{ route('dayoff.request.store') }}" novalidate>
-                @csrf
-                <div class="p-6 flex flex-col items-center gap-6 w-full">
-                    <div class="flex flex-col gap-2 w-full">
-                        <label for="date" class="text-sm md:text-base">{{ __('request_day_off.select_date_label') }}</label>
-                        <input type="date" name="date" id="date"
-                            class="text-sm md:text-base block w-full rounded-xl border border-gray-300 px-4 py-3 cursor-pointer hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition @error('date') is-invalid @enderror"
-                            min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}" value="{{ old('date') }}">
-                    </div>
 
-                    <div class="flex flex-col gap-2 w-full">
-                        <label for="leave_type" class="text-sm md:text-base">{{ __('request_day_off.leave_type_label') }}</label>
-                        <select name="leave_type" id="leave_type"
-                            class="text-sm md:text-base block w-full rounded-xl border border-gray-300 px-4 py-3 cursor-pointer hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition @error('leave_type') is-invalid @enderror">
-                            <option value="OFF_FULL" {{ old('leave_type') == 'OFF_FULL' ? 'selected' : '' }}>
-                                {{ __('request_day_off.full_day') }}
-                            </option>
-                            <option value="OFF_HALF" {{ old('leave_type') == 'OFF_HALF' ? 'selected' : '' }}>
-                                {{ __('request_day_off.half_day') }}
-                            </option>
-                        </select>
-                    </div>
+        {{-- BODY --}}
+        <form id="request-dayoff-form"
+              method="POST"
+              action="{{ route('dayoff.request.store') }}"
+              novalidate>
+            @csrf
 
-                    <div class="flex flex-col gap-2 w-full">
-                        <label for="reason" class="text-sm md:text-base">{{ __('request_day_off.reason_optional_label') }}</label>
-                        <input name="reason" id="reason"
-                            class="text-sm md:text-base block w-full rounded-xl border border-gray-300 px-4 py-3 placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition"
-                            placeholder="{{ __('request_day_off.reason_example') }}">{{ old('reason') }}</input>
-                    </div>
+            <div class="p-6 flex flex-col gap-5">
 
-                    <div class="flex flex-col md:flex-row justify-end gap-2 w-full">
-                        <button type="submit"
-                            class="text-sm px-4 py-2 bg-[#5D3FD3] hover:opacity-95 text-white rounded-lg shadow-[0_8px_24px_rgba(99,102,241,0.35)] transition">
-                            {{ __('request_day_off.submit_request') }}
-                        </button>
-                        <button type="button" class="close-request-dayoff px-4 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-200 transition">
-                            {{ __('app.cancel') }}
-                        </button>
-                    </div>
+                {{-- START DATE --}}
+                <div>
+                    <label class="text-sm font-medium text-main">
+                        {{ __('request_day_off.start_date_label') }} *
+                    </label>
+                    <input type="date"
+                           id="start_date"
+                           name="start_date"
+                           min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}"
+                           value="{{ old('start_date') }}"
+                           class="w-full rounded-xl border px-4 py-3">
                 </div>
-            </form>
-        </div>
+
+                {{-- END DATE --}}
+                <div>
+                    <label class="text-sm font-medium text-main">
+                        {{ __('request_day_off.end_date_label') }} *
+                    </label>
+                    <input type="date"
+                           id="end_date"
+                           name="end_date"
+                           min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}"
+                           value="{{ old('end_date') }}"
+                           class="w-full rounded-xl border px-4 py-3">
+                </div>
+
+                {{-- LEAVE TYPE --}}
+                <div>
+                    <label class="text-sm font-medium text-main">
+                        {{ __('request_day_off.leave_type_label') }} *
+                    </label>
+                    <select id="leave_type"
+                            name="leave_type"
+                            class="w-full rounded-xl border px-4 py-3">
+                        <option value="OFF_FULL">
+                            {{ __('request_day_off.full_day') }}
+                        </option>
+                        <option value="OFF_HALF">
+                            {{ __('request_day_off.half_day') }}
+                        </option>
+                    </select>
+                </div>
+
+                {{-- HALF DAY --}}
+                <div id="half-day-container" class="hidden">
+                    <label class="text-sm font-medium text-main">
+                        {{ __('request_day_off.half_day_period_label') }}
+                    </label>
+
+                    <select id="half_day_period"
+                            name="half_day_period"
+                            class="w-full rounded-xl border px-4 py-3">
+                        <option value="" disabled selected>
+                            {{ __('request_day_off.select_period') }}
+                        </option>
+                        <option value="AM">
+                            {{ __('request_day_off.morning') }}
+                        </option>
+                        <option value="PM">
+                            {{ __('request_day_off.afternoon') }}
+                        </option>
+                    </select>
+
+                    {{-- REAL TIME PREVIEW --}}
+                    <p id="half-day-preview"
+                       class="mt-1 text-xs text-muted-500"></p>
+                </div>
+
+                {{-- REASON --}}
+                <div>
+                    <label class="text-sm font-medium text-main">
+                        {{ __('request_day_off.reason_optional_label') }}
+                    </label>
+                    <textarea name="reason"
+                              rows="3"
+                              class="w-full rounded-xl border px-4 py-3 resize-none">{{ old('reason') }}</textarea>
+                </div>
+
+                {{-- ACTIONS --}}
+                <div class="flex justify-end gap-3">
+                    <button type="button"
+                            class="close-request-dayoff px-4 py-2 text-muted-600 hover:bg-muted-100 rounded-xl">
+                        {{ __('app.cancel') }}
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2 bg-primary text-white rounded-xl">
+                        {{ __('request_day_off.submit_request') }}
+                    </button>
+                </div>
+
+            </div>
+        </form>
     </div>
 </div>
-<!-- <div class="container py-5">
-                        <div class="row justify-content-center">
-                            <div class="col-md-8">
-                                <div class="card shadow border-primary">
-                                    <div class="card-header bg-primary text-white text-center">
-                                        <h3 class="mb-0">Request a Day Off</h3>
-                                    </div>
-                                    <div class="card-body">
 
-                                        @if(session('success'))
-                                            <div class="alert alert-primary text-center">
-                                                {{ session('success') }}
-                                            </div>
-                                        @endif
+{{-- LOGIC SCRIPT --}}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const leaveType = document.getElementById('leave_type');
+    const halfBox = document.getElementById('half-day-container');
+    const halfSelect = document.getElementById('half_day_period');
+    const preview = document.getElementById('half-day-preview');
 
-                                        <form method="POST" action="{{ route('dayoff.request.store') }}">
-                                            @csrf
+    const startDate = document.getElementById('start_date');
+    const endDate = document.getElementById('end_date');
+    const form = document.getElementById('request-dayoff-form');
 
-                                            <div class="mb-3">
-                                                <label for="date" class="form-label">Select Date</label>
-                                                <input type="date" name="date" id="date"
-                                                    class="form-control @error('date') is-invalid @enderror"
-                                                    min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}"
-                                                    value="{{ old('date') }}">
-                                                @error('date')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
-                                            </div>
+    let holidays = [];
 
-                                            <div class="mb-3">
-                                                <label for="leave_type" class="form-label">Leave Type</label>
-                                                <select name="leave_type" id="leave_type"
-                                                    class="form-select @error('leave_type') is-invalid @enderror">
-                                                    <option value="OFF_FULL" {{ old('leave_type') == 'OFF_FULL' ? 'selected' : '' }}>Full Day</option>
-                                                    <option value="OFF_HALF" {{ old('leave_type') == 'OFF_HALF' ? 'selected' : '' }}>Half Day</option>
-                                                </select>
-                                                @error('leave_type')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
-                                            </div>
+    // Fetch holidays when dialog opens
+    async function fetchHolidays() {
+        try {
+            const res = await fetch("{{ route('holidays.index') }}", {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                // Assuming the response contains holidays array
+                holidays = data.holidays || data.data || data;
+            }
+        } catch (error) {
+            console.error('Failed to fetch holidays:', error);
+        }
+    }
 
-                                            <div class="mb-3">
-                                                <label for="reason" class="form-label">Reason (Optional)</label>
-                                                <textarea name="reason" id="reason"
-                                                    class="form-control"
-                                                    rows="4"
-                                                    placeholder="E.g. Medical appointment, family emergency, etc.">{{ old('reason') }}</textarea>
-                                            </div>
+    // Check if a date falls within any holiday
+    function isHoliday(dateStr) {
+        const checkDate = new Date(dateStr);
+        
+        for (const holiday of holidays) {
+            const holidayStart = new Date(holiday.start_date);
+            const holidayEnd = new Date(holiday.end_date);
+            
+            if (checkDate >= holidayStart && checkDate <= holidayEnd) {
+                return holiday;
+            }
+        }
+        return null;
+    }
 
-                                            <div class="text-center pt-2">
-                                                <button type="submit" class="btn btn-primary px-4 py-2">
-                                                    Submit Request
-                                                </button>
-                                            </div>
-                                        </form>
+    // Validate dates against holidays
+    function validateDates() {
+        // Remove any existing error messages
+        const existingErrors = document.querySelectorAll('.holiday-error-message');
+        existingErrors.forEach(error => error.remove());
+        
+        if (!startDate.value || !endDate.value) {
+            return true;
+        }
 
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div> -->
+        const start = new Date(startDate.value);
+        const end = new Date(endDate.value);
+        const conflictingHolidays = [];
+
+        // Check each date in the range
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const dateStr = d.toISOString().split('T')[0];
+            const holiday = isHoliday(dateStr);
+            
+            if (holiday && !conflictingHolidays.find(h => h.title === holiday.title)) {
+                conflictingHolidays.push(holiday);
+            }
+        }
+
+        if (conflictingHolidays.length > 0) {
+            displayHolidayError(conflictingHolidays);
+            return false;
+        }
+
+        return true;
+    }
+
+    // Display error message for holiday conflicts
+    function displayHolidayError(conflictingHolidays) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'holiday-error-message mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700';
+        
+        const holidayList = conflictingHolidays.map(h => {
+            const startDate = new Date(h.start_date);
+            const formattedDate = startDate.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+            });
+            return `<strong>${h.title}</strong> (${formattedDate})`;
+        }).join(', ');
+        
+        errorDiv.innerHTML = `
+            <div class="flex items-start gap-2">
+                <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                </svg>
+                <div>
+                    <div class="font-medium">Cannot request day-off on holiday dates</div>
+                    <div class="mt-1">${holidayList}</div>
+                </div>
+            </div>
+        `;
+        
+        endDate.parentElement.appendChild(errorDiv);
+    }
+
+    function isSingleDay() {
+        return startDate.value && endDate.value && startDate.value === endDate.value;
+    }
+
+    function toggleHalfDay() {
+        const show = leaveType.value === 'OFF_HALF' && isSingleDay();
+        halfBox.classList.toggle('hidden', !show);
+        halfSelect.required = show;
+
+        if (!show) {
+            halfSelect.value = '';
+            preview.textContent = '';
+        }
+    }
+
+    async function loadPreview() {
+        if (!halfSelect.value) {
+            preview.textContent = '';
+            return;
+        }
+
+        preview.textContent = 'Calculating...';
+
+        try {
+            const res = await fetch("{{ route('dayoff.halfday.preview') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    period: halfSelect.value
+                })
+            });
+
+            const data = await res.json();
+            preview.textContent =
+                `Time: ${data.start_time} → ${data.end_time}`;
+        } catch {
+            preview.textContent = '';
+        }
+    }
+
+    // Event listeners
+    leaveType.addEventListener('change', toggleHalfDay);
+    startDate.addEventListener('change', () => {
+        toggleHalfDay();
+        validateDates();
+    });
+    endDate.addEventListener('change', () => {
+        toggleHalfDay();
+        validateDates();
+    });
+    halfSelect.addEventListener('change', loadPreview);
+
+    // Prevent form submission if there are holiday conflicts
+    form.addEventListener('submit', (e) => {
+        if (!validateDates()) {
+            e.preventDefault();
+            
+            // Scroll to error message
+            const errorMsg = document.querySelector('.holiday-error-message');
+            if (errorMsg) {
+                errorMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    });
+
+    // Fetch holidays when page loads
+    fetchHolidays();
+    toggleHalfDay();
+});
+</script>

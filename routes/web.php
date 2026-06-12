@@ -1,8 +1,8 @@
 <?php
 
+use App\Http\Controllers\ProjectController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -12,18 +12,27 @@ use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TaskController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\TeamController;
 use App\Services\UserRoleRedirectService;
 use App\Http\Controllers\DayOffController;
 use App\Http\Controllers\MeetingController;
+use App\Http\Controllers\TeamProgressController;
+use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\HolidayController;
+use App\Http\Controllers\Api\CheckInController;
+use App\Http\Controllers\FaceRegisterController;
+use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\WBOController;
+use App\Http\Controllers\OnlineDocumentController;
+use App\Http\Controllers\ChunkedUploadController;
+use App\Http\Controllers\AIWorkspaceController;
+use Illuminate\Http\Request;
 
 // Route::group(['middleware' => ['web', 'core']], function () {
 //     include_once 'admin/user.php';
 // });
 
-include_once 'admin/user.php';
-include_once 'staff/user.php';
+require __DIR__ . '/admin/user.php';
+require __DIR__ . '/staff/user.php';
 
 // Redirect root to login
 Route::get('/', [AuthController::class, 'redirectToLogin']);
@@ -53,8 +62,141 @@ Route::get('/dashboard', function (UserRoleRedirectService $redirectService) {
 
 Route::get('/user/dashboard', [DashboardController::class, 'user'])->name('user.dashboard')->middleware('auth');
 
+Route::get('/super-admin/dashboard', [App\Http\Controllers\SuperAdminDashboardController::class, 'index'])
+    ->middleware(['auth', 'role:super_admin'])
+    ->name('super_admin.dashboard');
+
+Route::prefix('super-admin')
+    ->middleware(['auth', 'role:super_admin'])
+    ->name('super_admin.')
+    ->group(function () {
+        Route::get('/logs', [App\Http\Controllers\SuperAdminDashboardController::class, 'logs'])->name('logs');
+        Route::delete('/logs', [App\Http\Controllers\SuperAdminDashboardController::class, 'clearLogs'])->name('logs.clear');
+        Route::get('/database', [App\Http\Controllers\SuperAdminController::class, 'database'])->name('database');
+        Route::get('/queues', [App\Http\Controllers\SuperAdminController::class, 'queues'])->name('queues');
+        Route::post('/queues/retry/{id}', [App\Http\Controllers\SuperAdminController::class, 'retryFailedJob'])->name('queues.retry');
+        Route::post('/queues/retry-all', [App\Http\Controllers\SuperAdminController::class, 'retryAllFailed'])->name('queues.retry-all');
+        Route::get('/health', [App\Http\Controllers\SuperAdminController::class, 'health'])->name('health');
+    });
+
+Route::middleware(['auth'])->prefix('online-docs')->name('online-docs.')->group(function () {
+    Route::get('/', [OnlineDocumentController::class, 'landing'])->name('home');
+    Route::post('/folders', [OnlineDocumentController::class, 'createFolder'])->name('folders.store');
+    Route::put('/folders/{folder}', [OnlineDocumentController::class, 'renameFolder'])->name('folders.update');
+    Route::delete('/folders/{folder}', [OnlineDocumentController::class, 'deleteFolder'])->name('folders.delete');
+    Route::post('/folders/{folder}/share', [OnlineDocumentController::class, 'shareFolder'])->name('folders.share');
+    Route::delete('/folders/{folder}/share/{share}', [OnlineDocumentController::class, 'removeFolderShare'])->name('folders.share.remove');
+    Route::post('/folders/{folder}/share-link', [OnlineDocumentController::class, 'generateFolderShareLink'])->name('folders.share.link');
+    Route::get('/shared-folder/{token}', [OnlineDocumentController::class, 'openFolderShareLink'])->name('folders.share.open');
+    Route::post('/files', [OnlineDocumentController::class, 'uploadPersonalFile'])->name('files.store');
+    Route::put('/files/{file}', [OnlineDocumentController::class, 'renameFile'])->name('files.update');
+    Route::delete('/files/{file}', [OnlineDocumentController::class, 'deleteFile'])->name('files.delete');
+    Route::match(['get', 'post'], '/files/{file}/ingest', [OnlineDocumentController::class, 'ingestPersonalFile'])
+        ->name('files.ingest');
+    Route::post('/files/ingest-all', [OnlineDocumentController::class, 'ingestAllPersonalFiles'])->name('files.ingest-all');
+    Route::get('/files/{file}/download', [OnlineDocumentController::class, 'downloadPersonalFile'])->name('files.download');
+    Route::get('/files/{file}/preview', [OnlineDocumentController::class, 'previewPersonalFile'])->name('files.preview');
+    Route::get('/files/{file}/open', [OnlineDocumentController::class, 'openPersonalFile'])->name('files.open');
+    Route::post('/links/{document}', [OnlineDocumentController::class, 'addDocumentLink'])->name('links.store');
+    Route::put('/links/{link}', [OnlineDocumentController::class, 'renameDocumentLink'])->name('links.update');
+    Route::delete('/links/{link}', [OnlineDocumentController::class, 'deleteDocumentLink'])->name('links.delete');
+    Route::post('/storage/move', [OnlineDocumentController::class, 'moveStorageItem'])->name('storage.move');
+    Route::post('/storage/bulk-move', [OnlineDocumentController::class, 'bulkMoveStorageItems'])->name('storage.bulk-move');
+    Route::post('/storage/bulk-delete', [OnlineDocumentController::class, 'bulkDeleteStorageItems'])->name('storage.bulk-delete');
+    
+    // Chunked upload routes for large files
+    Route::post('/upload/initiate', [ChunkedUploadController::class, 'initiate'])->name('upload.initiate');
+    Route::post('/upload/chunk', [ChunkedUploadController::class, 'uploadChunk'])->name('upload.chunk');
+    Route::post('/upload/assemble', [ChunkedUploadController::class, 'assemble'])->name('upload.assemble');
+    Route::get('/upload/status', [ChunkedUploadController::class, 'status'])->name('upload.status');
+    Route::post('/upload/cancel', [ChunkedUploadController::class, 'cancel'])->name('upload.cancel');
+    
+    Route::get('/docs', [OnlineDocumentController::class, 'docsIndex'])->name('docs');
+    Route::post('/docs', [OnlineDocumentController::class, 'store'])->name('docs.store');
+    Route::post('/excel', [OnlineDocumentController::class, 'createExcel'])->name('excel.create');
+    Route::get('/excel', [OnlineDocumentController::class, 'excelIndex'])->name('excel');
+    Route::post('/powerpoint', [OnlineDocumentController::class, 'createPowerpoint'])->name('powerpoint.create');
+    Route::get('/powerpoint', [OnlineDocumentController::class, 'powerpointIndex'])->name('powerpoint');
+    Route::get('/docs/{document}', [OnlineDocumentController::class, 'show'])->name('docs.show');
+    Route::put('/docs/{document}', [OnlineDocumentController::class, 'update'])->name('docs.update');
+    Route::put('/docs/{document}/rename', [OnlineDocumentController::class, 'rename'])->name('docs.rename');
+    Route::delete('/docs/{document}', [OnlineDocumentController::class, 'destroy'])->name('docs.delete');
+    Route::get('/docs/{document}/xlsx', [OnlineDocumentController::class, 'downloadXlsx'])->name('docs.xlsx');
+    Route::post('/docs/{document}/xlsx', [OnlineDocumentController::class, 'saveXlsx'])->name('docs.xlsx.save');
+    Route::post('/docs/{document}/import', [OnlineDocumentController::class, 'importDocx'])->name('docs.import');
+    Route::post('/docs/{document}/import-xlsx', [OnlineDocumentController::class, 'importXlsx'])->name('docs.import.xlsx');
+    Route::post('/docs/{document}/import-pptx', [OnlineDocumentController::class, 'importPptx'])->name('docs.import.pptx');
+    Route::get('/docs/{document}/export', [OnlineDocumentController::class, 'exportDocx'])->name('docs.export');
+    Route::post('/docs/{document}/share', [OnlineDocumentController::class, 'share'])->name('docs.share');
+    Route::put('/docs/{document}/share', [OnlineDocumentController::class, 'updateShare'])->name('docs.share.update');
+    Route::delete('/docs/{document}/share', [OnlineDocumentController::class, 'removeShare'])->name('docs.share.remove');
+    Route::get('/docs/{document}/action-items', [OnlineDocumentController::class, 'actionItems'])->name('docs.action-items');
+    Route::get('/docs/{document}/summary', [OnlineDocumentController::class, 'summarizeDocument'])->name('docs.summary');
+    Route::get('/docs/{document}/presence', [OnlineDocumentController::class, 'presence'])->name('docs.presence');
+    Route::post('/docs/{document}/presence', [OnlineDocumentController::class, 'touchPresence'])->name('docs.presence.touch');
+    Route::post('/search-agent', [OnlineDocumentController::class, 'searchAgent'])->name('search-agent');
+});
+
+Route::prefix('onlyoffice')->name('onlyoffice.')->group(function () {
+    Route::get('/files/{document}', [OnlineDocumentController::class, 'onlyofficeFile'])
+        ->middleware('signed')
+        ->name('files');
+    Route::post('/callback/{document}', [OnlineDocumentController::class, 'onlyofficeCallback'])
+        ->middleware('signed')
+        ->name('callback');
+});
+
+Route::middleware(['auth'])->group(function () {
+    // Route model binding for workspaces
+    Route::bind('ai_workspace', function ($value) {
+        return \App\Models\AIWorkspace::findOrFail($value);
+    });
+    Route::bind('ai_workspace_file', function ($value) {
+        return \App\Models\AIWorkspaceFile::findOrFail($value);
+    });
+
+    // Legacy AI upload endpoint
+    Route::get('/ai', function () {
+        return view('ai.upload');
+    })->name('ai.upload');
+
+    Route::post('/ai', function (Request $request) {
+        $files = $request->file('data_files', []);
+        $fileCount = is_array($files) ? count($files) : 0;
+        $workspaceName = trim((string) $request->input('workspace_name_upload'));
+        $target = $workspaceName !== '' ? $workspaceName : __('ai.workspace_unnamed');
+
+        return back()->with('status', __('ai.upload_received', [
+            'count' => $fileCount,
+            'workspace' => $target,
+        ]));
+    })->name('ai.upload.store');
+
+    // AI Workspace CRUD routes
+    Route::resource('ai-workspaces', AIWorkspaceController::class);
+
+    // Additional workspace-specific routes
+    Route::post('ai-workspaces/{ai_workspace}/upload-files', [AIWorkspaceController::class, 'uploadFiles'])
+        ->name('ai-workspaces.upload-files');
+    Route::post('ai-workspaces/{ai_workspace}/ingest', [AIWorkspaceController::class, 'ingestFiles'])
+        ->name('ai-workspaces.ingest');
+    Route::get('workspace-files/{ai_workspace_file}/preview', [AIWorkspaceController::class, 'previewFile'])
+        ->name('workspace-files.preview');
+    Route::get('workspace-files/{ai_workspace_file}/download', [AIWorkspaceController::class, 'downloadFile'])
+        ->name('workspace-files.download');
+    Route::delete('workspace-files/{ai_workspace_file}', [AIWorkspaceController::class, 'deleteFile'])
+        ->name('workspace-files.delete');
+    Route::post('workspace-files/{ai_workspace_file}/ingest', [AIWorkspaceController::class, 'ingestSingleFile'])
+        ->name('workspace-files.ingest');
+    Route::get('ai-workspaces/{ai_workspace}/export', [AIWorkspaceController::class, 'export'])
+        ->name('ai-workspaces.export');
+});
+
 Route::get('/dayoff/request', [DayOffController::class, 'create'])->name('dayoff.request');
 Route::post('/dayoff/request', [DayOffController::class, 'store'])->name('dayoff.request.store');
+Route::post('/dayoff/halfday-preview', [DayOffController::class, 'halfDayPreview'])
+    ->name('dayoff.halfday.preview');
+
 
 
 // Route::post('/notifications/{id}/read', function ($id) {
@@ -103,40 +245,128 @@ Route::get('/test-task-notification', function () {
 
 
 
-Route::middleware(['role:admin|staff'])->group(function () {
+// Route::middleware(['role:admin|staff'])->group(function () {
 
-    // CREATE TASK
-    Route::get('/management/tasks/create', [TaskController::class, 'create'])
-        ->middleware('permission:task.create')
-        ->name('tasks.create');
+//     // CREATE TASK
+//     Route::get('/management/tasks/create', [TaskController::class, 'create'])
+//         ->middleware('permission:task.create')
+//         ->name('tasks.create');
 
-    Route::post('/management/tasks', [TaskController::class, 'store'])
-        ->middleware('permission:task.create')
-        ->name('tasks.store');
+//     Route::post('/management/tasks', [TaskController::class, 'store'])
+//         ->middleware('permission:task.create')
+//         ->name('tasks.store');
 
-    // LIST + SHOW
-    Route::get('/management/tasks', [TaskController::class, 'index'])
-        ->name('tasks.index');
+//     // LIST + SHOW
+//     Route::get('/management/tasks', [TaskController::class, 'index'])
+//         ->name('tasks.index');
 
-    Route::get('/management/tasks/{task}', [TaskController::class, 'show'])
-        ->name('tasks.show');
+//     Route::get('/management/tasks/{task}', [TaskController::class, 'show'])
+//         ->name('tasks.show');
 
-    // EDIT TASK
-    Route::get('/management/tasks/{task}/edit', [TaskController::class, 'edit'])
-        ->middleware('permission:task.edit')
-        ->name('tasks.edit');
+//     Route::get('/admin/back-to-project-tasks', function () {
+//         return redirect()->route('projects.index', ['tab' => 'tasks']);
+//     })->name('admin.back.projects.tasks');
 
-    Route::put('/management/tasks/{task}', [TaskController::class, 'update'])
-        ->middleware('permission:task.edit')
-        ->name('tasks.update');
+//     // EDIT TASK
+//     Route::get('/management/tasks/{task}/edit', [TaskController::class, 'edit'])
+//         ->middleware('permission:task.edit')
+//         ->name('tasks.edit');
 
-    // DELETE TASK
-    Route::delete('/management/tasks/{task}', [TaskController::class, 'destroy'])
-        ->middleware('permission:task.delete')
-        ->name('tasks.destroy');
-});
+//     Route::put('/management/tasks/{task}', [TaskController::class, 'update'])
+//         ->middleware('permission:task.edit')
+//         ->name('tasks.update');
+
+//     // DELETE TASK
+//     Route::delete('/management/tasks/{task}', [TaskController::class, 'destroy'])
+//         ->middleware('permission:task.delete')
+//         ->name('tasks.destroy');
+// });
+
+// CREATE TASK
+Route::get('/management/tasks/create', [TaskController::class, 'create'])
+    ->middleware('admin_or_permission:task.create')
+    ->name('tasks.create');
+
+Route::post('/management/tasks', [TaskController::class, 'store'])
+    ->middleware('admin_or_permission:task.create')
+    ->name('tasks.store');
+
+// LIST + SHOW
+Route::get('/management/tasks', [TaskController::class, 'index'])
+    ->name('tasks.index');
+
+Route::get('/management/tasks/{task}', [TaskController::class, 'show'])
+    ->name('tasks.show');
+
+Route::get('/admin/back-to-project-tasks', function () {
+    return redirect()->route('projects.index', ['tab' => 'tasks']);
+})->name('admin.back.projects.tasks');
+
+// EDIT TASK
+Route::get('/management/tasks/{task}/edit', [TaskController::class, 'edit'])
+    ->middleware('admin_or_permission:task.edit')
+    ->name('tasks.edit');
+
+Route::put('/management/tasks/{task}', [TaskController::class, 'update'])
+    ->middleware('admin_or_permission:task.edit')
+    ->name('tasks.update');
+
+// DELETE TASK
+Route::delete('/management/tasks/{task}', [TaskController::class, 'destroy'])
+    ->middleware('admin_or_permission:task.delete')
+    ->name('tasks.destroy');
+
+// DETAIL TASK
+Route::get('/management/tasks/{task}/details', [TaskController::class, 'details'])
+    ->name('tasks.details');
+
+Route::post('/management/tasks/{task}/mark-read', [TaskController::class, 'markRead'])
+    ->name('tasks.markRead');
+
+Route::get('/back/tasks/{task}', function (\App\Models\Task $task) {
+    return redirect()->route('tasks.details', $task->id);
+})->name('back.tasks.details');
+
+Route::get('/projects', [ProjectController::class, 'index'])
+    ->middleware('auth')
+    ->name('projects.index');
+
+Route::get('/projects/create', [ProjectController::class, 'create'])
+    ->middleware(['auth', 'admin_or_permission:admin.projects.create'])
+    ->name('projects.create');
+
+Route::post('/projects/store', [ProjectController::class, 'store'])
+    ->middleware('auth')
+    ->name('projects.store');
+
+Route::get('/projects/{id}/edit', [ProjectController::class, 'edit'])
+    ->middleware(['auth', 'admin_or_permission:admin.projects.edit'])
+    ->name('projects.edit');
+
+Route::put('/projects/{id}', [ProjectController::class, 'update'])
+    ->middleware(['auth', 'admin_or_permission:admin.projects.edit'])
+    ->name('projects.update');
+
+Route::delete('/projects/{id}', [ProjectController::class, 'destroy'])
+    ->middleware(['auth', 'admin_or_permission:admin.projects.delete'])
+    ->name('projects.destroy');
+
+Route::get('/projects/{id}/details', [ProjectController::class, 'details'])
+    ->middleware('auth')
+    ->name('projects.details');
+    // ->name('projects.details');
+
+Route::get('/projects/{id}/kanban', [ProjectController::class, 'kanban'])
+    ->name('projects.kanban');
 
 
+Route::put('/phases/{phase}', [App\Http\Controllers\PhaseController::class, 'update'])->name('phases.update');
+Route::post('/projects/{project}/phases', [App\Http\Controllers\PhaseController::class, 'store'])->name('phases.store');
+Route::delete('/phases/{phase}', [App\Http\Controllers\PhaseController::class, 'destroy'])->name('phases.destroy');
+
+Route::get('/back/projects/{project}', function (\App\Models\Project $project) {
+    return redirect()->route('projects.details', ['id' => $project->id]);
+})->name('back.projects.details');
 
 // Redirect after login
 Route::get('/home', function () {
@@ -154,10 +384,34 @@ Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('
 Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
 
 // Profile and Settings
-Route::get('/profile', [ProfileController::class, 'showProfile'])->name('profile');
-Route::get('/settings', [ProfileController::class, 'showSettings'])->name('settings');
+Route::get('/profile', [ProfileController::class, 'showProfile'])->middleware('auth')->name('profile');
+Route::get('/settings', [ProfileController::class, 'showSettings'])->middleware('auth')->name('settings');
+Route::post('/profile/register-face', [ProfileController::class, 'registerFace'])->name('profile.register.face');
 Route::put('/settings/update-name', [SettingsController::class, 'updateName'])->name('settings.update.name');
 Route::put('/settings/update-avatar', [SettingsController::class, 'updateAvatar'])->name('settings.update.avatar');
+Route::get('/face/register', [ProfileController::class, 'showFaceRegister'])
+    ->name('face.register');
+// Route::post('/face/register', [ProfileController::class, 'storeFaceRegister'])
+//     ->name('face.register.store');
+Route::post('/face/register', [FaceRegisterController::class, 'store'])
+    ->name('face.register.store')
+    ->middleware('auth');
+
+Route::post('/profile/register-face', [ProfileController::class, 'registerFace'])
+    ->name('profile.register.face')
+    ->middleware('auth');
+
+// routes/web.php
+Route::get('/profile/check-face-status', function () {
+    $user = auth()->user();
+    return response()->json([
+        'face_registered' => !empty($user->face_image_path)
+    ]);
+})->middleware('auth');
+
+Route::post('/face/verify', [CheckInController::class, 'verify'])
+    ->middleware('auth');
+
 
 Route::get('lang/{locale}', function ($locale) {
     if (in_array($locale, ['en', 'vi'])) {
@@ -172,13 +426,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/chat', function () {
         return view('chat.realtime');
     })->name('chat.index');
-    
-    // Debug route for testing
-    Route::get('/chat/debug', function () {
-        return view('chat.debug');
-    })->name('chat.debug');
-    
+
+
     // Test route for user search
+    Route::get('/chat/messages/{message}/download', [App\Http\Controllers\ChatController::class, 'downloadFile'])->name('chat.file.download');
+
     Route::get('/chat/test-users', function () {
         $users = \App\Models\User::where('id', '!=', auth()->id())
             ->select(['id', 'name', 'email'])
@@ -186,12 +438,12 @@ Route::middleware(['auth'])->group(function () {
             ->get();
         return response()->json(['users' => $users]);
     })->name('chat.test.users');
-    
+
     // Old chat routes (keep for backward compatibility)
-    Route::get('/chat/old', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.old.index');
-    Route::get('/chat/conversation/{conversation}', [App\Http\Controllers\ChatController::class, 'show'])->name('chat.conversation');
-    Route::post('/chat/message', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.message.store');
-    Route::post('/chat/create', [App\Http\Controllers\ChatController::class, 'createConversation'])->name('chat.create');
+    //Route::get('/chat/old', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.old.index');
+    //Route::get('/chat/conversation/{conversation}', [App\Http\Controllers\ChatController::class, 'show'])->name('chat.conversation');
+    //Route::post('/chat/message', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.message.store');
+    //Route::post('/chat/create', [App\Http\Controllers\ChatController::class, 'createConversation'])->name('chat.create');
 });
 
 
@@ -201,19 +453,101 @@ Route::middleware(['auth'])->group(function () {
 Route::post('/tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.updateStatus');
 
 // Video Chat
-Route::get('/meet', function () {
-    return view('video-chat.index');
-})->name('meet');
+// Route::get('meeting', function () {
+//     return view('video-chat.index');
+// })->name('meet');
+
+Route::get('/meeting', [MeetingController::class, 'index'])->name('meeting');
+Route::post('/api/meetings/generate', [MeetingController::class, 'generateRoomApi'])->middleware('auth')->name('api.meetings.generate');
+Route::post('/meetings/smart/slots', [MeetingController::class, 'findSmartSlots'])->middleware(['auth', 'web'])->name('meetings.smart.slots');
+Route::post('/meetings/smart/book', [MeetingController::class, 'bookSmartMeeting'])->middleware(['auth', 'web'])->name('meetings.smart.book');
+
+Route::get('/meetings/history', [MeetingController::class, 'history'])->name('meetings.history');
+
+Route::get('/meetings/{meetingHistoryId}/details', [MeetingController::class, 'details'])
+    ->middleware(['auth'])
+    ->name('meetings.details');
+
+Route::post('/meetings/history/leave', [MeetingController::class, 'recordLeave'])
+    ->middleware(['auth'])
+    ->name('meetings.history.leave');
 
 Route::post("/createMeeting", [MeetingController::class, 'createMeeting'])->name("createMeeting");
-
 Route::post("/validateMeeting", [MeetingController::class, 'validateMeeting'])->name("validateMeeting");
 
-Route::get("/meeting/{meetingId}", function($meetingId) {
 
-    $METERED_DOMAIN = env('METERED_DOMAIN');
-    return view('video-chat.meeting', [
-        'METERED_DOMAIN' => $METERED_DOMAIN,
-        'MEETING_ID' => $meetingId
-    ]);
+// Route 1: The Lobby Page
+Route::get('/meeting/{meetingId}', [MeetingController::class, 'showLobby'])
+    ->name('meeting.lobby');
+
+// Route 2: The Meeting Room Page
+Route::get('/meeting/{meetingId}/room', [MeetingController::class, 'showMeetingRoom'])
+    ->name('meeting.room');
+
+Route::post('/meeting/{meetingId}/chat', [MeetingController::class, 'sendChatMessage'])
+    ->middleware(['auth'])
+    ->name('meeting.chat.send');
+
+Route::post('/meeting/{meetingId}/notes', [MeetingController::class, 'saveMeetingNotes'])
+    ->middleware(['auth'])
+    ->name('meeting.notes.save');
+
+// Whiteboard (WBO) Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/whiteboard', [WBOController::class, 'index'])->name('wbo.index');
+    Route::post('/whiteboard/create', [WBOController::class, 'create'])->name('wbo.create');
+    Route::post('/whiteboard/open', [WBOController::class, 'open'])->name('wbo.open');
+    Route::get('/whiteboard/{boardId}', [WBOController::class, 'board'])->name('wbo.board');
 });
+
+Route::post('/wbo/save', [WBOController::class, 'save'])->name('wbo.save');
+
+Route::get('/team-progress', [TeamProgressController::class, 'index'])->name('team-progress');
+Route::get('/user-tasks/{userId}', [TaskController::class, 'getUserTasks'])->name('user.tasks');
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar');
+    Route::get('/calendar/events', [CalendarController::class, 'getEvents'])->name('calendar.events');
+    Route::post('/calendar/store', [CalendarController::class, 'store'])->name('calendar.store');
+    Route::patch('/calendar/update', [CalendarController::class, 'updateDate'])->name('calendar.update'); // For Drag & Drop
+    Route::put('/calendar/update-details', [CalendarController::class, 'updateDetails'])->name('calendar.update-details'); // For Edit Modal
+    Route::delete('/calendar/destroy', [CalendarController::class, 'destroy'])->name('calendar.destroy'); // For Delete Button
+
+    Route::get('/calendar/google/connect', [CalendarController::class, 'connectGoogle'])->name('calendar.google.connect');
+    Route::get('/calendar/google/callback', [CalendarController::class, 'googleCallback']);
+});
+
+
+// Face check-in routes
+
+// Update your existing check-in routes to use the face check-in
+Route::middleware(['auth'])->group(function () {
+    Route::get('/checkin/face/{type}', [CheckInController::class, 'showFacePage'])
+        ->whereIn('type', ['checkin', 'checkout'])
+        ->name('checkin.face.page');
+});
+
+Route::post(
+    '/checkin/face/process',
+    [CheckInController::class, 'faceProcess']
+)->middleware('auth')->name('checkin.face.process');
+
+Route::post(
+    '/checkin/manual/process',
+    [CheckInController::class, 'manualProcess']
+)->middleware('auth')->name('checkin.manual.process');
+
+Route::get('/subadmin/dashboard', [AdminDashboardController::class, 'index'])
+    ->middleware(['auth', 'permission:admin.dashboard.view'])
+    ->name('subadmin.dashboard');
+
+Route::resource('holidays', HolidayController::class);
+
+Route::get('/substaff/dashboard', [DashboardController::class, 'substaffDashboard'])
+    // ->middleware(['auth', 'permission:staff.dashboard.view'])
+    ->name('substaff.dashboard');
+
+Route::middleware('auth')->get('/whiteboard/{board}', function (Request $request, string $board) {
+    $wboUrl = 'http://127.0.0.1:5001/boards/' . rawurlencode($board);
+    return view('whiteboard.show', compact('wboUrl', 'board'));
+})->name('whiteboard.show');

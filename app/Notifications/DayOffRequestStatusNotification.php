@@ -26,10 +26,11 @@ class DayOffRequestStatusNotification extends Notification
 
     public function toDatabase($notifiable)
     {
+        $formatted = $this->date->format('d/m/Y');
         return [
             'status' => $this->status,
             'date'   => $this->date,
-            'message' => "Your day-off request on {$this->date} was {$this->status}."
+            'message' => "Your day-off request on {$formatted} was {$this->status}."
         ];
     }
 
@@ -40,10 +41,11 @@ class DayOffRequestStatusNotification extends Notification
 
     public function toBroadcast($notifiable)
     {
+        $formatted = $this->date->format('d/m/Y');
         return new BroadcastMessage([
             'status' => $this->status,
             'date' => $this->date,
-            'message' => "Your day-off request on {$this->date} was {$this->status}."
+            'message' => "Your day-off request on {$formatted} was {$this->status}."
         ]);
     }
 

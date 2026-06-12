@@ -2,8 +2,8 @@
 
 <a href="{{ $href }}"
    {{ $attributes->class([
-       'group flex items-center gap-4 px-4 py-4 rounded-xl',
-       $active ? 'bg-[#F1EFFC] text-[#5D3FD3]' : 'hover:bg-gray-100 text-gray-700',
+       'flex items-center gap-4 px-3 sm:px-4 py-3 rounded-xl',
+       $active ? 'bg-primary/5 text-primary' : 'hover:bg-muted-50 text-muted-500',
    ]) }}
    aria-current="{{ $active ? 'page' : false }}">
    {{ $slot }}

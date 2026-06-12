@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -15,19 +16,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
 
     <!-- Custom styles for this template-->
-    <!-- <link href="{{ asset('css/sb-admin-2.min.css') }}" rel="stylesheet"> -->
-    @vite(['resources/css/app.css'])
-    @vite(['resources/utils/submit-form.js'])
-    <!-- Bootstrap core JavaScript-->
-    @vite(['public/vendor/jquery/jquery.min.js'])
-    @vite(['public/vendor/bootstrap/js/bootstrap.bundle.min.js'])
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/js/submit-form.js'])
+    <script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
     <!-- Core plugin JavaScript-->
-    @vite(['public/vendor/jquery-easing/jquery.easing.min.js'])
-    <!-- Custom scripts for all pages-->
-    @vite(['public/js/sb-admin-2.min.js'])
+    <script src="{{ asset('vendor/jquery-easing/jquery.easing.min.js') }}"></script>
+
+    <!-- Dashboard layout -->
+    @vite(['resources/js/dashboard_layout/switch_lang.js'])
+
 </head>
 
-<body class="flex flex-row h-screen p-[35px] justify-between gap-14 overflow-auto">
+<body class="flex flex-row h-screen p-[35px] lg:justify-between justify-center gap-9 overflow-auto">
     @yield('content')
 </body>
 

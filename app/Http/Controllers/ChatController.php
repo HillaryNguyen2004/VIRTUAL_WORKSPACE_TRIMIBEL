@@ -4,12 +4,20 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
+use App\Services\ChatFileService;
 
 class ChatController extends Controller
 {
+    protected $chatFileService;
+
+    public function __construct(ChatFileService $chatFileService)
+    {
+        $this->chatFileService = $chatFileService;
+    }
     public function index()
     {
         // Only get conversations where the current user is a participant
@@ -44,6 +52,11 @@ class ChatController extends Controller
 
     public function store(Request $request)
     {
+        // Determine if this is a file/image upload or text message
+        if ($request->hasFile('file') || $request->hasFile('image')) {
+            return $this->storeFileMessage($request);
+        }
+
         $request->validate([
             'conversation_id' => 'required|exists:conversations,id',
             'content' => 'required|string|max:1000'
@@ -60,7 +73,8 @@ class ChatController extends Controller
         $message = Message::create([
             'conversation_id' => $conversation->id,
             'user_id' => auth()->id(),
-            'content' => $request->input('content')
+            'content' => $request->input('content'),
+            'type' => 'text'
         ]);
 
         // Update conversation timestamp
@@ -70,6 +84,95 @@ class ChatController extends Controller
             'success' => true,
             'message' => $message->load('user')
         ]);
+    }
+
+    /**
+     * Store file or image message
+     */
+    protected function storeFileMessage(Request $request)
+    {
+        $request->validate([
+            'conversation_id' => 'required|exists:conversations,id',
+            'content' => 'nullable|string|max:500',
+            'file' => 'nullable|file|max:10240',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240'
+        ]);
+
+        $conversation = Conversation::findOrFail($request->conversation_id);
+        
+        // Verify user is participant in this conversation
+        if (!$conversation->participants->contains(auth()->id())) {
+            abort(403, 'You cannot send messages to this conversation.');
+        }
+
+        try {
+            $fileData = null;
+            $messageType = 'text';
+
+            if ($request->hasFile('file')) {
+                $fileData = $this->chatFileService->uploadFile($request->file('file'), $conversation->id);
+                $messageType = 'file';
+            } elseif ($request->hasFile('image')) {
+                $fileData = $this->chatFileService->uploadImage($request->file('image'), $conversation->id);
+                $messageType = 'image';
+            }
+
+            // Create the message
+            $messageData = [
+                'conversation_id' => $conversation->id,
+                'user_id' => auth()->id(),
+                'content' => $request->input('content') ?: ($fileData ? $fileData['file_name'] : ''),
+                'type' => $messageType
+            ];
+
+            if ($fileData) {
+                $messageData = array_merge($messageData, $fileData);
+            }
+
+            $message = Message::create($messageData);
+
+            // Update conversation timestamp
+            $conversation->touch();
+
+            return response()->json([
+                'success' => true,
+                'message' => $message->load('user')
+            ]);
+
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error uploading file: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload file'
+            ], 500);
+        }
+    }
+
+    public function downloadFile(Message $message)
+    {
+        $user = auth()->user();
+
+        if (!$message->file_path) {
+            abort(404);
+        }
+
+        // Only participants of the conversation can download
+        if (!$message->conversation->participants->contains($user->id)) {
+            abort(403);
+        }
+
+        $disk = Storage::disk();
+
+        if (!$disk->exists($message->file_path)) {
+            abort(404);
+        }
+
+        return $disk->download($message->file_path, $message->file_name);
     }
 
     public function createConversation(Request $request)

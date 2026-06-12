@@ -31,8 +31,37 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
     'google' => [
-    'client_id' => env('GOOGLE_CLIENT_ID'),
-    'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-    'redirect' => env('GOOGLE_REDIRECT_URI'),
-    ]
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
+    'chatbot' => [
+        'base_url' => env('CHATBOT_BASE_URL', 'http://127.0.0.1:8002'),
+    ],
+    'metered' => [
+        'domain' => env('METERED_DOMAIN'),
+        'secret_key' => env('METERED_SECRET_KEY'),
+    ],
+
+    'google_cloud' => [
+        'credentials' => env('GOOGLE_APPLICATION_CREDENTIALS'),
+        'project_id' => env('GOOGLE_CLOUD_PROJECT_ID'),
+        'storage_bucket' => env('GOOGLE_CLOUD_STORAGE_BUCKET'),
+    ],
+    'face' => [
+        'url' => env('FACE_SERVICE_URL'),
+    ],
+
+    'rag' => [
+        'python_binary' => env('RAG_PYTHON_BIN'),
+    ],
+
+    'node_binary' => env('NODE_BINARY', 'node'),
+
+    'google' => [
+        'credentials'      => env('GOOGLE_APPLICATION_CREDENTIALS'),
+        'project_id'       => env('GOOGLE_CLOUD_PROJECT_ID'),
+        'storage_bucket'   => env('GOOGLE_CLOUD_STORAGE_BUCKET'),
+    ],
 ];

@@ -35,7 +35,7 @@ class CampaignRepository
         return $campaign->delete();
     }
 
-        public function getAllPaginated($perPage = 3)
+        public function getAllPaginated($perPage = 10)
     {
         return Campaign::with('users')->latest()->paginate($perPage);
     }
@@ -53,7 +53,9 @@ class CampaignRepository
         if ($filters['status'] === 'sent') {
             $query->where('sent', true);
         } elseif ($filters['status'] === 'scheduled') {
-            $query->where('sent', false);
+            $query->where('scheduled_at', '>', now());
+        } elseif ($filters['status'] === 'pending') {
+            $query->where('sent', false)->where('scheduled_at', '=', null);
         }
 
         // 🔃 Sort by scheduled_at
@@ -63,7 +65,7 @@ class CampaignRepository
             $query->orderBy('scheduled_at', 'desc');
         }
 
-        return $query->paginate(3)->appends($filters); // retain query strings in pagination
+        return $query->paginate(5)->appends($filters); // retain query strings in pagination
     }
 
 

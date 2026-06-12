@@ -1,0 +1,25 @@
+[Unit]
+Description=Whitebophir Collaborative Whiteboard (Node.js / Socket.io)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/home/apps/DO_AN_CHUYEN_NGANH/whitebophir
+
+Environment=NODE_ENV=production
+Environment=PORT=3002
+
+ExecStart=/usr/bin/node ./server/server.mjs
+
+Restart=always
+RestartSec=5s
+TimeoutStopSec=20
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=whitebophir
+
+[Install]
+WantedBy=multi-user.target

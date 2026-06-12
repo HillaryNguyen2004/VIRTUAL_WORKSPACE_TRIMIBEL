@@ -1,7 +1,7 @@
 <?php
 return [
-    "title" => "Cập Nhật Người Dùng",
-    "role_label" => "Vai Trò",
+    "title" => "Cập nhật người dùng",
+    "role_label" => "Vai trò",
     "full_name_label" => "Họ Và Tên",
-    "update_btn" => "Cập Nhật",
+    "update_btn" => "Cập nhật",
 ];

@@ -16,7 +16,7 @@
             <h2 class="font-medium text-[28px] md:text-[32px]">{{ __('company_hour.title') }}</h2>
 
             @if (!$hour)
-                <a href="{{ route('companyhour.create') }}"
+                <a href="{{ route('admin.company_hours.create') }}"
                     class="flex items-center justify-center gap-1 w-fit h-fit bg-[#5D3FD3] text-white px-3 py-1 rounded-xl hover:opacity-95">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h4 fill-white">
                         <path
@@ -35,6 +35,7 @@
                         <th class="py-3 pl-4 pr-3 text-left font-medium">ID</th>
                         <th class="py-3 px-3 text-left font-medium">{{ __('company_hour.start_time') }}</th>
                         <th class="py-3 px-3 text-left font-medium">{{ __('company_hour.end_time') }}</th>
+                        <th class="py-3 px-3 text-left font-medium">{{ __('company_hour.working_days') ?? 'Working Days' }}</th>
                         <th class="py-3 pr-4 pl-3 text-right font-medium"></th>
                     </tr>
                 </thead>
@@ -57,11 +58,28 @@
                                 <div class="max-wxs truncate">{{ \Carbon\Carbon::parse($hour->end_at)->format('H:i') }}</div>
                             </td>
 
+                            {{-- Working Days --}}
+                            <td class="py-3 px-3">
+                                <div class="max-w-xs">
+                                    @php
+                                        $days = $hour->getWorkingDaysArray();
+                                        $dayAbbreviations = ['Monday' => 'Mon', 'Tuesday' => 'Tue', 'Wednesday' => 'Wed', 'Thursday' => 'Thu', 'Friday' => 'Fri', 'Saturday' => 'Sat', 'Sunday' => 'Sun'];
+                                    @endphp
+                                    <span class="inline-flex items-center gap-1 flex-wrap">
+                                        @foreach($days as $day)
+                                            <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                                                {{ $dayAbbreviations[$day] ?? substr($day, 0, 3) }}
+                                            </span>
+                                        @endforeach
+                                    </span>
+                                </div>
+                            </td>
+
                             {{-- Actions --}}
                             <td class="py-3 pr-4 pl-3 text-right">
                                 <div class="flex items-center justify-end gap-1 h-fit">
                                     {{-- Edit --}}
-                                    <a href="{{ route('companyhour.edit', $hour->id) }}"
+                                    <a href="{{ route('admin.company_hours.edit', $hour->id) }}"
                                         class="p-1.5 rounded-full hover:bg-gray-100 transition" title="{{ __('tasks.edit') }}">
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
                                             class="w-5 h-5 fill-green-500">
@@ -71,7 +89,7 @@
                                     </a>
 
                                     {{-- Delete --}}
-                                    <form action="{{ route('companyhour.destroy', $hour->id) }}" method="POST"
+                                    <form action="{{ route('admin.company_hours.destroy', $hour->id) }}" method="POST"
                                         onsubmit="return confirm('Are you sure?');" class="">
                                         @csrf
                                         @method('DELETE')
@@ -104,7 +122,7 @@
                     <h2 class="fw-bold text-primary">Company Working Hours</h2>
 
                     @if (!$hour)
-                        <a href="{{ route('companyhour.create') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.company_hours.create') }}" class="btn btn-primary">
                             <i class="bi bi-plus-circle"></i> Add Company Hours
                         </a>
                     @endif
@@ -128,10 +146,10 @@
                                         <td>{{ \Carbon\Carbon::parse($hour->start_at)->format('H:i') }}</td>
                                         <td>{{ \Carbon\Carbon::parse($hour->end_at)->format('H:i') }}</td>
                                         <td class="text-center">
-                                            <a href="{{ route('companyhour.edit') }}" class="btn btn-sm btn-outline-primary me-2">
+                                            <a href="{{ route('admin.company_hours.edit') }}" class="btn btn-sm btn-outline-primary me-2">
                                                 <i class="bi bi-pencil-square"></i> Edit
                                             </a>
-                                            <form action="{{ route('companyhour.destroy', $hour->id) }}" method="POST" class="d-inline-block" onsubmit="return confirm('Are you sure?');">
+                                            <form action="{{ route('admin.company_hours.destroy', $hour->id) }}" method="POST" class="d-inline-block" onsubmit="return confirm('Are you sure?');">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-sm btn-outline-danger">

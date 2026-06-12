@@ -4,18 +4,19 @@ namespace App\Helpers;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\File;
 
 class FileUploadHelper
 {
-    public function upload(UploadedFile $file, $directory = 'uploads', $disk = 'public')
+    public function upload(UploadedFile $file, $directory = 'uploads', $disk = null)
     {
-        return $file->store($directory, $disk);
+        $diskName = $disk ?: config('filesystems.default');
+        return $file->store($directory, $diskName);
     }
 
-    public function delete($path, $disk = 'public')
+    public function delete($path, $disk = null)
     {
-        return Storage::disk($disk)->delete($path);
+        $diskName = $disk ?: config('filesystems.default');
+        return Storage::disk($diskName)->delete($path);
     }
 }
 

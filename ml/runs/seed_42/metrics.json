@@ -1,0 +1,61 @@
+{
+  "seed": 42,
+  "test_set": {
+    "size": 1890,
+    "target_date_min": "2026-02-02",
+    "target_date_max": "2026-04-29"
+  },
+  "accuracy": 71.53,
+  "macroF1": 0.669,
+  "f1Low": 0.5058,
+  "f1Med": 0.721,
+  "f1High": 0.7803,
+  "perClass": {
+    "Low": {
+      "precision": 0.6895,
+      "recall": 0.3994,
+      "f1": 0.5058,
+      "support": 328
+    },
+    "Medium": {
+      "precision": 0.7227,
+      "recall": 0.7194,
+      "f1": 0.721,
+      "support": 873
+    },
+    "High": {
+      "precision": 0.7136,
+      "recall": 0.8607,
+      "f1": 0.7803,
+      "support": 689
+    }
+  },
+  "confusionMatrix": [
+    [
+      131,
+      156,
+      41
+    ],
+    [
+      48,
+      628,
+      197
+    ],
+    [
+      11,
+      85,
+      593
+    ]
+  ],
+  "mae": 13.02,
+  "rmse": 18.6,
+  "mae_midpoint": 14.04,
+  "rmse_midpoint": 20.44,
+  "naiveAccuracy": 65.56,
+  "naiveMacroF1": 0.6233,
+  "uplift_accuracy": 5.98,
+  "uplift_macroF1": 0.0457,
+  "lookback": 14,
+  "n_features": 45,
+  "evaluatedAt": "2026-05-07T04:57:39.384573Z"
+}

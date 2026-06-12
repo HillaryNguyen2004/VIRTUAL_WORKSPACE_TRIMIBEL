@@ -1,0 +1,11 @@
+# ── ETL Database & SQL ────────────────────────────────────
+psycopg2-binary==2.9.9
+pymysql==1.1.1
+sqlalchemy==2.0.30
+
+# ── Data Processing & Analysis ────────────────────────────
+numpy==1.26.4
+pandas==2.2.2
+
+# ── Environment & Config ──────────────────────────────────
+python-dotenv==1.0.0

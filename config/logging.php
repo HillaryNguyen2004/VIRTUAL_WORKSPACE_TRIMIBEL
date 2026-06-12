@@ -53,8 +53,8 @@ return [
     'channels' => [
         'stack' => [
             'driver' => 'stack',
-            'channels' => ['single'],
-            'ignore_exceptions' => false,
+            'channels' => ['single', 'database'],
+            'ignore_exceptions' => true,
         ],
 
         'single' => [
@@ -116,6 +116,12 @@ return [
 
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
+        ],
+
+        'database' => [
+            'driver' => 'monolog',
+            'handler' => \App\Logging\DatabaseLogger::class,
+            'level' => 'debug',
         ],
     ],
 

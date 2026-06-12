@@ -1,488 +1,915 @@
 @extends('layout_dashboard')
 
+@section('title', __('admin_dashboard.title'))
+
 @section('content')
-    @role('admin')
-    <div class="flex flex-col gap-[25px] w-full">
-        {{-- First section --}}
-        <div class="flex items-center gap-2">
-            <h2 class="font-medium text-[28px] md:text-[32px]">{{ __('admin_dashboard.admin_dashboard') }}</h2>
-            <div class="bg-blue-100 text-blue-500 text-center text-sm md:text-base w-fit h-fit py-1 px-3 rounded-2xl">
-                {{ __('admin_dashboard.admin') }}
-            </div>
-        </div>
+@can('admin.dashboard.view')
 
-        {{-- Second section --}}
-        <div class="flex flex-col md:flex-row items-center gap-3 w-full h-fit">
-            <x-admin.summary :title="__('admin_dashboard.pending_tasks')" :number="5"
-                animationDelay="[animation-delay:150ms]" colorNumber="text-[#5D3FD3]">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-7 h-7 fill-[#5D3FD3]">
-                    <path
-                        d="M197.8 100.3C208.7 107.9 211.3 122.9 203.7 133.7L147.7 213.7C143.6 219.5 137.2 223.2 130.1 223.8C123 224.4 116 222 111 217L71 177C61.7 167.6 61.7 152.4 71 143C80.3 133.6 95.6 133.7 105 143L124.8 162.8L164.4 106.2C172 95.3 187 92.7 197.8 100.3zM197.8 260.3C208.7 267.9 211.3 282.9 203.7 293.7L147.7 373.7C143.6 379.5 137.2 383.2 130.1 383.8C123 384.4 116 382 111 377L71 337C61.6 327.6 61.6 312.4 71 303.1C80.4 293.8 95.6 293.7 104.9 303.1L124.7 322.9L164.3 266.3C171.9 255.4 186.9 252.8 197.7 260.4zM288 160C288 142.3 302.3 128 320 128L544 128C561.7 128 576 142.3 576 160C576 177.7 561.7 192 544 192L320 192C302.3 192 288 177.7 288 160zM288 320C288 302.3 302.3 288 320 288L544 288C561.7 288 576 302.3 576 320C576 337.7 561.7 352 544 352L320 352C302.3 352 288 337.7 288 320zM224 480C224 462.3 238.3 448 256 448L544 448C561.7 448 576 462.3 576 480C576 497.7 561.7 512 544 512L256 512C238.3 512 224 497.7 224 480zM128 440C150.1 440 168 457.9 168 480C168 502.1 150.1 520 128 520C105.9 520 88 502.1 88 480C88 457.9 105.9 440 128 440z" />
-                </svg>
-            </x-admin.summary>
-            <x-admin.summary :title="__('admin_dashboard.active_projects')" :number="10"
-                animationDelay="[animation-delay:200ms]" colorNumber="text-green-400">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-7 h-7 fill-green-400">
-                    <path
-                        d="M64 144C64 117.5 85.5 96 112 96L208 96C234.5 96 256 117.5 256 144L256 160L384 160L384 144C384 117.5 405.5 96 432 96L528 96C554.5 96 576 117.5 576 144L576 240C576 266.5 554.5 288 528 288L432 288C405.5 288 384 266.5 384 240L384 224L256 224L256 240C256 247.3 254.3 254.3 251.4 260.5L320 352L400 352C426.5 352 448 373.5 448 400L448 496C448 522.5 426.5 544 400 544L304 544C277.5 544 256 522.5 256 496L256 400C256 392.7 257.7 385.7 260.6 379.5L192 288L112 288C85.5 288 64 266.5 64 240L64 144z" />
-                </svg>
-            </x-admin.summary>
-            <x-admin.summary :title="__('admin_dashboard.total_users')" :number="10"
-                animationDelay="[animation-delay:250ms]" colorNumber="text-blue-400">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-7 h-7 fill-blue-400">
-                    <path
-                        d="M320 80C377.4 80 424 126.6 424 184C424 241.4 377.4 288 320 288C262.6 288 216 241.4 216 184C216 126.6 262.6 80 320 80zM96 152C135.8 152 168 184.2 168 224C168 263.8 135.8 296 96 296C56.2 296 24 263.8 24 224C24 184.2 56.2 152 96 152zM0 480C0 409.3 57.3 352 128 352C140.8 352 153.2 353.9 164.9 357.4C132 394.2 112 442.8 112 496L112 512C112 523.4 114.4 534.2 118.7 544L32 544C14.3 544 0 529.7 0 512L0 480zM521.3 544C525.6 534.2 528 523.4 528 512L528 496C528 442.8 508 394.2 475.1 357.4C486.8 353.9 499.2 352 512 352C582.7 352 640 409.3 640 480L640 512C640 529.7 625.7 544 608 544L521.3 544zM472 224C472 184.2 504.2 152 544 152C583.8 152 616 184.2 616 224C616 263.8 583.8 296 544 296C504.2 296 472 263.8 472 224zM160 496C160 407.6 231.6 336 320 336C408.4 336 480 407.6 480 496L480 512C480 529.7 465.7 544 448 544L192 544C174.3 544 160 529.7 160 512L160 496z" />
-                </svg>
-            </x-admin.summary>
-        </div>
+    @php
+        // --- 1. RECEIVE DATA & HELPERS ---
 
-        {{-- Third section --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 w-full gap-3">
-            <x-admin.manage-action :title="__('admin_dashboard.user_management')"
-                :subtitle="__('admin_dashboard.user_management_description')" :btnLabel="__('admin_dashboard.add_new_user')"
-                :hrefAll="route('users.index')" :hrefAction="route('admin.users.create')"
-                animationDelay="[animation-delay:300ms]" bgBtn="bg-indigo-600" bgHoverBtn="opacity-95">
-                <ul class="text-sm list-disc pl-4">
-                    <li>{{ __('admin_dashboard.user_management_item_1') }}</li>
-                    <li>{{ __('admin_dashboard.user_management_item_2') }}</li>
-                    <li>{{ __('admin_dashboard.user_management_item_3') }}</li>
-                </ul>
-            </x-admin.manage-action>
-            <x-admin.manage-action :title="__('admin_dashboard.permission_management')"
-                :subtitle="__('admin_dashboard.permission_management_description')"
-                :btnLabel="__('admin_dashboard.edit_permissions')" :hrefAll="route('admin.permissions')"
-                :hrefAction="route('admin.permissions')" animationDelay="[animation-delay:300ms]" bgBtn="bg-violet-600"
-                bgHoverBtn="opacity-95">
-                <ul class="text-sm list-disc pl-4">
-                    <li>{{ __('admin_dashboard.permission_management_item_1') }}</li>
-                </ul>
-            </x-admin.manage-action>
-            <x-admin.manage-action :title="__('admin_dashboard.task_management')"
-                :subtitle="__('admin_dashboard.task_management_description')" :btnLabel="__('admin_dashboard.edit_tasks')"
-                :hrefAll="route('tasks.index')" :hrefAction="route('tasks.index')" animationDelay="[animation-delay:350ms]"
-                bgBtn="bg-amber-600" bgHoverBtn="opacity-95">
-                <ul class="text-sm list-disc pl-4">
-                    <li>{{ __('admin_dashboard.task_management_item_1') }}</li>
-                    <li>{{ __('admin_dashboard.task_management_item_2') }}</li>
-                    <li>{{ __('admin_dashboard.task_management_item_3') }}</li>
-                </ul>
-            </x-admin.manage-action>
-            <x-admin.manage-action :title="__('admin_dashboard.company_hours_management')"
-                :subtitle="__('admin_dashboard.company_hours_management_description')"
-                :btnLabel="__('admin_dashboard.create_new_company_hours')" :hrefAll="route('companyhour.index')"
-                :hrefAction="route('companyhour.create')" animationDelay="[animation-delay:350ms]" bgBtn="bg-teal-600"
-                bgHoverBtn="opacity-95">
-                <ul class="text-sm list-disc pl-4">
-                    <li>{{ __('admin_dashboard.company_hours_crud') }}</li>
-                    <li>{{ __('admin_dashboard.set_company_hours') }}</li>
-                    <li>{{ __('admin_dashboard.manage_hours_policies') }}</li>
-                </ul>
-            </x-admin.manage-action>
-            <x-admin.manage-action :title="__('admin_dashboard.campaign_management')"
-                :subtitle="__('admin_dashboard.campaign_management_description')"
-                :btnLabel="__('admin_dashboard.create_new_campaign')" :hrefAll="route('campaigns.index')"
-                :hrefAction="route('campaigns.create')" animationDelay="[animation-delay:400ms]" bgBtn="bg-rose-600"
-                bgHoverBtn="opacity-95">
-                <ul class="text-sm list-disc pl-4">
-                    <li>{{ __('admin_dashboard.campaign_crud') }}</li>
-                    <li>{{ __('admin_dashboard.assign_users_to_campaign') }}</li>
-                    <li>{{ __('admin_dashboard.schedule_and_send') }}</li>
-                </ul>
-            </x-admin.manage-action>
-            <x-admin.manage-action :title="__('admin_dashboard.email_template_management')"
-                :subtitle="__('admin_dashboard.email_template_management_description')"
-                :btnLabel="__('admin_dashboard.create_new_template')" :hrefAll="route('email-templates.index')"
-                :hrefAction="route('email-templates.create')" animationDelay="[animation-delay:400ms]" bgBtn="bg-sky-600"
-                bgHoverBtn="opacity-95">
-                <ul class="text-sm list-disc pl-4">
-                    <li>{{ __('admin_dashboard.email_template_crud') }}</li>
-                    <li>{{ __('admin_dashboard.support_shortcodes') }}</li>
-                    <li>{{ __('admin_dashboard.assign_to_campaign') }}</li>
-                </ul>
-            </x-admin.manage-action>
-            <div
-                class="flex flex-col gap-3 w-full h-full bg-[#FDFDFF] shadow-[0_4px_40px_0_rgba(32,27,53,0.1)] rounded-[20px] py-5 px-6 animate-fade-in-up [animation-delay:450ms]">
-                <div class="flex items-center justify-between w-full gap-2">
-                    <p class="text-[20px] font-medium">{{ __('admin_dashboard.recent_check_ins') }}</p>
-                    <a href="{{ route('users.checkin_index') }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
-                            <path
-                                d="M408 64L552 64C565.3 64 576 74.7 576 88L576 232C576 241.7 570.2 250.5 561.2 254.2C552.2 257.9 541.9 255.9 535 249L496 210L409 297C399.6 306.4 384.4 306.4 375.1 297L343.1 265C333.7 255.6 333.7 240.4 343.1 231.1L430.1 144.1L391.1 105.1C384.2 98.2 382.2 87.9 385.9 78.9C389.6 69.9 398.3 64 408 64zM232 576L88 576C74.7 576 64 565.3 64 552L64 408C64 398.3 69.8 389.5 78.8 385.8C87.8 382.1 98.1 384.2 105 391L144 430L231 343C240.4 333.6 255.6 333.6 264.9 343L296.9 375C306.3 384.4 306.3 399.6 296.9 408.9L209.9 495.9L248.9 534.9C255.8 541.8 257.8 552.1 254.1 561.1C250.4 570.1 241.7 576 232 576z" />
-                        </svg>
-                    </a>
+        // Helper: Convert decimal hour (12.5) to string ("12:30")
+        $floatToString = function($decimal) {
+            if ($decimal === null) return '--:--';
+            $hours = floor($decimal);
+            $minutes = ($decimal - $hours) * 60;
+            return sprintf('%02d:%02d', $hours, $minutes);
+        };
+
+        // Grab variables from Controller (Controller now sends floats like 8.5)
+        // IMPORTANT: Defaults should match Controller defaults if null is passed unexpectedly
+        $startVal = $companyStartHour ?? 8;
+        $endVal   = $companyEndHour   ?? 17;
+
+        // Check mode based on NULL values passed from Controller
+        // If lunch is NULL in DB, Controller sends NULL. If Midday is NULL, Controller sends NULL.
+        $lunchStartVal = $companyLunchStartHour; // Can be null
+        $lunchEndVal   = $companyLunchEndHour;   // Can be null
+        $midDayVal     = $companyMidDayHour;     // Can be null
+
+        // --- 2. DETERMINE MODE & VALUES ---
+
+        // Logic: If Lunch variables exist (are not null), use Lunch Mode.
+        // If Lunch is null but Midday exists, use Midday Mode.
+        // If BOTH are null (shouldn't happen with correct DB defaults, but safe fallback), default to Lunch.
+
+        $hasLunch = !is_null($lunchStartVal); // Strict null check
+
+        // Initialize Display Strings and Math Values
+        $startStr = $floatToString($startVal);
+        $endStr   = $floatToString($endVal);
+
+        // Math Percentages (Always based on 24hr clock)
+        $workStartPct = ($startVal / 24) * 100;
+        $workWidthPct = (($endVal - $startVal) / 24) * 100;
+
+        $currentHour = \Carbon\Carbon::now()->floatDiffInHours(\Carbon\Carbon::today());
+        $currentMarkerPct = ($currentHour / 24) * 100;
+
+        $lunchStartPct = 0;
+        $lunchWidthPct = 0;
+        $midDayPct = 0;
+
+        $lunchRangeStr = "";
+        $midDayStr = "";
+
+        if ($hasLunch) {
+            // --- LUNCH MODE ---
+            $lunchStartPct = ($lunchStartVal / 24) * 100;
+            $lunchDuration = $lunchEndVal - $lunchStartVal;
+            $lunchWidthPct = ($lunchDuration / 24) * 100;
+
+            $lunchRangeStr = $floatToString($lunchStartVal) . " - " . $floatToString($lunchEndVal);
+        } else {
+            // --- MIDDAY MODE ---
+            // If midDayVal is null here (rare fallback), default to 12 for safety
+            $safeMidDay = $midDayVal ?? 12;
+
+            $midDayPct = ($safeMidDay / 24) * 100;
+            $midDayStr = $floatToString($safeMidDay);
+        }
+    @endphp
+
+    {{-- Main Container (Matches User Dashboard) --}}
+    <div class="flex flex-col gap-6 w-full mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
+
+        {{-- Header Section --}}
+        <div class="flex flex-col @2xl:flex-row gap-4 justify-between @2xl:items-center w-full">
+            <div class="flex flex-col sm:justify-between">
+                <div class="flex items-center gap-3">
+                    <h1 class="font-semibold text-2xl md:text-3xl text-main tracking-tight">
+                        {{ __('admin_dashboard.admin_dashboard') }}</h1>
+                    <span
+                        class="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wide">
+                        @if(auth()->user()->hasRole('admin'))
+                            {{ __('admin_dashboard.admin') }}
+                        @else
+                            Subadmin
+                        @endif
+                    </span>
                 </div>
-                <div class="w-full overflow-x-auto">
-                    <table class="w-full">
-                        <thead class="text-gray-400 text-sm uppercase border-b">
-                            <tr>
-                                <td class="py-3 pl-4 pr-3 text-left font-medium">{{ __('admin_dashboard.user') }}</td>
-                                <td class="py-3 pl-4 pr-3 text-left font-medium">{{ __('admin_dashboard.date') }}</td>
-                                <td class="py-3 pl-4 pr-3 text-left font-medium">{{ __('admin_dashboard.check_in') }}</td>
-                                <td class="py-3 pl-4 pr-3 text-left font-medium">{{ __('admin_dashboard.check_out') }}</td>
-                            </tr>
-                        </thead>
-
-                        <tbody class="divide-y divide-gray-100 text-sm">
-                            @forelse($recentCheckIns->take(3) as $log)
-                                <tr>
-                                    <td class="py-3 pl-4 pr-3">{{ $log->user_name }}</td>
-                                    <td class="py-3 pl-4 pr-3">{{ $log->date }}</td>
-                                    <td class="py-3 pl-4 pr-3">{{ $log->check_in_time ?? '-' }}</td>
-                                    <td class="py-3 pl-4 pr-3">{{ $log->check_out_time ?? '-' }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="4" class="text-center">
-                                        {{ __('admin_dashboard.no_check_ins') }}
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                <p class="text-muted-500 text-sm md:text-base mt-1">{{ __('user_dashboard.subheading') }}</p>
             </div>
 
-            <div
-                class="flex flex-col gap-3 w-full h-full bg-[#FDFDFF] shadow-[0_4px_40px_0_rgba(32,27,53,0.1)] rounded-[20px] py-5 px-6 animate-fade-in-up [animation-delay:450ms]">
-                <div class="flex items-center justify-between w-full gap-2">
-                    <p class="text-[20px] font-medium">{{ __('admin_dashboard.recent_task_submissions') }}</p>
-                    <a href="{{ route('admin.activity.logs') }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
-                            <path
-                                d="M408 64L552 64C565.3 64 576 74.7 576 88L576 232C576 241.7 570.2 250.5 561.2 254.2C552.2 257.9 541.9 255.9 535 249L496 210L409 297C399.6 306.4 384.4 306.4 375.1 297L343.1 265C333.7 255.6 333.7 240.4 343.1 231.1L430.1 144.1L391.1 105.1C384.2 98.2 382.2 87.9 385.9 78.9C389.6 69.9 398.3 64 408 64zM232 576L88 576C74.7 576 64 565.3 64 552L64 408C64 398.3 69.8 389.5 78.8 385.8C87.8 382.1 98.1 384.2 105 391L144 430L231 343C240.4 333.6 255.6 333.6 264.9 343L296.9 375C306.3 384.4 306.3 399.6 296.9 408.9L209.9 495.9L248.9 534.9C255.8 541.8 257.8 552.1 254.1 561.1C250.4 570.1 241.7 576 232 576z" />
-                        </svg>
+            @if(auth()->user()->hasRole('subadmin'))
+                <div class="flex gap-4 ">
+                    {{-- Check In Button --}}
+                    <a href="{{ route('checkin.face.page', 'checkin') }}"
+                        class="group flex items-center gap-3 rounded-xl bg-primary-gradient px-6 py-3 text-white text-md md:text-base font-semibold shadow-lg shadow-primary/20 transition-all hover:opacity-90 focus:ring-4 focus:ring-primary/30 active:scale-95">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 lucide lucide-log-in-icon lucide-log-in">
+                                <path d="m10 17 5-5-5-5"/>
+                                <path d="M15 12H3"/>
+                                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                            </svg>
+                        {{ __('user_dashboard.check_in') }}
+                    </a>
+
+                    {{-- Check Out Button --}}
+                    <a href="{{ route('checkin.face.page', 'checkout') }}"
+                        class="group flex items-center gap-3 rounded-xl bg-primary-gradient px-6 py-3 text-white text-md md:text-base font-semibold shadow-lg shadow-primary/20 transition-all hover:opacity-90 focus:ring-4 focus:ring-primary/30 active:scale-95">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 lucide lucide-log-out-icon lucide-log-out"><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></svg>
+                        {{ __('user_dashboard.check_out') }}
                     </a>
                 </div>
-                <div class="w-full overflow-x-auto">
-                    <table class="w-full">
-                        <thead class="text-gray-400 text-sm uppercase border-b">
-                            <tr>
-                                <td class="py-3 pl-4 pr-3 text-left font-medium">{{ __('admin_dashboard.user') }}</td>
-                                <td class="py-3 pl-4 pr-3 text-left font-medium">{{ __('admin_dashboard.task') }}</td>
-                                <td class="py-3 pl-4 pr-3 text-left font-medium">{{ __('admin_dashboard.deadline') }}</td>
-                                <td class="py-3 pl-4 pr-3 text-left font-medium">{{ __('admin_dashboard.status') }}</td>
-                            </tr>
-                        </thead>
+            @endif
+        </div>
+        
 
-                        <tbody class="divide-y divide-gray-100 text-sm">
-                            @forelse($recentLogs->take(3) as $log)
-                                <tr>
-                                    <td class="py-3 pl-4 pr-3">{{ $log->user->name ?? 'N/A' }}</td>
-                                    <td class="py-3 pl-4 pr-3">{{ $log->action }}</td>
-                                    <td class="py-3 pl-4 pr-3">{{ $log->created_at->format('Y-m-d H:i') }}</td>
-                                    <td class="py-3 pl-4 pr-3">{{ \Illuminate\Support\Str::limit($log->description, 30) }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="4" class="text-center">
-                                        {{ __('admin_dashboard.no_activity_logs') }}
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+
+        {{-- MAIN GRID CONTAINER --}}
+        <div class="grid grid-cols-1 @4xl:grid-cols-12 gap-6 w-full">
+
+            {{-- Users --}}
+            @can('admin.users.view')
+                <div class="@4xl:col-span-12 flex flex-col @3xl:flex-row h-full min-h-[200px] gap-6 @container animate-fade-in-up [animation-delay:100ms]">
+                    {{-- Online Users --}}
+                    <x-white-card-container color="primary/50" class="p-6 w-full flex-col justify-between h-full">
+                        <div class="relative z-10 flex justify-between items-start">
+                            <div class="flex gap-1">
+                                <h3 class="text-md md:text-lg font-semibold tracking-tight">
+                                    Online Users
+                                </h3>
+                                <div class="flex items-center">
+                                    <p class="text-muted-500 text-md md:text-lg">(</p>
+                                    <p id="active-users-count" class="text-muted-500 text-md md:text-lg">
+                                        <svg class="animate-spin h-6 w-6 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </p>    
+                                    <p class="text-muted-500 text-md md:text-lg">)</p>
+                                </div>
+                            </div>
+
+                            {{-- Action Area --}}
+                            <div class="flex items-center gap-2">
+                                <!-- <div class="bg-accent/10 text-accent px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                                    {{ $userGrowthPercentage ?? 0 }}%
+                                </div> -->
+
+                                <a href="{{ route('admin.users.index') }}" class="text-xs md:text-sm text-primary font-medium hover:underline">View All</a>
+                            </div>
+                        </div>
+
+                        <div class="relative flex items-end justify-between gap-6 mt-2">
+                            <div id="active-users-list" class="w-full max-h-[360px] @3xl:max-h-[220px] overflow-y-auto pt-2">
+                                {{-- A loading state while JS fetches the data --}}
+                                <div class="flex items-center justify-center h-40 text-gray-500">
+                                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Loading active users...
+                                </div>
+                            </div>
+                        </div>
+                    </x-white-card-container>
+
+                    {{-- Department Distribution (Donut Chart) --}}
+                    @can('admin.roles.view') {{-- Update this permission if needed --}}
+                        <x-white-card-container color="primary/50" class="p-6 w-full flex-col justify-between">
+                            <div class="flex justify-between items-start mb-4">
+                                <h3 class="text-lg font-semibold text-main">Departments Overview</h3>
+                                <a href="{{ route('admin.permissions') }}" class="text-xs md:text-sm text-primary font-medium hover:underline">View Permissions</a>
+
+                            </div>
+
+                            {{-- Chart Container --}}
+                            <div class="flex flex-col @container mt-2 flex-1 justify-center">
+                                {{-- At small sizes it stacks, at larger sizes (using container queries) it goes side-by-side --}}
+                                <div class="flex flex-col @xs:flex-row items-center gap-6 w-full">
+                                    
+                                    {{-- LEFT: The Donut & Center Text --}}
+                                    <div class="relative w-[160px] h-[160px] flex-shrink-0">
+                                        <canvas id="departmentDonutChart"></canvas>
+                                        
+                                        {{-- Notice we removed pb-8 because the canvas legend is gone, so it centers perfectly now --}}
+                                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                            <span class="text-2xl md:text-3xl font-semibold leading-none">{{ $totalUsersCount }}</span>
+                                            <span class="font-medium text-muted-500 uppercase tracking-widest text-xs">Users</span>
+                                        </div>
+                                    </div>
+
+                                    {{-- RIGHT: The Custom HTML Legend --}}
+                                    <div id="custom-legend" class="flex flex-col flex-1 w-full min-w-0">
+                                        {{-- JavaScript will inject the legend items here --}}
+                                    </div>
+
+                                </div>
+                            </div>
+                        </x-white-card-container>
+                    @endcan
                 </div>
+
+                
+            @endcan
+
+            {{-- TWO COLUMN SPLIT VIEW - LEFT --}}
+            <div class="@4xl:col-span-8 flex flex-col gap-6 h-full">
+                {{-- 1. Daily Attendance --}}
+                @can('admin.attendance.view')
+                    <div class="@container flex flex-row w-full gap-6 animate-fade-in-up [animation-delay:150ms]">
+                        {{-- Statistics Chart --}}
+                        <x-white-card-container color="primary/50" class="p-6 w-full flex-col justify-between h-full">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-lg font-semibold text-main">Attendance Statistics</h3>
+                                <!-- <a href="{{ route('admin.users.index') }}" class="text-xs md:text-sm text-primary font-medium hover:underline">View All</a> -->
+                                <a href="{{ route('users.checkin_index') }}" title="{{ __('admin_dashboard.view_all') }}" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-primary/5">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                    </svg>
+                                </a>
+                            </div>
+
+                            {{-- Custom Legend --}}
+                            <div class="flex items-end justify-between mb-4">
+                                <div class="flex items-center gap-4 text-sm text-muted-500 font-medium">
+                                    <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-primary"></span> Present</div>
+                                    <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-secondary"></span> Absent</div>
+                                    <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-accent"></span> Leave</div>
+                                </div>
+                                {{-- Dropdown matching the image --}}
+                                <div class="relative z-20">
+                                    <select id="attendanceTimeframe" class="appearance-none bg-white border border-muted-300 text-sm text-main font-medium rounded-xl px-4 py-2 pr-8 cursor-pointer">
+                                        <option value="weekly">Weekly</option>
+                                        <option value="yearly">Yearly</option>
+                                    </select>
+                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-500">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Chart Canvas --}}
+                            <div class="relative w-full flex-1 min-h-[250px]">
+                                <canvas id="attendanceBarChart"></canvas>
+                            </div>
+                        </x-white-card-container>
+
+                        {{-- Recent Attendance --}}
+                        <x-white-card-container color="primary/50" class="hidden @3xl:block p-6 w-1/2 flex-col justify-between h-full">
+                            <div class="flex items-center justify-between mb-6">
+                                <h3 class="text-lg font-semibold text-main">{{ __('admin_dashboard.recent_attendance') }}</h3>
+                                <a href="{{ route('users.checkin_index') }}" title="{{ __('admin_dashboard.view_all') }}" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-primary/5">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                    </svg>
+                                </a>
+                            </div>
+
+                            <div class="overflow-y-visible max-h-[300px] pr-2 custom-scrollbar">
+                                @if($recentCheckIns->isNotEmpty())
+                                    <ul class="flex flex-col gap-4">
+                                        @foreach($recentCheckIns->take(5) as $log)
+                                            <li class="flex items-center gap-4 group">
+                                                {{-- Dynamic Avatar Logic using Component --}}
+                                                <x-user-avatar :user="$log->user" size="h-10 w-10" withRing="false" />
+
+                                                <div class="flex-1 min-w-0">
+                                                    <p class="text-sm font-medium text-main truncate">{{ $log->user_name ?? $log->user->name ?? 'U' }}</p>
+                                                    <div class="flex items-center gap-2 text-xs text-muted-400">
+                                                        <span class="flex items-center gap-1 text-primary font-medium">
+                                                            {{ $log->check_in_time ?? '--:--' }}
+                                                        </span>
+                                                        <span>•</span>
+                                                        <span>{{ $log->date }}</span>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                @else
+                                    <div class="text-center py-6 text-muted-400 text-sm">{{ __('admin_dashboard.no_check_ins') }}</div>
+                                @endif
+                            </div>
+                        </x-white-card-container>
+                    </div>
+                @endcan
+
+                {{-- 2. Project Progress --}}
+                @can('admin.projects.view')
+                    <x-white-card-container color="primary/50" class="p-6 w-full flex-col justify-between h-full animate-fade-in-up [animation-delay:200ms]">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-lg font-semibold text-main">{{ __('admin_dashboard.project_progress') }}</h3>
+
+                            <a href="{{ route('projects.index') }}" title="{{ __('admin_dashboard.view_all') }}" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-primary/5">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                </svg>
+                            </a>
+                        </div>
+
+                        <div class="flex flex-col gap-6">
+                            @forelse($projectsHealth ?? [] as $project)
+                                @php
+                                    $total = $project->total_tasks > 0 ? $project->total_tasks : 1;
+                                    $completedPct = ($project->completed / $total) * 100;
+                                    $inProgressPct = ($project->in_progress / $total) * 100;
+                                    $todoPct = ($project->todo / $total) * 100;
+                                @endphp
+                                <div>
+                                    <div class="flex justify-between items-end mb-2">
+                                        <div class="flex items-center gap-2">
+                                            {{-- NOTE: Changed from $project->name to $project->title based on your Model --}}
+                                            <h4 class="font-bold text-main text-sm">{{ $project->title }}</h4>
+                                            @if($project->overdue_count > 0)
+                                                <div class="flex items-center gap-1 text-[10px] bg-danger/10 text-danger px-1.5 py-0.5 rounded border border-danger/20">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                                                    {{ $project->overdue_count }}
+                                                </div>
+                                            @endif
+                                        </div>
+                                        <span class="text-xs text-muted-500 font-medium">{{ $project->completed }}/{{ $project->total_tasks }} Tasks ({{ round($completedPct) }}%)</span>
+                                    </div>
+                                    <div class="flex w-full h-1.5 overflow-hidden gap-0.5 bg-muted-100 rounded-full">
+                                        <div class="bg-accent shadow-[0_0_10px_rgba(var(--color-accent),0.5)]" style="width: {{ $completedPct }}%"></div>
+                                        <div class="bg-secondary" style="width: {{ $inProgressPct }}%"></div>
+                                        <div class="bg-muted-300" style="width: {{ $todoPct }}%"></div>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="text-center py-6 text-muted-400 text-sm">{{ __('admin_dashboard.no_projects') }}</div>
+                            @endforelse
+                        </div>
+                    </x-white-card-container>
+                @endcan
+
+                <div class="flex flex-col @2xl:flex-row w-full gap-6 animate-fade-in-up [animation-delay:300ms]">
+                    {{-- 3. Campaigns --}}
+                    @can('admin.campaigns.view')
+                        <x-dashboard_widgets.campaigns :upcomingCampaigns="$upcomingCampaigns" :sentCampaigns="$sentCampaigns" class="w-full h-full"/>
+                    @endcan
+
+                    {{-- 4. Email Templates --}}
+                    @can('admin.email_templates.view')
+                        <x-dashboard_widgets.email_templates :emailTemplates="$emailTemplates" class="w-full"/>
+                    @endcan
+                </div>
+            </div>
+
+
+            {{-- TWO COLUMN SPLIT VIEW - RIGHT --}}
+            <div class="@4xl:col-span-4 flex flex-col gap-6">
+                {{-- 1. Working Hours --}}
+                @can('admin.company_hours.view')
+                    <x-white-card-container color="accent/50" class="p-6 w-full flex-col justify-between animate-fade-in-up [animation-delay:150ms]">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-semibold text-main">{{ __('admin_dashboard.company_hours') }}</h3>
+
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs font-mono text-muted-500 bg-muted-100 px-2 py-1 rounded-md border border-muted-200">{{ date('H:i') }}</span>
+                                <button id="open-company-hours-btn" type="button" class="text-muted-400 hover:text-primary hover:bg-primary/5 p-1 rounded-md transition-colors cursor-pointer" title="Edit Hours">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-current">
+                                        <path d="M535.6 85.7C513.7 63.8 478.3 63.8 456.4 85.7L432 110.1L529.9 208L554.3 183.6C576.2 161.7 576.2 126.3 554.3 104.4L535.6 85.7zM236.4 305.7C230.3 311.8 225.6 319.3 222.9 327.6L193.3 416.4C190.4 425 192.7 434.5 199.1 441C205.5 447.5 215 449.7 223.7 446.8L312.5 417.2C320.7 414.5 328.2 409.8 334.4 403.7L496 241.9L398.1 144L236.4 305.7z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex-1 flex flex-col justify-between">
+                            <div class="my-auto">
+                                {{-- TIMELINE BAR --}}
+                                <div class="relative w-full h-8 bg-muted-100 rounded-full overflow-hidden shadow-inner">
+                                    {{-- 1. Main Work Shift --}}
+                                    <div class="absolute top-0 bottom-0 bg-accent/20 border-x border-accent/50"
+                                        style="left: {{ $workStartPct }}%; width: {{ $workWidthPct }}%;"></div>
+
+                                    {{-- 2. Conditional: Lunch vs Midday --}}
+                                    @if($hasLunch)
+                                        {{-- Lunch Block (Solid Range) --}}
+                                        <div class="absolute top-0 bottom-0 bg-secondary/40 border-x border-secondary/60"
+                                            style="left: {{ $lunchStartPct }}%; width: {{ $lunchWidthPct }}%;"></div>
+                                    @else
+                                        {{-- Midday Marker (Dashed Line) --}}
+                                        <div class="absolute top-0 bottom-0 border-l-2 border-dashed border-secondary z-10"
+                                            style="left: {{ $midDayPct }}%;"></div>
+                                    @endif
+
+                                    {{-- 3. Current Time Marker --}}
+                                    <div class="absolute top-0 bottom-0 w-0.5 bg-danger z-20 shadow-[0_0_8px_rgba(239,68,68,0.8)]"
+                                        style="left: {{ $currentMarkerPct }}%;"></div>
+                                </div>
+
+                                {{-- TIMELINE LABELS --}}
+                                <div class="relative w-full h-6 mt-2 text-xs text-muted-400 font-medium">
+                                    <span class="absolute left-0">00:00</span>
+
+                                    {{-- Start Time Label --}}
+                                    <span class="absolute -translate-x-1/2 text-main font-bold" style="left: {{ $workStartPct }}%;">
+                                        {{ $startStr }}
+                                    </span>
+
+                                    {{-- End Time Label --}}
+                                    <span class="absolute -translate-x-1/2 text-main font-bold" style="left: {{ $workStartPct + $workWidthPct }}%;">
+                                        {{ $endStr }}
+                                    </span>
+
+                                    <span class="absolute right-0">23:59</span>
+                                </div>
+                            </div>
+
+                            {{-- LEGEND (BOTTOM ROW) --}}
+                            <div class="flex items-center gap-6 mt-4 pt-4 border-t border-muted-200">
+                                {{-- Work Legend --}}
+                                <div class="flex items-center gap-2 w-full">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-accent/50 border border-accent"></div>
+                                    <div class="flex flex-col gap-0.5">
+                                        <span class="text-[10px] uppercase text-muted-400 font-bold tracking-wider">{{ __('admin_dashboard.work') }}</span>
+                                        <span class="text-xs text-main font-medium leading-none">{{ $startStr }} - {{ $endStr }}</span>
+                                    </div>
+                                </div>
+
+                                {{-- Conditional Legend: Lunch or Midday --}}
+                                @if($hasLunch)
+                                    <div class="flex items-center gap-2 w-full">
+                                        <div class="w-2.5 h-2.5 rounded-full bg-secondary/60 border border-secondary"></div>
+                                        <div class="flex flex-col gap-0.5">
+                                            <span class="text-[10px] uppercase text-muted-400 font-bold tracking-wider">{{ __('admin_dashboard.lunch') }}</span>
+                                            <span class="text-xs text-main font-medium leading-none">{{ $lunchRangeStr }}</span>
+                                        </div>
+                                    </div>
+                                @else
+                                    <div class="flex items-center gap-2 w-full">
+                                        {{-- Purple Marker for Midday --}}
+                                        <div class="w-2.5 h-0.5 bg-secondary border-none"></div>
+                                        <div class="flex flex-col gap-0.5">
+                                            <span class="text-[10px] uppercase text-muted-400 font-bold tracking-wider">{{ __('admin_dashboard.midday') }}</span>
+                                            <span class="text-xs text-main font-medium leading-none">{{ $midDayStr }}</span>
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </x-white-card-container>
+                @endcan
+
+                {{-- 2. Upcoming Holidays --}}
+                @can('admin.holidays.view')
+                    <div class="flex flex-col gap-4 w-full animate-fade-in-up [animation-delay:200ms] @container">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-main">Upcoming Holidays</h3>
+                            @can('admin.holidays.create')
+                                <button id="openHolidayModal" title="Add Holiday" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-primary/5">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 lucide lucide-plus-icon lucide-plus">
+                                        <path d="M5 12h14"/>
+                                        <path d="M12 5v14"/>
+                                    </svg>
+                                </button>
+                            @endcan
+                        </div>
+
+                        {{-- Holidays Grid --}}
+                        <div class="grid grid-cols-1 @sm:grid-cols-2 gap-4">
+                            @forelse($upcomingHolidays ?? [] as $holiday)
+                                <div onclick="openHolidayModal('edit', {{ json_encode($holiday) }})"
+                                    class="group flex items-center gap-4 p-4 rounded-2xl bg-white border border-muted-300 hover:border-accent/30 transition-all duration-300 cursor-pointer">
+
+                                    {{-- Calendar Icon --}}
+                                    <div class="relative w-12 h-12 flex-none bg-accent/5 rounded-xl flex flex-col items-center justify-center border border-accent/10 group-hover:bg-accent/10 transition-colors">
+                                        <span class="text-[10px] font-bold text-accent uppercase tracking-wider">{{ $holiday->start_date->format('M') }}</span>
+                                        <span class="text-lg font-bold text-main leading-none">{{ $holiday->start_date->format('d') }}</span>
+                                    </div>
+
+                                    {{-- Info --}}
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="text-sm font-bold text-main group-hover:text-accent transition-colors truncate">{{ $holiday->title }}</h4>
+                                        <p class="text-xs text-muted-500 mt-0.5 truncate">
+                                            {{ $holiday->start_date->format('l, H:i') }}
+                                        </p>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="col-span-full text-center py-6 text-muted-400 text-sm border border-dashed border-muted-200 rounded-2xl">
+                                    No upcoming holidays found.
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+                @endcan
+
+                {{-- 3. Activity Log --}}
+                @can('admin.activity_logs.view')
+                    <x-white-card-container color="primary/50" class="p-6 w-full flex-col justify-between animate-fade-in-up [animation-delay:300ms]">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-lg font-semibold text-main">{{ __('admin_dashboard.recent_activities') }}</h3>
+                            <a href="{{ route('admin.activity.logs') }}" title="{{ __('admin_dashboard.view_all') }}" class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-primary/5">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                </svg>
+                            </a>
+                        </div>
+
+                        <div class="relative">
+                            @if($recentLogs->isNotEmpty())
+                                {{-- Timeline Line --}}
+                                <div class="absolute left-4 top-2 bottom-4 w-px bg-muted-300"></div>
+
+                                <ul class="flex flex-col gap-6 relative">
+                                    @foreach($recentLogs->take(3) as $log)
+                                        <li class="flex gap-4 group">
+                                            {{-- Dynamic Avatar Logic using Component --}}
+                                            <div class="relative z-10 mt-0.5 flex-shrink-0">
+                                                <x-user-avatar :user="$log->user" size="w-8 h-8" ringClass="ring-4 ring-white" />
+                                            </div>
+                                            
+                                            <div class="flex-1">
+                                                <p class="text-sm font-medium text-main">
+                                                    <span class="font-bold text-primary">{{ $log->user->name ?? 'User' }}</span>
+                                                    {{ $log->action }}
+                                                </p>
+                                                <p class="text-xs text-muted-500 mt-1 line-clamp-2">{{ $log->description }}</p>
+                                                <p class="text-[10px] text-muted-400 mt-1.5">{{ $log->created_at->diffForHumans() }}</p>
+                                            </div>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @else
+                                <div class="text-center py-6 text-muted-400 text-sm">{{ __('admin_dashboard.no_activity_logs') }}</div>
+                            @endif
+                        </div>
+                    </x-white-card-container>
+                @endcan
             </div>
         </div>
     </div>
-    <!-- <div class="container py-4">
-                                                                        <h1 class="mb-2 fw-bold">{{ __('admin_dashboard.admin_dashboard') }}</h1>
-                                                                        <p class="mb-4">{{ __('admin_dashboard.welcome_message') }}</p>
 
-                                                                        <div class="row mb-4">
-                                                                            <div class="col-md-4 mb-3">
-                                                                                <div class="card text-center shadow-sm border-0">
-                                                                                    <div class="card-body">
-                                                                                        <div class="mb-2" style="font-size:2rem; color:#377dff;"><i class="bi bi-list-task"></i></div>
-                                                                                        <div class="fw-bold text-secondary">{{ __('admin_dashboard.pending_tasks') }}</div>
-                                                                                        <div class="h4 mb-0">5</div>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div class="col-md-4 mb-3">
-                                                                                <div class="card text-center shadow-sm border-0">
-                                                                                    <div class="card-body">
-                                                                                        <div class="mb-2" style="font-size:2rem; color:#00b96b;"><i class="bi bi-kanban"></i></div>
-                                                                                        <div class="fw-bold text-secondary">{{ __('admin_dashboard.active_projects') }}</div>
-                                                                                        <div class="h4 mb-0">3/4</div>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div class="col-md-4 mb-3">
-                                                                                <div class="card text-center shadow-sm border-0">
-                                                                                    <div class="card-body">
-                                                                                        <div class="mb-2" style="font-size:2rem; color:#a259f7;"><i class="bi bi-people"></i></div>
-                                                                                        <div class="fw-bold text-secondary">{{ __('admin_dashboard.total_users') }}</div>
-                                                                                        <div class="h4 mb-0">12</div>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
+    @include('holidays_modal')
 
-                                                                        <div class="row mb-4">
-                                                                            <div class="col-md-6 mb-3">
-                                                                                <div class="card shadow-sm border-0 h-100">
-                                                                                    <div class="card-body">
-                                                                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                                                                            <strong>{{ __('admin_dashboard.task_management') }}</strong>
-                                                                                            <a href="{{ route('tasks.index') }}" class="small text-primary">{{ __('admin_dashboard.view_all') }} <i class="bi bi-list"></i></a>
-                                                                                        </div>
-                                                                                        <div class="text-secondary mb-2">{{ __('admin_dashboard.task_management_description') }}</div>
-                                                                                        <ul class="mb-3 ps-3">
-                                                                                            <li class="mb-1">{{ __('admin_dashboard.task_management_item_1') }}</li>
-                                                                                            <li class="mb-1">{{ __('admin_dashboard.task_management_item_2') }}</li>
-                                                                                            <li class="mb-1">{{ __('admin_dashboard.task_management_item_3') }}</li>
-                                                                                        </ul>
-                                                                                        <a href="{{ route('tasks.index') }}" class="btn btn-primary w-100" style="background:#2563eb;border:none;">
-                                                                                            <i class="bi bi-check2-circle"></i> {{ __('admin_dashboard.edit_tasks') }}
-                                                                                        </a>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-
-                                                                            <div class="col-md-6 mb-3">
-                                                                                <div class="card shadow-sm border-0 h-100">
-                                                                                    <div class="card-body">
-                                                                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                                                                            <strong>{{ __('admin_dashboard.permission_management') }}</strong>
-                                                                                            <a href="{{ route('admin.permissions') }}" class="small text-primary">{{ __('admin_dashboard.view_all') }} <i class="bi bi-list"></i></a>
-                                                                                        </div>
-                                                                                        <div class="text-secondary mb-2">{{ __('admin_dashboard.permission_management_description') }}</div>
-                                                                                        <ul class="mb-3 ps-3">
-                                                                                            <li class="mb-1">{{ __('admin_dashboard.permission_management_item_1') }}</li>
-                                                                                        </ul>
-                                                                                        <a href="{{ route('admin.permissions') }}" class="btn w-100" style="background:#00b96b;color:#fff;border:none;">
-                                                                                            <i class="bi bi-folder-plus"></i> {{ __('admin_dashboard.edit_permissions') }}
-                                                                                        </a>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div class="row mb-4">
-                                                                            <div class="col-md-6 mb-3">
-                                                                                <div class="card shadow-sm border-0 h-100">
-                                                                                    <div class="card-body">
-                                                                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                                                                            <strong>{{ __('admin_dashboard.user_management') }}</strong>
-                                                                                            <a href="{{ route('users.index') }}" class="small text-primary">{{ __('admin_dashboard.view_all') }} <i class="bi bi-list"></i></a>
-                                                                                        </div>
-                                                                                        <div class="text-secondary mb-2">{{ __('admin_dashboard.user_management_description') }}</div>
-                                                                                        <ul class="mb-3 ps-3">
-                                                                                            <li class="mb-1">{{ __('admin_dashboard.user_management_item_1') }}</li>
-                                                                                            <li class="mb-1">{{ __('admin_dashboard.user_management_item_2') }}</li>
-                                                                                            <li class="mb-1">{{ __('admin_dashboard.user_management_item_3') }}</li>
-                                                                                        </ul>
-                                                                                        <a href="{{ route('admin.users.create') }}" class="btn w-100" style="background:#a259f7;color:#fff;border:none;">
-                                                                                            <i class="bi bi-person-plus"></i> {{ __('admin_dashboard.add_new_user') }}
-                                                                                        </a>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-
-                                                                            <div class="col-md-6 mb-3">
-                                                                                <div class="card shadow-sm border-0 h-100">
-                                                                                    <div class="card-body">
-                                                                                        <strong>{{ __('admin_dashboard.recent_task_submissions') }}</strong>
-                                                                                        <table class="table table-sm mt-3">
-                                                                                            <thead>
-                                                                                                <tr>
-                                                                                                    <th>{{ __('admin_dashboard.id') }}</th>
-                                                                                                    <th>{{ __('admin_dashboard.user') }}</th>
-                                                                                                    <th>{{ __('admin_dashboard.task') }}</th>
-                                                                                                    <th>{{ __('admin_dashboard.deadline') }}</th>
-                                                                                                    <th>{{ __('admin_dashboard.status') }}</th>
-                                                                                                </tr>
-                                                                                            </thead>
-                                                                                            <tbody>
-                                                                                                @forelse($recentLogs as $log)
-                                                                                                    <tr>
-                                                                                                        <td>{{ $log->id }}</td>
-                                                                                                        <td>{{ $log->user->name ?? 'N/A' }}</td>
-                                                                                                        <td>{{ $log->action }}</td>
-                                                                                                        <td>{{ $log->created_at->format('Y-m-d H:i') }}</td>
-                                                                                                        <td>
-                                                                                                            <span class="badge rounded-pill bg-info text-dark">
-                                                                                                                {{ \Illuminate\Support\Str::limit($log->description, 30) }}
-                                                                                                            </span>
-                                                                                                        </td>
-                                                                                                    </tr>
-                                                                                                @empty
-                                                                                                    <tr>
-                                                                                                        <td colspan="5" class="text-center text-muted">
-                                                                                                            {{ __('admin_dashboard.no_activity_logs') }}
-                                                                                                        </td>
-                                                                                                    </tr>
-                                                                                                @endforelse
-                                                                                            </tbody>
-                                                                                        </table>
-                                                                                        <a href="{{ route('admin.activity.logs') }}" class="small text-primary">{{ __('admin_dashboard.view_all_tasks') }} <i class="bi bi-list"></i></a>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div class="row mb-4">
-                                                                            <div class="col-md-6 mb-3">
-                                                                                <div class="card shadow-sm border-0 h-100">
-                                                                                    <div class="card-body">
-                                                                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                                                                            <strong>{{ __('admin_dashboard.campaign_management') }}</strong>
-                                                                                            <a href="{{ route('campaigns.index') }}" class="small text-primary">
-                                                                                                {{ __('admin_dashboard.view_all') }} <i class="bi bi-list"></i>
-                                                                                            </a>
-                                                                                        </div>
-                                                                                        <div class="text-secondary mb-2">{{ __('admin_dashboard.campaign_management_description') }}</div>
-                                                                                        <ul class="mb-3 ps-3">
-                                                                                            <li class="mb-1">{{ __('admin_dashboard.campaign_crud') }}</li>
-                                                                                            <li class="mb-1">{{ __('admin_dashboard.assign_users_to_campaign') }}</li>
-                                                                                            <li class="mb-1">{{ __('admin_dashboard.schedule_and_send') }}</li>
-                                                                                        </ul>
-                                                                                        <a href="{{ route('campaigns.create') }}" class="btn w-100" style="background:#ff6b6b;color:#fff;border:none;">
-                                                                                            <i class="bi bi-envelope-plus"></i> {{ __('admin_dashboard.create_new_campaign') }}
-                                                                                        </a>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-
-                                                                            <div class="col-md-6 mb-3">
-                                                                                <div class="card shadow-sm border-0 h-100">
-                                                                                    <div class="card-body">
-                                                                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                                                                            <strong>{{ __('admin_dashboard.email_template_management') }}</strong>
-                                                                                            <a href="{{ route('email-templates.index') }}" class="small text-primary">
-                                                                                                {{ __('admin_dashboard.view_all') }} <i class="bi bi-list"></i>
-                                                                                            </a>
-                                                                                        </div>
-                                                                                        <div class="text-secondary mb-2">{{ __('admin_dashboard.email_template_management_description') }}</div>
-                                                                                        <ul class="mb-3 ps-3">
-                                                                                            <li class="mb-1">{{ __('admin_dashboard.email_template_crud') }}</li>
-                                                                                            <li class="mb-1">{{ __('admin_dashboard.support_shortcodes') }}</li>
-                                                                                            <li class="mb-1">{{ __('admin_dashboard.assign_to_campaign') }}</li>
-                                                                                        </ul>
-                                                                                        <a href="{{ route('email-templates.create') }}" class="btn w-100" style="background:#4b6cb7;color:#fff;border:none;">
-                                                                                            <i class="bi bi-file-earmark-plus"></i> {{ __('admin_dashboard.create_new_template') }}
-                                                                                        </a>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div class="row mb-4">
-                                                                            <div class="col-md-6 mb-3">
-                                                                                <div class="card shadow-sm border-0 h-100">
-                                                                                    <div class="card-body">
-                                                                                        <strong>{{ __('admin_dashboard.recent_check_ins') }}</strong>
-                                                                                        <table class="table table-sm mt-3">
-                                                                                            <thead>
-                                                                                                <tr>
-                                                                                                    <th>{{ __('admin_dashboard.user') }}</th>
-                                                                                                    <th>{{ __('admin_dashboard.date') }}</th>
-                                                                                                    <th>{{ __('admin_dashboard.check_in') }}</th>
-                                                                                                    <th>{{ __('admin_dashboard.check_out') }}</th>
-                                                                                                </tr>
-                                                                                            </thead>
-                                                                                            <tbody>
-                                                                                                @forelse($recentCheckIns as $log)
-                                                                                                    <tr>
-                                                                                                        <td>{{ $log->user_name }}</td>
-                                                                                                        <td>{{ $log->date }}</td>
-                                                                                                        <td>{{ $log->check_in_time ?? '-' }}</td>
-                                                                                                        <td>{{ $log->check_out_time ?? '-' }}</td>
-                                                                                                    </tr>
-                                                                                                @empty
-                                                                                                    <tr>
-                                                                                                        <td colspan="4" class="text-center text-muted">
-                                                                                                            {{ __('admin_dashboard.no_check_ins') }}
-                                                                                                        </td>
-                                                                                                    </tr>
-                                                                                                @endforelse
-                                                                                            </tbody>
-                                                                                        </table>
-                                                                                        <a href="{{ route('users.checkin_index') }}" class="small text-primary">
-                                                                                            {{ __('admin_dashboard.view_all_checkins') }} <i class="bi bi-list"></i>
-                                                                                        </a>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-
-                                                                            <div class="col-md-6 mb-3">
-                                                                                <div class="card shadow-sm border-0 h-100">
-                                                                                    <div class="card-body">
-                                                                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                                                                            <strong>{{ __('admin_dashboard.company_hours_management') }}</strong>
-                                                                                            <a href="{{ route('companyhour.index') }}" class="small text-primary">
-                                                                                                {{ __('admin_dashboard.view_all') }} <i class="bi bi-list"></i>
-                                                                                            </a>
-                                                                                        </div>
-                                                                                        <div class="text-secondary mb-2">{{ __('admin_dashboard.company_hours_management_description') }}</div>
-                                                                                        <ul class="mb-3 ps-3">
-                                                                                            <li class="mb-1">{{ __('admin_dashboard.company_hours_crud') }}</li>
-                                                                                            <li class="mb-1">{{ __('admin_dashboard.set_company_hours') }}</li>
-                                                                                            <li class="mb-1">{{ __('admin_dashboard.manage_hours_policies') }}</li>
-                                                                                        </ul>
-                                                                                        <a href="{{ route('companyhour.create') }}" class="btn w-100" style="background:#f39c12;color:#fff;border:none;">
-                                                                                            <i class="bi bi-clock"></i> {{ __('admin_dashboard.create_new_company_hours') }}
-                                                                                        </a>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div class="row mb-4">
-                                                                            <div class="col-12">
-                                                                                <div class="card p-3 shadow-sm border-0">
-                                                                                    <strong>{{ __('admin_dashboard.quick_actions') }}</strong>
-                                                                                    <div class="row mt-3">
-                                                                                        <div class="col-md-3 mb-2">
-                                                                                            <a href="{{ route('tasks.index') }}" class="btn btn-outline-primary w-100"><i class="bi bi-check2-square"></i> {{ __('admin_dashboard.review_tasks') }}</a>
-                                                                                        </div>
-                                                                                        <div class="col-md-3 mb-2">
-                                                                                            <a href="{{ route('tasks.create') }}" class="btn btn-outline-success w-100"><i class="bi bi-folder-plus"></i> {{ __('admin_dashboard.new_task') }}</a>
-                                                                                        </div>
-                                                                                        <div class="col-md-3 mb-2">
-                                                                                            <a href="{{ route('users.index') }}" class="btn btn-outline-secondary w-100"><i class="bi bi-people"></i> {{ __('admin_dashboard.manage_users') }}</a>
-                                                                                        </div>
-                                                                                        <div class="col-md-3 mb-2">
-                                                                                            <a href="#" class="btn btn-outline-info w-100"><i class="bi bi-bar-chart"></i> {{ __('admin_dashboard.view_reports') }}</a>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div class="row mb-4">
-                                                                            <div class="col-12">
-                                                                                <div class="card p-3 shadow-sm border-0">
-                                                                                    <div class="row text-center">
-                                                                                        <div class="col-md-4 mb-2">
-                                                                                            <div class="fw-bold">{{ __('admin_dashboard.todays_tasks') }}</div>
-                                                                                            <div class="h4">7</div>
-                                                                                            <a href="#" class="small text-primary">{{ __('admin_dashboard.view_details') }} <i class="bi bi-list"></i></a>
-                                                                                        </div>
-                                                                                        <div class="col-md-4 mb-2">
-                                                                                            <div class="fw-bold">{{ __('admin_dashboard.project_completion') }}</div>
-                                                                                            <div class="h4">75%</div>
-                                                                                            <a href="#" class="small text-primary">{{ __('admin_dashboard.view_progress') }} <i class="bi bi-bar-chart"></i></a>
-                                                                                        </div>
-                                                                                        <div class="col-md-4 mb-2">
-                                                                                            <div class="fw-bold">{{ __('admin_dashboard.unassigned_tasks') }}</div>
-                                                                                            <div class="h4">3</div>
-                                                                                            <a href="#" class="small text-primary">{{ __('admin_dashboard.assign_now') }} <i class="bi bi-person-lines-fill"></i></a>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div class="text-end text-muted mt-2">
-                                                                                        {{ __('admin_dashboard.current_date') }}
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                    @else
-                                                                    <div class="container py-4">
-                                                                        <h3 class="text-danger">{{ __('admin_dashboard.access_denied') }}</h3>
-                                                                        <p>{{ __('admin_dashboard.no_permission') }}</p>
-                                                                    </div>
-                                                                    @endrole -->
-
+@else
+    <div class="flex items-center justify-center min-h-[400px]">
+        <div class="text-center">
+            <div class="inline-block p-4 rounded-full bg-danger/10 text-danger mb-4">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+            <h4 class="text-xl font-bold text-main">{{ __('admin_dashboard.access_denied') }}</h4>
+            <p class="text-muted-500 mt-2">You do not have permission to view the Admin Dashboard.</p>
+        </div>
+    </div>
+@endcan
 @endsection
+
+@push('scripts')
+    @vite(['resources/js/admin/edit_holiday.js'])
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const listElement = document.getElementById('active-users-list');
+            const countElement = document.getElementById('active-users-count');
+            
+            
+            // Keep a local array of online users so we can add/remove them in real-time
+            let currentOnlineUsers = [];
+
+            // 1. Initial Fetch (Get who is online right now)
+            fetch('/api/chat/users/online')
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.success && data.data && data.data.users) {
+                        currentOnlineUsers = data.data.users;
+                        renderActiveUsers();
+                    }
+                });
+
+            // 2. Real-Time Listener (Listen for changes via WebSockets)
+            if (window.Echo) {
+                window.Echo.channel('user-status').listen('.user.status.changed', (e) => {
+                    const user = e.user;
+                    const status = e.status;
+
+                    if (!user || !user.id) return;
+
+                    if (status === 'online') {
+                        // Check if they are already in the array, if not, add them
+                        if (!currentOnlineUsers.find(u => u.id === user.id)) {
+                            // We push the base user data. The next time they refresh, 
+                            // the API will fetch their exact task % and department.
+                            currentOnlineUsers.push({
+                                ...user,
+                                role_name: user.role_name || 'Staff',
+                                department_name: user.department_name || 'General',
+                                task_completion: user.task_completion || 0
+                            });
+                        }
+                    } else if (status === 'offline') {
+                        // Remove user from the list
+                        currentOnlineUsers = currentOnlineUsers.filter(u => u.id !== user.id);
+                    }
+
+                    renderActiveUsers();
+                });
+            }
+
+            // 3. Render the UI matching the mockup
+            function renderActiveUsers() {
+                if (countElement) countElement.innerText = currentOnlineUsers.length;
+
+                if (currentOnlineUsers.length === 0) {
+                    listElement.innerHTML = '<div class="text-center text-gray-500 py-10">No users currently online.</div>';
+                    return;
+                }
+
+                const usersToDisplay = currentOnlineUsers.slice(0, 10);
+                @php
+                    $storageBaseUrl = rtrim(
+                        \Illuminate\Support\Str::beforeLast(
+                            \Illuminate\Support\Facades\Storage::disk()->url('storage-base'),
+                            '/storage-base'
+                        ),
+                        '/'
+                    );
+                @endphp
+                const storageBaseUrl = @json($storageBaseUrl);
+                let htmlString = '';
+
+                usersToDisplay.forEach(user => {
+                    const percentage = user.task_completion || 0;
+                    const isHighCompletion = percentage >= 50;
+                    const barColor = isHighCompletion ? 'bg-success-light' : 'bg-danger-light';
+                    const textColor = isHighCompletion ? 'text-muted-500' : 'text-danger';
+
+                    // --- NEW AVATAR LOGIC ---
+                    // Fallback to user.avatar just in case the backend hasn't been updated yet
+                    const photoData = user.user_profile_photo || user.avatar; 
+                    let avatarHtml = '';
+
+                    if (photoData) {
+                        // Has photo: Check if it's already a full URL, otherwise append /storage/
+                        const photoUrl = photoData.startsWith('http') ? photoData : `${storageBaseUrl}/${photoData}`;
+                        avatarHtml = `
+                            <div class="relative flex-shrink-0">
+                                <img src="${photoUrl}" alt="${user.name}" class="w-12 h-12 rounded-full object-cover">
+                                <span class="absolute bottom-0 right-0 block h-3 w-3 rounded-full ring-2 ring-white bg-success"></span>
+                            </div>
+                        `;
+                    } else {
+                        // No photo: Fallback to realtime.blade colored initials
+                        const initial = (user.name || 'U').charAt(0).toUpperCase();
+                        const colors = [
+                            'bg-primary/10 text-primary',
+                            'bg-secondary/10 text-secondary',
+                            'bg-accent/20 text-accent',
+                        ];
+                        // Assign consistent color based on user ID
+                        const colorClass = colors[(user.id || 0) % colors.length];
+                        
+                        avatarHtml = `
+                            <div class="relative flex-shrink-0">
+                                <div class="w-12 h-12 rounded-full ${colorClass} flex items-center justify-center font-bold text-lg">
+                                    ${initial}
+                                </div>
+                                <span class="absolute bottom-0 right-0 block h-3 w-3 rounded-full ring-2 ring-white bg-success"></span>
+                            </div>
+                        `;
+                    }
+                    // ------------------------
+
+                    htmlString += `
+                        <div class="flex items-center justify-between gap-4 pt-3 pb-3 last:pb-0 border-b border-gray-100 last:border-b-0 animate-fade-in-up">
+                            
+                            <div class="flex items-center gap-4 flex-1">
+                                
+                                ${avatarHtml}
+                                
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs md:text-sm font-medium truncate">${user.name}</p>
+                                    <p class="text-xs text-muted-500 truncate">${user.role_name} - ${user.department_name}</p>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col items-end gap-1.5 w-24 flex-shrink-0">
+                                <div class="h-1.5 w-full rounded-full bg-gray-200 overflow-hidden">
+                                    <div class="h-full rounded-full ${barColor} transition-all duration-500" style="width: ${percentage}%"></div>
+                                </div>
+                                <p class="text-xs font-semibold truncate ${textColor}">${percentage}%</p>
+                            </div>
+
+                        </div>
+                    `;
+                });
+
+                listElement.innerHTML = htmlString;
+            }
+
+            // --- DEPARTMENT DONUT CHART LOGIC ---
+            // Pass the sorted PHP data to Javascript
+            const rawData = @json($departmentStats);
+            
+            // Apply the "Top 4 + Other" Logic we discussed
+            let labels = [];
+            let chartData = [];
+            
+            if (rawData.length > 5) {
+                const top4 = rawData.slice(0, 4);
+                const others = rawData.slice(4).reduce((sum, item) => sum + item.count, 0);
+                
+                top4.forEach(item => {
+                    labels.push(item.name);
+                    chartData.push(item.count);
+                });
+                labels.push('Other'); // Collapse the rest
+                chartData.push(others);
+            } else {
+                rawData.forEach(item => {
+                    labels.push(item.name);
+                    chartData.push(item.count);
+                });
+            }
+
+            const palette = [
+                '#5347CC', // primary.DEFAULT
+                '#4896FE', // secondary.DEFAULT
+                '#17C8C6', // accent.DEFAULT
+                '#766CD6', // primary.light (for a 4th slice if needed)
+                '#E5E7EB'  // muted.200 (Perfect for the 'Other' slice)
+            ];
+
+            const ctx = document.getElementById('departmentDonutChart');
+            if (ctx && chartData.length > 0) {
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: chartData,
+                            backgroundColor: palette.slice(0, chartData.length),
+                            borderWidth: 2,
+                            borderColor: '#ffffff',
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '75%',
+                        layout: { padding: 0 }, // Removed padding since native legend is gone
+                        plugins: {
+                            // 1. Hide the default Chart.js legend
+                            legend: {
+                                display: false 
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return ' ' + context.label + ': ' + context.raw + ' Users';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // 2. Generate the Custom HTML Legend
+                const legendContainer = document.getElementById('custom-legend');
+                if (legendContainer) {
+                    let legendHTML = '';
+                    
+                    labels.forEach((label, index) => {
+                        const color = palette[index];
+                        const count = chartData[index];
+                        
+                        legendHTML += `
+                            <div class="flex items-center justify-between gap-2 px-3 py-2 rounded-xl hover:bg-primary/5 transition-colors">
+                                <div class="flex items-center gap-3 truncate">
+                                    <span class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: ${color}"></span>
+                                    <span class="text-xs md:text-sm font-medium truncate">${label}</span>
+                                </div>
+                                <span class="text-xs md:text-sum font-medium text-muted-500 truncate">${count}</span>
+                            </div>
+                        `;
+                    });
+                    
+                    legendContainer.innerHTML = legendHTML;
+                }
+            }
+
+            // --- ATTENDANCE MULTI-LINE CHART ---
+            const attendanceDataSets = @json($attendanceChartData);
+            const ctxChart = document.getElementById('attendanceBarChart');
+            const timeframeSelect = document.getElementById('attendanceTimeframe'); // Get dropdown early
+            let attendanceChart;
+
+            if (ctxChart && attendanceDataSets) {
+                // 1. Check local storage for previous selection, default to 'weekly'
+                const savedTimeframe = localStorage.getItem('attendanceTimeframePref') || 'weekly';
+
+                // 2. Update the dropdown UI to match the saved preference
+                if (timeframeSelect) {
+                    timeframeSelect.value = savedTimeframe;
+                }
+
+                // 3. Initialize chart with the correct data (saved or default)
+                let currentData = attendanceDataSets[savedTimeframe] || attendanceDataSets.weekly;
+
+                attendanceChart = new Chart(ctxChart, {
+                    type: 'line',
+                    data: {
+                        labels: currentData.labels,
+                        datasets: [
+                            {
+                                label: 'Leave',
+                                data: currentData.leave, 
+                                borderColor: '#17C8C6',
+                                backgroundColor: '#17C8C6',
+                                borderWidth: 3,
+                                tension: 0.4, 
+                                pointRadius: 4,
+                                pointHoverRadius: 6
+                            },
+                            {
+                                label: 'Absent',
+                                data: currentData.absent, 
+                                borderColor: '#4896FE',
+                                backgroundColor: '#4896FE',
+                                borderWidth: 3,
+                                tension: 0.4,
+                                pointRadius: 4,
+                                pointHoverRadius: 6
+                            },
+                            {
+                                label: 'Present',
+                                data: currentData.present, 
+                                borderColor: '#5347CC',
+                                backgroundColor: '#5347CC',
+                                borderWidth: 3,
+                                tension: 0.4,
+                                pointRadius: 4,
+                                pointHoverRadius: 6
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { 
+                                display: false 
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                padding: 12,
+                                backgroundColor: '#1F2937',
+                                titleFont: { size: 14 },
+                                bodyFont: { size: 13 },
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': ' + context.parsed.y;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                border: { display: false },
+                                ticks: { font: { size: 13 }, color: '#6B7280' }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                border: { display: false },
+                                grid: {
+                                    color: '#F3F4F6', 
+                                    drawTicks: false,
+                                },
+                                ticks: {
+                                    stepSize: 1, 
+                                    font: { size: 13 },
+                                    color: '#6B7280',
+                                    padding: 16,
+                                    callback: function(value) {
+                                        if (Math.floor(value) === value) {
+                                            return value; 
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } // <--- THIS WAS THE MISSING BRACE!
+                });
+
+                // 4. Listen for dropdown changes to update chart AND save preference
+                if (timeframeSelect) {
+                    timeframeSelect.addEventListener('change', function(e) {
+                        const timeframe = e.target.value; // 'weekly' or 'yearly'
+                        
+                        // Save preference to local storage
+                        localStorage.setItem('attendanceTimeframePref', timeframe);
+                        
+                        const selectedData = attendanceDataSets[timeframe];
+
+                        // Update Chart labels and dataset data
+                        attendanceChart.data.labels = selectedData.labels;
+                        attendanceChart.data.datasets[0].data = selectedData.leave;
+                        attendanceChart.data.datasets[1].data = selectedData.absent;
+                        attendanceChart.data.datasets[2].data = selectedData.present;
+                        
+                        // Re-render chart smoothly
+                        attendanceChart.update();
+                    });
+                }
+            }
+        });
+    </script>
+@endpush

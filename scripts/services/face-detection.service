@@ -1,0 +1,30 @@
+[Unit]
+Description=Face Detection Service (FastAPI / uvicorn) — port 8001
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/home/apps/DO_AN_CHUYEN_NGANH/face_detection
+
+ExecStart=/home/apps/DO_AN_CHUYEN_NGANH/face_detection/.venv/bin/uvicorn \
+    app:app \
+    --host 127.0.0.1 \
+    --port 8001 \
+    --workers 1
+
+Restart=always
+RestartSec=10s
+
+# Allow time for InsightFace model loading on startup
+TimeoutStartSec=180
+TimeoutStopSec=30
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=face-detection
+
+[Install]
+WantedBy=multi-user.target

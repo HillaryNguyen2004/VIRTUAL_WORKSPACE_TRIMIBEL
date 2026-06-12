@@ -29,7 +29,7 @@ class CompanyHourController extends Controller
     public function store(StoreCompanyHourRequest $request)
     {
         $this->companyHourService->store($request->validated());
-        return redirect()->route('companyhour.index')->with('success', 'Company hour saved!');
+        return redirect()->route('admin.company_hours.index')->with('success', 'Company hour saved!');
     }
 
     public function edit()
@@ -41,12 +41,12 @@ class CompanyHourController extends Controller
     public function update(StoreCompanyHourRequest $request)
     {
         $this->companyHourService->update($request->validated());
-        return redirect()->route('companyhour.index')->with('success', 'Updated!');
+        return redirect()->back()->with('success', 'Updated!');
     }
 
     public function destroy(CompanyHour $companyhour)
     {
         $this->companyHourService->delete($companyhour);
-        return redirect()->route('companyhour.index')->with('success', 'Deleted!');
+        return redirect()->route('admin.company_hours.index')->with('success', 'Deleted!');
     }
 }

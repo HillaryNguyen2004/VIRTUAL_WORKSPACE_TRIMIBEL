@@ -4,54 +4,152 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
-use App\Models\CheckIn;
-use Illuminate\Support\Str;
 use Carbon\Carbon;
 use App\Models\CompanyHour;
-use Illuminate\Support\Facades\DB;
-use App\Services\CheckInExportService;
 use App\Services\CheckInService;
-use App\Http\Requests\CheckInRequest;
-use App\Http\Requests\CheckOutRequest;
-
-// use Maatwebsite\Excel\Facades\Excel;
-// use App\Exports\CheckInExport;
-
-
+use App\Services\FaceService;
+use App\Services\CheckInExportService;
+use App\Services\AttendanceReportService;
+use App\Http\Requests\AttendanceReportRequest;
+use Illuminate\Support\Facades\Log;
 
 class CheckInController extends Controller
 {
     protected $checkInService;
+    protected $faceService;
+    protected $attendanceReportService;
 
-    public function __construct(CheckInService $checkInService)
-    {
+    public function __construct(
+        CheckInService $checkInService,
+        FaceService $faceService,
+        AttendanceReportService $attendanceReportService
+    ) {
         $this->checkInService = $checkInService;
+        $this->faceService = $faceService;
+        $this->attendanceReportService = $attendanceReportService;
     }
-   
-    // public function index(Request $request, CheckInExportService $exportService)
-    // {
-    //     // $query = $exportService->getFilteredCheckIns($request);
-    //     // $checkIns = $query->paginate(3);
 
-    //     // return view('users.checkin_index', compact('checkIns'));
-    //     $query = $exportService->getFilteredCheckIns($request);
+    public function checkIn(Request $request)
+    {
+        $request->validate([
+            'username' => 'required|string'
+        ]);
 
-    //     // Eager load the related user and their dayOffRequests
-    //     $checkIns = $query->with(['user.dayOffRequests'])->paginate(3);
+        $user = User::where('username', $request->username)->first();
 
-    //     return view('users.checkin_index', compact('checkIns'));
-    // }
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found'
+            ], 404);
+        }
+
+        // Trusting the Kiosk: Pass user's own ID as the "current user" to satisfy Service checks
+        $result = $this->checkInService->processCheckIn($user->username, $user->id);
+
+        return response()->json($result);
+    }
+
+    public function checkOut(Request $request)
+    {
+        $request->validate([
+            'username' => 'required|string'
+        ]);
+
+        $user = User::where('username', $request->username)->first();
+
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found'
+            ], 404);
+        }
+
+        // Trusting the Kiosk
+        $result = $this->checkInService->processCheckOut($user->username, $user->id);
+
+        return response()->json($result);
+    }
+
+    // New method to handle face verification and check-in/out
+    public function faceProcess(Request $request)
+    {
+        try {
+            $request->validate([
+                'username' => 'required|string',
+                'check_type' => 'required|in:checkin,checkout',
+                'image_data' => 'required|string'
+            ]);
+
+            $user = User::where('username', $request->username)->first();
+
+            if (!$user) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'User not found'
+                ], 404);
+            }
+
+            // Verify face if user has registered face
+            if (!$user->face_image_path) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'User has not registered a face image.'
+                ], 400);
+            }
+
+            $faceVerified = $this->faceService->verify($user, $request->image_data);
+
+            if (!$faceVerified) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Face verification failed.',
+                    'requires_verification' => true
+                ], 400);
+            }
+
+            // Process check-in or check-out
+            if ($request->check_type === 'checkin') {
+                $result = $this->checkInService->processCheckIn($request->username, $user->id);
+            } else {
+                $result = $this->checkInService->processCheckOut($request->username, $user->id);
+            }
+
+            return response()->json($result);
+
+        } catch (\Exception $e) {
+            Log::error('Face check-in error: ' . $e->getMessage());
+
+            return response()->json([
+                'status' => false,
+                'message' => 'An error occurred. Please try again.'
+            ], 500);
+        }
+    }
+
+    public function showFacePage(string $type)
+    {
+        $workingHour = CompanyHour::first();
+
+        return view('face-checkin', [
+            'checkType' => $type,
+            'workingHour' => $workingHour,
+        ]);
+    }
+
+
+    // ... rest of your existing methods ...
     public function index(Request $request, CheckInExportService $exportService)
     {
         $query = $exportService->getFilteredCheckIns($request);
 
         // Get per_page from request, default to 5
-        $perPage = $request->get('per_page', 5);
-        
+        $perPage = $request->get('per_page', 10);
+
         // Validate per_page value
-        $allowedPerPage = [5, 10, 15, 25, 50];
+        $allowedPerPage = [10, 25, 50];
         if (!in_array($perPage, $allowedPerPage)) {
-            $perPage = 5;
+            $perPage = 10;
         }
 
         // Eager load user and their dayOffRequests
@@ -72,35 +170,40 @@ class CheckInController extends Controller
             }
         }
 
-        return view('users.checkin_index', compact('checkIns'));
+        // Get attendance report data for the selected month
+        $month = $request->input('month', Carbon::now()->format('Y-m'));
+        [$year, $monthNum] = explode('-', $month);
+
+        $availableMonths = $this->attendanceReportService->getAvailableMonths();
+
+        // Only generate attendance reports for users visible on the current page
+        // (prevents O(N*D) queries when many users exist)
+        $attendanceReports = [];
+        $userIdsOnPage = collect($checkIns->items())->pluck('user.id')->filter()->unique()->values()->all();
+
+        if (!empty($userIdsOnPage)) {
+            $usersOnPage = User::whereIn('id', $userIdsOnPage)->get();
+            foreach ($usersOnPage as $user) {
+                $attendanceReports[] = array_merge(
+                    $this->attendanceReportService->getMonthlyAttendanceReport($user, $year, $monthNum),
+                    ['user' => $user]
+                );
+            }
+        }
+
+        return view('users.checkin_index', compact(
+            'checkIns',
+            'attendanceReports',
+            'availableMonths',
+            'month'
+        ));
     }
 
-
-    public function checkIn(CheckInRequest $request)
-    {
-        
-        $result = $this->checkInService->processCheckIn($request->username);
-
-        return $result['status']
-            ? response()->json(['message' => $result['message'], 'token' => $result['token']])
-            : response()->json(['message' => $result['message']], 400);
-    }
-
-
-    public function checkOut(CheckOutRequest $request)
-    {
-       
-        $result = $this->checkInService->processCheckOut($request->username);
-
-        return $result['status']
-            ? response()->json(['message' => $result['message']])
-            : response()->json(['message' => $result['message']], 400);
-    }
-
-    
 
     public function export(Request $request, CheckInExportService $exportService)
     {
+        @ini_set('max_execution_time', '600');
+        @set_time_limit(600);
         $checkIns = $exportService->getFilteredCheckIns($request)->get(); // ✅ Now we get all results
         $excelFile = $exportService->generateExcel($checkIns);
 
@@ -118,7 +221,7 @@ class CheckInController extends Controller
 
         // Get the current company hours (assuming there's only one active)
         $companyHour = CompanyHour::first();
-        
+
         if (!$companyHour) {
             return false; // No company hours defined, can't determine if late
         }
@@ -126,24 +229,20 @@ class CheckInController extends Controller
         try {
             // Parse the check-in time
             $checkInDateTime = Carbon::createFromFormat('Y-m-d H:i:s', $date . ' ' . $checkInTime);
-            
+
             // Create company start time for the same date
             $companyStartTime = Carbon::createFromFormat('Y-m-d H:i:s', $date . ' ' . $companyHour->start_at);
-            
+
             // Add a small grace period (e.g., 5 minutes)
             $gracePeriodMinutes = 5;
             $allowedStartTime = $companyStartTime->copy()->addMinutes($gracePeriodMinutes);
-            
+
             // Check if check-in is after the allowed start time
             return $checkInDateTime->greaterThan($allowedStartTime);
-            
+
         } catch (\Exception $e) {
             // If there's any error parsing times, assume not late
             return false;
         }
     }
-
-
 }
-
-

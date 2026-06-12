@@ -2,9 +2,11 @@
 /public/build
 /public/hot
 /public/storage
+/packages/vendor
 /storage/*.key
 /vendor
 .env
+.env.example
 .env.backup
 .env.production
 .phpunit.result.cache
@@ -48,3 +50,12 @@ yarn-error.log
 # Misc
 .DS_Store
 *.pem
+.vercel
+
+.venv/
+venv/
+face_detection/__pycache__/
+face_detection/*.pyc 
+
+# Google
+storage/google/service-account.json

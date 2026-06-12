@@ -10,7 +10,7 @@ class TaskRepository extends BaseRepository implements TaskRepositoryInterface
     {
         parent::__construct($model);
     }
-    public function find($id): ?\App\Models\Task
+    public function find($id): ?Task
     {
         /** @var \App\Models\Task|null $task */
         $task = parent::find($id);

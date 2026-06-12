@@ -11,7 +11,7 @@ class UpdateTaskRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true; // You can change this to use role-based checks (e.g., auth()->user()->hasRole('admin'))
+        return true;
     }
 
     /**
@@ -19,36 +19,42 @@ class UpdateTaskRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $user = auth()->user();
+
+        $rules = [
             'title' => 'required|string|max:255',
-            'assignee' => 'required|exists:users,id',
+            'project_id' => 'required|exists:projects,id',
+            'phase_id' => 'nullable|exists:phases,id',
+            'start_date' => 'required|date',
             'due_date' => 'required|date',
             'description' => 'nullable|string',
-            'active' => 'nullable|boolean',
             'status' => 'required|in:pending,in_progress,completed',
+            'priority' => 'required|in:low,normal,high,critical',
+            'percentage' => 'required|integer|min:0|max:100',
+            'estimated_time' => 'numeric|min:1',
+            'active' => 'boolean',
+            'score' => 'nullable|integer|min:0|max:100',
         ];
+
+        // If user is admin, assignee is required
+        if ($user->hasRole('admin')) {
+            $rules['assignee'] = 'required|exists:users,id';
+        } else {
+            // For staff, assignee is optional? But probably required
+            $rules['assignee'] = 'required|exists:users,id';
+        }
+
+        return $rules;
     }
 
     /**
-     * Format validated data for repository update
+     * Get custom messages for validator errors.
      */
-    public function formatted(): array
+    public function messages(): array
     {
-        $data = $this->validated();
-
-        $formatted = [
-            'title' => $data['title'],
-            'description' => $data['description'] ?? null,
-            'due_date' => $data['due_date'],
-            'status' => $data['status'],
-            'active' => $this->has('active') ? 1 : 0,
+        return [
+            'assignees.required' => 'At least one assignee is required.',
+            'assignees.min' => 'Please select at least one assignee.',
         ];
-
-        // Only include assigned_user_id if current user is admin
-        if (auth()->user()->hasRole('admin')) {
-            $formatted['assigned_user_id'] = $data['assignee'];
-        }
-
-        return $formatted;
     }
 }

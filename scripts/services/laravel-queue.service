@@ -1,0 +1,30 @@
+[Unit]
+Description=Laravel Queue Worker
+After=network.target redis.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/home/apps/DO_AN_CHUYEN_NGANH
+ExecStart=/usr/bin/php8.2 /home/apps/DO_AN_CHUYEN_NGANH/artisan queue:work \
+    --sleep=3 \
+    --tries=3 \
+    --max-time=3600 \
+    --timeout=90
+
+# Restart automatically on failure
+Restart=always
+RestartSec=5s
+
+# Graceful stop: let the current job finish (up to 90s)
+KillSignal=SIGTERM
+TimeoutStopSec=90
+
+# Logs go to journald — view with: journalctl -u laravel-queue -f
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=laravel-queue
+
+[Install]
+WantedBy=multi-user.target

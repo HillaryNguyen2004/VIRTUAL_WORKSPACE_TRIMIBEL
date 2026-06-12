@@ -55,11 +55,21 @@ class AuthController extends Controller
             $request->filled('remember')
         );
 
-        if ($user->hasRole('admin')) {
+        if ($user->hasRole('super_admin')) {
+            return redirect()->route('super_admin.dashboard');
+        } elseif ($user->hasRole('admin')) {
             return redirect()->route('admin.dashboard');
-        } elseif ($user->hasRole('staff')) {
+        }  elseif ($user->hasRole('subadmin')) {
+            return redirect()->route('subadmin.dashboard'); 
+        }
+        elseif ($user->hasRole('staff')) {
             return redirect()->route('staff.dashboard');
-        } else {
+        }
+        elseif ($user->hasRole('substaff')) {
+                return redirect()->route('substaff.dashboard');
+            }
+        
+        else {
             return redirect()->route('user.dashboard');
         }
 

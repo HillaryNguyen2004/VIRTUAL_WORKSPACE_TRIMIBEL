@@ -1,0 +1,9 @@
+{
+  "name": "docx-converter",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "html-to-docx": "^1.8.0",
+    "mammoth": "^1.8.0"
+  }
+}

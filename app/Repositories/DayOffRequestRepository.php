@@ -30,6 +30,16 @@ class DayOffRequestRepository
         return DayOffRequest::where('status', 'PENDING')->with('user')->get();
     }
 
+    public function getPendingWithUsersByTeamLeader($teamLeaderId)
+    {
+        return DayOffRequest::where('status', 'PENDING')
+            ->with('user')
+            ->whereHas('user', function ($query) use ($teamLeaderId) {
+                $query->where('team_leader_id', $teamLeaderId);
+            })
+            ->get();
+    }
+
     public function find($id)
     {
         return DayOffRequest::findOrFail($id);

@@ -1,0 +1,48 @@
+# Core API
+fastapi==0.115.2
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+python-dotenv==1.0.1
+
+# RAG / Vector DB
+chromadb==0.5.5
+numpy<2
+
+# Chunking (only if still using LangChain splitter)
+langchain-text-splitters==0.2.4
+langchain-experimental==0.0.65
+
+# LLM / Embedding
+ollama==0.4.0
+sentence-transformers==3.0.1
+torch>=2.2,<3
+
+# Data analysis / visualization
+matplotlib==3.9.2
+pandas==2.2.3
+ipykernel
+
+# Cloud storage
+boto3==1.35.0
+
+# Database
+pymysql==1.1.0
+
+# Document parsing
+pdfminer.six==20240706
+pypdf==6.10.2
+
+# Language detection
+lingua-language-detector==2.1.1
+
+# Hybrid search
+rank-bm25>=0.2.2
+
+# Observability (only if actively using Langfuse)
+langfuse==3.14.5
+opentelemetry-api==1.33.1
+opentelemetry-sdk==1.33.1
+opentelemetry-exporter-otlp-proto-grpc==1.33.1
+opentelemetry-exporter-otlp-proto-http==1.33.1
+opentelemetry-proto==1.33.1
+opentelemetry-semantic-conventions==0.54b1

@@ -2,6 +2,7 @@
 
 return [
     'title' => 'Mẫu Email',
+    'subtitle' => 'Thiết kế và quản lý các mẫu email có thể tái sử dụng với shortcode',
     'add_new_template' => 'Thêm Mẫu Mới',
     'no_templates_found' => 'Không tìm thấy mẫu nào.',
     'name' => 'Tên',

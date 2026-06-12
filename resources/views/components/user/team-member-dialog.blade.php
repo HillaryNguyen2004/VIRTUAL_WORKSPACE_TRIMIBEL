@@ -2,63 +2,77 @@
   'teamMembers' => collect(),
 ])
 
-@vite(['resources/utils/user_dashboard/team_member_dialog.js'])
-<div class="hidden items-center justify-center fixed h-screen w-screen bg-black/20 z-50" id="team-member-dialog">
-    <div class="flex flex-col gap-8 bg-[#FDFDFF] w-[300px] md:w-[600px] max-h-[400px] rounded-[20px] p-6 animate-fade-in-up [animation-delay:150ms]">
-        <div class="flex justify-between">
-            <p class="text-[20px]">{{ __('user_dashboard.team_members') }}</p>
-            <button id="close-team-member">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-6 h-6 fill-[#5D3FD3]">
-                    <path
-                        d="M183.1 137.4C170.6 124.9 150.3 124.9 137.8 137.4C125.3 149.9 125.3 170.2 137.8 182.7L275.2 320L137.9 457.4C125.4 469.9 125.4 490.2 137.9 502.7C150.4 515.2 170.7 515.2 183.2 502.7L320.5 365.3L457.9 502.6C470.4 515.1 490.7 515.1 503.2 502.6C515.7 490.1 515.7 469.8 503.2 457.3L365.8 320L503.1 182.6C515.6 170.1 515.6 149.8 503.1 137.3C490.6 124.8 470.3 124.8 457.8 137.3L320.5 274.7L183.1 137.4z" />
+@vite(['resources/js/user_dashboard/team_member_dialog.js'])
+
+<div class="hidden items-center justify-center fixed h-screen w-screen bg-black/50 z-[100]" id="team-member-dialog">
+    <div class="flex flex-col bg-white w-[340px] md:w-[650px] max-h-[500px] rounded-2xl shadow-2xl animate-fade-in-up [animation-delay:150ms] overflow-hidden">
+        
+        <div class="flex items-center justify-between px-6 py-4 border-b border-muted-200">
+            <h3 class="text-lg font-bold text-main">{{ __('user_dashboard.team_members') }}</h3>
+            <button id="close-team-member" class="p-2 rounded-full text-muted-400 hover:text-primary hover:bg-muted-50 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
-        <div class="">
-            <table class="w-full table-fixed">
-                <thead class="text-sm text-[#D9D9D9] border-b border-[#D9D9D9]">
-                    <tr>
-                        <th scope="col" class="w-1/2 md:w-1/3 text-left font-medium py-2">
-                            {{ __('user_dashboard.name_label') }}
-                        </th>
-                        <th scope="col" class="hidden md:block md:w-1/3 text-left font-medium py-2">
-                            Username
-                        </th>
-                        <th scope="col" class="w-1/2 md:w-1/3 text-left font-medium py-2">
-                            Email
-                        </th>
-                    </tr>
-                </thead>
 
-                <tbody class="divide-y divide-gray-100 text-sm max-h-40 overflow-auto">
-                    @forelse($teamMembers as $member)
-                        <tr class="">
-                            <td class="py-3 pr-2">
-                                <span class="break-all" title="{{ $member->name }}">{{ $member->name }}</span>
-                            </td>
-
-                            <td class="py-3 pr-2 hidden md:block">
-                                <span class="break-all" title="{{ $member->username }}">
-                                    {{ $member->username }}
-                                </span>
-                            </td>
-
-                            <td class="py-3">
-                                <a href="mailto:{{ $member->email }}" class="break-all hover:underline"
-                                    title="{{ $member->email }}">
-                                    {{ $member->email }}
-                                </a>
-                            </td>
-                        </tr>
-                    @empty
+        <div class="p-0 overflow-hidden flex flex-col h-full">
+            <div class="overflow-auto max-h-[400px]">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-muted-50 sticky top-0 z-10">
                         <tr>
-                            <td colspan="3" class="py-6 text-center text-gray-400">
-                                {{ __('user_dashboard.no_team_members') }}
-                            </td>
+                            <th scope="col" class="px-6 py-3 text-xs font-semibold text-muted-500 uppercase tracking-wider w-1/3">
+                                {{ __('user_dashboard.name_label') }}
+                            </th>
+                            <th scope="col" class="hidden md:table-cell px-6 py-3 text-xs font-semibold text-muted-500 uppercase tracking-wider w-1/3">
+                                Username
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-xs font-semibold text-muted-500 uppercase tracking-wider w-1/3">
+                                Email
+                            </th>
                         </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+
+                    <tbody class="divide-y divide-muted-100 bg-white">
+                        @forelse($teamMembers as $member)
+                            <tr class="group hover:bg-canvas transition-colors">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold uppercase ring-2 ring-white group-hover:ring-primary/20 transition-all">
+                                            {{ mb_substr($member->name ?? '', 0, 1) }}
+                                        </div>
+                                        <span class="text-sm font-medium text-main truncate max-w-[120px]" title="{{ $member->name }}">
+                                            {{ $member->name }}
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <td class="hidden md:table-cell px-6 py-4">
+                                    <span class="text-sm text-muted-500 truncate max-w-[150px] block" title="{{ $member->username }}">
+                                        {{ $member->username }}
+                                    </span>
+                                </td>
+
+                                <td class="px-6 py-4">
+                                    <a href="mailto:{{ $member->email }}" class="text-sm text-primary hover:text-primary-hover hover:underline truncate max-w-[150px] block transition-colors"
+                                        title="{{ $member->email }}">
+                                        {{ $member->email }}
+                                    </a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="3" class="px-6 py-12 text-center text-muted-400">
+                                    <div class="flex flex-col items-center gap-2">
+                                        <svg class="w-10 h-10 text-muted-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                        <p>{{ __('user_dashboard.no_team_members') }}</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

@@ -63,7 +63,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         $data = Validator::make($request->all(), [
             'first_name' => ['required', 'string', 'max:255'],
             'last_name'  => ['required', 'string', 'max:255'],
-            'email'      => ['required', 'email:rfc,dns', 'unique:users,email'],
+            'email'      => ['required', 'email:rfc', 'unique:users,email'],
             'password'   => ['required', 'confirmed', Password::min(8)->numbers()->symbols()],
         ])->validate(); // throws on failure
 
@@ -95,15 +95,18 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         $extension = $file->getClientOriginalExtension();
         $filename = $cleanName . '_' . $timestamp . '.' . $extension;
 
-        $file->move(public_path('img/user_avatar/'), $filename);
+        $path = $file->storeAs('avatars', $filename, config('filesystems.default'));
 
-        $user->user_profile_photo = $filename;
+        $user->user_profile_photo = $path;
         $user->save();
     }
 
-    public function filterUsers(array $filters, int $perPage = 3)
+    public function filterUsers(array $filters, int $perPage = 10)
     {
-        $query = $this->model->with('roles');
+        $query = $this->model->with(['roles', 'department'])
+            ->whereDoesntHave('roles', function ($q) {
+                $q->where('name', 'admin');
+            });
 
         if (!empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {

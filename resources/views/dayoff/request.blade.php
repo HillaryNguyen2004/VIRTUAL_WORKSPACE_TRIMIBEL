@@ -1,146 +1,126 @@
 @extends('layout_dashboard')
 
 @section('content')
-    <div class="flex flex-col gap-6 w-full">
-        <a href="{{ route('user.dashboard') }}" class="text-[#5D3FD3] text-lg font-medium w-fit">
-            &larr; {{ __('request_day_off.back_to_dashboard') }}
-        </a>
-        <div
-            class="flex flex-col items-center w-full h-fit bg-[#FDFDFF] rounded-2xl shadow-[0_4px_40px_0_rgba(32,27,53,0.1)] animate-fade-in-up [animation-delay:150ms]">
-            <!-- title -->
-            <div class="w-full py-3 text-center text-xl bg-[#F1EFFC] text-[#5D3FD3] font-medium rounded-t-2xl relative">
-                <h2>{{ __('request_day_off.form_title') }}</h2>
-            </div>
-            <!-- form -->
-            <div class="w-full">
-                <form method="POST" action="{{ route('dayoff.request.store') }}" novalidate>
-                    @csrf
-                    <div class="p-6 flex flex-col gap-6">
-                        <!-- @foreach (['success' => 'success', 'error' => 'error'] as $key => $type)
-                                        @if (session()->has($key))
-                                            @push('scripts')
-                                                <script>
-                                                    showToast(@json(session($key)), '{{ $type }}', 5000);
-                                                </script>
-                                            @endpush
-                                        @endif
-                                    @endforeach -->
-                        <!-- @if(session('success'))
-                                    @push('scripts')
-                                        <script>
-                                            alert('{{ session('success') }}');
-                                        </script>
-                                    @endpush
-                                @endif -->
+@php
+    $minDate = \Carbon\Carbon::tomorrow()->toDateString();
+@endphp
 
-                        <div class="flex flex-col gap-2 w-full">
-                            <label for="date">{{ __('request_day_off.select_date_label') }}</label>
-                            <input type="date" name="date" id="date"
-                                class="block w-full rounded-xl border border-gray-300 px-4 py-3 cursor-pointer hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition @error('date') is-invalid @enderror"
-                                min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}" value="{{ old('date') }}">
-                            @error('date')
-                                <span id="error-date" class="text-red-400 text-xs">{{ $message }}</span>
-                            @enderror
-                        </div>
+<div class="flex flex-col gap-6 w-full max-w-[900px] mx-auto">
+    <a href="{{ route('user.dashboard') }}" class="text-[#5D3FD3] text-lg font-medium w-fit">
+        ← {{ __('request_day_off.back_to_dashboard') }}
+    </a>
 
-                        <div class="flex flex-col gap-2">
-                            <label for="leave_type">{{ __('request_day_off.leave_type_label') }}</label>
-                            <select name="leave_type" id="leave_type"
-                                class="block w-full rounded-xl border border-gray-300 px-4 py-3 cursor-pointer hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition @error('leave_type') is-invalid @enderror">
-                                <option value="OFF_FULL" {{ old('leave_type') == 'OFF_FULL' ? 'selected' : '' }}>
-                                    {{ __('request_day_off.full_day') }}
-                                </option>
-                                <option value="OFF_HALF" {{ old('leave_type') == 'OFF_HALF' ? 'selected' : '' }}>
-                                    {{ __('request_day_off.half_day') }}
-                                </option>
-                            </select>
-                            @error('leave_type')
-                                <span id="error-leave-type" class="text-red-400 text-xs">{{ $message }}</span>
-                            @enderror
-                        </div>
-
-                        <div class="flex flex-col gap-2">
-                            <label for="reason">{{ __('request_day_off.reason_optional_label') }}</label>
-                            <input name="reason" id="reason"
-                                class="block w-full rounded-xl border border-gray-300 px-4 py-3 placeholder-gray-400 hover:border-gray-400 focus:outline-none focus:border-[#5D3FD3] transition"
-                                placeholder="{{ __('request_day_off.reason_example') }}"
-                                value="{{ old('reason') }}">
-                        </div>
-
-                        @if (session('success'))
-                            <span class="w-full text-center text-green-600">{{ session('success') }}</span>
-                        @endif
-
-                        <div class="text-center pt-2">
-                            <button type="submit"
-                                class="px-4 py-2 bg-[#5D3FD3] hover:opacity-95 text-white rounded-xl shadow-[0_8px_24px_rgba(99,102,241,0.35)] transition">
-                                {{ __('request_day_off.submit_request') }}
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
+    <div class="bg-white rounded-2xl shadow-lg">
+        <div class="py-3 text-center text-xl bg-[#F1EFFC] text-[#5D3FD3] font-medium rounded-t-2xl">
+            {{ __('request_day_off.form_title') }}
         </div>
+
+        <form method="POST" action="{{ route('dayoff.request.store') }}" id="dayoff-form">
+            @csrf
+
+            <div class="p-6 flex flex-col gap-6">
+
+                {{-- DATE RANGE --}}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <x-form.input
+                        type="date"
+                        label="request_day_off.start_date_label"
+                        id="start_date"
+                        min="{{ $minDate }}"
+                        required
+                    />
+
+                    <x-form.input
+                        type="date"
+                        label="request_day_off.end_date_label"
+                        id="end_date"
+                        min="{{ $minDate }}"
+                        required
+                    />
+                </div>
+
+                {{-- LEAVE TYPE --}}
+                <x-form.select
+                    label="request_day_off.leave_type_label"
+                    name="leave_type"
+                    id="leave_type"
+                    :value="old('leave_type','OFF_FULL')"
+                    :options="[
+                        'OFF_FULL' => __('request_day_off.full_day'),
+                        'OFF_HALF' => __('request_day_off.half_day'),
+                    ]"
+                />
+
+                {{-- HALF DAY --}}
+                <div id="half-day-box" class="hidden flex flex-col gap-2">
+                    <x-form.select
+                        label="request_day_off.half_day_period_label"
+                        name="half_day_period"
+                        id="half_day_period"
+                        :options="[
+                            'AM' => __('request_day_off.morning'),
+                            'PM' => __('request_day_off.afternoon'),
+                        ]"
+                    />
+
+                    <p id="half-day-preview" class="text-sm text-gray-500"></p>
+                </div>
+
+                {{-- REASON --}}
+                <x-form.input
+                    label="request_day_off.reason_optional_label"
+                    name="reason"
+                />
+
+                {{-- HIDDEN DATES --}}
+                <input type="hidden" name="dates[]" id="dates-input">
+
+                <button class="bg-[#5D3FD3] text-white px-6 py-2 rounded-xl w-fit">
+                    {{ __('request_day_off.submit_request') }}
+                </button>
+            </div>
+        </form>
     </div>
-    <!-- <div class="container py-5">
-                                    <div class="row justify-content-center">
-                                        <div class="col-md-8">
-                                            <div class="card shadow border-primary">
-                                                <div class="card-header bg-primary text-white text-center">
-                                                    <h3 class="mb-0">Request a Day Off</h3>
-                                                </div>
-                                                <div class="card-body">
+</div>
 
-                                                    @if(session('success'))
-                                                        <div class="alert alert-primary text-center">
-                                                            {{ session('success') }}
-                                                        </div>
-                                                    @endif
+{{-- JS --}}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const leaveType = document.getElementById('leave_type');
+    const halfBox = document.getElementById('half-day-box');
+    const halfSelect = document.getElementById('half_day_period');
+    const preview = document.getElementById('half-day-preview');
 
-                                                    <form method="POST" action="{{ route('dayoff.request.store') }}">
-                                                        @csrf
+    const startInput = document.getElementById('start_date');
+    const endInput = document.getElementById('end_date');
+    const datesInput = document.getElementById('dates-input');
 
-                                                        <div class="mb-3">
-                                                            <label for="date" class="form-label">Select Date</label>
-                                                            <input type="date" name="date" id="date"
-                                                                class="form-control @error('date') is-invalid @enderror"
-                                                                min="{{ \Carbon\Carbon::tomorrow()->toDateString() }}"
-                                                                value="{{ old('date') }}">
-                                                            @error('date')
-                                                                <div class="invalid-feedback">{{ $message }}</div>
-                                                            @enderror
-                                                        </div>
+    function toggleHalf() {
+        const isHalf = leaveType.value === 'OFF_HALF';
+        halfBox.classList.toggle('hidden', !isHalf);
+        halfSelect.required = isHalf;
+        preview.textContent = '';
+    }
 
-                                                        <div class="mb-3">
-                                                            <label for="leave_type" class="form-label">Leave Type</label>
-                                                            <select name="leave_type" id="leave_type"
-                                                                class="form-select @error('leave_type') is-invalid @enderror">
-                                                                <option value="OFF_FULL" {{ old('leave_type') == 'OFF_FULL' ? 'selected' : '' }}>Full Day</option>
-                                                                <option value="OFF_HALF" {{ old('leave_type') == 'OFF_HALF' ? 'selected' : '' }}>Half Day</option>
-                                                            </select>
-                                                            @error('leave_type')
-                                                                <div class="invalid-feedback">{{ $message }}</div>
-                                                            @enderror
-                                                        </div>
+    function buildDates() {
+        if (!startInput.value || !endInput.value) return;
 
-                                                        <div class="mb-3">
-                                                            <label for="reason" class="form-label">Reason (Optional)</label>
-                                                            <textarea name="reason" id="reason"
-                                                                class="form-control"
-                                                                rows="4"
-                                                                placeholder="E.g. Medical appointment, family emergency, etc.">{{ old('reason') }}</textarea>
-                                                        </div>
+        const start = new Date(startInput.value);
+        const end = new Date(endInput.value);
+        const dates = [];
 
-                                                        <div class="text-center pt-2">
-                                                            <button type="submit" class="btn btn-primary px-4 py-2">
-                                                                Submit Request
-                                                            </button>
-                                                        </div>
-                                                    </form>
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            dates.push(d.toISOString().slice(0, 10));
+        }
 
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div> -->
+        datesInput.value = dates.join(',');
+    }
+
+    leaveType.addEventListener('change', toggleHalf);
+    startInput.addEventListener('change', buildDates);
+    endInput.addEventListener('change', buildDates);
+
+    toggleHalf();
+});
+</script>
 @endsection

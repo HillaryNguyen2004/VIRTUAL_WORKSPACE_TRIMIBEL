@@ -1,4 +1,4 @@
-@extends('layouts.app')
+<!-- @extends('layouts.app')
 
 @section('content')
 <div class="container-fluid px-0" style="background:#17a2b8;">
@@ -16,7 +16,7 @@
             </a>
         </div>
     </div>
-</div>
+</div> -->
 
 <div class="container py-4">
     <!-- Flash Messages -->
@@ -57,7 +57,16 @@
             <div class="card">
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="bi bi-chat-dots"></i> Conversations</h5>
+                        <div>
+                            <ul class="nav nav-tabs" id="chatTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="conversations-tab" data-bs-toggle="tab" data-bs-target="#conversationsPane" type="button" role="tab" aria-controls="conversationsPane" aria-selected="true">Conversations</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="channels-tab" data-bs-toggle="tab" data-bs-target="#channelsPane" type="button" role="tab" aria-controls="channelsPane" aria-selected="false">Channels</button>
+                                </li>
+                            </ul>
+                        </div>
                         <small id="conversationCount" class="text-muted">{{ $conversations->count() }} total</small>
                     </div>
                     <!-- Search Bar -->
@@ -120,6 +129,66 @@
                             <p>No conversations yet. Start a new chat!</p>
                         </div>
                     @endforelse
+                    </div>
+                </div>
+                <div class="card-body p-0" style="max-height: 500px; overflow-y: auto;">
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="conversationsPane" role="tabpanel" aria-labelledby="conversations-tab">
+                            <div id="conversationsList">
+                                @forelse($conversations as $conversation)
+                                    <a href="{{ route('chat.conversation', $conversation) }}" class="text-decoration-none conversation-item" data-conversation-name="{{ strtolower($conversation->display_name) }}" data-last-message="{{ $conversation->lastMessage ? strtolower($conversation->lastMessage->content) : '' }}" data-last-sender="{{ $conversation->lastMessage ? strtolower($conversation->lastMessage->user->name) : '' }}">
+                                        <div class="d-flex align-items-center p-3 border-bottom hover-bg-light">
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                                 style="width: 50px; height: 50px; background: #17a2b8; color: white; font-size: 16px;">
+                                                @if($conversation->type === 'group')
+                                                    <i class="bi bi-people"></i>
+                                                @else
+                                                    {{ strtoupper(substr($conversation->display_name, 0, 2)) }}
+                                                @endif
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="fw-bold">
+                                                    {{ $conversation->display_name }}
+                                                    @if($conversation->unread_count > 0)
+                                                        <span class="badge bg-danger rounded-pill">{{ $conversation->unread_count }}</span>
+                                                    @endif
+                                                </div>
+                                                @if($conversation->lastMessage)
+                                                    <div class="text-muted small">
+                                                        <strong>{{ $conversation->lastMessage->user->name }}:</strong>
+                                                        {{ Str::limit($conversation->lastMessage->content, 30) }}
+                                                    </div>
+                                                    <div class="text-muted small">{{ $conversation->lastMessage->created_at->diffForHumans() }}</div>
+                                                @else
+                                                    <div class="text-muted small">No messages yet</div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </a>
+                                @empty
+                                    <div class="text-center p-4 text-muted" id="noConversations">
+                                        <i class="bi bi-chat-dots display-4"></i>
+                                        <p>No conversations yet. Start a new chat!</p>
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="channelsPane" role="tabpanel" aria-labelledby="channels-tab">
+                            <div class="p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <strong>Channels</strong>
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-primary me-2" id="refreshChannelsBtn">Refresh</button>
+                                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newChannelModal">New Channel</button>
+                                    </div>
+                                </div>
+                                <div id="channelsList" style="max-height: 380px; overflow-y: auto;">
+                                    <div class="text-center text-muted py-4">Loading channels...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -189,6 +258,67 @@
                     <button type="submit" class="btn btn-primary" style="background: #17a2b8; border-color: #17a2b8;">Create Conversation</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- New Channel Modal -->
+<div class="modal fade" id="newChannelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="newChannelForm">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Channel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Channel Name</label>
+                        <input type="text" class="form-control" name="name" id="channelName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" id="channelDescription"></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="channelPrivate" name="is_private">
+                        <label class="form-check-label" for="channelPrivate">Private channel (invite only)</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Channel Details Modal -->
+<div class="modal fade" id="channelDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="channelDetailsTitle">Channel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="channelDetailsBody">
+                <div class="mb-3">
+                    <strong>Description</strong>
+                    <p id="channelDetailsDescription" class="text-muted"></p>
+                </div>
+                <div class="mb-3">
+                    <strong>Members</strong>
+                    <div id="channelMembersList" class="mt-2"></div>
+                </div>
+                <div class="mb-3">
+                    <strong>Rules</strong>
+                    <div id="channelRulesList" class="mt-2"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
         </div>
     </div>
 </div>
@@ -531,3 +661,219 @@ mark {
 }
 </style>
 @endsection
+
+<script>
+// Channels UI interactions
+document.addEventListener('DOMContentLoaded', function() {
+    const refreshBtn = document.getElementById('refreshChannelsBtn');
+    if (refreshBtn) refreshBtn.addEventListener('click', loadChannels);
+
+    // Load channels when channels tab is shown
+    const channelsTab = document.getElementById('channels-tab');
+    if (channelsTab) {
+        channelsTab.addEventListener('shown.bs.tab', function (e) {
+            loadChannels();
+        });
+    }
+
+    // New channel form submit
+    const newChannelForm = document.getElementById('newChannelForm');
+    if (newChannelForm) {
+        newChannelForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            createChannel();
+        });
+    }
+});
+
+function loadChannels() {
+    const list = document.getElementById('channelsList');
+    if (!list) return;
+    list.innerHTML = '<div class="text-center text-muted py-4">Loading channels...</div>';
+
+    fetch('/api/chat/channels', {
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!Array.isArray(data)) {
+            list.innerHTML = '<div class="text-danger p-3">Failed to load channels.</div>';
+            return;
+        }
+
+        if (data.length === 0) {
+            list.innerHTML = '<div class="text-center text-muted p-3">No channels yet.</div>';
+            return;
+        }
+
+        list.innerHTML = '';
+        data.forEach(ch => {
+            const isMember = !!ch.is_member;
+            const membersCount = ch.members_count || 0;
+            const item = document.createElement('div');
+            item.className = 'd-flex align-items-start p-3 border-bottom';
+            item.innerHTML = `
+                <div class="flex-grow-1">
+                    <div class="fw-bold">${escapeHtml(ch.name)} ${ch.is_private ? '<small class="text-muted">(private)</small>' : ''}</div>
+                    <div class="text-muted small">${escapeHtml(ch.description || '')}</div>
+                    <div class="text-muted small">Members: ${membersCount}</div>
+                </div>
+                <div class="ms-2 d-flex flex-column align-items-end">
+                    <button class="btn btn-sm ${isMember ? 'btn-outline-danger' : 'btn-outline-success'} mb-1" data-id="${ch.id}" onclick="toggleMembership(${ch.id}, ${isMember})">${isMember ? 'Leave' : 'Join'}</button>
+                    <button class="btn btn-sm btn-secondary" onclick="showChannelDetails(${ch.id})">Details</button>
+                </div>
+            `;
+            list.appendChild(item);
+        });
+    })
+    .catch(err => {
+        list.innerHTML = '<div class="text-danger p-3">Error loading channels.</div>';
+        console.error(err);
+    });
+}
+
+function createChannel() {
+    const name = document.getElementById('channelName').value.trim();
+    const description = document.getElementById('channelDescription').value.trim();
+    const isPrivate = document.getElementById('channelPrivate').checked ? 1 : 0;
+
+    if (!name) return alert('Channel name is required');
+
+    fetch('/api/chat/channels', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ name, description, is_private: !!isPrivate })
+    })
+    .then(async res => {
+        if (!res.ok) throw await res.json();
+        return res.json();
+    })
+    .then(data => {
+        const modalEl = document.getElementById('newChannelModal');
+        closeModalElement(modalEl);
+        document.getElementById('channelName').value = '';
+        document.getElementById('channelDescription').value = '';
+        document.getElementById('channelPrivate').checked = false;
+        loadChannels();
+        alert('Channel created');
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Failed to create channel');
+    });
+}
+
+function joinChannel(id) {
+    // simple wrapper to join (used previously)
+    fetch(`/api/chat/channels/${id}/join`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message || 'Joined channel');
+        loadChannels();
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Failed to join channel');
+    });
+}
+
+function toggleMembership(id, isMember) {
+    if (isMember) {
+        fetch(`/api/chat/channels/${id}/leave`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message || 'Left channel');
+            loadChannels();
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Failed to leave channel');
+        });
+    } else {
+        joinChannel(id);
+    }
+}
+
+function showChannelDetails(id) {
+    fetch(`/api/chat/channels/${id}`, {
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
+    })
+    .then(res => res.json())
+    .then(ch => {
+        document.getElementById('channelDetailsTitle').textContent = ch.name || 'Channel';
+        document.getElementById('channelDetailsDescription').textContent = ch.description || '';
+
+        const membersDiv = document.getElementById('channelMembersList');
+        membersDiv.innerHTML = '';
+        if (Array.isArray(ch.members) && ch.members.length) {
+            ch.members.forEach(m => {
+                const el = document.createElement('div');
+                el.className = 'd-flex align-items-center mb-2';
+                el.innerHTML = `<div class="me-2 rounded-circle" style="width:32px;height:32px;background:#e9ecef;border-radius:50%;display:flex;align-items:center;justify-content:center">${(m.name||'').charAt(0).toUpperCase()}</div><div>${escapeHtml(m.name)} <small class="text-muted">${escapeHtml(m.email||'')}</small></div>`;
+                membersDiv.appendChild(el);
+            });
+        } else {
+            membersDiv.innerHTML = '<div class="text-muted">No members yet</div>';
+        }
+
+        const rulesDiv = document.getElementById('channelRulesList');
+        rulesDiv.innerHTML = '';
+        if (Array.isArray(ch.rules) && ch.rules.length) {
+            ch.rules.forEach(r => {
+                const el = document.createElement('div');
+                el.className = 'mb-2';
+                el.innerHTML = `<strong>${escapeHtml(r.title)}</strong><div class="text-muted small">${escapeHtml(r.content||'')}</div>`;
+                rulesDiv.appendChild(el);
+            });
+        } else {
+            rulesDiv.innerHTML = '<div class="text-muted">No rules defined</div>';
+        }
+
+        const modalEl = document.getElementById('channelDetailsModal');
+        openModalElement(modalEl);
+    })
+    .catch(err => console.error(err));
+}
+
+function openModalElement(modalEl) {
+    if (!modalEl) return;
+
+    modalEl.classList.add('show');
+    modalEl.style.display = 'block';
+    modalEl.removeAttribute('aria-hidden');
+    modalEl.setAttribute('aria-modal', 'true');
+}
+
+function closeModalElement(modalEl) {
+    if (!modalEl) return;
+
+    modalEl.classList.remove('show');
+    modalEl.style.display = 'none';
+    modalEl.setAttribute('aria-hidden', 'true');
+    modalEl.removeAttribute('aria-modal');
+}
+
+function escapeHtml(unsafe) {
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/\"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+}
+</script>

@@ -2,176 +2,432 @@
 @section('title', __('staff_dashboard.title'))
 
 @section('content')
-    @role('staff')
-    <div class="flex flex-col gap-[25px] w-full h-fit">
-        <!-- First section -->
-        <div class="flex items-center gap-2">
-            <h2 class="font-medium text-[28px] md:text-[32px]">{{ __('staff_dashboard.dashboard') }}</h2>
-            <div class="bg-[#D6F5E3] text-[#5AE194] text-center text-sm md:text-base w-fit h-fit py-1 px-3 rounded-2xl">
-                {{ __('staff_dashboard.staff') }}
+    @php
+        $dashboardMode = $dashboardMode ?? 'staff';
+        $isStaff = auth()->user()->hasRole('staff');
+        $isSubstaffDashboard = ($dashboardMode === 'substaff');
+
+        $canView = $isSubstaffDashboard
+            ? auth()->user()->can('staff.dashboard.view')
+            : $isStaff;
+
+        $dashboardHomeRoute = $isSubstaffDashboard
+            ? route('substaff.dashboard')
+            : route('staff.dashboard');
+    @endphp
+    {{-- Main Container --}}
+    <div class="flex flex-col gap-6 w-full mx-auto text-main px-4 md:px-8 lg:px-16 xl:px-24 py-8">
+
+        {{-- Header Section --}}
+        <div class="flex flex-col sm:justify-between w-full">
+            <div class="flex items-center gap-3">
+                <h1 class="font-semibold text-2xl md:text-3xl text-main tracking-tight">
+                    {{ __('staff_dashboard.dashboard') }}</h1>
+                <span
+                    class="inline-flex items-center px-3 py-1 rounded-full bg-secondary/10 text-secondary text-xs font-semibold uppercase tracking-wide">
+                    {{ $isSubstaffDashboard ? 'Substaff' : __('staff_dashboard.staff') }}
+                </span>
             </div>
+            <p class="text-muted-500 text-sm md:text-base mt-1">{{ __('user_dashboard.subheading') }}</p>
         </div>
 
-        <!-- Second section -->
-        <div class="flex flex-col sm:flex-row gap-5 w-full">
-            <!-- Upcoming task -->
-            <x-staff.view-block animationDelay="[animation-delay:150ms]">
-                <x-staff.view-content title="{{ __('staff_dashboard.upcoming_tasks') }}"
-                    subtitle="{{ __('staff_dashboard.upcoming_tasks_description') }}"></x-staff.view-content>
-                <x-staff.view-btn href="{{ route('tasks.staff.index') }}" bgColor="bg-[#5D3FD3]"
-                    content="{{ __('staff_dashboard.upcoming_tasks_btn') }}"></x-staff.view-btn>
-            </x-staff.view-block>
-            <!-- Review request day off -->
-            <x-staff.view-block animationDelay="[animation-delay:200ms]">
-                <x-staff.view-content title="{{ __('staff_dashboard.view_requests') }}"
-                    subtitle="{{ __('staff_dashboard.view_requests_description') }}">
-                    <x-slot:icon>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-6 h-6 fill-[#5AE194]">
-                            <path
-                                d="M216 64C229.3 64 240 74.7 240 88L240 128L400 128L400 88C400 74.7 410.7 64 424 64C437.3 64 448 74.7 448 88L448 128L480 128C515.3 128 544 156.7 544 192L544 480C544 515.3 515.3 544 480 544L160 544C124.7 544 96 515.3 96 480L96 192C96 156.7 124.7 128 160 128L192 128L192 88C192 74.7 202.7 64 216 64zM480 496C488.8 496 496 488.8 496 480L496 416L408 416L408 496L480 496zM496 368L496 288L408 288L408 368L496 368zM360 368L360 288L280 288L280 368L360 368zM232 368L232 288L144 288L144 368L232 368zM144 416L144 480C144 488.8 151.2 496 160 496L232 496L232 416L144 416zM280 416L280 496L360 496L360 416L280 416zM216 176L160 176C151.2 176 144 183.2 144 192L144 240L496 240L496 192C496 183.2 488.8 176 480 176L216 176z" />
-                        </svg>
-                    </x-slot:icon>
-                </x-staff.view-content>
-                <x-staff.view-btn href="{{ route('dayoff.staff.pending') }}" bgColor="bg-[#5AE194]"
-                    content="{{ __('staff_dashboard.view_requests_btn') }}"></x-staff.view-btn>
-            </x-staff.view-block>
-            <!-- Team overview -->
-            <x-staff.view-block animationDelay="[animation-delay:250ms]">
-                <x-staff.view-content title="{{ __('staff_dashboard.team_overview') }}"
-                    subtitle="{{ __('staff_dashboard.team_overview_description') }}">
-                    <x-slot:icon>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#CBEA8E]">
-                            <path
-                                d="M320 64C355.3 64 384 92.7 384 128C384 163.3 355.3 192 320 192C284.7 192 256 163.3 256 128C256 92.7 284.7 64 320 64zM416 376C416 401 403.3 423 384 435.9L384 528C384 554.5 362.5 576 336 576L304 576C277.5 576 256 554.5 256 528L256 435.9C236.7 423 224 401 224 376L224 336C224 283 267 240 320 240C373 240 416 283 416 336L416 376zM160 96C190.9 96 216 121.1 216 152C216 182.9 190.9 208 160 208C129.1 208 104 182.9 104 152C104 121.1 129.1 96 160 96zM176 336L176 368C176 400.5 188.1 430.1 208 452.7L208 528C208 529.2 208 530.5 208.1 531.7C199.6 539.3 188.4 544 176 544L144 544C117.5 544 96 522.5 96 496L96 439.4C76.9 428.4 64 407.7 64 384L64 352C64 299 107 256 160 256C172.7 256 184.8 258.5 195.9 262.9C183.3 284.3 176 309.3 176 336zM432 528L432 452.7C451.9 430.2 464 400.5 464 368L464 336C464 309.3 456.7 284.4 444.1 262.9C455.2 258.4 467.3 256 480 256C533 256 576 299 576 352L576 384C576 407.7 563.1 428.4 544 439.4L544 496C544 522.5 522.5 544 496 544L464 544C451.7 544 440.4 539.4 431.9 531.7C431.9 530.5 432 529.2 432 528zM480 96C510.9 96 536 121.1 536 152C536 182.9 510.9 208 480 208C449.1 208 424 182.9 424 152C424 121.1 449.1 96 480 96z" />
-                        </svg>
-                    </x-slot:icon>
-                </x-staff.view-content>
-                <x-staff.view-btn href="{{ route('team.overview') }}" bgColor="bg-[#CBEA8E]"
-                    content="{{ __('staff_dashboard.team_overview_btn') }}"></x-staff.view-btn>
-            </x-staff.view-block>
-        </div>
+        {{-- Main Container --}}
+        <div class="grid grid-cols-1 @4xl:grid-cols-12 gap-6 w-full">
 
-        <!-- Second section -->
-        <div
-            class="flex flex-col w-full gap-8 bg-[#FDFDFF] shadow-[0_4px_40px_0_rgba(32,27,53,0.1)] rounded-[20px] py-5 px-6 animate-fade-in-up [animation-delay:300ms]">
-            <!-- Heading -->
-            <div class="flex items-center justify-between w-full">
-                <p class="text-[20px] font-medium">{{ __('staff_dashboard.upcoming_tasks') }}</p>
-                <a href="{{ route('tasks.staff.index') }}">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
-                        <path
-                            d="M408 64L552 64C565.3 64 576 74.7 576 88L576 232C576 241.7 570.2 250.5 561.2 254.2C552.2 257.9 541.9 255.9 535 249L496 210L409 297C399.6 306.4 384.4 306.4 375.1 297L343.1 265C333.7 255.6 333.7 240.4 343.1 231.1L430.1 144.1L391.1 105.1C384.2 98.2 382.2 87.9 385.9 78.9C389.6 69.9 398.3 64 408 64zM232 576L88 576C74.7 576 64 565.3 64 552L64 408C64 398.3 69.8 389.5 78.8 385.8C87.8 382.1 98.1 384.2 105 391L144 430L231 343C240.4 333.6 255.6 333.6 264.9 343L296.9 375C306.3 384.4 306.3 399.6 296.9 408.9L209.9 495.9L248.9 534.9C255.8 541.8 257.8 552.1 254.1 561.1C250.4 570.1 241.7 576 232 576z" />
-                    </svg>
-                </a>
-            </div>
-            <!-- Content -->
-            @php
-                $badgeBase = 'px-3 py-1 rounded-full text-sm text-center';
-                $statusMap = [
-                    'pending' => $badgeBase . ' bg-gray-100 text-gray-400',
-                    'in_progress' => $badgeBase . ' bg-[#F2FBDF] text-[#CBEA8E]',
-                    'completed' => $badgeBase . ' bg-[#D3FDE5] text-[#5AE194]',
-                ];
-            @endphp
+            {{-- Attendance Check --}}
+            @include('components.dashboard_widgets.check_attendance')
 
-            <div class="w-full">
-                <div class="grid grid-cols-2 md:grid-cols-3 items-center text-gray-300">
-                    <p>{{ __('staff_dashboard.tasks_label') }}</p>
-                    <p class="text-center hidden md:block">{{ __('staff_dashboard.due_date') }}</p>
-                    <p class="text-right">{{ __('staff_dashboard.tasks_status_label') }}</p>
-                </div>
-                <div class="h-px w-full bg-[#D9D9D9] mt-3"></div>
-
-                @forelse ($tasks->take(3) as $task)
-                    <div class="grid grid-cols-2 md:grid-cols-3 items-center pt-3">
-                        <p class="truncate pr-4">{{ $task->title }}</p>
-
-                        <p class="text-center hidden md:block">
-                            {{ $task->due_date }}
-                        </p>
-
-                        <span class="justify-self-end {{ $statusMap[$task->status] }}">
-                            {{ __('user_dashboard.status_' . $task->status) }}
-                        </span>
+            {{-- Pending Day Off Requests --}}
+            @if(auth()->user()->hasRole('admin') || auth()->user()->hasDepartmentRolePermission('staff.request_daysoff.view'))
+                <div class="@4xl:col-span-7 flex flex-col h-full">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-md md:text-lg font-semibold text-main">
+                            {{ __('staff_dashboard.pending_day_off_requests') }}</h3>
+                        <a href="{{ route('dayoff.staff.pending') }}" title="{{ __('admin_dashboard.view_all') }}"
+                            class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                        </a>
                     </div>
-                @empty
-                    <p>{{ __('staff_dashboard.no_upcoming_tasks') ?? 'No data available' }}</p>
-                @endforelse
-            </div>
+
+                    {{-- Request List --}}
+                    <div class="grid grid-cols-2 gap-3">
+                        @forelse($recentDayOffRequests as $req)
+                                        @php
+                                            $isFullDay = $req->leave_type === 'OFF_FULL';
+                                            $circleColor = $isFullDay
+                                                ? 'bg-secondary/10 text-secondary ring-secondary/20'
+                                                : 'bg-accent/10 text-accent ring-accent/20';
+                                            $circleLabel = $isFullDay ? __('staff_dashboard.full_day') : __('staff_dashboard.half_day');
+                                        @endphp
+                                        <div
+                                            class="group flex items-center gap-4 p-4 rounded-2xl bg-white border border-muted-300 hover:border-primary/50 transition-all duration-300">
+                                            {{-- Info --}}
+                                            <div class="flex-1 min-w-0">
+                                                <h4
+                                                    class="text-sm md:text-base font-semibold text-main group-hover:text-primary transition-colors truncate">
+                                                    {{ $req->user->name ?? '—' }}</h4>
+                                                <p class="text-xs text-muted-500 mt-0.5">
+                                                    {{ \Carbon\Carbon::parse($req->date)->format('M d, Y') }}
+                                                    @if($req->half_day_period)
+                                                        &nbsp;·&nbsp;{{ ucfirst(strtolower($req->half_day_period)) }}
+                                                    @endif
+                                                </p>
+                                            </div>
+
+                                            {{-- Pending badge --}}
+                                            <span
+                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ring-1 ring-inset {{ $circleColor }}">
+                                                {{ $circleLabel }}
+                                            </span>
+                                        </div>
+                        @empty
+                            <div class="flex flex-col items-center justify-center py-10 text-muted-400 text-sm gap-2">
+                                <svg class="w-8 h-8 text-muted-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                </svg>
+                                {{ __('staff_dashboard.no_pending_day_off_requests') }}
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+            @endif
+
+            {{-- TEAM MEMBERS SECTION --}}
+            @if(auth()->user()->hasRole('admin') || auth()->user()->hasDepartmentRolePermission('staff.team_members.view') || auth()->user()->hasRole('substaff'))
+                <div class="@4xl:col-span-4 bg-white border border-muted-300 hover:border-primary/50 transition-all duration-300 rounded-2xl p-6 flex-1">
+                    <div class="flex items-center justify-between mb-6">
+                        <h4 class="text-md md:text-lg font-semibold text-main">{{ __('user_dashboard.team_members') }}</h4>
+                        <a href="{{ route('team.overview') }}"
+                            class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16m-7 6h7" />
+                            </svg>
+                        </a>
+                        {{-- New View All Button --}}
+                        <button id="open-team"
+                            class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M17 7H8m9 0v9" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    @if($teamMembers->isNotEmpty())
+                        <ul class="flex flex-col gap-4">
+                            @foreach($teamMembers->take(3) as $member)
+                                <li class="flex items-center gap-4 group">
+                                    <div
+                                        class="h-10 w-10 rounded-full bg-muted-100 text-muted-600 border border-muted-200 grid place-items-center font-semibold text-sm  transition-colors">
+                                        {{ mb_substr($member->name ?? '', 0, 1) }}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-xs md:text-sm font-medium truncate" title="{{ $member->name }}">
+                                            {{ $member->name }}
+                                        </p>
+                                        <p class="text-xs text-muted-500 truncate">{{ $member->email }}</p>
+                                    </div>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <div class="text-center py-6 text-muted-400 text-xs md:text-sm">
+                            {{ __('user_dashboard.no_team_members') }}
+                        </div>
+                    @endif
+                </div>
+            @endif
+
+            {{-- Project Section --}}
+            @if(auth()->user()->hasRole('staff'))
+                <div class="@4xl:col-span-8 bg-white border border-muted-300 hover:border-primary/50 transition-all duration-300 rounded-2xl p-6 animate-fade-in-up [animation-delay:150ms]">
+                    <div class="flex items-center justify-between mb-6">
+                        <h4 class="text-lg font-bold text-main">{{ __('staff_dashboard.my_projects') }}</h4>
+                        <a href="{{ route('projects.index') }}"
+                            class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                        </a>
+
+                    </div>
+
+                    @php
+                        $statusMap = [
+                            'pending' => 'bg-muted-100 text-muted-600 ring-muted-500/10',
+                            'in_progress' => 'bg-secondary/10 text-secondary ring-secondary/20',
+                            'active' => 'bg-accent/10 text-accent ring-accent/20',
+                        ];
+                    @endphp
+
+                    <div class="w-full">
+                        {{-- Header Row --}}
+                        <div
+                            class="grid grid-cols-12 gap-4 pb-3 border-b border-muted-200 text-xs font-semibold text-muted-400 uppercase tracking-wider">
+                            <div class="col-span-6">{{ __('staff_dashboard.project_name') }}</div>
+                            <div class="col-span-2 text-center hidden @2xl:block">{{ __('staff_dashboard.percentage') }}</div>
+                            <div class="col-span-3 @2xl:col-span-2 text-right">{{ __('staff_dashboard.status') }}</div>
+                            <div class="col-span-3 @2xl:col-span-2 text-right">{{ __('staff_dashboard.tasks_count') }}</div>
+                        </div>
+
+                        {{-- List Rows --}}
+                        @forelse ($projects->take(3) as $project)
+                            <div
+                                class="grid grid-cols-12 gap-4 py-4 items-center border-b border-muted-100 last:border-0 hover:bg-canvas transition-colors px-2 rounded-lg -mx-2">
+                                <div class="col-span-6">
+                                    <p class="text-sm font-medium text-main truncate" title="{{ $project->name }}">
+                                        {{ $project->title }}</p>
+                                </div>
+
+                                <div class="col-span-2 text-center hidden @2xl:block">
+                                    <span class="text-sm text-muted-500 font-medium">{{ $project->percentage ?? 0 }}%</span>
+                                </div>
+
+                                <div class="col-span-3 @2xl:col-span-2 flex justify-end">
+                                    <span
+                                        class="inline-flex items-center text-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset {{ $statusMap[$project->status] ?? $statusMap['pending'] }}">
+                                        {{ __('staff_dashboard.' . $project->status) }}
+                                    </span>
+                                </div>
+
+                                <div class="col-span-3 @2xl:col-span-2 flex justify-end">
+                                    <span class="text-sm text-muted-500 font-medium">{{ $project->tasks->count() }}</span>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center py-8 text-muted-400 text-sm">
+                                {{ __('staff_dashboard.no_upcoming_projects') ?? 'No data available' }}
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+            @elseif(auth()->user()->hasRole('substaff'))
+                <div class="@4xl:col-span-8 bg-white border border-muted-300 hover:border-primary/30 transition-all duration-300 rounded-2xl p-6 h-max">
+                    <div class="flex items-center justify-between mb-6">
+                        <h4 class="text-md md:text-lg font-semibold text-main">{{ __('user_dashboard.assigned_projects') }}</h4>
+                        <a href="{{ route('tasks.index') }}"
+                            class="text-muted-400 hover:text-primary transition-colors p-1 rounded-md hover:bg-muted-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M17 7H8m9 0v9" />
+                            </svg>
+                        </a>
+                    </div>
+
+                    <div class="w-full">
+                        <div
+                            class="grid grid-cols-12 gap-4 pb-3 border-b border-muted-200 text-xs font-semibold text-muted-400 uppercase tracking-wider">
+                            <div class="col-span-8">{{ __('user_dashboard.tasks') }}</div>
+                            <div class="col-span-4 text-right">{{ __('user_dashboard.task_status') }}</div>
+                        </div>
+
+                        @if ($assignedTasks->isNotEmpty())
+                            <ul class="flex flex-col divide-y divide-muted-100">
+                                @foreach ($assignedTasks->take(3) as $task)
+                                                @php
+                                                    // Mapping statuses to your specific palette
+                                                    $statusConfig = [
+                                                        // Pending -> Muted/Neutral
+                                                        'pending' => ['bg' => 'bg-muted-100', 'text' => 'text-muted-600', 'ring' => 'ring-muted-500/10'],
+                                                        // In Progress -> Secondary (Blue)
+                                                        'in_progress' => ['bg' => 'bg-secondary/10', 'text' => 'text-secondary', 'ring' => 'ring-secondary/20'],
+                                                        // Completed -> Accent (Cyan) 
+                                                        'completed' => ['bg' => 'bg-accent/10', 'text' => 'text-accent', 'ring' => 'ring-accent/20'],
+                                                    ];
+
+                                                    $currentStatus = $statusConfig[$task->status] ?? $statusConfig['pending'];
+                                                    // Check if task is inactive
+                                                    $isInactive = !$task->active; // Assuming 'active' is a boolean field
+                                                @endphp
+                                     <li
+                                                    class="grid grid-cols-12 gap-4 py-4 items-center hover:bg-canvas transition-colors px-2 rounded-lg -mx-2">
+                                                    <div class="col-span-8 flex items-center gap-3">
+                                                        {{-- Small indicator dot --}}
+                                                        <div
+                                                            class="w-2 h-2 rounded-full {{ str_replace('bg-', 'bg-', $currentStatus['text']) }} opacity-50">
+                                                        </div>
+                                                        <div class="flex items-center gap-2 overflow-hidden">
+                                                            @if($task->isUnread())
+                                                                <span
+                                                                    class="w-1.5 h-1.5 rounded-full bg-red-500 shadow-sm shadow-red-500/50 flex-shrink-0 animate-pulse"
+                                                                    title="New/Updated"></span>
+                                                            @endif
+                                                            <a href="{{ route('tasks.details', $task->id) }}"
+                                                                class="text-sm font-medium text-main truncate hover:text-primary hover:underline"
+                                                                title="{{ $task->title }}">{{ $task->title }}</a>
+                                                            @if($isInactive)
+                                                                <span
+                                                                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-danger/10 text-danger ring-1 ring-inset ring-danger/20 whitespace-nowrap">
+                                                                    Inactive
+                                                                </span>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-span-4 flex justify-end">
+                                                        <span
+                                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $currentStatus['bg'] }} {{ $currentStatus['text'] }} ring-1 ring-inset {{ $currentStatus['ring'] }}">
+                                                            {{ __('user_dashboard.status_' . $task->status) }}
+                                                        </span>
+                                                    </div>
+                                                </li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <div class="text-center py-10">
+                                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted-100 mb-3">
+                                    <svg class="w-6 h-6 text-muted-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+                                        </path>
+                                    </svg>
+                                </div>
+                                <p class="text-muted-500 text-xs md:text-sm">{{ __('user_dashboard.no_projects_assigned') }}</p>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @endif
         </div>
-        <!-- Third section -->
-        <div
-            class="flex flex-col w-full gap-8 bg-[#FDFDFF] shadow-[0_4px_40px_0_rgba(32,27,53,0.1)] rounded-[20px] py-5 px-6 animate-fade-in-up [animation-delay:350ms]">
-            <!-- Heading -->
-            <div class="flex items-center justify-between w-full">
-                <p class="text-[20px] font-medium">{{ __('staff_dashboard.recent_activity') }}</p>
-                <a href="#">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-[#5D3FD3]">
-                        <path
-                            d="M408 64L552 64C565.3 64 576 74.7 576 88L576 232C576 241.7 570.2 250.5 561.2 254.2C552.2 257.9 541.9 255.9 535 249L496 210L409 297C399.6 306.4 384.4 306.4 375.1 297L343.1 265C333.7 255.6 333.7 240.4 343.1 231.1L430.1 144.1L391.1 105.1C384.2 98.2 382.2 87.9 385.9 78.9C389.6 69.9 398.3 64 408 64zM232 576L88 576C74.7 576 64 565.3 64 552L64 408C64 398.3 69.8 389.5 78.8 385.8C87.8 382.1 98.1 384.2 105 391L144 430L231 343C240.4 333.6 255.6 333.6 264.9 343L296.9 375C306.3 384.4 306.3 399.6 296.9 408.9L209.9 495.9L248.9 534.9C255.8 541.8 257.8 552.1 254.1 561.1C250.4 570.1 241.7 576 232 576z" />
-                    </svg>
-                </a>
-            </div>
 
-            <!-- Content -->
-            @php
-                $badgeBase = 'flex gap-1 items-center justify-center px-3 py-1 rounded-full text-sm';
-                $statusMap = [
-                    'add' => $badgeBase . ' bg-[#46AAF1] text-white',
-                    'remove' => $badgeBase . ' bg-[#F14646] text-white',
-                    'completed' => $badgeBase . ' bg-[#46F196] text-white',
-                ];
-            @endphp
-            <div class="w-full">
-                <div class="grid grid-cols-2 md:grid-cols-3 items-center text-gray-300">
-                    <p>{{ __('staff_dashboard.activity_title') }}</p>
-                    <p class="hidden md:block text-center">
-                        {{ __('staff_dashboard.activity_time') }}
-                    </p>
-                    <p class="text-right">{{ __('staff_dashboard.activity_status_label') }}</p>
-                </div>
-                <div class="h-px w-full bg-[#D9D9D9] mt-3"></div>
+        {{-- SECTION: Admin Permissions Container --}}
+        <div class="">
+            <!-- <h3 class="text-2xl font-semibold text-main mb-6">{{ __('user_dashboard.admin_section') ?? 'Admin Management' }}</h3> -->
+            <div
+                class="grid grid-cols-1 @2xl:grid-cols-2 @4xl:grid-cols-3 gap-6 w-full animate-fade-in-up [animation-delay:150ms]">
+                {{-- Admin Campaigns --}}
+                @if(auth()->user()->hasRole('admin') || auth()->user()->hasDepartmentRolePermission('admin.campaigns.view'))
+                    <x-dashboard_widgets.campaigns :upcomingCampaigns="$upcomingCampaigns" :sentCampaigns="$sentCampaigns" class=""/>
+                @endif
 
-                <div class="grid grid-cols-2 md:grid-cols-3 items-center pt-3">
-                    <p class="break-all">Viết báo cáo</p>
-                    <p class="text-center hidden md:block">2025-09-26</p>
-                    <span class="justify-self-end {{ $statusMap['add'] }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h4 fill-white">
-                            <path
-                                d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z" />
-                        </svg>
-                        <p>Add</p>
-                    </span>
-                </div>
-                <div class="grid grid-cols-2 md:grid-cols-3 items-center pt-3">
-                    <p class="break-all">Viết báo cáo</p>
-                    <p class="text-center hidden md:block">2025-09-26</p>
-                    <span class="justify-self-end {{ $statusMap['remove'] }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4 fill-white">
-                            <path
-                                d="M183.1 137.4C170.6 124.9 150.3 124.9 137.8 137.4C125.3 149.9 125.3 170.2 137.8 182.7L275.2 320L137.9 457.4C125.4 469.9 125.4 490.2 137.9 502.7C150.4 515.2 170.7 515.2 183.2 502.7L320.5 365.3L457.9 502.6C470.4 515.1 490.7 515.1 503.2 502.6C515.7 490.1 515.7 469.8 503.2 457.3L365.8 320L503.1 182.6C515.6 170.1 515.6 149.8 503.1 137.3C490.6 124.8 470.3 124.8 457.8 137.3L320.5 274.7L183.1 137.4z" />
-                        </svg>
-                        <p>Remove</p>
-                    </span>
-                </div>
-                <div class="grid grid-cols-2 md:grid-cols-3 items-center pt-3">
-                    <p class="break-all">Viết báo cáo</p>
-                    <p class="text-center hidden md:block">2025-09-26</p>
-                    <span class="justify-self-end {{ $statusMap['completed'] }}">
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 640 640"
-                            class="w-4 h-4 fill-white"
-                        >
-                            <path
-                                d="M530.8 134.1C545.1 144.5 548.3 164.5 537.9 178.8L281.9 530.8C276.4 538.4 267.9 543.1 258.5 543.9C249.1 544.7 240 541.2 233.4 534.6L105.4 406.6C92.9 394.1 92.9 373.8 105.4 361.3C117.9 348.8 138.2 348.8 150.7 361.3L252.2 462.8L486.2 141.1C496.6 126.8 516.6 123.6 530.9 134z" />
-                        </svg>
-                        <p>Done</p>
-                    </span>
-                </div>
+                {{-- Admin Email Templates --}}
+                @if(auth()->user()->hasRole('admin') || auth()->user()->hasDepartmentRolePermission('admin.email_templates.view'))
+                    <x-dashboard_widgets.email_templates :emailTemplates="$emailTemplates" class=""/>
+                @endif
             </div>
         </div>
     </div>
-    <!-- @else
-                    <h4>{{ __('staff_dashboard.no_permission') }}</h4>
-                @endrole -->
+
 @endsection
+
+@push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <script>
+        let actionType = null;
+        let stream = null;
+        let detecting = false;
+
+        document.getElementById('checkInBtn').onclick = () => startFaceCheck('checkin');
+        document.getElementById('checkOutBtn').onclick = () => startFaceCheck('checkout');
+
+        $('#faceModal').on('hidden.bs.modal', () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            detecting = false;
+        });
+
+        async function startFaceCheck(type) {
+            actionType = type;
+            $('#faceModal').modal('show');
+
+            const video = document.getElementById('video');
+            document.getElementById('status').textContent = 'Initializing camera...';
+
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "user" }
+                });
+
+                video.srcObject = stream;
+
+                video.onloadedmetadata = async () => {
+                    document.getElementById('status').textContent = 'Loading face detection models...';
+                    await loadModels();
+                    document.getElementById('status').textContent = 'Detecting face...';
+                    detecting = true;
+                    detectFace();
+                };
+            } catch (error) {
+                document.getElementById('status').textContent = 'Camera access denied or unavailable';
+            }
+        }
+
+        async function loadModels() {
+            await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights/');
+        }
+
+        function detectFace() {
+            if (!detecting) return;
+
+            const video = document.getElementById('video');
+
+            faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).then(detection => {
+                if (detection) {
+                    const box = detection.box;
+                    const centerX = box.x + box.width / 2;
+                    const centerY = box.y + box.height / 2;
+                    const videoCenterX = 160;
+                    const videoCenterY = 160;
+                    const distance = Math.sqrt((centerX - videoCenterX) ** 2 + (centerY - videoCenterY) ** 2);
+
+                    if (distance < 100) {
+                        document.getElementById('status').textContent = 'Face aligned! Capturing...';
+                        detecting = false;
+                        setTimeout(captureFace, 500); // small delay
+                    } else {
+                        document.getElementById('status').textContent = 'Align your face inside the circle';
+                    }
+                } else {
+                    document.getElementById('status').textContent = 'No face detected';
+                }
+
+                requestAnimationFrame(detectFace);
+            }).catch(() => {
+                requestAnimationFrame(detectFace);
+            });
+        }
+
+        function captureFace() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob(blob => {
+                sendFace(blob);
+            }, 'image/jpeg', 0.9);
+        }
+
+        function sendFace(blob) {
+            const form = new FormData();
+            form.append('face_image', blob);
+            form.append('action', actionType);
+            form.append('_token', '{{ csrf_token() }}');
+
+            fetch('/face/verify', {
+                method: 'POST',
+                body: form
+            })
+                .then(r => r.json())
+                .then(res => {
+                    $('#faceModal').modal('hide');
+                    alert(res.message);
+                    if (res.status) {
+                        location.reload();
+                    }
+                })
+                .catch(() => {
+                    $('#faceModal').modal('hide');
+                    alert('Verification failed');
+                });
+        }
+    </script>
+@endpush

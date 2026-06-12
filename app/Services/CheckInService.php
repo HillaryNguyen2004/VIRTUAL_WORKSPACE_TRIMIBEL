@@ -6,6 +6,7 @@ use Illuminate\Support\Carbon;
 use App\Models\DayOffRequest;
 use App\Models\User;
 use App\Models\CompanyHour;
+use Illuminate\Support\Facades\Log;
 
 class CheckInService
 {
@@ -16,7 +17,14 @@ class CheckInService
         $this->checkInRepository = $checkInRepository;
     }
 
-    public function processCheckOut(string $username): array
+    private function normalizeName(string $s): string
+    {
+        $s = mb_strtolower(trim($s), 'UTF-8');
+        $s = preg_replace('/\s+/', '', $s); // remove all spaces
+        return $s;
+    }
+
+    public function processCheckOut(string $username, string $currentUserId): array
     {
         $user = User::where('username', $username)->first();
 
@@ -24,6 +32,25 @@ class CheckInService
             return [
                 'status' => false,
                 'message' => __('messages.invalid_user'),
+            ];
+        }
+
+        $currentUser = User::find($currentUserId);
+
+        if (!$currentUser) {
+            return [
+                'status' => false,
+                'message' => __('messages.invalid_user'),
+            ];
+        }
+
+        $currentUsername = $currentUser->username;
+
+        // compare 2 username to check is it checkin with its own username or not, if not then throw error
+        if ($this->normalizeName($user->username) !== $this->normalizeName($currentUsername)) {
+            return [
+                'status' => false,
+                'message' => __('messages.wrong_username'),
             ];
         }
 
@@ -55,55 +82,95 @@ class CheckInService
         ];
     }
 
-    public function processCheckIn(string $username): array
+    public function processCheckIn(string $username, string $currentUserId): array
     {
-        $user = User::where('username', $username)->first();
-
-        if (!$user) {
-            return [
-                'status' => false,
-                'message' => __('messages.invalid_user'),
-            ];
-        }
-
-        $token = $user->createToken('check-in-token')->plainTextToken;
-
-        $now = Carbon::now('Asia/Ho_Chi_Minh');
+        $tz = 'Asia/Ho_Chi_Minh';
+        $now = Carbon::now($tz);
         $today = $now->toDateString();
 
-        // Check if already checked in today (by username)
+        $user = User::where('username', $username)->first();
+        if (!$user) {
+            return ['status' => false, 'message' => __('messages.invalid_user')];
+        }
+
+        $currentUser = User::find($currentUserId);
+        if (!$currentUser) {
+            return ['status' => false, 'message' => __('messages.invalid_user')];
+        }
+
+        // Must check-in with own username
+        if ($this->normalizeName($user->username) !== $this->normalizeName($currentUser->username)) {
+            return ['status' => false, 'message' => __('messages.wrong_username')];
+        }
+
+        // Already checked in?
         if ($this->checkInRepository->hasCheckedInToday($user->username, $today)) {
+            return ['status' => false, 'message' => __('messages.already_checked_in')];
+        }
+
+        $workingHour = CompanyHour::first();
+        if (!$workingHour) {
+            return ['status' => false, 'message' => __('messages.working_hour_not_configured')];
+        }
+
+        $dayOff = DayOffRequest::where('user_id', $user->id)
+            ->where('date', $today)
+            ->where('status', 'APPROVED')
+            ->first();
+
+        // Build today's base window
+        $start = Carbon::createFromFormat('H:i:s', $workingHour->start_at, $tz)
+            ->setDate($now->year, $now->month, $now->day);
+
+        $end = Carbon::createFromFormat('H:i:s', $workingHour->end_at, $tz)
+            ->setDate($now->year, $now->month, $now->day);
+
+        // Overnight shift support (e.g., 22:00 -> 06:00)
+        if ($end->lessThanOrEqualTo($start)) {
+            $end->addDay();
+            // also if now is after midnight (00:xx) it belongs to "next day" window
+            // You can adjust logic here if your shifts span dates in a specific way.
+        }
+
+        // Adjust window for half-day off
+        if ($dayOff && $dayOff->leave_type === 'OFF_HALF') {
+            if ($dayOff->half_day_period === 'AM') {
+                // Start becomes afternoon start
+                $afternoonStartTime = $workingHour->mid_day ?: $workingHour->lunch_end;
+                if ($afternoonStartTime) {
+                    $start = Carbon::createFromFormat('H:i:s', $afternoonStartTime, $tz)
+                        ->setDate($now->year, $now->month, $now->day);
+                }
+            } elseif ($dayOff->half_day_period === 'PM') {
+                // End becomes before afternoon
+                $beforeAfternoonEndTime = $workingHour->mid_day ?: $workingHour->lunch_start;
+                if ($beforeAfternoonEndTime) {
+                    $end = Carbon::createFromFormat('H:i:s', $beforeAfternoonEndTime, $tz)
+                        ->setDate($now->year, $now->month, $now->day);
+                }
+            }
+        }
+
+        // Block if now not in range
+        if (!$now->betweenIncluded($start, $end)) {
             return [
                 'status' => false,
-                'message' => __('messages.already_checked_in'),
+                'message' => __('messages.not_in_working_hours', [
+                    'start' => $start->format('H:i'),
+                    'end' => $end->format('H:i'),
+                ]),
             ];
         }
 
-        $isLate = false;
-        $workingHour = CompanyHour::first();
+        // Late check (based on effective start time)
+        $isLate = $now->greaterThan($start);
 
-        if ($workingHour) {
-            $dayOff = DayOffRequest::where('user_id', $user->id)
-                ->where('date', $now->toDateString())
-                ->whereIn('status', ['APPROVED'])
-                ->first();
-
-            $configuredStart = Carbon::createFromFormat(
-                'H:i:s',
-                $workingHour->start_at,
-                'Asia/Ho_Chi_Minh'
-            )->setDate($now->year, $now->month, $now->day);
-
-            if ($dayOff && $dayOff->leave_type === 'OFF_HALF') {
-                $configuredStart->setTime(12, 0, 0);
-            }
-
-            $isLate = $now->greaterThan($configuredStart);
-        }
+        // Token (create only when allowed)
+        $token = $user->createToken('check-in-token')->plainTextToken;
 
         // Save NAME into DB (not username)
         $this->checkInRepository->insertCheckIn([
-            'user_name' => $user->name, // store full name
+            'user_name' => $user->name,
             'date' => $today,
             'check_in_time' => $now->toTimeString(),
             'created_at' => $now,

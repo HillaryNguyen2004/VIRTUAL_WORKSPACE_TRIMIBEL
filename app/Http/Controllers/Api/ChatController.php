@@ -15,10 +15,18 @@ use App\Models\User;
 use App\Events\MessageSent;
 use App\Events\UserTyping;
 use App\Events\UserStatusChanged;
+use App\Notifications\MentionedNotification;
+use App\Services\ChatFileService;
 use Carbon\Carbon;
 
 class ChatController extends Controller
 {
+    protected $chatFileService;
+
+    public function __construct(ChatFileService $chatFileService)
+    {
+        $this->chatFileService = $chatFileService;
+    }
     /**
      * Get all conversations for the authenticated user
      */
@@ -167,6 +175,49 @@ class ChatController extends Controller
     }
 
     /**
+     * Add participants to an existing conversation
+     */
+    public function addParticipants(Request $request, Conversation $conversation)
+    {
+        $request->validate([
+            'participant_ids' => 'required|array|min:1',
+            'participant_ids.*' => 'exists:users,id'
+        ]);
+
+        try {
+            $user = Auth::user();
+
+            // Only participants can add members (or creator) — basic permission
+            if (!$conversation->participants->contains($user->id)) {
+                return response()->json(['success' => false, 'message' => 'Access denied'], 403);
+            }
+
+            $newIds = array_values(array_diff($request->participant_ids, $conversation->participants->pluck('id')->toArray()));
+            if (empty($newIds)) {
+                return response()->json(['success' => true, 'data' => ['added' => []]]);
+            }
+
+            foreach ($newIds as $pid) {
+                $conversation->participants()->attach($pid, ['joined_at' => now()]);
+            }
+
+            // reload participants
+            $conversation->load('participants');
+
+            // broadcast ConversationCreated event to newly added participants
+            foreach ($newIds as $pid) {
+                try { broadcast(new \App\Events\ConversationCreated($conversation, $pid)); } catch (\Exception $e) {}
+            }
+
+            return response()->json(['success' => true, 'data' => ['added' => $newIds, 'conversation' => $conversation]]);
+
+        } catch (\Exception $e) {
+            Log::error('Error adding participants: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to add participants'], 500);
+        }
+    }
+
+    /**
      * Get a specific conversation with messages
      */
     public function getConversation(Request $request, Conversation $conversation)
@@ -188,6 +239,15 @@ class ChatController extends Controller
                     $query->with('user')->orderBy('created_at', 'desc')->limit(50);
                 }
             ]);
+
+            // Set display name properly
+            if ($conversation->type === 'direct') {
+                // For direct chats, get the other user (not current user)
+                $otherUser = $conversation->participants->where('id', '!=', $user->id)->first();
+                $conversation->display_name = $otherUser ? $otherUser->name : 'Unknown User';
+            } else {
+                $conversation->display_name = $conversation->name ?? 'Group Chat';
+            }
 
             // Mark as read
             $this->markConversationAsRead($conversation, $user);
@@ -283,6 +343,40 @@ class ChatController extends Controller
             // Broadcast the message
             broadcast(new MessageSent($message, $conversation))->toOthers();
 
+            // Handle @mentions or @all in group chats: notify matching participants
+            try {
+                $content = $message->content ?? '';
+                if (preg_match_all('/@([A-Za-z0-9_\.\-]+)/', $content, $matches)) {
+                    $tokens = array_unique($matches[1]);
+                    foreach ($tokens as $token) {
+                        if (strtolower($token) === 'all') {
+                            $targets = $conversation->participants()->where('id', '!=', $user->id)->get();
+                        } else {
+                            if (is_numeric($token)) {
+                                $targets = \App\Models\User::where('id', $token)->get();
+                            } else {
+                                $targets = $conversation->participants()->where('name', 'like', '%' . $token . '%')->get();
+                            }
+                        }
+
+                        foreach ($targets as $target) {
+                            if (!$target || $target->id == $user->id) continue;
+                            try {
+                                $target->notify(new MentionedNotification($message, $conversation->id, $user));
+                                $notif = $target->notifications()->latest()->first();
+                                if ($notif) {
+                                    broadcast(new \App\Events\NotificationSent($notif, $target->id));
+                                }
+                            } catch (\Exception $e) {
+                                Log::error('Error sending mention notification: ' . $e->getMessage());
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Error processing mentions: ' . $e->getMessage());
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => ['message' => $message]
@@ -293,6 +387,134 @@ class ChatController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to send message'
+            ], 500);
+        }
+    }
+
+    /**
+     * Send a file message
+     */
+    public function sendFile(Request $request, Conversation $conversation)
+    {
+        $request->validate([
+            'file' => 'required|file|max:40960', // 40MB max
+            'content' => 'nullable|string|max:500'
+        ]);
+
+        try {
+            $user = Auth::user();
+
+            if (!$conversation->participants->contains($user->id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Access denied'
+                ], 403);
+            }
+
+            // Upload file
+            $fileData = $this->chatFileService->uploadFile($request->file('file'), $conversation->id);
+
+            // Ensure content is not null (use provided content or a sensible default)
+            $content = $request->filled('content') ? $request->input('content') : 'File: ' . $fileData['file_name'];
+
+            // Create message with file
+            $message = $conversation->messages()->create([
+                'user_id' => $user->id,
+                'content' => $content,
+                'type' => 'file',
+                'file_name' => $fileData['file_name'],
+                'file_path' => $fileData['file_path'],
+                'file_size' => $fileData['file_size'],
+                'file_type' => $fileData['file_type']
+            ]);
+
+            $message->load('user');
+
+            // Update conversation timestamp
+            $conversation->touch();
+
+            // Broadcast the message
+            broadcast(new MessageSent($message, $conversation))->toOthers();
+
+            return response()->json([
+                'success' => true,
+                'data' => ['message' => $message]
+            ], 201);
+
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error sending file: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send file'
+            ], 500);
+        }
+    }
+
+    /**
+     * Send an image message
+     */
+    public function sendImage(Request $request, Conversation $conversation)
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:40960', // 40MB max
+            'content' => 'nullable|string|max:500'
+        ]);
+
+        try {
+            $user = Auth::user();
+
+            if (!$conversation->participants->contains($user->id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Access denied'
+                ], 403);
+            }
+
+            // Upload image
+            $imageData = $this->chatFileService->uploadImage($request->file('image'), $conversation->id);
+
+            // Ensure content is not null (use provided caption or default)
+            $content = $request->filled('content') ? $request->input('content') : 'Image: ' . $imageData['file_name'];
+
+            // Create message with image
+            $message = $conversation->messages()->create([
+                'user_id' => $user->id,
+                'content' => $content,
+                'type' => 'image',
+                'file_name' => $imageData['file_name'],
+                'file_path' => $imageData['file_path'],
+                'file_size' => $imageData['file_size'],
+                'file_type' => $imageData['file_type']
+            ]);
+
+            $message->load('user');
+
+            // Update conversation timestamp
+            $conversation->touch();
+
+            // Broadcast the message
+            broadcast(new MessageSent($message, $conversation))->toOthers();
+
+            return response()->json([
+                'success' => true,
+                'data' => ['message' => $message]
+            ], 201);
+
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error sending image: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send image'
             ], 500);
         }
     }
@@ -416,10 +638,31 @@ class ChatController extends Controller
             // Get users who have been active in the last 5 minutes
             $onlineUsers = Cache::get('online_users', []);
 
+            // Fetch users with their relationships
             $users = User::whereIn('id', array_keys($onlineUsers))
                 ->where('id', '!=', Auth::id())
-                ->select(['id', 'name'])
-                ->get();
+                ->with(['roles', 'department', 'tasks']) // Eager load relationships
+                ->get()
+                ->map(function ($user) {
+                    
+                    // Safely calculate task completion percentage
+                    $totalTasks = $user->tasks ? $user->tasks->count() : 0;
+                    $completedTasks = $user->tasks ? $user->tasks->where('status', 'completed')->count() : 0;
+                    $taskCompletion = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100) : 0;
+
+                    // Safely grab role and department names
+                    $roleName = $user->roles->first() ? ucfirst($user->roles->first()->name) : 'Staff';
+                    $departmentName = $user->department ? $user->department->name : 'General';
+
+                    return [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'user_profile_photo' => storageUrl($user->user_profile_photo),
+                        'role_name' => $roleName,
+                        'department_name' => $departmentName,
+                        'task_completion' => $taskCompletion,
+                    ];
+                });
 
             return response()->json([
                 'success' => true,
@@ -453,8 +696,8 @@ class ChatController extends Controller
                 ], 403);
             }
 
-            $METERED_DOMAIN = env('METERED_DOMAIN');
-            $METERED_SECRET_KEY = env('METERED_SECRET_KEY');
+            $METERED_DOMAIN = config('services.metered.domain');
+            $METERED_SECRET_KEY = config('services.metered.secret_key');
 
             // Create meeting room
             $response = Http::post("https://{$METERED_DOMAIN}/api/v1/room?secretKey={$METERED_SECRET_KEY}", [
@@ -525,8 +768,8 @@ class ChatController extends Controller
                 ], 403);
             }
 
-            $METERED_DOMAIN = env('METERED_DOMAIN');
-            $METERED_SECRET_KEY = env('METERED_SECRET_KEY');
+            $METERED_DOMAIN = config('services.metered.domain');
+            $METERED_SECRET_KEY = config('services.metered.secret_key');
             $meetingId = $request->meeting_id;
 
             // Validate meeting exists

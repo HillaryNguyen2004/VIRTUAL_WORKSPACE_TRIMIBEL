@@ -18,12 +18,13 @@ class StoreUserRequest extends FormRequest
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'roles' => 'required|in:user,staff',
+            'department_id' => 'required|exists:departments,id',
             'team_leader_id' => 'nullable|exists:users,id',
         ];
     }
 
     public function validatedData(): array
     {
-        return $this->only(['name', 'email', 'roles']);
+        return $this->only(['name', 'email', 'roles', 'department_id', 'team_leader_id']);
     }
 }

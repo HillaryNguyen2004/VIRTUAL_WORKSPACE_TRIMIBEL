@@ -1,6 +1,6 @@
 <?php
 return [
-    'admin_dashboard' => 'Bảng Điều Khiển',
+    'admin_dashboard' => 'Bảng điều khiển',
     'admin'=> 'QUẢN TRỊ VIÊN',
     'welcome_message' => 'Chào mừng bạn đến với Bảng quản lý công việc và quản trị người dùng.',
     'pending_tasks' => 'Công việc đang chờ',
@@ -50,24 +50,29 @@ return [
     'campaign_management' => 'Quản lý Chiến dịch',
     'campaign_management_description' => 'Tạo và quản lý các chiến dịch email cho nhóm hoặc khách hàng của bạn.',
     'campaign_crud' => 'Tạo, cập nhật và xóa chiến dịch',
+    'campaign_scheduled' => 'ĐÃ LÊN LỊCH',
+    'campaign_sent' => 'ĐÃ GỬI',
+    'campaign_no_sent' => 'Không có chiến dịch đã gửi.',
+    'campaign_no_scheduled' => 'Không có chiến dịch đã lên lịch.',
+    'campaign_users_reached' => 'Người dùng được nhận',
     'assign_users_to_campaign' => 'Chỉ định người dùng nhận chiến dịch cụ thể',
     'schedule_and_send' => 'Lên lịch gửi email tự động',
 
-    'email_template_management' => 'Quản lý Mẫu Email',
+    'email_templates' => 'Mẫu Email',
     'email_template_management_description' => 'Thiết kế và quản lý các mẫu email có thể tái sử dụng với shortcode.',
     'email_template_crud' => 'Tạo, chỉnh sửa và xóa mẫu email',
     'support_shortcodes' => 'Hỗ trợ shortcode như [name], [birthday], v.v.',
     'assign_to_campaign' => 'Gán mẫu cho chiến dịch',
     'create_new_template' => 'Tạo Mẫu Mới',
     'create_new_campaign' => 'Tạo Chiến dịch Mới',
-    'recent_check_ins' => 'Chấm công gần đây',
+    'recent_attendance' => 'Chấm công gần đây',
     'user' => 'Người dùng',
     'date' => 'Ngày',
     'check_in' => 'Giờ vào',
     'check_out' => 'Giờ ra',
     'no_check_ins' => 'Không có bản ghi chấm công.',
     'view_all_checkins' => 'Xem tất cả chấm công',
-    'company_hours_management' => 'Quản lý giờ làm việc công ty',
+    'company_hours' => 'Giờ làm việc',
     'company_hours_management_description' => 'Thiết lập và quản lý khung giờ làm việc chính thức của công ty.',
     'company_hours_crud' => 'Thêm, sửa, xoá giờ làm việc',
     'set_company_hours' => 'Thiết lập giờ làm việc',
@@ -76,5 +81,12 @@ return [
     'team_chat' => 'Chat Nhóm',
     'team_chat_description' => 'Giao tiếp với các thành viên trong nhóm theo thời gian thực.',
     'open_chat' => 'Mở Chat',
+
+    'roles_overview' => 'Tổng quan vai trò',
+    'project_progress' => 'Tiến độ Dự án',
+    'recent_activities' => 'Hoạt động gần đây',
+    'work' => 'LÀM VIỆC',
+    'lunch' => 'NGHỈ TRƯA',
+    'midday' => 'GIỮA NGÀY'
 ];
 ?>
